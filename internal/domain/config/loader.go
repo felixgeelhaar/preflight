@@ -60,3 +60,30 @@ func (l *Loader) LoadTarget(manifest *Manifest, target TargetName, layersDir str
 		Layers: layers,
 	}, nil
 }
+
+// Load loads a manifest, resolves the target, merges layers, and returns MergedConfig.
+func (l *Loader) Load(manifestPath string, target TargetName) (*MergedConfig, error) {
+	// Load manifest
+	manifest, err := l.LoadManifest(manifestPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Determine layers directory (sibling to manifest)
+	layersDir := filepath.Join(filepath.Dir(manifestPath), "layers")
+
+	// Load target with its layers
+	resolvedTarget, err := l.LoadTarget(manifest, target, layersDir)
+	if err != nil {
+		return nil, err
+	}
+
+	// Merge layers
+	merger := NewMerger()
+	merged, err := merger.Merge(resolvedTarget.Layers)
+	if err != nil {
+		return nil, err
+	}
+
+	return merged, nil
+}
