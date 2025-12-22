@@ -68,6 +68,105 @@ func TestMergedConfig_Raw_Empty(t *testing.T) {
 	}
 }
 
+func TestMergedConfig_Raw_GitConfig(t *testing.T) {
+	merged := &MergedConfig{
+		Git: GitConfig{
+			User: GitUserConfig{
+				Name:       "John Doe",
+				Email:      "john@example.com",
+				SigningKey: "ABCD1234",
+			},
+			Core: GitCoreConfig{
+				Editor:       "nvim",
+				AutoCRLF:     "input",
+				ExcludesFile: "~/.gitignore_global",
+			},
+			Commit: GitCommitConfig{
+				GPGSign: true,
+			},
+			GPG: GitGPGConfig{
+				Format:  "openpgp",
+				Program: "/usr/bin/gpg",
+			},
+			Aliases: map[string]string{
+				"co": "checkout",
+				"st": "status",
+			},
+			Includes: []GitInclude{
+				{Path: "~/.gitconfig.work", IfConfig: "gitdir:~/work/"},
+			},
+		},
+	}
+
+	raw := merged.Raw()
+
+	// Check git section
+	git, ok := raw["git"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected git section to be map")
+	}
+
+	// Check user section
+	user, ok := git["user"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected user section to be map")
+	}
+	if user["name"] != "John Doe" {
+		t.Errorf("user.name = %v, want John Doe", user["name"])
+	}
+	if user["email"] != "john@example.com" {
+		t.Errorf("user.email = %v, want john@example.com", user["email"])
+	}
+	if user["signingkey"] != "ABCD1234" {
+		t.Errorf("user.signingkey = %v, want ABCD1234", user["signingkey"])
+	}
+
+	// Check core section
+	core, ok := git["core"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected core section to be map")
+	}
+	if core["editor"] != "nvim" {
+		t.Errorf("core.editor = %v, want nvim", core["editor"])
+	}
+
+	// Check commit section
+	commit, ok := git["commit"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected commit section to be map")
+	}
+	if commit["gpgsign"] != true {
+		t.Errorf("commit.gpgsign = %v, want true", commit["gpgsign"])
+	}
+
+	// Check gpg section
+	gpg, ok := git["gpg"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected gpg section to be map")
+	}
+	if gpg["format"] != "openpgp" {
+		t.Errorf("gpg.format = %v, want openpgp", gpg["format"])
+	}
+
+	// Check alias section
+	alias, ok := git["alias"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected alias section to be map")
+	}
+	if alias["co"] != "checkout" {
+		t.Errorf("alias.co = %v, want checkout", alias["co"])
+	}
+
+	// Check includes section
+	includes, ok := git["includes"].([]interface{})
+	if !ok {
+		t.Fatal("expected includes to be []interface{}")
+	}
+	if len(includes) != 1 {
+		t.Errorf("includes len = %d, want 1", len(includes))
+	}
+}
+
 func TestLoader_Load(t *testing.T) {
 	// This test requires setting up temp files
 	// We'll test with minimal setup

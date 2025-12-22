@@ -191,3 +191,137 @@ packages:
 	assert.Len(t, merged.Packages.Brew.Casks, 2)
 	assert.ElementsMatch(t, []string{"visual-studio-code", "docker"}, merged.Packages.Brew.Casks)
 }
+
+func TestMerger_Merge_Git_UserConfig_LastWins(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+git:
+  user:
+    name: Base User
+    email: base@example.com
+`))
+	require.NoError(t, err)
+
+	workLayer, err := config.ParseLayer([]byte(`
+name: identity.work
+git:
+  user:
+    email: work@company.com
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer, *workLayer})
+
+	require.NoError(t, err)
+	// Name from base, email overridden by work
+	assert.Equal(t, "Base User", merged.Git.User.Name)
+	assert.Equal(t, "work@company.com", merged.Git.User.Email)
+}
+
+func TestMerger_Merge_Git_Aliases_DeepMerge(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+git:
+  alias:
+    co: checkout
+    st: status
+`))
+	require.NoError(t, err)
+
+	workLayer, err := config.ParseLayer([]byte(`
+name: identity.work
+git:
+  alias:
+    br: branch
+    st: status -sb
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer, *workLayer})
+
+	require.NoError(t, err)
+	// Deep merge: co from base, br from work, st overwritten by work
+	assert.Equal(t, "checkout", merged.Git.Aliases["co"])
+	assert.Equal(t, "branch", merged.Git.Aliases["br"])
+	assert.Equal(t, "status -sb", merged.Git.Aliases["st"])
+}
+
+func TestMerger_Merge_Git_Includes_SetUnion(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+git:
+  includes:
+    - path: ~/.gitconfig.local
+`))
+	require.NoError(t, err)
+
+	workLayer, err := config.ParseLayer([]byte(`
+name: identity.work
+git:
+  includes:
+    - path: ~/.gitconfig.work
+      ifconfig: "gitdir:~/work/"
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer, *workLayer})
+
+	require.NoError(t, err)
+	assert.Len(t, merged.Git.Includes, 2)
+}
+
+func TestMerger_Merge_Git_GPGSigning(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+git:
+  user:
+    name: John Doe
+    signingkey: ABCD1234
+  commit:
+    gpgsign: true
+  gpg:
+    format: openpgp
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer})
+
+	require.NoError(t, err)
+	assert.Equal(t, "ABCD1234", merged.Git.User.SigningKey)
+	assert.True(t, merged.Git.Commit.GPGSign)
+	assert.Equal(t, "openpgp", merged.Git.GPG.Format)
+}
+
+func TestMerger_Merge_Git_CoreConfig(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+git:
+  core:
+    editor: nvim
+    autocrlf: input
+    excludesfile: ~/.gitignore_global
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer})
+
+	require.NoError(t, err)
+	assert.Equal(t, "nvim", merged.Git.Core.Editor)
+	assert.Equal(t, "input", merged.Git.Core.AutoCRLF)
+	assert.Equal(t, "~/.gitignore_global", merged.Git.Core.ExcludesFile)
+}

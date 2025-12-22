@@ -44,6 +44,88 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 	files["copies"] = []interface{}{} // Empty for now
 	raw["files"] = files
 
+	// Convert git config
+	git := make(map[string]interface{})
+
+	// User section
+	user := make(map[string]interface{})
+	if m.Git.User.Name != "" {
+		user["name"] = m.Git.User.Name
+	}
+	if m.Git.User.Email != "" {
+		user["email"] = m.Git.User.Email
+	}
+	if m.Git.User.SigningKey != "" {
+		user["signingkey"] = m.Git.User.SigningKey
+	}
+	if len(user) > 0 {
+		git["user"] = user
+	}
+
+	// Core section
+	core := make(map[string]interface{})
+	if m.Git.Core.Editor != "" {
+		core["editor"] = m.Git.Core.Editor
+	}
+	if m.Git.Core.AutoCRLF != "" {
+		core["autocrlf"] = m.Git.Core.AutoCRLF
+	}
+	if m.Git.Core.ExcludesFile != "" {
+		core["excludesfile"] = m.Git.Core.ExcludesFile
+	}
+	if len(core) > 0 {
+		git["core"] = core
+	}
+
+	// Commit section
+	commit := make(map[string]interface{})
+	if m.Git.Commit.GPGSign {
+		commit["gpgsign"] = true
+	}
+	if len(commit) > 0 {
+		git["commit"] = commit
+	}
+
+	// GPG section
+	gpg := make(map[string]interface{})
+	if m.Git.GPG.Format != "" {
+		gpg["format"] = m.Git.GPG.Format
+	}
+	if m.Git.GPG.Program != "" {
+		gpg["program"] = m.Git.GPG.Program
+	}
+	if len(gpg) > 0 {
+		git["gpg"] = gpg
+	}
+
+	// Aliases
+	if len(m.Git.Aliases) > 0 {
+		aliases := make(map[string]interface{})
+		for k, v := range m.Git.Aliases {
+			aliases[k] = v
+		}
+		git["alias"] = aliases
+	}
+
+	// Includes
+	if len(m.Git.Includes) > 0 {
+		var includes []interface{}
+		for _, inc := range m.Git.Includes {
+			incMap := map[string]interface{}{
+				"path": inc.Path,
+			}
+			if inc.IfConfig != "" {
+				incMap["ifconfig"] = inc.IfConfig
+			}
+			includes = append(includes, incMap)
+		}
+		git["includes"] = includes
+	}
+
+	if len(git) > 0 {
+		raw["git"] = git
+	}
+
 	return raw
 }
 

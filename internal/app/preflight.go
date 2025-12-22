@@ -12,6 +12,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
 	"github.com/felixgeelhaar/preflight/internal/provider/files"
+	"github.com/felixgeelhaar/preflight/internal/provider/git"
 )
 
 // Preflight is the main application orchestrator.
@@ -32,6 +33,7 @@ func New(out io.Writer) *Preflight {
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 	comp.RegisterProvider(files.NewProvider(fs))
+	comp.RegisterProvider(git.NewProvider(fs))
 
 	return &Preflight{
 		compiler: comp,

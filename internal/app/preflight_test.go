@@ -153,6 +153,64 @@ func TestPreflight_Plan_MissingConfig(t *testing.T) {
 	}
 }
 
+func TestPreflight_Plan_WithGitConfig(t *testing.T) {
+	// Create temp directory structure
+	tmpDir := t.TempDir()
+
+	// Create manifest
+	manifest := `
+targets:
+  default:
+    - base
+`
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create layers directory
+	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create base layer with git config
+	baseLayer := `
+name: base
+git:
+  user:
+    name: John Doe
+    email: john@example.com
+  core:
+    editor: nvim
+  alias:
+    co: checkout
+    st: status
+`
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	pf := New(&buf)
+
+	ctx := context.Background()
+	plan, err := pf.Plan(ctx, tmpDir+"/preflight.yaml", "default")
+	if err != nil {
+		t.Fatalf("Plan() error = %v", err)
+	}
+
+	if plan == nil {
+		t.Fatal("Plan() returned nil plan")
+	}
+
+	// The plan should include a git:config step
+	pf.PrintPlan(plan)
+	output := buf.String()
+
+	if !contains(output, "git:config") {
+		t.Errorf("output should contain 'git:config' step, got: %s", output)
+	}
+}
+
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
 }

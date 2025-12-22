@@ -123,6 +123,11 @@ func (fs *MockFileSystem) AddFile(path string, content string) {
 	fs.files[path] = []byte(content)
 }
 
+// SetFileContent sets file content directly as bytes.
+func (fs *MockFileSystem) SetFileContent(path string, content []byte) {
+	fs.files[path] = content
+}
+
 // AddSymlink adds a symlink to the mock filesystem.
 func (fs *MockFileSystem) AddSymlink(link, target string) {
 	fs.symlinks[link] = target
