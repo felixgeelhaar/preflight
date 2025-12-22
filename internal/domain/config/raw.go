@@ -126,6 +126,114 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 		raw["git"] = git
 	}
 
+	// Convert SSH config
+	ssh := make(map[string]interface{})
+
+	// Include directive
+	if m.SSH.Include != "" {
+		ssh["include"] = m.SSH.Include
+	}
+
+	// Defaults section
+	defaults := make(map[string]interface{})
+	if m.SSH.Defaults.AddKeysToAgent {
+		defaults["addkeystoagent"] = true
+	}
+	if m.SSH.Defaults.IdentitiesOnly {
+		defaults["identitiesonly"] = true
+	}
+	if m.SSH.Defaults.ForwardAgent {
+		defaults["forwardagent"] = true
+	}
+	if m.SSH.Defaults.ServerAliveInterval > 0 {
+		defaults["serveraliveinterval"] = m.SSH.Defaults.ServerAliveInterval
+	}
+	if m.SSH.Defaults.ServerAliveCountMax > 0 {
+		defaults["serveralivecountmax"] = m.SSH.Defaults.ServerAliveCountMax
+	}
+	if len(defaults) > 0 {
+		ssh["defaults"] = defaults
+	}
+
+	// Hosts section
+	if len(m.SSH.Hosts) > 0 {
+		var hosts []interface{}
+		for _, h := range m.SSH.Hosts {
+			hostMap := map[string]interface{}{
+				"host": h.Host,
+			}
+			if h.HostName != "" {
+				hostMap["hostname"] = h.HostName
+			}
+			if h.User != "" {
+				hostMap["user"] = h.User
+			}
+			if h.Port > 0 {
+				hostMap["port"] = h.Port
+			}
+			if h.IdentityFile != "" {
+				hostMap["identityfile"] = h.IdentityFile
+			}
+			if h.IdentitiesOnly {
+				hostMap["identitiesonly"] = true
+			}
+			if h.ForwardAgent {
+				hostMap["forwardagent"] = true
+			}
+			if h.ProxyCommand != "" {
+				hostMap["proxycommand"] = h.ProxyCommand
+			}
+			if h.ProxyJump != "" {
+				hostMap["proxyjump"] = h.ProxyJump
+			}
+			if h.LocalForward != "" {
+				hostMap["localforward"] = h.LocalForward
+			}
+			if h.RemoteForward != "" {
+				hostMap["remoteforward"] = h.RemoteForward
+			}
+			if h.AddKeysToAgent {
+				hostMap["addkeystoagent"] = true
+			}
+			if h.UseKeychain {
+				hostMap["usekeychain"] = true
+			}
+			hosts = append(hosts, hostMap)
+		}
+		ssh["hosts"] = hosts
+	}
+
+	// Matches section
+	if len(m.SSH.Matches) > 0 {
+		var matches []interface{}
+		for _, match := range m.SSH.Matches {
+			matchMap := map[string]interface{}{
+				"match": match.Match,
+			}
+			if match.HostName != "" {
+				matchMap["hostname"] = match.HostName
+			}
+			if match.User != "" {
+				matchMap["user"] = match.User
+			}
+			if match.IdentityFile != "" {
+				matchMap["identityfile"] = match.IdentityFile
+			}
+			if match.ProxyCommand != "" {
+				matchMap["proxycommand"] = match.ProxyCommand
+			}
+			if match.ProxyJump != "" {
+				matchMap["proxyjump"] = match.ProxyJump
+			}
+			matches = append(matches, matchMap)
+		}
+		ssh["matches"] = matches
+	}
+
+	if len(ssh) > 0 {
+		raw["ssh"] = ssh
+	}
+
 	return raw
 }
 

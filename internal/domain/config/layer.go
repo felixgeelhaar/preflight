@@ -84,6 +84,50 @@ type GitConfig struct {
 	Includes []GitInclude      `yaml:"includes,omitempty"`
 }
 
+// SSHDefaultsConfig represents SSH global defaults (Host *).
+type SSHDefaultsConfig struct {
+	AddKeysToAgent      bool `yaml:"addkeystoagent,omitempty"`
+	IdentitiesOnly      bool `yaml:"identitiesonly,omitempty"`
+	ForwardAgent        bool `yaml:"forwardagent,omitempty"`
+	ServerAliveInterval int  `yaml:"serveraliveinterval,omitempty"`
+	ServerAliveCountMax int  `yaml:"serveralivecountmax,omitempty"`
+}
+
+// SSHHostConfig represents an SSH Host block.
+type SSHHostConfig struct {
+	Host           string `yaml:"host"`
+	HostName       string `yaml:"hostname,omitempty"`
+	User           string `yaml:"user,omitempty"`
+	Port           int    `yaml:"port,omitempty"`
+	IdentityFile   string `yaml:"identityfile,omitempty"`
+	IdentitiesOnly bool   `yaml:"identitiesonly,omitempty"`
+	ForwardAgent   bool   `yaml:"forwardagent,omitempty"`
+	ProxyCommand   string `yaml:"proxycommand,omitempty"`
+	ProxyJump      string `yaml:"proxyjump,omitempty"`
+	LocalForward   string `yaml:"localforward,omitempty"`
+	RemoteForward  string `yaml:"remoteforward,omitempty"`
+	AddKeysToAgent bool   `yaml:"addkeystoagent,omitempty"`
+	UseKeychain    bool   `yaml:"usekeychain,omitempty"`
+}
+
+// SSHMatchConfig represents an SSH Match block.
+type SSHMatchConfig struct {
+	Match        string `yaml:"match"`
+	HostName     string `yaml:"hostname,omitempty"`
+	User         string `yaml:"user,omitempty"`
+	IdentityFile string `yaml:"identityfile,omitempty"`
+	ProxyCommand string `yaml:"proxycommand,omitempty"`
+	ProxyJump    string `yaml:"proxyjump,omitempty"`
+}
+
+// SSHConfig represents SSH configuration.
+type SSHConfig struct {
+	Include  string            `yaml:"include,omitempty"`
+	Defaults SSHDefaultsConfig `yaml:"defaults,omitempty"`
+	Hosts    []SSHHostConfig   `yaml:"hosts,omitempty"`
+	Matches  []SSHMatchConfig  `yaml:"matches,omitempty"`
+}
+
 // Layer is a composable configuration overlay.
 type Layer struct {
 	Name       LayerName
@@ -91,6 +135,7 @@ type Layer struct {
 	Packages   PackageSet
 	Files      []FileDeclaration
 	Git        GitConfig
+	SSH        SSHConfig
 }
 
 // layerYAML is the YAML representation for unmarshaling.
@@ -99,6 +144,7 @@ type layerYAML struct {
 	Packages PackageSet        `yaml:"packages,omitempty"`
 	Files    []FileDeclaration `yaml:"files,omitempty"`
 	Git      GitConfig         `yaml:"git,omitempty"`
+	SSH      SSHConfig         `yaml:"ssh,omitempty"`
 }
 
 // ParseLayer parses a Layer from YAML bytes.
@@ -118,6 +164,7 @@ func ParseLayer(data []byte) (*Layer, error) {
 		Packages: raw.Packages,
 		Files:    raw.Files,
 		Git:      raw.Git,
+		SSH:      raw.SSH,
 	}, nil
 }
 

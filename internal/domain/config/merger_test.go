@@ -325,3 +325,74 @@ git:
 	assert.Equal(t, "input", merged.Git.Core.AutoCRLF)
 	assert.Equal(t, "~/.gitignore_global", merged.Git.Core.ExcludesFile)
 }
+
+func TestMerger_Merge_SSH_Hosts(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+ssh:
+  hosts:
+    - host: github.com
+      hostname: github.com
+      user: git
+      identityfile: ~/.ssh/id_ed25519
+`))
+	require.NoError(t, err)
+
+	workLayer, err := config.ParseLayer([]byte(`
+name: identity.work
+ssh:
+  hosts:
+    - host: work
+      hostname: git.company.com
+      user: developer
+      identityfile: ~/.ssh/id_work
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer, *workLayer})
+
+	require.NoError(t, err)
+	assert.Len(t, merged.SSH.Hosts, 2)
+}
+
+func TestMerger_Merge_SSH_Defaults(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+ssh:
+  defaults:
+    addkeystoagent: true
+    identitiesonly: true
+    serveraliveinterval: 60
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer})
+
+	require.NoError(t, err)
+	assert.True(t, merged.SSH.Defaults.AddKeysToAgent)
+	assert.True(t, merged.SSH.Defaults.IdentitiesOnly)
+	assert.Equal(t, 60, merged.SSH.Defaults.ServerAliveInterval)
+}
+
+func TestMerger_Merge_SSH_Include(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+ssh:
+  include: ~/.ssh/config.d/*
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer})
+
+	require.NoError(t, err)
+	assert.Equal(t, "~/.ssh/config.d/*", merged.SSH.Include)
+}

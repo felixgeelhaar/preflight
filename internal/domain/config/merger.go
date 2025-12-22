@@ -8,6 +8,7 @@ type MergedConfig struct {
 	Packages   PackageSet
 	Files      []FileDeclaration
 	Git        GitConfig
+	SSH        SSHConfig
 	provenance ProvenanceMap
 }
 
@@ -46,6 +47,8 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 	filesMap := make(map[string]FileDeclaration)
 	aliasesMap := make(map[string]string)
 	includesSet := make(map[string]bool)
+	sshHostsMap := make(map[string]SSHHostConfig)
+	sshMatchesSet := make(map[string]bool)
 
 	for _, layer := range layers {
 		// Merge brew formulae
@@ -141,6 +144,49 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 				m.trackProvenance(merged, "git.includes", inc.Path, layer.Provenance)
 			}
 		}
+
+		// Merge SSH config
+		if layer.SSH.Include != "" {
+			merged.SSH.Include = layer.SSH.Include
+			m.trackProvenance(merged, "ssh.include", layer.SSH.Include, layer.Provenance)
+		}
+
+		// Merge SSH defaults (scalars: last-wins)
+		if layer.SSH.Defaults.AddKeysToAgent {
+			merged.SSH.Defaults.AddKeysToAgent = true
+			m.trackProvenance(merged, "ssh.defaults.addkeystoagent", "true", layer.Provenance)
+		}
+		if layer.SSH.Defaults.IdentitiesOnly {
+			merged.SSH.Defaults.IdentitiesOnly = true
+			m.trackProvenance(merged, "ssh.defaults.identitiesonly", "true", layer.Provenance)
+		}
+		if layer.SSH.Defaults.ForwardAgent {
+			merged.SSH.Defaults.ForwardAgent = true
+			m.trackProvenance(merged, "ssh.defaults.forwardagent", "true", layer.Provenance)
+		}
+		if layer.SSH.Defaults.ServerAliveInterval > 0 {
+			merged.SSH.Defaults.ServerAliveInterval = layer.SSH.Defaults.ServerAliveInterval
+			m.trackProvenance(merged, "ssh.defaults.serveraliveinterval", "set", layer.Provenance)
+		}
+		if layer.SSH.Defaults.ServerAliveCountMax > 0 {
+			merged.SSH.Defaults.ServerAliveCountMax = layer.SSH.Defaults.ServerAliveCountMax
+			m.trackProvenance(merged, "ssh.defaults.serveralivecountmax", "set", layer.Provenance)
+		}
+
+		// Merge SSH hosts (last-wins per host name)
+		for _, host := range layer.SSH.Hosts {
+			sshHostsMap[host.Host] = host
+			m.trackProvenance(merged, "ssh.hosts", host.Host, layer.Provenance)
+		}
+
+		// Merge SSH matches (set union by match pattern)
+		for _, match := range layer.SSH.Matches {
+			if !sshMatchesSet[match.Match] {
+				sshMatchesSet[match.Match] = true
+				merged.SSH.Matches = append(merged.SSH.Matches, match)
+				m.trackProvenance(merged, "ssh.matches", match.Match, layer.Provenance)
+			}
+		}
 	}
 
 	// Convert files map to slice
@@ -151,6 +197,11 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 	// Convert aliases map to merged config
 	if len(aliasesMap) > 0 {
 		merged.Git.Aliases = aliasesMap
+	}
+
+	// Convert SSH hosts map to slice
+	for _, host := range sshHostsMap {
+		merged.SSH.Hosts = append(merged.SSH.Hosts, host)
 	}
 
 	return merged, nil
