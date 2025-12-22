@@ -1,0 +1,8 @@
+defaults:
+  mode: locked
+  editor: nvim
+
+targets:
+  work:
+    - base
+    - identity.work

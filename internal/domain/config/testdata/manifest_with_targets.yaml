@@ -1,0 +1,8 @@
+targets:
+  work:
+    - base
+    - identity.work
+    - role.go-developer
+  personal:
+    - base
+    - identity.personal

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go mod init:*)",
+      "Bash(go get:*)",
+      "Bash(go mod tidy:*)",
+      "Bash(go build:*)",
+      "Bash(./bin/preflight version:*)",
+      "Bash(go test:*)",
+      "Bash(go tool cover:*)",
+      "Bash(golangci-lint run:*)",
+      "Bash(gofmt:*)",
+      "Bash(./bin/preflight:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

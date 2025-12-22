@@ -1,0 +1,8 @@
+name: identity.work
+
+files:
+  - path: ~/.gitconfig
+    mode: generated
+  - path: ~/.ssh/config
+    mode: template
+    template: ssh/config.tmpl

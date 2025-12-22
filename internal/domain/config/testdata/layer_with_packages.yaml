@@ -1,0 +1,11 @@
+name: base
+
+packages:
+  brew:
+    formulae:
+      - git
+      - ripgrep
+      - fd
+    casks:
+      - visual-studio-code
+      - docker
