@@ -18,6 +18,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/provider/runtime"
 	"github.com/felixgeelhaar/preflight/internal/provider/shell"
 	"github.com/felixgeelhaar/preflight/internal/provider/ssh"
+	"github.com/felixgeelhaar/preflight/internal/provider/vscode"
 )
 
 // Preflight is the main application orchestrator.
@@ -44,6 +45,7 @@ func New(out io.Writer) *Preflight {
 	comp.RegisterProvider(runtime.NewProvider(fs))
 	comp.RegisterProvider(shell.NewProvider(fs))
 	comp.RegisterProvider(nvim.NewProvider(fs, cmdRunner))
+	comp.RegisterProvider(vscode.NewProvider(fs, cmdRunner))
 
 	return &Preflight{
 		compiler: comp,

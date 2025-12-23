@@ -368,6 +368,43 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 		raw["nvim"] = nvim
 	}
 
+	// Convert VSCode config
+	vscode := make(map[string]interface{})
+
+	if len(m.VSCode.Extensions) > 0 {
+		vscode["extensions"] = toInterfaceSlice(m.VSCode.Extensions)
+	}
+
+	if len(m.VSCode.Settings) > 0 {
+		settings := make(map[string]interface{})
+		for k, v := range m.VSCode.Settings {
+			settings[k] = v
+		}
+		vscode["settings"] = settings
+	}
+
+	if len(m.VSCode.Keybindings) > 0 {
+		var keybindings []interface{}
+		for _, kb := range m.VSCode.Keybindings {
+			kbMap := map[string]interface{}{
+				"key":     kb.Key,
+				"command": kb.Command,
+			}
+			if kb.When != "" {
+				kbMap["when"] = kb.When
+			}
+			if kb.Args != "" {
+				kbMap["args"] = kb.Args
+			}
+			keybindings = append(keybindings, kbMap)
+		}
+		vscode["keybindings"] = keybindings
+	}
+
+	if len(vscode) > 0 {
+		raw["vscode"] = vscode
+	}
+
 	return raw
 }
 

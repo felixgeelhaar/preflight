@@ -12,6 +12,7 @@ type MergedConfig struct {
 	Runtime    RuntimeConfig
 	Shell      ShellConfig
 	Nvim       NvimConfig
+	VSCode     VSCodeConfig
 	provenance ProvenanceMap
 }
 
@@ -281,6 +282,49 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 		if layer.Nvim.EnsureInstall {
 			merged.Nvim.EnsureInstall = true
 			m.trackProvenance(merged, "nvim.ensure_install", "true", layer.Provenance)
+		}
+
+		// Merge VSCode extensions (set union)
+		for _, ext := range layer.VSCode.Extensions {
+			// Check if already present
+			found := false
+			for _, existing := range merged.VSCode.Extensions {
+				if existing == ext {
+					found = true
+					break
+				}
+			}
+			if !found {
+				merged.VSCode.Extensions = append(merged.VSCode.Extensions, ext)
+			}
+			m.trackProvenance(merged, "vscode.extensions", ext, layer.Provenance)
+		}
+
+		// Merge VSCode settings (deep merge, last-wins per key)
+		if len(layer.VSCode.Settings) > 0 {
+			if merged.VSCode.Settings == nil {
+				merged.VSCode.Settings = make(map[string]interface{})
+			}
+			for key, value := range layer.VSCode.Settings {
+				merged.VSCode.Settings[key] = value
+				m.trackProvenance(merged, "vscode.settings", key, layer.Provenance)
+			}
+		}
+
+		// Merge VSCode keybindings (set union by key+command)
+		for _, kb := range layer.VSCode.Keybindings {
+			// Check if already present
+			found := false
+			for _, existing := range merged.VSCode.Keybindings {
+				if existing.Key == kb.Key && existing.Command == kb.Command {
+					found = true
+					break
+				}
+			}
+			if !found {
+				merged.VSCode.Keybindings = append(merged.VSCode.Keybindings, kb)
+			}
+			m.trackProvenance(merged, "vscode.keybindings", kb.Key, layer.Provenance)
 		}
 	}
 

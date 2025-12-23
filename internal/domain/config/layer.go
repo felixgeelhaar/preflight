@@ -187,6 +187,21 @@ type NvimConfig struct {
 	EnsureInstall bool   `yaml:"ensure_install,omitempty"`
 }
 
+// VSCodeKeybinding represents a single VSCode keybinding.
+type VSCodeKeybinding struct {
+	Key     string `yaml:"key"`
+	Command string `yaml:"command"`
+	When    string `yaml:"when,omitempty"`
+	Args    string `yaml:"args,omitempty"`
+}
+
+// VSCodeConfig represents VSCode editor configuration.
+type VSCodeConfig struct {
+	Extensions  []string               `yaml:"extensions,omitempty"`
+	Settings    map[string]interface{} `yaml:"settings,omitempty"`
+	Keybindings []VSCodeKeybinding     `yaml:"keybindings,omitempty"`
+}
+
 // Layer is a composable configuration overlay.
 type Layer struct {
 	Name       LayerName
@@ -198,6 +213,7 @@ type Layer struct {
 	Runtime    RuntimeConfig
 	Shell      ShellConfig
 	Nvim       NvimConfig
+	VSCode     VSCodeConfig
 }
 
 // layerYAML is the YAML representation for unmarshaling.
@@ -210,6 +226,7 @@ type layerYAML struct {
 	Runtime  RuntimeConfig     `yaml:"runtime,omitempty"`
 	Shell    ShellConfig       `yaml:"shell,omitempty"`
 	Nvim     NvimConfig        `yaml:"nvim,omitempty"`
+	VSCode   VSCodeConfig      `yaml:"vscode,omitempty"`
 }
 
 // ParseLayer parses a Layer from YAML bytes.
@@ -233,6 +250,7 @@ func ParseLayer(data []byte) (*Layer, error) {
 		Runtime:  raw.Runtime,
 		Shell:    raw.Shell,
 		Nvim:     raw.Nvim,
+		VSCode:   raw.VSCode,
 	}, nil
 }
 
