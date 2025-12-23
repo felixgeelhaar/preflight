@@ -12,6 +12,9 @@ if [[ -z "$VERSION" ]]; then
     exit 1
 fi
 
+# Remove 'v' prefix if present
+VERSION="${VERSION#v}"
+
 REPO="felixgeelhaar/preflight"
 TAP_REPO="felixgeelhaar/homebrew-tap"
 FORMULA_PATH="Formula/preflight.rb"
@@ -23,22 +26,25 @@ TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
 # Download and calculate SHA256 for each platform
-declare -A SHAS
+echo "Downloading darwin-amd64..."
+curl -sL "https://github.com/${REPO}/releases/download/v${VERSION}/preflight-darwin-amd64.tar.gz" -o "$TMPDIR/preflight-darwin-amd64.tar.gz"
+SHA_DARWIN_AMD64=$(shasum -a 256 "$TMPDIR/preflight-darwin-amd64.tar.gz" | cut -d' ' -f1)
+echo "  SHA256: $SHA_DARWIN_AMD64"
 
-for PLATFORM in "darwin-amd64" "darwin-arm64" "linux-amd64" "linux-arm64"; do
-    URL="https://github.com/${REPO}/releases/download/v${VERSION}/preflight-${PLATFORM}.tar.gz"
-    echo "Downloading ${PLATFORM}..."
+echo "Downloading darwin-arm64..."
+curl -sL "https://github.com/${REPO}/releases/download/v${VERSION}/preflight-darwin-arm64.tar.gz" -o "$TMPDIR/preflight-darwin-arm64.tar.gz"
+SHA_DARWIN_ARM64=$(shasum -a 256 "$TMPDIR/preflight-darwin-arm64.tar.gz" | cut -d' ' -f1)
+echo "  SHA256: $SHA_DARWIN_ARM64"
 
-    if ! curl -sL "$URL" -o "$TMPDIR/preflight-${PLATFORM}.tar.gz"; then
-        echo "Error: Failed to download $URL"
-        echo "Make sure the release v${VERSION} exists with all platform artifacts."
-        exit 1
-    fi
+echo "Downloading linux-amd64..."
+curl -sL "https://github.com/${REPO}/releases/download/v${VERSION}/preflight-linux-amd64.tar.gz" -o "$TMPDIR/preflight-linux-amd64.tar.gz"
+SHA_LINUX_AMD64=$(shasum -a 256 "$TMPDIR/preflight-linux-amd64.tar.gz" | cut -d' ' -f1)
+echo "  SHA256: $SHA_LINUX_AMD64"
 
-    SHA=$(shasum -a 256 "$TMPDIR/preflight-${PLATFORM}.tar.gz" | cut -d' ' -f1)
-    SHAS[$PLATFORM]=$SHA
-    echo "  SHA256: $SHA"
-done
+echo "Downloading linux-arm64..."
+curl -sL "https://github.com/${REPO}/releases/download/v${VERSION}/preflight-linux-arm64.tar.gz" -o "$TMPDIR/preflight-linux-arm64.tar.gz"
+SHA_LINUX_ARM64=$(shasum -a 256 "$TMPDIR/preflight-linux-arm64.tar.gz" | cut -d' ' -f1)
+echo "  SHA256: $SHA_LINUX_ARM64"
 
 echo ""
 echo "All SHA256 hashes calculated successfully."
@@ -56,20 +62,20 @@ class Preflight < Formula
   on_macos do
     if Hardware::CPU.arm?
       url \"https://github.com/felixgeelhaar/preflight/releases/download/v#{version}/preflight-darwin-arm64.tar.gz\"
-      sha256 \"${SHAS[darwin-arm64]}\"
+      sha256 \"${SHA_DARWIN_ARM64}\"
     else
       url \"https://github.com/felixgeelhaar/preflight/releases/download/v#{version}/preflight-darwin-amd64.tar.gz\"
-      sha256 \"${SHAS[darwin-amd64]}\"
+      sha256 \"${SHA_DARWIN_AMD64}\"
     end
   end
 
   on_linux do
     if Hardware::CPU.arm?
       url \"https://github.com/felixgeelhaar/preflight/releases/download/v#{version}/preflight-linux-arm64.tar.gz\"
-      sha256 \"${SHAS[linux-arm64]}\"
+      sha256 \"${SHA_LINUX_ARM64}\"
     else
       url \"https://github.com/felixgeelhaar/preflight/releases/download/v#{version}/preflight-linux-amd64.tar.gz\"
-      sha256 \"${SHAS[linux-amd64]}\"
+      sha256 \"${SHA_LINUX_AMD64}\"
     end
   end
 
@@ -88,9 +94,13 @@ echo "$FORMULA_CONTENT"
 echo "=================="
 echo ""
 
-# Check if we should push to GitHub
-read -p "Push to ${TAP_REPO}? (y/n) " -n 1 -r
-echo ""
+# Check for non-interactive mode
+if [[ "${NONINTERACTIVE:-}" == "1" ]] || [[ ! -t 0 ]]; then
+    REPLY="y"
+else
+    read -p "Push to ${TAP_REPO}? (y/n) " -n 1 -r
+    echo ""
+fi
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Updating formula in ${TAP_REPO}..."
