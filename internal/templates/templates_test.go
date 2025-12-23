@@ -1,7 +1,6 @@
 package templates_test
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/templates"
@@ -60,7 +59,7 @@ func TestGenerateReadme(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.Contains(t, readme, "preflight")
-		assert.True(t, strings.Contains(readme, "Dotfiles and machine configuration"))
+		assert.Contains(t, readme, "Dotfiles and machine configuration")
 	})
 
 	t.Run("contains structure", func(t *testing.T) {

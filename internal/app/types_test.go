@@ -268,6 +268,49 @@ func TestRepoOptions(t *testing.T) {
 	})
 }
 
+func TestFixResult(t *testing.T) {
+	t.Parallel()
+
+	t.Run("all fixed when no remaining issues", func(t *testing.T) {
+		t.Parallel()
+		result := FixResult{
+			FixedIssues: []DoctorIssue{
+				{StepID: "brew.git", Severity: SeverityWarning},
+			},
+			RemainingIssues: []DoctorIssue{},
+		}
+
+		assert.True(t, result.AllFixed())
+		assert.Equal(t, 0, result.RemainingCount())
+		assert.Equal(t, 1, result.FixedCount())
+	})
+
+	t.Run("not all fixed when issues remain", func(t *testing.T) {
+		t.Parallel()
+		result := FixResult{
+			FixedIssues: []DoctorIssue{
+				{StepID: "brew.git", Severity: SeverityWarning},
+			},
+			RemainingIssues: []DoctorIssue{
+				{StepID: "brew.curl", Severity: SeverityError},
+				{StepID: "files.dotfiles", Severity: SeverityWarning},
+			},
+		}
+
+		assert.False(t, result.AllFixed())
+		assert.Equal(t, 2, result.RemainingCount())
+		assert.Equal(t, 1, result.FixedCount())
+	})
+
+	t.Run("all fixed with empty result", func(t *testing.T) {
+		t.Parallel()
+		result := FixResult{}
+
+		assert.True(t, result.AllFixed())
+		assert.Equal(t, 0, result.RemainingCount())
+	})
+}
+
 func TestRepoStatus(t *testing.T) {
 	t.Parallel()
 

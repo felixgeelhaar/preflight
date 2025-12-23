@@ -51,8 +51,9 @@ func (d *DoctorCheck) RequiredBinaries() []BinaryCheck {
 
 // CheckBinaries verifies all required binaries are installed.
 func (d *DoctorCheck) CheckBinaries(ctx context.Context) []BinaryResult {
-	var results []BinaryResult
-	for _, check := range d.RequiredBinaries() {
+	binaries := d.RequiredBinaries()
+	results := make([]BinaryResult, 0, len(binaries))
+	for _, check := range binaries {
 		result := d.checkBinary(ctx, check)
 		results = append(results, result)
 	}

@@ -64,7 +64,7 @@ func TestBuildInterviewPrompt(t *testing.T) {
 			assert.NotEmpty(t, prompt.SystemPrompt())
 			assert.NotEmpty(t, prompt.UserPrompt())
 			assert.Equal(t, 512, prompt.MaxTokens())
-			assert.Equal(t, 0.3, prompt.Temperature())
+			assert.InDelta(t, 0.3, prompt.Temperature(), 0.001)
 
 			for _, s := range tt.contains {
 				assert.Contains(t, prompt.UserPrompt(), s)
@@ -144,7 +144,7 @@ func TestQuestionPrompts(t *testing.T) {
 		assert.NotEmpty(t, prompt.SystemPrompt())
 		assert.Contains(t, prompt.UserPrompt(), "experience")
 		assert.Equal(t, 256, prompt.MaxTokens())
-		assert.Equal(t, 0.7, prompt.Temperature())
+		assert.InDelta(t, 0.7, prompt.Temperature(), 0.001)
 	})
 
 	t.Run("language question", func(t *testing.T) {

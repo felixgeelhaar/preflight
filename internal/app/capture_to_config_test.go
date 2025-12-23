@@ -233,4 +233,158 @@ func TestCaptureConfigGenerator_GenerateFromCapture(t *testing.T) {
 		assert.Contains(t, string(content), "vscode:")
 		assert.Contains(t, string(content), "runtime:")
 	})
+
+	t.Run("uses default target when empty", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items:      []CapturedItem{},
+			CapturedAt: time.Now(),
+		}
+
+		// Pass empty target - should use "default"
+		err := generator.GenerateFromCapture(findings, "")
+		require.NoError(t, err)
+
+		// Read manifest and check target is "default"
+		manifestPath := filepath.Join(tmpDir, "preflight.yaml")
+		content, err := os.ReadFile(manifestPath)
+		require.NoError(t, err)
+
+		assert.Contains(t, string(content), "default:")
+	})
+
+	t.Run("ignores unhandled providers", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				// nvim and ssh providers are not handled by capture config generator
+				{Provider: "nvim", Name: "preset", Value: "lazyvim", CapturedAt: time.Now()},
+				{Provider: "ssh", Name: "host.github", Value: "github.com", CapturedAt: time.Now()},
+			},
+			Providers:  []string{"nvim", "ssh"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Should create files without error even if providers are not handled
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Layer should just have the name since no sections are added
+		assert.Contains(t, string(content), "name: captured")
+	})
+
+	t.Run("generates git init defaultBranch from capture", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "git", Name: "init.defaultBranch", Value: "main", CapturedAt: time.Now()},
+			},
+			Providers:  []string{"git"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Read layer content
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Verify git init config
+		assert.Contains(t, string(content), "init:")
+		assert.Contains(t, string(content), "defaultBranch: main")
+	})
+
+	t.Run("generates bash default when only bash shell files", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "shell", Name: ".bashrc", Value: "~/.bashrc", CapturedAt: time.Now()},
+				{Provider: "shell", Name: ".bash_profile", Value: "~/.bash_profile", CapturedAt: time.Now()},
+			},
+			Providers:  []string{"shell"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Read layer content
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Verify shell defaults to bash
+		assert.Contains(t, string(content), "default: bash")
+	})
+
+	t.Run("returns nil shell when no shell files found", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				// Shell provider with unrecognized file
+				{Provider: "shell", Name: ".config", Value: "~/.config", CapturedAt: time.Now()},
+			},
+			Providers:  []string{"shell"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Read layer content
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Shell section should not be present
+		assert.NotContains(t, string(content), "shell:")
+	})
+
+	t.Run("returns nil runtime when no tools captured", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				// Runtime provider but with non-string value
+				{Provider: "runtime", Name: "invalid", Value: 123, CapturedAt: time.Now()},
+			},
+			Providers:  []string{"runtime"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Read layer content
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Runtime section should have the tool
+		assert.Contains(t, string(content), "runtime:")
+		assert.Contains(t, string(content), "name: invalid")
+	})
 }

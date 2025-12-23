@@ -85,7 +85,7 @@ func (c *Client) CreateRepository(ctx context.Context, opts ports.GitHubCreateOp
 		// If JSON parsing fails, try to extract info from the output
 		// gh repo create sometimes just outputs the URL
 		url := strings.TrimSpace(result.Stdout)
-		return &ports.GitHubRepoInfo{
+		return &ports.GitHubRepoInfo{ //nolint:nilerr // Fallback to URL parsing when JSON fails
 			Name:     opts.Name,
 			URL:      url,
 			CloneURL: url + ".git",

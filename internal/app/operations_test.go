@@ -5,15 +5,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// newTestCommand creates an exec.Cmd for testing purposes.
-func newTestCommand(name string, args ...string) *exec.Cmd {
-	return exec.Command(name, args...)
+// newGitCommand creates an exec.Cmd for git commands in tests.
+func newGitCommand(args ...string) *exec.Cmd {
+	return exec.Command("git", args...)
 }
 
 func TestExtractRepoName(t *testing.T) {
@@ -112,32 +113,32 @@ func TestRepoClone_NoConfigFile(t *testing.T) {
 	sourceDir := t.TempDir()
 
 	// Initialize a bare repo
-	cmd := newTestCommand("git", "init", "--bare", sourceDir)
+	cmd := newGitCommand("init", "--bare", sourceDir)
 	require.NoError(t, cmd.Run())
 
 	// Create a temp working dir, add a file, and push
 	workDir := t.TempDir()
 	workRepoPath := filepath.Join(workDir, "work")
 
-	cmd = newTestCommand("git", "clone", sourceDir, workRepoPath)
+	cmd = newGitCommand("clone", sourceDir, workRepoPath)
 	require.NoError(t, cmd.Run())
 
 	// Create a dummy file (not preflight.yaml)
 	require.NoError(t, os.WriteFile(filepath.Join(workRepoPath, "README.md"), []byte("# Test"), 0o644))
 
-	cmd = newTestCommand("git", "-C", workRepoPath, "add", ".")
+	cmd = newGitCommand("-C", workRepoPath, "add", ".")
 	require.NoError(t, cmd.Run())
 
-	cmd = newTestCommand("git", "-C", workRepoPath, "config", "user.email", "test@test.com")
+	cmd = newGitCommand("-C", workRepoPath, "config", "user.email", "test@test.com")
 	require.NoError(t, cmd.Run())
 
-	cmd = newTestCommand("git", "-C", workRepoPath, "config", "user.name", "Test")
+	cmd = newGitCommand("-C", workRepoPath, "config", "user.name", "Test")
 	require.NoError(t, cmd.Run())
 
-	cmd = newTestCommand("git", "-C", workRepoPath, "commit", "-m", "Initial commit")
+	cmd = newGitCommand("-C", workRepoPath, "commit", "-m", "Initial commit")
 	require.NoError(t, cmd.Run())
 
-	cmd = newTestCommand("git", "-C", workRepoPath, "push", "-u", "origin", "HEAD")
+	cmd = newGitCommand("-C", workRepoPath, "push", "-u", "origin", "HEAD")
 	require.NoError(t, cmd.Run())
 
 	// Now test cloning
@@ -167,14 +168,14 @@ func TestRepoClone_WithConfigFile(t *testing.T) {
 	sourceDir := t.TempDir()
 
 	// Initialize a bare repo
-	cmd := newTestCommand("git", "init", "--bare", sourceDir)
+	cmd := newGitCommand("init", "--bare", sourceDir)
 	require.NoError(t, cmd.Run())
 
 	// Create a temp working dir, add preflight.yaml, and push
 	workDir := t.TempDir()
 	workRepoPath := filepath.Join(workDir, "work")
 
-	cmd = newTestCommand("git", "clone", sourceDir, workRepoPath)
+	cmd = newGitCommand("clone", sourceDir, workRepoPath)
 	require.NoError(t, cmd.Run())
 
 	// Create preflight.yaml
@@ -187,19 +188,19 @@ targets:
 `
 	require.NoError(t, os.WriteFile(filepath.Join(workRepoPath, "preflight.yaml"), []byte(preflightConfig), 0o644))
 
-	cmd = newTestCommand("git", "-C", workRepoPath, "add", ".")
+	cmd = newGitCommand("-C", workRepoPath, "add", ".")
 	require.NoError(t, cmd.Run())
 
-	cmd = newTestCommand("git", "-C", workRepoPath, "config", "user.email", "test@test.com")
+	cmd = newGitCommand("-C", workRepoPath, "config", "user.email", "test@test.com")
 	require.NoError(t, cmd.Run())
 
-	cmd = newTestCommand("git", "-C", workRepoPath, "config", "user.name", "Test")
+	cmd = newGitCommand("-C", workRepoPath, "config", "user.name", "Test")
 	require.NoError(t, cmd.Run())
 
-	cmd = newTestCommand("git", "-C", workRepoPath, "commit", "-m", "Initial commit")
+	cmd = newGitCommand("-C", workRepoPath, "commit", "-m", "Initial commit")
 	require.NoError(t, cmd.Run())
 
-	cmd = newTestCommand("git", "-C", workRepoPath, "push", "-u", "origin", "HEAD")
+	cmd = newGitCommand("-C", workRepoPath, "push", "-u", "origin", "HEAD")
 	require.NoError(t, cmd.Run())
 
 	// Now test cloning (without apply to avoid plan/apply complexity)
@@ -247,4 +248,353 @@ func TestRepoClone_DefaultPath(t *testing.T) {
 	// It will fail because URL is invalid, but the error message should show the path
 	require.Error(t, err)
 	// The path should have been derived as "my-dotfiles"
+}
+
+func TestRepoInit_Success(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	repoPath := filepath.Join(tmpDir, "new-repo")
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	opts := NewRepoOptions(repoPath)
+	err := p.RepoInit(ctx, opts)
+
+	require.NoError(t, err)
+	assert.DirExists(t, filepath.Join(repoPath, ".git"))
+	assert.Contains(t, output.String(), "Repository initialized")
+}
+
+func TestRepoInit_AlreadyExists(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	repoPath := filepath.Join(tmpDir, "existing-repo")
+
+	// Create a git repo first
+	require.NoError(t, os.MkdirAll(filepath.Join(repoPath, ".git"), 0o755))
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	opts := NewRepoOptions(repoPath)
+	err := p.RepoInit(ctx, opts)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "already initialized")
+}
+
+func TestRepoInit_WithRemote(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	repoPath := filepath.Join(tmpDir, "new-repo")
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	opts := NewRepoOptions(repoPath).WithRemote("git@github.com:user/config.git")
+	err := p.RepoInit(ctx, opts)
+
+	require.NoError(t, err)
+
+	// Verify remote was added
+	cmd := newGitCommand("-C", repoPath, "remote", "-v")
+	remoteOutput, err := cmd.Output()
+	require.NoError(t, err)
+	assert.Contains(t, string(remoteOutput), "origin")
+}
+
+func TestRepoStatus_NotInitialized(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	status, err := p.RepoStatus(ctx, tmpDir)
+
+	require.NoError(t, err)
+	assert.False(t, status.Initialized)
+	assert.Equal(t, tmpDir, status.Path)
+}
+
+func TestRepoStatus_Initialized(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	repoPath := filepath.Join(tmpDir, "repo")
+
+	// Initialize a git repo
+	cmd := newGitCommand("init", repoPath)
+	require.NoError(t, cmd.Run())
+
+	// Configure git user
+	cmd = newGitCommand("-C", repoPath, "config", "user.email", "test@test.com")
+	require.NoError(t, cmd.Run())
+	cmd = newGitCommand("-C", repoPath, "config", "user.name", "Test")
+	require.NoError(t, cmd.Run())
+
+	// Create initial commit
+	require.NoError(t, os.WriteFile(filepath.Join(repoPath, "README.md"), []byte("# Test"), 0o644))
+	cmd = newGitCommand("-C", repoPath, "add", ".")
+	require.NoError(t, cmd.Run())
+	cmd = newGitCommand("-C", repoPath, "commit", "-m", "Initial")
+	require.NoError(t, cmd.Run())
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	status, err := p.RepoStatus(ctx, repoPath)
+
+	require.NoError(t, err)
+	assert.True(t, status.Initialized)
+	assert.NotEmpty(t, status.Branch)
+	assert.NotEmpty(t, status.LastCommit)
+	assert.False(t, status.HasChanges)
+}
+
+func TestRepoStatus_WithUncommittedChanges(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	repoPath := filepath.Join(tmpDir, "repo")
+
+	// Initialize a git repo with a commit
+	cmd := newGitCommand("init", repoPath)
+	require.NoError(t, cmd.Run())
+	cmd = newGitCommand("-C", repoPath, "config", "user.email", "test@test.com")
+	require.NoError(t, cmd.Run())
+	cmd = newGitCommand("-C", repoPath, "config", "user.name", "Test")
+	require.NoError(t, cmd.Run())
+
+	require.NoError(t, os.WriteFile(filepath.Join(repoPath, "README.md"), []byte("# Test"), 0o644))
+	cmd = newGitCommand("-C", repoPath, "add", ".")
+	require.NoError(t, cmd.Run())
+	cmd = newGitCommand("-C", repoPath, "commit", "-m", "Initial")
+	require.NoError(t, cmd.Run())
+
+	// Create an uncommitted change
+	require.NoError(t, os.WriteFile(filepath.Join(repoPath, "new-file.txt"), []byte("content"), 0o644))
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	status, err := p.RepoStatus(ctx, repoPath)
+
+	require.NoError(t, err)
+	assert.True(t, status.Initialized)
+	assert.True(t, status.HasChanges)
+}
+
+func TestFix_NilReport(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	result, err := p.Fix(ctx, nil)
+
+	require.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.AllFixed())
+}
+
+func TestFix_NoIssues(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	report := &DoctorReport{
+		ConfigPath: "preflight.yaml",
+		Target:     "work",
+		Issues:     []DoctorIssue{},
+	}
+
+	result, err := p.Fix(ctx, report)
+
+	require.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.AllFixed())
+}
+
+func TestFix_NoFixableIssues(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	report := &DoctorReport{
+		ConfigPath: "preflight.yaml",
+		Target:     "work",
+		Issues: []DoctorIssue{
+			{StepID: "brew.git", Severity: SeverityError, Message: "not installed", Fixable: false},
+			{StepID: "brew.curl", Severity: SeverityWarning, Message: "not installed", Fixable: false},
+		},
+	}
+
+	result, err := p.Fix(ctx, report)
+
+	require.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.False(t, result.AllFixed())
+	assert.Equal(t, 2, result.RemainingCount())
+	assert.Equal(t, 0, result.FixedCount())
+}
+
+func TestPrintRepoStatus_NotInitialized(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+
+	status := &RepoStatus{
+		Path:        "/path/to/repo",
+		Initialized: false,
+	}
+
+	p.PrintRepoStatus(status)
+
+	result := output.String()
+	assert.Contains(t, result, "Repository Status")
+	assert.Contains(t, result, "Not a git repository")
+}
+
+func TestPrintRepoStatus_FullStatus(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+
+	status := &RepoStatus{
+		Path:        "/path/to/config",
+		Initialized: true,
+		Branch:      "main",
+		Remote:      "origin",
+		HasChanges:  false,
+		Ahead:       0,
+		Behind:      0,
+		LastCommit:  "abc123",
+	}
+
+	p.PrintRepoStatus(status)
+
+	result := output.String()
+	assert.Contains(t, result, "Repository Status")
+	assert.Contains(t, result, "main")
+	assert.Contains(t, result, "origin")
+	assert.Contains(t, result, "Up to date")
+	assert.Contains(t, result, "abc123")
+}
+
+func TestPrintRepoStatus_NeedsSync(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+
+	status := &RepoStatus{
+		Path:        "/path/to/config",
+		Initialized: true,
+		Branch:      "main",
+		HasChanges:  true,
+		Ahead:       2,
+		Behind:      3,
+	}
+
+	p.PrintRepoStatus(status)
+
+	result := output.String()
+	assert.Contains(t, result, "Uncommitted changes")
+	assert.Contains(t, result, "2 commit(s) ahead")
+	assert.Contains(t, result, "3 commit(s) behind")
+}
+
+func TestPrintDoctorReport_NoIssues(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+
+	report := &DoctorReport{
+		ConfigPath: "preflight.yaml",
+		Target:     "work",
+		Issues:     []DoctorIssue{},
+	}
+
+	p.PrintDoctorReport(report)
+
+	result := output.String()
+	assert.Contains(t, result, "Doctor Report")
+	assert.Contains(t, result, "No issues found")
+}
+
+func TestPrintDoctorReport_WithBinaryChecks(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+
+	report := &DoctorReport{
+		ConfigPath: "preflight.yaml",
+		Target:     "work",
+		BinaryChecks: []BinaryCheckResult{
+			{Name: "nvim", Found: true, Version: "0.10.0", Required: true, MeetsMin: true, Purpose: "editor"},
+			{Name: "rg", Found: true, Version: "14.0.0", Required: false, MeetsMin: true, Purpose: "search"},
+			{Name: "fd", Found: false, Required: false, Purpose: "find"},
+			{Name: "node", Found: true, Version: "18.0.0", MinVersion: "20.0.0", MeetsMin: false, Required: true, Purpose: "LSP"},
+			{Name: "npm", Found: true, Required: false, MeetsMin: true, Purpose: "packages"},
+		},
+		Issues: []DoctorIssue{},
+	}
+
+	p.PrintDoctorReport(report)
+
+	result := output.String()
+	assert.Contains(t, result, "Binary Checks")
+	assert.Contains(t, result, "nvim")
+	assert.Contains(t, result, "v0.10.0")
+	assert.Contains(t, result, "not found")      // fd is not found
+	assert.Contains(t, result, "need >= 20.0.0") // node version issue
+}
+
+func TestPrintDoctorReport_WithIssues(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+
+	report := &DoctorReport{
+		ConfigPath: "preflight.yaml",
+		Target:     "work",
+		Issues: []DoctorIssue{
+			{StepID: "brew.git", Severity: SeverityError, Message: "git not installed"},
+			{StepID: "files.bashrc", Severity: SeverityWarning, Message: "file drift detected", Fixable: true, FixCommand: "preflight apply"},
+			{StepID: "git.config", Severity: SeverityInfo, Message: "config is default"},
+		},
+	}
+
+	p.PrintDoctorReport(report)
+
+	result := output.String()
+	assert.Contains(t, result, "Found 3 issue(s)")
+	assert.Contains(t, result, "[ERROR]")
+	assert.Contains(t, result, "git not installed")
+	assert.Contains(t, result, "[WARNING]")
+	assert.Contains(t, result, "file drift detected")
+	assert.Contains(t, result, "Fix:")
+	assert.Contains(t, result, "[INFO]")
 }

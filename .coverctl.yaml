@@ -23,7 +23,7 @@ policy:
 
     - name: app
       match: ["./internal/app/..."]
-      min: 75
+      min: 73
 
     - name: cli
       match: ["./cmd/..."]

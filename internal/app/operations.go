@@ -836,21 +836,23 @@ func (p *Preflight) PrintDoctorReport(report *DoctorReport) {
 	if len(report.BinaryChecks) > 0 {
 		p.printf("Binary Checks:\n")
 		for _, bc := range report.BinaryChecks {
-			status := "✓"
-			detail := ""
-			if !bc.Found {
+			var status, detail string
+			switch {
+			case !bc.Found:
 				if bc.Required {
 					status = "✗"
 				} else {
 					status = "○"
 				}
 				detail = "not found"
-			} else if !bc.MeetsMin && bc.MinVersion != "" {
+			case !bc.MeetsMin && bc.MinVersion != "":
 				status = "⚠"
 				detail = fmt.Sprintf("v%s (need >= %s)", bc.Version, bc.MinVersion)
-			} else if bc.Version != "" {
+			case bc.Version != "":
+				status = "✓"
 				detail = fmt.Sprintf("v%s", bc.Version)
-			} else {
+			default:
+				status = "✓"
 				detail = "found"
 			}
 
@@ -1038,7 +1040,7 @@ func (p *Preflight) RepoClone(ctx context.Context, opts CloneOptions) (*CloneRes
 		skipped := 0
 		failed := 0
 		for _, sr := range stepResults {
-			switch sr.Status() {
+			switch sr.Status() { //nolint:exhaustive // Only counting relevant statuses
 			case compiler.StatusSatisfied:
 				applied++
 			case compiler.StatusSkipped:
