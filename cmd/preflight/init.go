@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
+	"github.com/felixgeelhaar/preflight/internal/domain/advisor/anthropic"
+	"github.com/felixgeelhaar/preflight/internal/domain/advisor/openai"
 	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/spf13/cobra"
 )
@@ -32,6 +35,7 @@ var (
 	initPreset      string
 	initSkipWelcome bool
 	initYes         bool
+	initNoAI        bool
 )
 
 func init() {
@@ -39,6 +43,7 @@ func init() {
 	initCmd.Flags().StringVar(&initPreset, "preset", "", "Pre-select a preset")
 	initCmd.Flags().BoolVar(&initSkipWelcome, "skip-welcome", false, "Skip the welcome screen")
 	initCmd.Flags().BoolVarP(&initYes, "yes", "y", false, "Accept all defaults")
+	initCmd.Flags().BoolVar(&initNoAI, "no-ai", false, "Skip AI-guided interview")
 
 	rootCmd.AddCommand(initCmd)
 }
@@ -63,6 +68,15 @@ func runInit(_ *cobra.Command, _ []string) error {
 	if initSkipWelcome || initYes {
 		opts = opts.WithSkipWelcome(true)
 	}
+	if initNoAI {
+		opts = opts.WithSkipInterview(true)
+	}
+
+	// Detect AI provider from environment
+	aiProvider := detectAIProvider()
+	if aiProvider != nil && !initNoAI {
+		opts = opts.WithAdvisor(aiProvider)
+	}
 
 	// Run the wizard
 	ctx := context.Background()
@@ -80,6 +94,28 @@ func runInit(_ *cobra.Command, _ []string) error {
 	fmt.Println("\nNext steps:")
 	fmt.Println("  preflight plan   - Review the execution plan")
 	fmt.Println("  preflight apply  - Apply the configuration")
+
+	return nil
+}
+
+// detectAIProvider returns an available AI provider from environment.
+// It checks for Anthropic API key first, then OpenAI.
+func detectAIProvider() advisor.AIProvider {
+	// Check for Anthropic API key first (preferred)
+	if apiKey := os.Getenv("ANTHROPIC_API_KEY"); apiKey != "" {
+		provider := anthropic.NewProvider(apiKey)
+		if provider.Available() {
+			return provider
+		}
+	}
+
+	// Check for OpenAI API key
+	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
+		provider := openai.NewProvider(apiKey)
+		if provider.Available() {
+			return provider
+		}
+	}
 
 	return nil
 }

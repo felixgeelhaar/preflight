@@ -33,8 +33,10 @@ var repoInitCmd = &cobra.Command{
 This enables version control and sharing of your configuration.
 
 Examples:
-  preflight repo init                    # Initialize repo
-  preflight repo init --remote <url>     # With remote origin`,
+  preflight repo init                        # Initialize local repo
+  preflight repo init --remote <url>         # With remote origin
+  preflight repo init --github               # Create GitHub repo (requires gh CLI)
+  preflight repo init --github --public      # Create public GitHub repo`,
 	RunE: runRepoInit,
 }
 
@@ -69,21 +71,51 @@ Examples:
 	RunE: runRepoPull,
 }
 
+var repoCloneCmd = &cobra.Command{
+	Use:   "clone <url> [path]",
+	Short: "Clone and bootstrap a configuration repository",
+	Long: `Clone a preflight configuration repository and optionally apply it.
+
+This is the recommended way to bootstrap a new machine from an existing
+configuration repository.
+
+Examples:
+  preflight repo clone git@github.com:user/dotfiles.git
+  preflight repo clone git@github.com:user/dotfiles.git ~/dotfiles
+  preflight repo clone git@github.com:user/dotfiles.git --apply
+  preflight repo clone git@github.com:user/dotfiles.git --yes`,
+	Args: cobra.RangeArgs(1, 2),
+	RunE: runRepoClone,
+}
+
 var (
-	repoRemote string
-	repoForce  bool
-	repoBranch string
+	repoRemote      string
+	repoForce       bool
+	repoBranch      string
+	repoGitHub      bool
+	repoPrivate     bool
+	repoName        string
+	repoApply       bool
+	repoAutoConfirm bool
+	repoTarget      string
 )
 
 func init() {
 	repoInitCmd.Flags().StringVar(&repoRemote, "remote", "", "Remote repository URL")
 	repoInitCmd.Flags().StringVar(&repoBranch, "branch", "main", "Branch name")
+	repoInitCmd.Flags().BoolVar(&repoGitHub, "github", false, "Create GitHub repository (requires gh CLI)")
+	repoInitCmd.Flags().BoolVar(&repoPrivate, "private", true, "Create private repository (default: true)")
+	repoInitCmd.Flags().StringVar(&repoName, "name", "", "Repository name (default: directory name)")
 	repoPushCmd.Flags().BoolVar(&repoForce, "force", false, "Force push")
+	repoCloneCmd.Flags().BoolVar(&repoApply, "apply", false, "Apply configuration after cloning")
+	repoCloneCmd.Flags().BoolVarP(&repoAutoConfirm, "yes", "y", false, "Skip confirmation prompts")
+	repoCloneCmd.Flags().StringVarP(&repoTarget, "target", "t", "", "Target configuration to apply")
 
 	repoCmd.AddCommand(repoInitCmd)
 	repoCmd.AddCommand(repoStatusCmd)
 	repoCmd.AddCommand(repoPushCmd)
 	repoCmd.AddCommand(repoPullCmd)
+	repoCmd.AddCommand(repoCloneCmd)
 
 	rootCmd.AddCommand(repoCmd)
 }
@@ -109,6 +141,29 @@ func runRepoInit(_ *cobra.Command, _ []string) error {
 	ctx := context.Background()
 	preflight := app.New(os.Stdout)
 
+	// Handle GitHub repository creation
+	if repoGitHub {
+		name := repoName
+		if name == "" {
+			name = filepath.Base(configDir)
+		}
+
+		opts := app.GitHubRepoOptions{
+			Path:        configDir,
+			Name:        name,
+			Description: "Dotfiles and machine configuration managed by preflight",
+			Private:     repoPrivate,
+			Branch:      repoBranch,
+		}
+
+		if err := preflight.RepoInitGitHub(ctx, opts); err != nil {
+			return fmt.Errorf("GitHub repo init failed: %w", err)
+		}
+
+		return nil
+	}
+
+	// Standard git init
 	opts := app.NewRepoOptions(configDir).
 		WithBranch(repoBranch)
 
@@ -195,5 +250,38 @@ func runRepoPull(_ *cobra.Command, _ []string) error {
 	}
 
 	fmt.Println("Configuration updated.")
+	return nil
+}
+
+func runRepoClone(_ *cobra.Command, args []string) error {
+	url := args[0]
+	path := ""
+	if len(args) > 1 {
+		path = args[1]
+	}
+
+	ctx := context.Background()
+	preflight := app.New(os.Stdout)
+
+	opts := app.CloneOptions{
+		URL:         url,
+		Path:        path,
+		Apply:       repoApply,
+		AutoConfirm: repoAutoConfirm,
+		Target:      repoTarget,
+	}
+
+	result, err := preflight.RepoClone(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("clone failed: %w", err)
+	}
+
+	if result.Applied {
+		fmt.Printf("\n✓ Configuration applied successfully from %s\n", result.Path)
+	} else if result.ConfigFound {
+		fmt.Printf("\nRepository cloned to %s\n", result.Path)
+		fmt.Println("Run 'preflight apply' to apply the configuration.")
+	}
+
 	return nil
 }

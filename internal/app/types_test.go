@@ -143,6 +143,58 @@ func TestDoctorReport(t *testing.T) {
 		assert.Len(t, bySeverity[SeverityWarning], 1)
 		assert.Empty(t, bySeverity[SeverityInfo])
 	})
+
+	t.Run("no binary issues", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{
+			BinaryChecks: []BinaryCheckResult{
+				{Name: "nvim", Found: true, MeetsMin: true, Required: true},
+				{Name: "rg", Found: true, MeetsMin: true, Required: false},
+			},
+		}
+
+		assert.False(t, report.HasBinaryIssues())
+		assert.Equal(t, 0, report.BinaryIssueCount())
+	})
+
+	t.Run("required binary missing", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{
+			BinaryChecks: []BinaryCheckResult{
+				{Name: "nvim", Found: false, MeetsMin: false, Required: true},
+				{Name: "rg", Found: false, MeetsMin: false, Required: false},
+			},
+		}
+
+		assert.True(t, report.HasBinaryIssues())
+		assert.Equal(t, 1, report.BinaryIssueCount())
+	})
+
+	t.Run("required binary version too low", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{
+			BinaryChecks: []BinaryCheckResult{
+				{Name: "nvim", Found: true, MeetsMin: false, Required: true, Version: "0.8.0", MinVersion: "0.9.0"},
+			},
+		}
+
+		assert.True(t, report.HasBinaryIssues())
+		assert.Equal(t, 1, report.BinaryIssueCount())
+	})
+
+	t.Run("optional binary missing no issue", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{
+			BinaryChecks: []BinaryCheckResult{
+				{Name: "nvim", Found: true, MeetsMin: true, Required: true},
+				{Name: "rg", Found: false, MeetsMin: false, Required: false},
+				{Name: "fd", Found: false, MeetsMin: false, Required: false},
+			},
+		}
+
+		assert.False(t, report.HasBinaryIssues())
+		assert.Equal(t, 0, report.BinaryIssueCount())
+	})
 }
 
 func TestIssueSeverity(t *testing.T) {

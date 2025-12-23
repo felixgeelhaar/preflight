@@ -2,6 +2,7 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 	"github.com/felixgeelhaar/preflight/internal/tui/components"
 	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
@@ -11,6 +12,7 @@ type initWizardStep int
 
 const (
 	stepWelcome initWizardStep = iota
+	stepInterview
 	stepSelectProvider
 	stepSelectPreset
 	stepConfirm
@@ -30,11 +32,16 @@ type initWizardModel struct {
 	selectedPreset   string
 	cancelled        bool
 	catalogService   CatalogServiceInterface
+	aiProvider       advisor.AIProvider
 
 	// Components
 	providerList components.List
 	presetList   components.List
 	confirm      components.Confirm
+	interview    interviewModel
+
+	// AI recommendation results
+	aiRecommendation *advisor.AIRecommendation
 }
 
 func newInitWizardModel(opts InitWizardOptions) initWizardModel {
@@ -82,9 +89,21 @@ func newInitWizardModel(opts InitWizardOptions) initWizardModel {
 		WithYesLabel("Create").
 		WithNoLabel("Back")
 
+	// Initialize interview model if advisor is available
+	var interview interviewModel
+	if opts.Advisor != nil && opts.Advisor.Available() {
+		interview = newInterviewModel(opts.Advisor)
+	}
+
+	// Determine starting step
 	startStep := stepWelcome
 	if opts.SkipWelcome {
-		startStep = stepSelectProvider
+		// If we have an advisor and not skipping interview, go to interview
+		if opts.Advisor != nil && opts.Advisor.Available() && !opts.SkipInterview {
+			startStep = stepInterview
+		} else {
+			startStep = stepSelectProvider
+		}
 	}
 
 	return initWizardModel{
@@ -95,9 +114,11 @@ func newInitWizardModel(opts InitWizardOptions) initWizardModel {
 		width:          80,
 		height:         24,
 		catalogService: catalogService,
+		aiProvider:     opts.Advisor,
 		providerList:   providerList,
 		presetList:     presetList,
 		confirm:        confirm,
+		interview:      interview,
 	}
 }
 
@@ -159,6 +180,9 @@ func (m initWizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case components.ConfirmResultMsg:
 		return m.handleConfirm(msg)
+
+	case interviewCompleteMsg:
+		return m.handleInterviewComplete(msg)
 	}
 
 	// Update active component
@@ -166,6 +190,10 @@ func (m initWizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m.step {
 	case stepWelcome, stepComplete:
 		// No component to update
+	case stepInterview:
+		var newInterview tea.Model
+		newInterview, cmd = m.interview.Update(msg)
+		m.interview = newInterview.(interviewModel)
 	case stepSelectProvider:
 		m.providerList, cmd = m.providerList.Update(msg)
 	case stepSelectPreset:
@@ -181,7 +209,7 @@ func (m initWizardModel) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	//nolint:exhaustive // We only handle specific key types
 	switch msg.Type {
 	case tea.KeyCtrlC, tea.KeyEsc:
-		if m.step == stepWelcome || m.step == stepSelectProvider {
+		if m.step == stepWelcome || m.step == stepSelectProvider || m.step == stepInterview {
 			m.cancelled = true
 			return m, tea.Quit
 		}
@@ -193,7 +221,12 @@ func (m initWizardModel) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyEnter:
 		if m.step == stepWelcome {
-			m.step = stepSelectProvider
+			// Transition to interview if advisor available, otherwise to provider selection
+			if m.aiProvider != nil && m.aiProvider.Available() && !m.opts.SkipInterview {
+				m.step = stepInterview
+			} else {
+				m.step = stepSelectProvider
+			}
 			return m, nil
 		}
 	}
@@ -203,6 +236,10 @@ func (m initWizardModel) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch m.step {
 	case stepWelcome, stepComplete:
 		// No component to update
+	case stepInterview:
+		var newInterview tea.Model
+		newInterview, cmd = m.interview.Update(msg)
+		m.interview = newInterview.(interviewModel)
 	case stepSelectProvider:
 		m.providerList, cmd = m.providerList.Update(msg)
 	case stepSelectPreset:
@@ -215,8 +252,9 @@ func (m initWizardModel) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m initWizardModel) handleSelection(msg components.ListSelectedMsg) (tea.Model, tea.Cmd) {
+	//nolint:exhaustive // We only handle selection in specific steps
 	switch m.step {
-	case stepWelcome, stepConfirm, stepComplete:
+	case stepWelcome, stepConfirm, stepComplete, stepInterview:
 		// No selection handling in these steps
 	case stepSelectProvider:
 		// Provider selected, populate presets
@@ -267,6 +305,25 @@ func (m initWizardModel) handleConfirm(msg components.ConfirmResultMsg) (tea.Mod
 	}
 	// Go back to preset selection
 	m.step = stepSelectPreset
+	return m, nil
+}
+
+func (m initWizardModel) handleInterviewComplete(msg interviewCompleteMsg) (tea.Model, tea.Cmd) {
+	if m.interview.Cancelled() {
+		m.cancelled = true
+		return m, tea.Quit
+	}
+
+	// Store AI recommendation if available
+	if msg.recommendation != nil {
+		m.aiRecommendation = msg.recommendation
+
+		// If we have preset recommendations, we could pre-select them
+		// For now, just move to provider selection
+	}
+
+	// Move to provider selection
+	m.step = stepSelectProvider
 	return m, nil
 }
 
@@ -338,6 +395,8 @@ func (m initWizardModel) View() string {
 	switch m.step {
 	case stepWelcome:
 		return m.viewWelcome()
+	case stepInterview:
+		return m.interview.View()
 	case stepSelectProvider:
 		return m.viewSelectProvider()
 	case stepSelectPreset:

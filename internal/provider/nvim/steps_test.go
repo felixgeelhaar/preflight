@@ -139,7 +139,8 @@ func TestLazyLockStep_ID(t *testing.T) {
 	t.Parallel()
 
 	fs := mocks.NewFileSystem()
-	step := nvim.NewLazyLockStep(fs)
+	runner := mocks.NewCommandRunner()
+	step := nvim.NewLazyLockStep(fs, runner)
 
 	assert.Equal(t, "nvim:lazy-lock", step.ID().String())
 }
@@ -148,7 +149,8 @@ func TestLazyLockStep_DependsOn(t *testing.T) {
 	t.Parallel()
 
 	fs := mocks.NewFileSystem()
-	step := nvim.NewLazyLockStep(fs)
+	runner := mocks.NewCommandRunner()
+	step := nvim.NewLazyLockStep(fs, runner)
 	deps := step.DependsOn()
 
 	// lazy-lock depends on preset or config being installed first
@@ -159,25 +161,27 @@ func TestLazyLockStep_Check_NoLockFile(t *testing.T) {
 	t.Parallel()
 
 	fs := mocks.NewFileSystem()
-	step := nvim.NewLazyLockStep(fs)
+	runner := mocks.NewCommandRunner()
+	step := nvim.NewLazyLockStep(fs, runner)
 
 	ctx := compiler.NewRunContext(context.TODO())
 	status, err := step.Check(ctx)
 
 	require.NoError(t, err)
 	// No lock file means nothing to sync
-	assert.Equal(t, compiler.StatusSatisfied, status)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
 }
 
 func TestLazyLockStep_Check_WithLockFile(t *testing.T) {
 	t.Parallel()
 
 	fs := mocks.NewFileSystem()
-	// Simulate lazy-lock.json exists in dotfiles (source)
+	runner := mocks.NewCommandRunner()
+	// Simulate lazy-lock.json exists in nvim config
 	lockPath := ports.ExpandPath("~/.config/nvim/lazy-lock.json")
 	fs.SetFileContent(lockPath, []byte(`{"plugin": {"commit": "abc123"}}`))
 
-	step := nvim.NewLazyLockStep(fs)
+	step := nvim.NewLazyLockStep(fs, runner)
 
 	ctx := compiler.NewRunContext(context.TODO())
 	status, err := step.Check(ctx)
@@ -416,7 +420,8 @@ func TestLazyLockStep_Plan(t *testing.T) {
 	t.Parallel()
 
 	fs := mocks.NewFileSystem()
-	step := nvim.NewLazyLockStep(fs)
+	runner := mocks.NewCommandRunner()
+	step := nvim.NewLazyLockStep(fs, runner)
 
 	ctx := compiler.NewRunContext(context.TODO())
 	diff, err := step.Plan(ctx)
@@ -426,11 +431,19 @@ func TestLazyLockStep_Plan(t *testing.T) {
 	assert.Contains(t, diff.Summary(), "lazy-lock")
 }
 
-func TestLazyLockStep_Apply(t *testing.T) {
+func TestLazyLockStep_Apply_Success(t *testing.T) {
 	t.Parallel()
 
 	fs := mocks.NewFileSystem()
-	step := nvim.NewLazyLockStep(fs)
+	runner := mocks.NewCommandRunner()
+
+	// Mock successful nvim headless sync
+	runner.AddResult("nvim", []string{"--headless", "+Lazy sync", "+qa"}, ports.CommandResult{
+		ExitCode: 0,
+		Stdout:   "",
+	})
+
+	step := nvim.NewLazyLockStep(fs, runner)
 
 	ctx := compiler.NewRunContext(context.TODO())
 	err := step.Apply(ctx)
@@ -438,11 +451,33 @@ func TestLazyLockStep_Apply(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestLazyLockStep_Apply_NvimFails(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
+
+	// Mock failed nvim headless sync
+	runner.AddResult("nvim", []string{"--headless", "+Lazy sync", "+qa"}, ports.CommandResult{
+		ExitCode: 1,
+		Stderr:   "Error: Lazy.nvim not found",
+	})
+
+	step := nvim.NewLazyLockStep(fs, runner)
+
+	ctx := compiler.NewRunContext(context.TODO())
+	err := step.Apply(ctx)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "nvim sync failed")
+}
+
 func TestLazyLockStep_Explain(t *testing.T) {
 	t.Parallel()
 
 	fs := mocks.NewFileSystem()
-	step := nvim.NewLazyLockStep(fs)
+	runner := mocks.NewCommandRunner()
+	step := nvim.NewLazyLockStep(fs, runner)
 
 	ctx := compiler.NewExplainContext()
 	exp := step.Explain(ctx)

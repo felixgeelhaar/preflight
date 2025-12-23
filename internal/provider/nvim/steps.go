@@ -178,16 +178,18 @@ func (s *ConfigRepoStep) Explain(_ compiler.ExplainContext) compiler.Explanation
 
 // LazyLockStep manages lazy-lock.json synchronization for reproducible plugin versions.
 type LazyLockStep struct {
-	id compiler.StepID
-	fs ports.FileSystem
+	id     compiler.StepID
+	fs     ports.FileSystem
+	runner ports.CommandRunner
 }
 
 // NewLazyLockStep creates a new LazyLockStep.
-func NewLazyLockStep(fs ports.FileSystem) *LazyLockStep {
+func NewLazyLockStep(fs ports.FileSystem, runner ports.CommandRunner) *LazyLockStep {
 	id := compiler.MustNewStepID("nvim:lazy-lock")
 	return &LazyLockStep{
-		id: id,
-		fs: fs,
+		id:     id,
+		fs:     fs,
+		runner: runner,
 	}
 }
 
@@ -203,9 +205,11 @@ func (s *LazyLockStep) DependsOn() []compiler.StepID {
 
 // Check verifies if lazy-lock.json is in sync.
 func (s *LazyLockStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
-	// For now, if the file exists, consider it satisfied
-	// Future: compare with dotfiles version
-	return compiler.StatusSatisfied, nil
+	lockPath := ports.ExpandPath("~/.config/nvim/lazy-lock.json")
+	if s.fs.Exists(lockPath) {
+		return compiler.StatusSatisfied, nil
+	}
+	return compiler.StatusNeedsApply, nil
 }
 
 // Plan returns the diff for this step.
@@ -219,11 +223,16 @@ func (s *LazyLockStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 	), nil
 }
 
-// Apply syncs the lazy-lock.json file.
-func (s *LazyLockStep) Apply(_ compiler.RunContext) error {
-	// In real implementation:
-	// 1. Copy lazy-lock.json from dotfiles to ~/.config/nvim/
-	// 2. Run nvim --headless "+Lazy sync" +qa to sync plugins
+// Apply syncs the lazy-lock.json file by running nvim headless.
+func (s *LazyLockStep) Apply(ctx compiler.RunContext) error {
+	// Run nvim --headless "+Lazy sync" +qa to sync plugins
+	result, err := s.runner.Run(ctx.Context(), "nvim", "--headless", "+Lazy sync", "+qa")
+	if err != nil {
+		return fmt.Errorf("failed to run nvim: %w", err)
+	}
+	if !result.Success() {
+		return fmt.Errorf("nvim sync failed (exit %d): %s", result.ExitCode, result.Stderr)
+	}
 	return nil
 }
 

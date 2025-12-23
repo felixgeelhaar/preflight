@@ -50,7 +50,7 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 
 	// Add lazy-lock step if using lazy plugin manager
 	if cfg.PluginManager == "lazy" {
-		steps = append(steps, NewLazyLockStep(p.fs))
+		steps = append(steps, NewLazyLockStep(p.fs, p.runner))
 	}
 
 	return steps, nil

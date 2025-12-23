@@ -2,8 +2,14 @@
 package anthropic
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 )
@@ -13,7 +19,53 @@ var (
 	ErrNotConfigured = errors.New("anthropic provider is not configured")
 	ErrEmptyAPIKey   = errors.New("API key is required")
 	ErrEmptyModel    = errors.New("model is required")
+	ErrAPIError      = errors.New("anthropic API error")
+	ErrRateLimit     = errors.New("rate limit exceeded")
+	ErrUnauthorized  = errors.New("unauthorized - check API key")
 )
+
+// API request types.
+type messagesRequest struct {
+	Model       string    `json:"model"`
+	MaxTokens   int       `json:"max_tokens"`
+	System      string    `json:"system,omitempty"`
+	Messages    []message `json:"messages"`
+	Temperature float64   `json:"temperature,omitempty"`
+}
+
+type message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// API response types.
+type messagesResponse struct {
+	ID           string         `json:"id"`
+	Type         string         `json:"type"`
+	Role         string         `json:"role"`
+	Content      []contentBlock `json:"content"`
+	Model        string         `json:"model"`
+	StopReason   string         `json:"stop_reason"`
+	StopSequence *string        `json:"stop_sequence"`
+	Usage        usage          `json:"usage"`
+}
+
+type contentBlock struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+type usage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
+}
+
+type errorResponse struct {
+	Error struct {
+		Type    string `json:"type"`
+		Message string `json:"message"`
+	} `json:"error"`
+}
 
 // Config holds the configuration for the Anthropic provider.
 type Config struct {
@@ -38,6 +90,7 @@ type Provider struct {
 	apiKey   string
 	model    string
 	endpoint string
+	client   *http.Client
 }
 
 // NewProvider creates a new Anthropic provider.
@@ -46,6 +99,9 @@ func NewProvider(apiKey string) *Provider {
 		apiKey:   apiKey,
 		model:    "claude-3-5-sonnet-20241022",
 		endpoint: "https://api.anthropic.com",
+		client: &http.Client{
+			Timeout: 60 * time.Second,
+		},
 	}
 }
 
@@ -64,6 +120,9 @@ func NewProviderWithConfig(config Config) (*Provider, error) {
 		apiKey:   config.APIKey,
 		model:    config.Model,
 		endpoint: endpoint,
+		client: &http.Client{
+			Timeout: 60 * time.Second,
+		},
 	}, nil
 }
 
@@ -83,6 +142,7 @@ func (p *Provider) WithModel(model string) *Provider {
 		apiKey:   p.apiKey,
 		model:    model,
 		endpoint: p.endpoint,
+		client:   p.client,
 	}
 }
 
@@ -92,13 +152,83 @@ func (p *Provider) Available() bool {
 }
 
 // Complete sends a prompt to Anthropic and returns the response.
-// AI features require API integration which is planned for a future release.
-func (p *Provider) Complete(_ context.Context, _ advisor.Prompt) (advisor.Response, error) {
+func (p *Provider) Complete(ctx context.Context, prompt advisor.Prompt) (advisor.Response, error) {
 	if !p.Available() {
 		return advisor.Response{}, ErrNotConfigured
 	}
 
-	// AI completion requires Anthropic API integration.
-	// Use the noop provider or disable AI features with --no-ai flag.
-	return advisor.Response{}, ErrNotConfigured
+	// Build request
+	reqBody := messagesRequest{
+		Model:       p.model,
+		MaxTokens:   prompt.MaxTokens(),
+		System:      prompt.SystemPrompt(),
+		Temperature: prompt.Temperature(),
+		Messages: []message{
+			{
+				Role:    "user",
+				Content: prompt.UserPrompt(),
+			},
+		},
+	}
+
+	jsonBody, err := json.Marshal(reqBody)
+	if err != nil {
+		return advisor.Response{}, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	// Create HTTP request
+	url := fmt.Sprintf("%s/v1/messages", p.endpoint)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonBody))
+	if err != nil {
+		return advisor.Response{}, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-api-key", p.apiKey)
+	req.Header.Set("anthropic-version", "2023-06-01")
+
+	// Make request
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return advisor.Response{}, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close() //nolint:errcheck // Best effort close after reading body
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return advisor.Response{}, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	// Handle error responses
+	if resp.StatusCode != http.StatusOK {
+		var errResp errorResponse
+		if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error.Message != "" {
+			switch resp.StatusCode {
+			case http.StatusUnauthorized:
+				return advisor.Response{}, ErrUnauthorized
+			case http.StatusTooManyRequests:
+				return advisor.Response{}, ErrRateLimit
+			default:
+				return advisor.Response{}, fmt.Errorf("%w: %s", ErrAPIError, errResp.Error.Message)
+			}
+		}
+		return advisor.Response{}, fmt.Errorf("%w: status %d", ErrAPIError, resp.StatusCode)
+	}
+
+	// Parse successful response
+	var msgResp messagesResponse
+	if err := json.Unmarshal(body, &msgResp); err != nil {
+		return advisor.Response{}, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	// Extract text content
+	var content string
+	for _, block := range msgResp.Content {
+		if block.Type == "text" {
+			content += block.Text
+		}
+	}
+
+	tokensUsed := msgResp.Usage.InputTokens + msgResp.Usage.OutputTokens
+	return advisor.NewResponse(content, tokensUsed, msgResp.Model), nil
 }

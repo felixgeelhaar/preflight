@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
 	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
@@ -92,6 +93,8 @@ type InitWizardOptions struct {
 	PreselectedPreset   string
 	CatalogService      CatalogServiceInterface
 	TargetDir           string
+	Advisor             advisor.AIProvider
+	SkipInterview       bool
 }
 
 // NewInitWizardOptions creates default init wizard options.
@@ -126,6 +129,18 @@ func (o InitWizardOptions) WithCatalogService(service CatalogServiceInterface) I
 // WithTargetDir sets the target directory for generated config files.
 func (o InitWizardOptions) WithTargetDir(dir string) InitWizardOptions {
 	o.TargetDir = dir
+	return o
+}
+
+// WithAdvisor sets the AI advisor for the interview.
+func (o InitWizardOptions) WithAdvisor(adv advisor.AIProvider) InitWizardOptions {
+	o.Advisor = adv
+	return o
+}
+
+// WithSkipInterview skips the AI interview step.
+func (o InitWizardOptions) WithSkipInterview(skip bool) InitWizardOptions {
+	o.SkipInterview = skip
 	return o
 }
 

@@ -114,13 +114,26 @@ type DoctorIssue struct {
 	FixCommand string
 }
 
+// BinaryCheckResult holds the result of checking a required binary.
+type BinaryCheckResult struct {
+	Name       string
+	Found      bool
+	Version    string
+	Path       string
+	MeetsMin   bool
+	MinVersion string
+	Required   bool
+	Purpose    string
+}
+
 // DoctorReport holds the results of a doctor check.
 type DoctorReport struct {
-	ConfigPath string
-	Target     string
-	Issues     []DoctorIssue
-	CheckedAt  time.Time
-	Duration   time.Duration
+	ConfigPath   string
+	Target       string
+	Issues       []DoctorIssue
+	BinaryChecks []BinaryCheckResult
+	CheckedAt    time.Time
+	Duration     time.Duration
 }
 
 // IssueCount returns the total number of issues.
@@ -169,6 +182,27 @@ func (r DoctorReport) WarningCount() int {
 	count := 0
 	for _, issue := range r.Issues {
 		if issue.Severity == SeverityWarning {
+			count++
+		}
+	}
+	return count
+}
+
+// HasBinaryIssues returns true if any required binary is missing or doesn't meet version requirements.
+func (r DoctorReport) HasBinaryIssues() bool {
+	for _, b := range r.BinaryChecks {
+		if b.Required && (!b.Found || !b.MeetsMin) {
+			return true
+		}
+	}
+	return false
+}
+
+// BinaryIssueCount returns the number of binary-related issues.
+func (r DoctorReport) BinaryIssueCount() int {
+	count := 0
+	for _, b := range r.BinaryChecks {
+		if b.Required && (!b.Found || !b.MeetsMin) {
 			count++
 		}
 	}
@@ -297,4 +331,68 @@ func (s RepoStatus) NeedsPush() bool {
 // NeedsPull returns true if remote commits need to be pulled.
 func (s RepoStatus) NeedsPull() bool {
 	return s.Behind > 0
+}
+
+// GitHubRepoOptions configures GitHub repository creation.
+type GitHubRepoOptions struct {
+	// Path is the local repository path
+	Path string
+	// Name is the repository name
+	Name string
+	// Description is the repository description
+	Description string
+	// Private indicates if the repository should be private
+	Private bool
+	// Branch is the default branch name
+	Branch string
+}
+
+// GitHubRepoResult holds the result of GitHub repository creation.
+type GitHubRepoResult struct {
+	// Name is the repository name
+	Name string
+	// URL is the repository web URL
+	URL string
+	// CloneURL is the HTTPS clone URL
+	CloneURL string
+	// SSHURL is the SSH clone URL
+	SSHURL string
+	// Owner is the repository owner
+	Owner string
+}
+
+// CloneOptions configures the clone operation.
+type CloneOptions struct {
+	// URL is the repository URL to clone
+	URL string
+	// Path is the destination path (optional, defaults to repo name)
+	Path string
+	// Apply triggers applying configuration after cloning
+	Apply bool
+	// AutoConfirm skips confirmation prompts
+	AutoConfirm bool
+	// Target is the target configuration to apply
+	Target string
+}
+
+// CloneResult holds the result of a clone operation.
+type CloneResult struct {
+	// Path is the local path where the repo was cloned
+	Path string
+	// ConfigFound indicates if preflight.yaml was found
+	ConfigFound bool
+	// Applied indicates if the configuration was applied
+	Applied bool
+	// ApplyResult contains the apply result if Applied is true
+	ApplyResult *ApplyResult
+}
+
+// ApplyResult holds the result of an apply operation.
+type ApplyResult struct {
+	// Applied is the number of steps applied
+	Applied int
+	// Skipped is the number of steps skipped
+	Skipped int
+	// Failed is the number of steps that failed
+	Failed int
 }

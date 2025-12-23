@@ -2,6 +2,9 @@ package openai
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
@@ -178,15 +181,124 @@ func TestNewProviderWithConfig(t *testing.T) {
 	}
 }
 
-func TestProvider_Complete_Available(t *testing.T) {
+func TestProvider_Complete_Success(t *testing.T) {
 	t.Parallel()
 
-	p := NewProvider("sk-test-key")
+	// Create a mock server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify request
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/chat/completions", r.URL.Path)
+		assert.Equal(t, "Bearer sk-test-key", r.Header.Get("Authorization"))
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+		// Return mock response
+		resp := chatResponse{
+			ID:     "chatcmpl-123",
+			Object: "chat.completion",
+			Model:  "gpt-4o",
+			Choices: []choice{
+				{
+					Index: 0,
+					Message: chatMessage{
+						Role:    "assistant",
+						Content: "Hello! How can I help you?",
+					},
+					FinishReason: "stop",
+				},
+			},
+			Usage: chatUsage{
+				PromptTokens:     10,
+				CompletionTokens: 20,
+				TotalTokens:      30,
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp) //nolint:errcheck // Test code
+	}))
+	defer server.Close()
+
+	// Create provider with mock endpoint
+	p, err := NewProviderWithConfig(Config{
+		APIKey:   "sk-test-key",
+		Model:    "gpt-4o",
+		Endpoint: server.URL,
+	})
+	require.NoError(t, err)
+
+	prompt := advisor.NewPrompt("You are a helpful assistant.", "Say hello")
+	response, err := p.Complete(context.Background(), prompt)
+
+	require.NoError(t, err)
+	assert.Equal(t, "Hello! How can I help you?", response.Content())
+	assert.Equal(t, 30, response.TokensUsed())
+	assert.Equal(t, "gpt-4o", response.Model())
+}
+
+func TestProvider_Complete_Unauthorized(t *testing.T) {
+	t.Parallel()
+
+	// Create a mock server that returns 401
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(errorResponse{ //nolint:errcheck // Test code
+			Error: struct {
+				Message string `json:"message"`
+				Type    string `json:"type"`
+				Code    string `json:"code"`
+			}{
+				Message: "Invalid API key",
+				Type:    "invalid_request_error",
+				Code:    "invalid_api_key",
+			},
+		})
+	}))
+	defer server.Close()
+
+	p, err := NewProviderWithConfig(Config{
+		APIKey:   "invalid-key",
+		Model:    "gpt-4o",
+		Endpoint: server.URL,
+	})
+	require.NoError(t, err)
+
 	prompt := advisor.NewPrompt("system", "user")
+	_, err = p.Complete(context.Background(), prompt)
 
-	_, err := p.Complete(context.Background(), prompt)
-
-	// The API is not actually integrated, so it returns ErrNotConfigured
 	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrNotConfigured)
+	assert.ErrorIs(t, err, ErrUnauthorized)
+}
+
+func TestProvider_Complete_RateLimit(t *testing.T) {
+	t.Parallel()
+
+	// Create a mock server that returns 429
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		_ = json.NewEncoder(w).Encode(errorResponse{ //nolint:errcheck // Test code
+			Error: struct {
+				Message string `json:"message"`
+				Type    string `json:"type"`
+				Code    string `json:"code"`
+			}{
+				Message: "Rate limit exceeded",
+				Type:    "rate_limit_error",
+				Code:    "rate_limit_exceeded",
+			},
+		})
+	}))
+	defer server.Close()
+
+	p, err := NewProviderWithConfig(Config{
+		APIKey:   "sk-test-key",
+		Model:    "gpt-4o",
+		Endpoint: server.URL,
+	})
+	require.NoError(t, err)
+
+	prompt := advisor.NewPrompt("system", "user")
+	_, err = p.Complete(context.Background(), prompt)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrRateLimit)
 }

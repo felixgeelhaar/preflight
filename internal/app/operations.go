@@ -9,9 +9,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/felixgeelhaar/preflight/internal/adapters/command"
+	"github.com/felixgeelhaar/preflight/internal/adapters/github"
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
+	"github.com/felixgeelhaar/preflight/internal/domain/execution"
 	"github.com/felixgeelhaar/preflight/internal/domain/lock"
+	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/provider/nvim"
+	"github.com/felixgeelhaar/preflight/internal/templates"
 )
 
 // Capture discovers current machine configuration.
@@ -331,10 +337,11 @@ func (p *Preflight) Doctor(ctx context.Context, opts DoctorOptions) (*DoctorRepo
 	startTime := time.Now()
 
 	report := &DoctorReport{
-		ConfigPath: opts.ConfigPath,
-		Target:     opts.Target,
-		Issues:     make([]DoctorIssue, 0),
-		CheckedAt:  startTime,
+		ConfigPath:   opts.ConfigPath,
+		Target:       opts.Target,
+		Issues:       make([]DoctorIssue, 0),
+		BinaryChecks: make([]BinaryCheckResult, 0),
+		CheckedAt:    startTime,
 	}
 
 	// Load and compile configuration
@@ -385,8 +392,89 @@ func (p *Preflight) Doctor(ctx context.Context, opts DoctorOptions) (*DoctorRepo
 		}
 	}
 
+	// Run provider-specific doctor checks
+	p.runProviderDoctorChecks(ctx, plan, report)
+
 	report.Duration = time.Since(startTime)
 	return report, nil
+}
+
+// runProviderDoctorChecks runs health checks for providers used in the plan.
+func (p *Preflight) runProviderDoctorChecks(ctx context.Context, plan *execution.Plan, report *DoctorReport) {
+	// Check which providers are used in the plan
+	providersUsed := make(map[string]bool)
+	for _, entry := range plan.Entries() {
+		providersUsed[entry.Step().ID().Provider()] = true
+	}
+
+	// Run nvim doctor checks if nvim is used
+	if providersUsed["nvim"] {
+		runner := command.NewRealRunner()
+		doctor := nvim.NewDoctorCheck(runner)
+		binaryResults := doctor.CheckBinaries(ctx)
+
+		for _, br := range binaryResults {
+			report.BinaryChecks = append(report.BinaryChecks, BinaryCheckResult{
+				Name:       br.Name,
+				Found:      br.Found,
+				Version:    br.Version,
+				Path:       br.Path,
+				MeetsMin:   br.MeetsMin,
+				MinVersion: "", // Will be filled from check
+				Required:   false,
+				Purpose:    br.Purpose,
+			})
+		}
+
+		// Get required info for each binary
+		for _, check := range doctor.RequiredBinaries() {
+			for i := range report.BinaryChecks {
+				if report.BinaryChecks[i].Name == check.Name {
+					report.BinaryChecks[i].MinVersion = check.MinVersion
+					report.BinaryChecks[i].Required = check.Required
+					break
+				}
+			}
+		}
+
+		// Add binary issues to main issues list
+		if doctor.HasIssues(binaryResults) {
+			for _, br := range binaryResults {
+				// Find the check info for this binary
+				var check nvim.BinaryCheck
+				for _, c := range doctor.RequiredBinaries() {
+					if c.Name == br.Name {
+						check = c
+						break
+					}
+				}
+
+				if check.Required && !br.Found {
+					report.Issues = append(report.Issues, DoctorIssue{
+						Provider:   "nvim",
+						StepID:     "nvim:binary:" + br.Name,
+						Severity:   SeverityError,
+						Message:    fmt.Sprintf("Required binary '%s' not found", br.Name),
+						Expected:   fmt.Sprintf("%s installed", br.Name),
+						Actual:     "not found",
+						Fixable:    true,
+						FixCommand: fmt.Sprintf("brew install %s", br.Name),
+					})
+				} else if check.Required && !br.MeetsMin {
+					report.Issues = append(report.Issues, DoctorIssue{
+						Provider:   "nvim",
+						StepID:     "nvim:binary:" + br.Name,
+						Severity:   SeverityWarning,
+						Message:    fmt.Sprintf("Binary '%s' version too low", br.Name),
+						Expected:   fmt.Sprintf(">= %s", check.MinVersion),
+						Actual:     br.Version,
+						Fixable:    true,
+						FixCommand: fmt.Sprintf("brew upgrade %s", br.Name),
+					})
+				}
+			}
+		}
+	}
 }
 
 // Fix applies fixes for issues found by Doctor and verifies the result.
@@ -571,6 +659,114 @@ func (p *Preflight) RepoInit(ctx context.Context, opts RepoOptions) error {
 	return nil
 }
 
+// RepoInitGitHub initializes a configuration repository and creates a GitHub remote.
+func (p *Preflight) RepoInitGitHub(ctx context.Context, opts GitHubRepoOptions) error {
+	runner := command.NewRealRunner()
+	ghClient := github.NewClient(runner)
+
+	// Step 1: Check GitHub authentication
+	p.printf("Checking GitHub authentication...\n")
+	authed, err := ghClient.IsAuthenticated(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to check GitHub auth: %w", err)
+	}
+	if !authed {
+		return fmt.Errorf("not authenticated with GitHub. Run 'gh auth login' first")
+	}
+
+	// Get authenticated user for README template
+	owner, err := ghClient.GetAuthenticatedUser(ctx)
+	if err != nil {
+		p.printf("Warning: could not get GitHub username: %v\n", err)
+		owner = ""
+	}
+
+	// Step 2: Create .gitignore if it doesn't exist
+	gitignorePath := filepath.Join(opts.Path, ".gitignore")
+	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
+		p.printf("Creating .gitignore...\n")
+		if err := os.WriteFile(gitignorePath, []byte(templates.GitignoreTemplate), 0o644); err != nil {
+			return fmt.Errorf("failed to create .gitignore: %w", err)
+		}
+	}
+
+	// Step 3: Create README.md if it doesn't exist
+	readmePath := filepath.Join(opts.Path, "README.md")
+	if _, err := os.Stat(readmePath); os.IsNotExist(err) {
+		p.printf("Creating README.md...\n")
+		readme, err := templates.GenerateReadme(templates.ReadmeData{
+			RepoName:    opts.Name,
+			Description: opts.Description,
+			Owner:       owner,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to generate README: %w", err)
+		}
+		if err := os.WriteFile(readmePath, []byte(readme), 0o644); err != nil {
+			return fmt.Errorf("failed to create README.md: %w", err)
+		}
+	}
+
+	// Step 4: Initialize git repository if not already
+	gitDir := filepath.Join(opts.Path, ".git")
+	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
+		p.printf("Initializing git repository...\n")
+		cmd := exec.CommandContext(ctx, "git", "init", opts.Path)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to initialize git: %w", err)
+		}
+
+		// Create initial branch
+		cmd = exec.CommandContext(ctx, "git", "-C", opts.Path, "checkout", "-b", opts.Branch)
+		_ = cmd.Run()
+	}
+
+	// Step 5: Stage and commit
+	p.printf("Creating initial commit...\n")
+	cmd := exec.CommandContext(ctx, "git", "-C", opts.Path, "add", "-A")
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to stage files: %w", err)
+	}
+
+	cmd = exec.CommandContext(ctx, "git", "-C", opts.Path, "commit", "-m", "Initial preflight configuration")
+	_ = cmd.Run() // Ignore if nothing to commit
+
+	// Step 6: Create GitHub repository
+	p.printf("Creating GitHub repository '%s'...\n", opts.Name)
+	repoInfo, err := ghClient.CreateRepository(ctx, ports.GitHubCreateOptions{
+		Name:        opts.Name,
+		Description: opts.Description,
+		Private:     opts.Private,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create GitHub repository: %w", err)
+	}
+
+	// Step 7: Set remote and push
+	p.printf("Setting up remote...\n")
+	if err := ghClient.SetRemote(ctx, opts.Path, repoInfo.SSHURL); err != nil {
+		return fmt.Errorf("failed to set remote: %w", err)
+	}
+
+	// Push to remote
+	p.printf("Pushing to GitHub...\n")
+	cmd = exec.CommandContext(ctx, "git", "-C", opts.Path, "push", "-u", "origin", opts.Branch)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to push to GitHub: %s", output)
+	}
+
+	p.printf("\n✓ Repository created successfully!\n")
+	p.printf("  URL: %s\n", repoInfo.URL)
+	p.printf("  SSH: %s\n", repoInfo.SSHURL)
+	if opts.Private {
+		p.printf("  Visibility: private\n")
+	} else {
+		p.printf("  Visibility: public\n")
+	}
+
+	return nil
+}
+
 // RepoStatus returns the status of a configuration repository.
 func (p *Preflight) RepoStatus(ctx context.Context, path string) (*RepoStatus, error) {
 	status := &RepoStatus{
@@ -635,6 +831,37 @@ func (p *Preflight) RepoStatus(ctx context.Context, path string) (*RepoStatus, e
 func (p *Preflight) PrintDoctorReport(report *DoctorReport) {
 	p.printf("\nDoctor Report\n")
 	p.printf("=============\n\n")
+
+	// Print binary checks if any
+	if len(report.BinaryChecks) > 0 {
+		p.printf("Binary Checks:\n")
+		for _, bc := range report.BinaryChecks {
+			status := "✓"
+			detail := ""
+			if !bc.Found {
+				if bc.Required {
+					status = "✗"
+				} else {
+					status = "○"
+				}
+				detail = "not found"
+			} else if !bc.MeetsMin && bc.MinVersion != "" {
+				status = "⚠"
+				detail = fmt.Sprintf("v%s (need >= %s)", bc.Version, bc.MinVersion)
+			} else if bc.Version != "" {
+				detail = fmt.Sprintf("v%s", bc.Version)
+			} else {
+				detail = "found"
+			}
+
+			reqTag := ""
+			if bc.Required {
+				reqTag = " (required)"
+			}
+			p.printf("  %s %s%s - %s [%s]\n", status, bc.Name, reqTag, bc.Purpose, detail)
+		}
+		p.printf("\n")
+	}
 
 	if !report.HasIssues() {
 		p.printf("✓ No issues found. Your system matches the configuration.\n")
@@ -724,6 +951,139 @@ func (p *Preflight) PrintDiff(result *DiffResult) {
 		}
 		p.printf("\n")
 	}
+}
+
+// RepoClone clones a configuration repository and optionally applies it.
+func (p *Preflight) RepoClone(ctx context.Context, opts CloneOptions) (*CloneResult, error) {
+	result := &CloneResult{}
+
+	// Determine destination path
+	destPath := opts.Path
+	if destPath == "" {
+		// Extract repo name from URL for default path
+		destPath = extractRepoName(opts.URL)
+	}
+
+	// Make path absolute
+	if !filepath.IsAbs(destPath) {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get current directory: %w", err)
+		}
+		destPath = filepath.Join(cwd, destPath)
+	}
+	result.Path = destPath
+
+	// Check if path already exists
+	if _, err := os.Stat(destPath); err == nil {
+		return nil, fmt.Errorf("destination path already exists: %s", destPath)
+	}
+
+	// Clone the repository
+	p.printf("Cloning %s...\n", opts.URL)
+	cmd := exec.CommandContext(ctx, "git", "clone", opts.URL, destPath)
+	cmd.Stdout = p.out
+	cmd.Stderr = p.out
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("git clone failed: %w", err)
+	}
+
+	// Check for preflight.yaml
+	configPath := filepath.Join(destPath, "preflight.yaml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		// Also check for preflight.yml
+		configPath = filepath.Join(destPath, "preflight.yml")
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			p.printf("\n⚠ No preflight.yaml found in repository.\n")
+			result.ConfigFound = false
+			return result, nil
+		}
+	}
+	result.ConfigFound = true
+
+	// Determine whether to apply
+	shouldApply := opts.Apply
+	if !shouldApply && !opts.AutoConfirm {
+		// Prompt user
+		p.printf("\nConfiguration file found. Apply now? [y/N]: ")
+		var response string
+		if _, err := fmt.Scanln(&response); err == nil {
+			response = strings.ToLower(strings.TrimSpace(response))
+			shouldApply = response == "y" || response == "yes"
+		}
+	}
+
+	if shouldApply {
+		p.printf("\nApplying configuration...\n")
+
+		// Create plan
+		target := opts.Target
+		plan, err := p.Plan(ctx, configPath, target)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create plan: %w", err)
+		}
+
+		// Show plan summary
+		entries := plan.Entries()
+		p.printf("Plan: %d steps to apply\n", len(entries))
+
+		// Apply configuration
+		stepResults, err := p.Apply(ctx, plan, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply configuration: %w", err)
+		}
+
+		// Count results by status
+		applied := 0
+		skipped := 0
+		failed := 0
+		for _, sr := range stepResults {
+			switch sr.Status() {
+			case compiler.StatusSatisfied:
+				applied++
+			case compiler.StatusSkipped:
+				skipped++
+			case compiler.StatusFailed:
+				failed++
+			}
+		}
+
+		result.Applied = true
+		result.ApplyResult = &ApplyResult{
+			Applied: applied,
+			Skipped: skipped,
+			Failed:  failed,
+		}
+
+		p.printf("\n✓ Applied %d steps (%d skipped, %d failed)\n",
+			applied, skipped, failed)
+	}
+
+	return result, nil
+}
+
+// extractRepoName extracts the repository name from a git URL.
+func extractRepoName(url string) string {
+	// Handle SSH URLs: git@github.com:user/repo.git
+	if strings.HasPrefix(url, "git@") {
+		parts := strings.Split(url, "/")
+		if len(parts) > 0 {
+			name := parts[len(parts)-1]
+			return strings.TrimSuffix(name, ".git")
+		}
+	}
+
+	// Handle HTTPS URLs: https://github.com/user/repo.git
+	if strings.Contains(url, "://") {
+		parts := strings.Split(url, "/")
+		if len(parts) > 0 {
+			name := parts[len(parts)-1]
+			return strings.TrimSuffix(name, ".git")
+		}
+	}
+
+	// Fallback: use the whole URL as name
+	return strings.TrimSuffix(filepath.Base(url), ".git")
 }
 
 // PrintRepoStatus outputs repository status.
