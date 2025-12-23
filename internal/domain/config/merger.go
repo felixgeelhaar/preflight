@@ -46,6 +46,8 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 	formulaeSet := make(map[string]bool)
 	casksSet := make(map[string]bool)
 	tapsSet := make(map[string]bool)
+	ppasSet := make(map[string]bool)
+	aptPackagesSet := make(map[string]bool)
 	filesMap := make(map[string]FileDeclaration)
 	aliasesMap := make(map[string]string)
 	includesSet := make(map[string]bool)
@@ -85,10 +87,21 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 			m.trackProvenance(merged, "packages.brew.taps", tap, layer.Provenance)
 		}
 
+		// Merge apt PPAs
+		for _, ppa := range layer.Packages.Apt.PPAs {
+			if !ppasSet[ppa] {
+				ppasSet[ppa] = true
+				merged.Packages.Apt.PPAs = append(merged.Packages.Apt.PPAs, ppa)
+			}
+			m.trackProvenance(merged, "packages.apt.ppas", ppa, layer.Provenance)
+		}
+
 		// Merge apt packages
 		for _, pkg := range layer.Packages.Apt.Packages {
-			// Simple append for apt packages (dedup could be added)
-			merged.Packages.Apt.Packages = append(merged.Packages.Apt.Packages, pkg)
+			if !aptPackagesSet[pkg] {
+				aptPackagesSet[pkg] = true
+				merged.Packages.Apt.Packages = append(merged.Packages.Apt.Packages, pkg)
+			}
 			m.trackProvenance(merged, "packages.apt.packages", pkg, layer.Provenance)
 		}
 

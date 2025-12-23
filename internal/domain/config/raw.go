@@ -13,6 +13,7 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 
 	// Convert apt packages
 	apt := make(map[string]interface{})
+	apt["ppas"] = toInterfaceSlice(m.Packages.Apt.PPAs)
 	apt["packages"] = toInterfaceSlice(m.Packages.Apt.Packages)
 	raw["apt"] = apt
 

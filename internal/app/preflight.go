@@ -10,6 +10,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/provider/apt"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
 	"github.com/felixgeelhaar/preflight/internal/provider/files"
 	"github.com/felixgeelhaar/preflight/internal/provider/git"
@@ -34,6 +35,7 @@ func New(out io.Writer) *Preflight {
 
 	// Create compiler with providers
 	comp := compiler.NewCompiler()
+	comp.RegisterProvider(apt.NewProvider(cmdRunner))
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 	comp.RegisterProvider(files.NewProvider(fs))
 	comp.RegisterProvider(git.NewProvider(fs))

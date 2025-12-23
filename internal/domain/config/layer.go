@@ -34,6 +34,7 @@ type BrewPackages struct {
 
 // AptPackages represents apt package configuration.
 type AptPackages struct {
+	PPAs     []string `yaml:"ppas,omitempty"`
 	Packages []string `yaml:"packages,omitempty"`
 }
 
