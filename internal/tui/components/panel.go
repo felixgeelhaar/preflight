@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // Panel is a bordered container with a title.
@@ -14,7 +14,7 @@ type Panel struct {
 	width     int
 	height    int
 	hasBorder bool
-	styles    common.Styles
+	styles    ui.Styles
 }
 
 // NewPanel creates a new panel with the given title.
@@ -24,7 +24,7 @@ func NewPanel(title string) Panel {
 		width:     40,
 		height:    10,
 		hasBorder: true,
-		styles:    common.DefaultStyles(),
+		styles:    ui.DefaultStyles(),
 	}
 }
 
@@ -84,7 +84,7 @@ func (p Panel) WithBorder(hasBorder bool) Panel {
 }
 
 // WithStyles returns the panel with custom styles.
-func (p Panel) WithStyles(styles common.Styles) Panel {
+func (p Panel) WithStyles(styles ui.Styles) Panel {
 	p.styles = styles
 	return p
 }
@@ -124,7 +124,7 @@ type SplitPanel struct {
 	width    int
 	height   int
 	gap      int
-	styles   common.Styles
+	styles   ui.Styles
 }
 
 // NewSplitPanel creates a new split panel with left and right panels.
@@ -136,7 +136,7 @@ func NewSplitPanel(left, right Panel) SplitPanel {
 		width:  80,
 		height: 20,
 		gap:    1,
-		styles: common.DefaultStyles(),
+		styles: ui.DefaultStyles(),
 	}
 }
 

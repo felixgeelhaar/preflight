@@ -2,8 +2,8 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
 	"github.com/felixgeelhaar/preflight/internal/tui/components"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // initWizardStep represents the current step in the wizard.
@@ -21,8 +21,8 @@ const (
 type initWizardModel struct {
 	step           initWizardStep
 	opts           InitWizardOptions
-	styles         common.Styles
-	keys           common.KeyMap
+	styles         ui.Styles
+	keys           ui.KeyMap
 	width          int
 	height         int
 	configPath     string
@@ -36,8 +36,8 @@ type initWizardModel struct {
 }
 
 func newInitWizardModel(opts InitWizardOptions) initWizardModel {
-	styles := common.DefaultStyles()
-	keys := common.DefaultKeyMap()
+	styles := ui.DefaultStyles()
+	keys := ui.DefaultKeyMap()
 
 	// Initialize provider list
 	providers := []components.ListItem{

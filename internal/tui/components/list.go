@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // ListItem represents a single item in the list.
@@ -35,8 +35,8 @@ type List struct {
 	selected int
 	width    int
 	height   int
-	keys     common.KeyMap
-	styles   common.Styles
+	keys     ui.KeyMap
+	styles   ui.Styles
 }
 
 // NewList creates a new list with the given items.
@@ -46,8 +46,8 @@ func NewList(items []ListItem) List {
 		selected: 0,
 		width:    40,
 		height:   10,
-		keys:     common.DefaultKeyMap(),
-		styles:   common.DefaultStyles(),
+		keys:     ui.DefaultKeyMap(),
+		styles:   ui.DefaultStyles(),
 	}
 }
 
@@ -114,7 +114,7 @@ func (l List) WithHeight(height int) List {
 }
 
 // WithStyles returns the list with custom styles.
-func (l List) WithStyles(styles common.Styles) List {
+func (l List) WithStyles(styles ui.Styles) List {
 	l.styles = styles
 	return l
 }

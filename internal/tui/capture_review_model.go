@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // CaptureType represents the type of captured item.
@@ -35,7 +35,7 @@ type CaptureItem struct {
 type captureReviewModel struct {
 	items     []CaptureItem
 	options   CaptureReviewOptions
-	styles    common.Styles
+	styles    ui.Styles
 	width     int
 	height    int
 	cursor    int
@@ -47,7 +47,7 @@ type captureReviewModel struct {
 
 // newCaptureReviewModel creates a new capture review model.
 func newCaptureReviewModel(items []CaptureItem, opts CaptureReviewOptions) captureReviewModel {
-	styles := common.DefaultStyles()
+	styles := ui.DefaultStyles()
 
 	return captureReviewModel{
 		items:    items,

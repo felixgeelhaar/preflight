@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // ExplainSection represents a titled section in an explanation.
@@ -26,8 +26,8 @@ type Explain struct {
 	height       int
 	scrollOffset int
 	viewport     viewport.Model
-	keys         common.KeyMap
-	styles       common.Styles
+	keys         ui.KeyMap
+	styles       ui.Styles
 }
 
 // NewExplain creates a new explain panel.
@@ -39,8 +39,8 @@ func NewExplain() Explain {
 		links:    make(map[string]string),
 		sections: make([]ExplainSection, 0),
 		viewport: vp,
-		keys:     common.DefaultKeyMap(),
-		styles:   common.DefaultStyles(),
+		keys:     ui.DefaultKeyMap(),
+		styles:   ui.DefaultStyles(),
 	}
 }
 
@@ -153,7 +153,7 @@ func (e Explain) WithHeight(height int) Explain {
 }
 
 // WithStyles sets the styles.
-func (e Explain) WithStyles(styles common.Styles) Explain {
+func (e Explain) WithStyles(styles ui.Styles) Explain {
 	e.styles = styles
 	return e
 }

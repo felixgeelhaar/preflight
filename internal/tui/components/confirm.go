@@ -4,7 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // ConfirmResultMsg is sent when the user confirms or cancels.
@@ -19,8 +19,8 @@ type Confirm struct {
 	noLabel  string
 	focused  bool // true = yes, false = no
 	width    int
-	keys     common.KeyMap
-	styles   common.Styles
+	keys     ui.KeyMap
+	styles   ui.Styles
 }
 
 // NewConfirm creates a new confirmation dialog.
@@ -31,8 +31,8 @@ func NewConfirm(message string) Confirm {
 		noLabel:  "No",
 		focused:  true,
 		width:    40,
-		keys:     common.DefaultKeyMap(),
-		styles:   common.DefaultStyles(),
+		keys:     ui.DefaultKeyMap(),
+		styles:   ui.DefaultStyles(),
 	}
 }
 
@@ -86,7 +86,7 @@ func (c Confirm) WithWidth(width int) Confirm {
 }
 
 // WithStyles sets the styles.
-func (c Confirm) WithStyles(styles common.Styles) Confirm {
+func (c Confirm) WithStyles(styles ui.Styles) Confirm {
 	c.styles = styles
 	return c
 }

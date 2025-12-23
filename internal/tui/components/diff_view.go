@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // DiffLineType indicates the type of a diff line.
@@ -48,8 +48,8 @@ type DiffView struct {
 	height       int
 	scrollOffset int
 	viewport     viewport.Model
-	keys         common.KeyMap
-	styles       common.Styles
+	keys         ui.KeyMap
+	styles       ui.Styles
 }
 
 // NewDiffView creates a new diff view.
@@ -60,8 +60,8 @@ func NewDiffView() DiffView {
 		width:    60,
 		height:   20,
 		viewport: vp,
-		keys:     common.DefaultKeyMap(),
-		styles:   common.DefaultStyles(),
+		keys:     ui.DefaultKeyMap(),
+		styles:   ui.DefaultStyles(),
 	}
 }
 
@@ -191,7 +191,7 @@ func (d DiffView) WithHeight(height int) DiffView {
 }
 
 // WithStyles sets the styles.
-func (d DiffView) WithStyles(styles common.Styles) DiffView {
+func (d DiffView) WithStyles(styles ui.Styles) DiffView {
 	d.styles = styles
 	return d
 }

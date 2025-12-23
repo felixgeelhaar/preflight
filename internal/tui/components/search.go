@@ -4,7 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // SearchSubmitMsg is sent when the user submits a search.
@@ -24,8 +24,8 @@ type SearchChangeMsg struct {
 type Search struct {
 	input  textinput.Model
 	width  int
-	keys   common.KeyMap
-	styles common.Styles
+	keys   ui.KeyMap
+	styles ui.Styles
 }
 
 // NewSearch creates a new search component.
@@ -37,8 +37,8 @@ func NewSearch() Search {
 	return Search{
 		input:  ti,
 		width:  40,
-		keys:   common.DefaultKeyMap(),
-		styles: common.DefaultStyles(),
+		keys:   ui.DefaultKeyMap(),
+		styles: ui.DefaultStyles(),
 	}
 }
 
@@ -100,7 +100,7 @@ func (s Search) WithWidth(width int) Search {
 }
 
 // WithStyles sets the styles.
-func (s Search) WithStyles(styles common.Styles) Search {
+func (s Search) WithStyles(styles ui.Styles) Search {
 	s.styles = styles
 	return s
 }

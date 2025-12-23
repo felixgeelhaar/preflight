@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // IssueSeverity represents the severity of a doctor issue.
@@ -53,7 +53,7 @@ func (r *DoctorReport) FixableCount() int {
 type doctorReportModel struct {
 	report  *DoctorReport
 	options DoctorReportOptions
-	styles  common.Styles
+	styles  ui.Styles
 	width   int
 	height  int
 	cursor  int
@@ -63,7 +63,7 @@ type doctorReportModel struct {
 
 // newDoctorReportModel creates a new doctor report model.
 func newDoctorReportModel(report *DoctorReport, opts DoctorReportOptions) doctorReportModel {
-	styles := common.DefaultStyles()
+	styles := ui.DefaultStyles()
 
 	return doctorReportModel{
 		report:  report,

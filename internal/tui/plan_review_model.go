@@ -8,8 +8,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
 	"github.com/felixgeelhaar/preflight/internal/tui/components"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // planReviewModel is the Bubble Tea model for plan review.
@@ -18,8 +18,8 @@ type planReviewModel struct {
 	options   PlanReviewOptions
 	list      components.List
 	explain   components.Explain
-	styles    common.Styles
-	keys      common.KeyMap
+	styles    ui.Styles
+	keys      ui.KeyMap
 	width     int
 	height    int
 	approved  bool
@@ -28,8 +28,8 @@ type planReviewModel struct {
 
 // newPlanReviewModel creates a new plan review model.
 func newPlanReviewModel(plan *execution.Plan, opts PlanReviewOptions) planReviewModel {
-	styles := common.DefaultStyles()
-	keys := common.DefaultKeyMap()
+	styles := ui.DefaultStyles()
+	keys := ui.DefaultKeyMap()
 
 	// Convert plan entries to list items
 	items := planEntriesToListItems(plan.Entries())

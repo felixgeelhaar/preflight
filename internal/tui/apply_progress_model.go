@@ -7,8 +7,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
 	"github.com/felixgeelhaar/preflight/internal/tui/components"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // StepStartMsg is sent when a step starts executing.
@@ -31,7 +31,7 @@ type applyProgressModel struct {
 	plan           *execution.Plan
 	options        ApplyProgressOptions
 	progressBar    components.Progress
-	styles         common.Styles
+	styles         ui.Styles
 	width          int
 	height         int
 	stepsTotal     int
@@ -45,7 +45,7 @@ type applyProgressModel struct {
 
 // newApplyProgressModel creates a new apply progress model.
 func newApplyProgressModel(plan *execution.Plan, opts ApplyProgressOptions) applyProgressModel {
-	styles := common.DefaultStyles()
+	styles := ui.DefaultStyles()
 	progressBar := components.NewProgress().WithWidth(40)
 
 	return applyProgressModel{

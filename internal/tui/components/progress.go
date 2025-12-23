@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // Progress displays a progress bar with optional message.
@@ -17,14 +17,14 @@ type Progress struct {
 	total   int
 	message string
 	width   int
-	styles  common.Styles
+	styles  ui.Styles
 }
 
 // NewProgress creates a new progress component.
 func NewProgress() Progress {
 	return Progress{
 		width:  40,
-		styles: common.DefaultStyles(),
+		styles: ui.DefaultStyles(),
 	}
 }
 
@@ -116,7 +116,7 @@ func (p Progress) WithWidth(width int) Progress {
 }
 
 // WithStyles sets the styles.
-func (p Progress) WithStyles(styles common.Styles) Progress {
+func (p Progress) WithStyles(styles ui.Styles) Progress {
 	p.styles = styles
 	return p
 }
@@ -156,18 +156,18 @@ func (p Progress) View() string {
 type Spinner struct {
 	spinner spinner.Model
 	message string
-	styles  common.Styles
+	styles  ui.Styles
 }
 
 // NewSpinner creates a new spinner component.
 func NewSpinner() Spinner {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	s.Style = lipgloss.NewStyle().Foreground(common.ColorPrimary)
+	s.Style = lipgloss.NewStyle().Foreground(ui.ColorPrimary)
 
 	return Spinner{
 		spinner: s,
-		styles:  common.DefaultStyles(),
+		styles:  ui.DefaultStyles(),
 	}
 }
 
@@ -183,7 +183,7 @@ func (s Spinner) SetMessage(message string) Spinner {
 }
 
 // WithStyles sets the styles.
-func (s Spinner) WithStyles(styles common.Styles) Spinner {
+func (s Spinner) WithStyles(styles ui.Styles) Spinner {
 	s.styles = styles
 	return s
 }

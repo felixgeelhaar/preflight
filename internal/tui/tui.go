@@ -7,15 +7,15 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
-	"github.com/felixgeelhaar/preflight/internal/tui/common"
+	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
 // App represents the main TUI application state.
 type App struct {
 	width  int
 	height int
-	styles common.Styles
-	keys   common.KeyMap
+	styles ui.Styles
+	keys   ui.KeyMap
 }
 
 // NewApp creates a new TUI application.
@@ -23,8 +23,8 @@ func NewApp() *App {
 	return &App{
 		width:  80,
 		height: 24,
-		styles: common.DefaultStyles(),
-		keys:   common.DefaultKeyMap(),
+		styles: ui.DefaultStyles(),
+		keys:   ui.DefaultKeyMap(),
 	}
 }
 
@@ -39,12 +39,12 @@ func (a *App) Height() int {
 }
 
 // Styles returns the application styles.
-func (a *App) Styles() common.Styles {
+func (a *App) Styles() ui.Styles {
 	return a.styles
 }
 
 // Keys returns the key bindings.
-func (a *App) Keys() common.KeyMap {
+func (a *App) Keys() ui.KeyMap {
 	return a.keys
 }
 

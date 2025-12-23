@@ -607,8 +607,8 @@ func TestMergedConfig_Raw_VSCodeConfig(t *testing.T) {
 				"ms-python.python",
 			},
 			Settings: map[string]interface{}{
-				"editor.fontSize":       14,
-				"editor.tabSize":         4,
+				"editor.fontSize":      14,
+				"editor.tabSize":       4,
 				"workbench.colorTheme": "Catppuccin Mocha",
 			},
 			Keybindings: []VSCodeKeybinding{

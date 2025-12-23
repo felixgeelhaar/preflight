@@ -1,5 +1,5 @@
-// Package common provides shared styles, key bindings, and messages for TUI components.
-package common
+// Package ui provides shared styles, key bindings, and messages for TUI components.
+package ui
 
 import (
 	"github.com/charmbracelet/lipgloss"
