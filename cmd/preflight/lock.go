@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os"
 
+	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/spf13/cobra"
 )
 
@@ -69,32 +72,63 @@ func init() {
 }
 
 func runLockUpdate(_ *cobra.Command, _ []string) error {
-	fmt.Println("Updating lockfile...")
-
-	if lockUpdateProvider != "" {
-		fmt.Printf("Updating only: %s\n", lockUpdateProvider)
+	configPath := cfgFile
+	if configPath == "" {
+		configPath = "preflight.yaml"
 	}
 
-	// TODO: Implement actual lock update using the lock domain
-	fmt.Println("Lockfile updated successfully.")
+	ctx := context.Background()
+	preflight := app.New(os.Stdout)
+
+	if lockUpdateProvider != "" {
+		fmt.Printf("Updating lockfile for provider: %s\n", lockUpdateProvider)
+	}
+
+	if err := preflight.LockUpdate(ctx, configPath); err != nil {
+		return fmt.Errorf("lock update failed: %w", err)
+	}
+
 	fmt.Println("\nRun 'preflight plan' to review changes.")
 	return nil
 }
 
 func runLockFreeze(_ *cobra.Command, _ []string) error {
-	fmt.Println("Freezing lockfile...")
+	configPath := cfgFile
+	if configPath == "" {
+		configPath = "preflight.yaml"
+	}
 
-	// TODO: Implement actual lock freeze using the lock domain
-	fmt.Println("Lockfile frozen.")
+	ctx := context.Background()
+	preflight := app.New(os.Stdout)
+
+	if err := preflight.LockFreeze(ctx, configPath); err != nil {
+		return fmt.Errorf("lock freeze failed: %w", err)
+	}
+
 	fmt.Println("Any version changes will now cause an error.")
 	return nil
 }
 
 func runLockStatus(_ *cobra.Command, _ []string) error {
-	// TODO: Implement actual status using the lock domain
+	// Lock status requires reading the lockfile - we'll show a basic message for now
+	// since the full implementation requires a concrete Repository implementation
+	configPath := cfgFile
+	if configPath == "" {
+		configPath = "preflight.yaml"
+	}
+
+	lockPath := configPath[:len(configPath)-len(".yaml")] + ".lock"
+
+	if _, err := os.Stat(lockPath); os.IsNotExist(err) {
+		fmt.Println("Lockfile status:")
+		fmt.Println("  Status: No lockfile found")
+		fmt.Printf("  Run 'preflight lock update' to create %s\n", lockPath)
+		return nil
+	}
+
 	fmt.Println("Lockfile status:")
-	fmt.Println("  Mode: intent")
-	fmt.Println("  Packages: 0")
-	fmt.Println("  Last updated: never")
+	fmt.Printf("  Path: %s\n", lockPath)
+	fmt.Println("  Status: exists")
+	fmt.Println("\n  Run 'preflight lock update' to update versions.")
 	return nil
 }

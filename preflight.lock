@@ -1,0 +1,7 @@
+version: 1
+mode: frozen
+machine_info:
+    os: darwin
+    arch: arm64
+    hostname: MacBookAir.fritz.box
+    snapshot: "2025-12-23T13:17:04+01:00"

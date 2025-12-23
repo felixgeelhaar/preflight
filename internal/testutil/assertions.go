@@ -12,7 +12,7 @@ import (
 )
 
 // AssertFileExists asserts that a file exists at the given path.
-func AssertFileExists(t testing.TB, path string, msgAndArgs ...interface{}) {
+func AssertFileExists(t testing.TB, path string, _ ...interface{}) {
 	t.Helper()
 
 	info, err := os.Stat(path)
@@ -25,7 +25,7 @@ func AssertFileExists(t testing.TB, path string, msgAndArgs ...interface{}) {
 }
 
 // AssertFileNotExists asserts that no file exists at the given path.
-func AssertFileNotExists(t testing.TB, path string, msgAndArgs ...interface{}) {
+func AssertFileNotExists(t testing.TB, path string, _ ...interface{}) {
 	t.Helper()
 
 	_, err := os.Stat(path)
@@ -33,7 +33,7 @@ func AssertFileNotExists(t testing.TB, path string, msgAndArgs ...interface{}) {
 }
 
 // AssertDirExists asserts that a directory exists at the given path.
-func AssertDirExists(t testing.TB, path string, msgAndArgs ...interface{}) {
+func AssertDirExists(t testing.TB, path string, _ ...interface{}) {
 	t.Helper()
 
 	info, err := os.Stat(path)

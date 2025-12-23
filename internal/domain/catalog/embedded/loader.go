@@ -1,3 +1,4 @@
+// Package embedded provides the embedded catalog data and loader.
 package embedded
 
 import (

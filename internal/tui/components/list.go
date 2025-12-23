@@ -126,8 +126,7 @@ func (l List) Init() tea.Cmd {
 
 // Update implements tea.Model.
 func (l List) Update(msg tea.Msg) (List, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		return l.handleKeyMsg(msg)
 	}
 	return l, nil

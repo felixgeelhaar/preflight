@@ -42,8 +42,14 @@ func runDoctor(_ *cobra.Command, _ []string) error {
 		opts.Verbose = false
 	}
 
+	// TODO: Run actual doctor checks to populate the report
+	// For now, create an empty report that will show "No issues found"
+	report := &tui.DoctorReport{
+		Issues: []tui.DoctorIssue{},
+	}
+
 	ctx := context.Background()
-	result, err := tui.RunDoctorReport(ctx, opts)
+	result, err := tui.RunDoctorReport(ctx, report, opts)
 	if err != nil {
 		return fmt.Errorf("doctor failed: %w", err)
 	}

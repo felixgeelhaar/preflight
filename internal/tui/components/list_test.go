@@ -17,7 +17,7 @@ func TestNewList(t *testing.T) {
 
 	list := NewList(items)
 
-	assert.Equal(t, 2, len(list.Items()))
+	assert.Len(t, list.Items(), 2)
 	assert.Equal(t, 0, list.SelectedIndex())
 	assert.Equal(t, "1", list.SelectedItem().ID)
 }
@@ -27,7 +27,7 @@ func TestList_EmptyList(t *testing.T) {
 
 	list := NewList([]ListItem{})
 
-	assert.Equal(t, 0, len(list.Items()))
+	assert.Empty(t, list.Items())
 	assert.Equal(t, 0, list.SelectedIndex())
 	assert.Nil(t, list.SelectedItem())
 }
@@ -119,7 +119,7 @@ func TestList_SetItems(t *testing.T) {
 
 	list = list.SetItems(newItems)
 
-	assert.Equal(t, 3, len(list.Items()))
+	assert.Len(t, list.Items(), 3)
 	assert.Equal(t, "a", list.SelectedItem().ID)
 }
 

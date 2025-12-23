@@ -16,6 +16,7 @@ var (
 // ConfidenceLevel indicates how confident the AI is in its recommendation.
 type ConfidenceLevel string
 
+// Confidence level constants.
 const (
 	ConfidenceLow    ConfidenceLevel = "low"
 	ConfidenceMedium ConfidenceLevel = "medium"

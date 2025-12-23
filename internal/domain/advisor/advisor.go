@@ -1,3 +1,5 @@
+// Package advisor provides AI-powered recommendations and explanations.
+// AI is advisory only - it never executes changes.
 package advisor
 
 import (

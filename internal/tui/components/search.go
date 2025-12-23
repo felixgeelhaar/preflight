@@ -116,8 +116,7 @@ func (s Search) Update(msg tea.Msg) (Search, tea.Cmd) {
 		return s, nil
 	}
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		return s.handleKeyMsg(msg)
 	}
 

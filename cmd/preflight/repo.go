@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 
+	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/spf13/cobra"
 )
 
@@ -67,10 +72,12 @@ Examples:
 var (
 	repoRemote string
 	repoForce  bool
+	repoBranch string
 )
 
 func init() {
 	repoInitCmd.Flags().StringVar(&repoRemote, "remote", "", "Remote repository URL")
+	repoInitCmd.Flags().StringVar(&repoBranch, "branch", "main", "Branch name")
 	repoPushCmd.Flags().BoolVar(&repoForce, "force", false, "Force push")
 
 	repoCmd.AddCommand(repoInitCmd)
@@ -81,44 +88,112 @@ func init() {
 	rootCmd.AddCommand(repoCmd)
 }
 
-func runRepoInit(_ *cobra.Command, _ []string) error {
-	fmt.Println("Initializing configuration repository...")
+func getConfigDir() string {
+	configPath := cfgFile
+	if configPath == "" {
+		configPath = "preflight.yaml"
+	}
+	return filepath.Dir(configPath)
+}
 
-	// TODO: Implement actual git initialization
-	fmt.Println("Repository initialized.")
+func runRepoInit(_ *cobra.Command, _ []string) error {
+	configDir := getConfigDir()
+	if configDir == "" || configDir == "." {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to get current directory: %w", err)
+		}
+		configDir = cwd
+	}
+
+	ctx := context.Background()
+	preflight := app.New(os.Stdout)
+
+	opts := app.NewRepoOptions(configDir).
+		WithBranch(repoBranch)
 
 	if repoRemote != "" {
-		fmt.Printf("Remote set to: %s\n", repoRemote)
+		opts = opts.WithRemote(repoRemote)
+	}
+
+	if err := preflight.RepoInit(ctx, opts); err != nil {
+		return fmt.Errorf("repo init failed: %w", err)
 	}
 
 	return nil
 }
 
 func runRepoStatus(_ *cobra.Command, _ []string) error {
-	// TODO: Implement actual git status
-	fmt.Println("Repository status:")
-	fmt.Println("  Branch: main")
-	fmt.Println("  Status: clean")
-	fmt.Println("  Remote: not configured")
+	configDir := getConfigDir()
+	if configDir == "" || configDir == "." {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to get current directory: %w", err)
+		}
+		configDir = cwd
+	}
+
+	ctx := context.Background()
+	preflight := app.New(os.Stdout)
+
+	status, err := preflight.RepoStatus(ctx, configDir)
+	if err != nil {
+		return fmt.Errorf("repo status failed: %w", err)
+	}
+
+	preflight.PrintRepoStatus(status)
 	return nil
 }
 
 func runRepoPush(_ *cobra.Command, _ []string) error {
-	fmt.Println("Pushing configuration...")
-
-	if repoForce {
-		fmt.Println("Force pushing...")
+	configDir := getConfigDir()
+	if configDir == "" || configDir == "." {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to get current directory: %w", err)
+		}
+		configDir = cwd
 	}
 
-	// TODO: Implement actual git push
+	fmt.Println("Pushing configuration...")
+
+	args := []string{"-C", configDir, "push"}
+	if repoForce {
+		args = append(args, "--force")
+	}
+
+	cmd := exec.Command("git", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("git push failed: %w", err)
+	}
+
 	fmt.Println("Configuration pushed successfully.")
 	return nil
 }
 
 func runRepoPull(_ *cobra.Command, _ []string) error {
+	configDir := getConfigDir()
+	if configDir == "" || configDir == "." {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to get current directory: %w", err)
+		}
+		configDir = cwd
+	}
+
 	fmt.Println("Pulling configuration updates...")
 
-	// TODO: Implement actual git pull
-	fmt.Println("Configuration is up to date.")
+	cmd := exec.Command("git", "-C", configDir, "pull")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("git pull failed: %w", err)
+	}
+
+	fmt.Println("Configuration updated.")
 	return nil
 }

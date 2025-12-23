@@ -98,8 +98,7 @@ func (c Confirm) Init() tea.Cmd {
 
 // Update implements tea.Model.
 func (c Confirm) Update(msg tea.Msg) (Confirm, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		return c.handleKeyMsg(msg)
 	}
 	return c, nil

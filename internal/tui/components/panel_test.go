@@ -74,7 +74,7 @@ func TestSplitPanel(t *testing.T) {
 
 	split := NewSplitPanel(left, right)
 
-	assert.Equal(t, 0.5, split.Ratio())
+	assert.InDelta(t, 0.5, split.Ratio(), 0.001)
 }
 
 func TestSplitPanel_WithRatio(t *testing.T) {
@@ -85,7 +85,7 @@ func TestSplitPanel_WithRatio(t *testing.T) {
 
 	split := NewSplitPanel(left, right).WithRatio(0.3)
 
-	assert.Equal(t, 0.3, split.Ratio())
+	assert.InDelta(t, 0.3, split.Ratio(), 0.001)
 }
 
 func TestSplitPanel_View(t *testing.T) {

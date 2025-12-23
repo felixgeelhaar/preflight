@@ -43,8 +43,12 @@ func runCapture(_ *cobra.Command, _ []string) error {
 		opts.Interactive = false
 	}
 
+	// TODO: Run actual capture to discover items
+	// For now, create an empty list that will show "Nothing captured"
+	items := []tui.CaptureItem{}
+
 	ctx := context.Background()
-	result, err := tui.RunCaptureReview(ctx, opts)
+	result, err := tui.RunCaptureReview(ctx, items, opts)
 	if err != nil {
 		return fmt.Errorf("capture failed: %w", err)
 	}

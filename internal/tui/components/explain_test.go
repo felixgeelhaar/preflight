@@ -46,7 +46,7 @@ func TestExplain_SetSections(t *testing.T) {
 
 	explain := NewExplain().SetSections(sections)
 
-	assert.Equal(t, 2, len(explain.Sections()))
+	assert.Len(t, explain.Sections(), 2)
 	assert.Equal(t, "Overview", explain.Sections()[0].Title)
 }
 
@@ -57,7 +57,7 @@ func TestExplain_AddSection(t *testing.T) {
 		AddSection("Overview", "This is the overview").
 		AddSection("Details", "More details here")
 
-	assert.Equal(t, 2, len(explain.Sections()))
+	assert.Len(t, explain.Sections(), 2)
 }
 
 func TestExplain_SetLinks(t *testing.T) {
@@ -70,7 +70,7 @@ func TestExplain_SetLinks(t *testing.T) {
 
 	explain := NewExplain().SetLinks(links)
 
-	assert.Equal(t, 2, len(explain.Links()))
+	assert.Len(t, explain.Links(), 2)
 }
 
 func TestExplain_View(t *testing.T) {
@@ -124,7 +124,7 @@ func TestExplain_Scroll(t *testing.T) {
 
 	// Scroll down
 	explain, _ = explain.Update(tea.KeyMsg{Type: tea.KeyDown})
-	assert.True(t, explain.ScrollOffset() >= 0)
+	assert.GreaterOrEqual(t, explain.ScrollOffset(), 0)
 }
 
 func TestExplain_Width(t *testing.T) {

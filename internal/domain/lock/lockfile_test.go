@@ -71,7 +71,7 @@ func TestLockfile_AddPackage_Duplicate(t *testing.T) {
 
 	err = lockfile.AddPackage(pkg2)
 	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrPackageExists)
+	require.ErrorIs(t, err, ErrPackageExists)
 
 	// Original still exists
 	retrieved, _ := lockfile.GetPackage("brew", "ripgrep")
@@ -212,7 +212,7 @@ func TestLockfile_PackagesByProvider(t *testing.T) {
 	assert.Len(t, aptPkgs, 1)
 
 	npmPkgs := lockfile.PackagesByProvider("npm")
-	assert.Len(t, npmPkgs, 0)
+	assert.Empty(t, npmPkgs)
 }
 
 func TestLockfile_WithMode(t *testing.T) {

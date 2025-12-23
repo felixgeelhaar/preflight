@@ -15,6 +15,7 @@ var (
 // DifficultyLevel indicates the complexity/expertise required.
 type DifficultyLevel string
 
+// Difficulty level constants.
 const (
 	DifficultyBeginner     DifficultyLevel = "beginner"
 	DifficultyIntermediate DifficultyLevel = "intermediate"

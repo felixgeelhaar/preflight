@@ -94,7 +94,7 @@ func (p *Provider) Available() bool {
 // Complete sends a prompt to Ollama and returns the response.
 // Note: This is a skeleton implementation. Actual HTTP calls would be made
 // in production, but tests use mocks.
-func (p *Provider) Complete(ctx context.Context, prompt advisor.Prompt) (advisor.Response, error) {
+func (p *Provider) Complete(_ context.Context, _ advisor.Prompt) (advisor.Response, error) {
 	// In a full implementation, this would:
 	// 1. Build the Ollama API request
 	// 2. Make an HTTP POST to the /api/generate endpoint

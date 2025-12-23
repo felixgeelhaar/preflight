@@ -40,8 +40,8 @@ func TestDiffView_SetHunks(t *testing.T) {
 
 	diff := NewDiffView().SetHunks(hunks)
 
-	assert.Equal(t, 1, len(diff.Hunks()))
-	assert.Equal(t, 3, len(diff.Hunks()[0].Lines))
+	assert.Len(t, diff.Hunks(), 1)
+	assert.Len(t, diff.Hunks()[0].Lines, 3)
 }
 
 func TestDiffView_AddHunk(t *testing.T) {
@@ -51,7 +51,7 @@ func TestDiffView_AddHunk(t *testing.T) {
 		AddHunk(DiffHunk{StartLine: 1}).
 		AddHunk(DiffHunk{StartLine: 10})
 
-	assert.Equal(t, 2, len(diff.Hunks()))
+	assert.Len(t, diff.Hunks(), 2)
 }
 
 func TestDiffView_FromUnified(t *testing.T) {
@@ -68,8 +68,8 @@ func TestDiffView_FromUnified(t *testing.T) {
 
 	diff := NewDiffView().FromUnified(unifiedDiff)
 
-	assert.Equal(t, 1, len(diff.Hunks()))
-	assert.True(t, len(diff.Hunks()[0].Lines) > 0)
+	assert.Len(t, diff.Hunks(), 1)
+	assert.NotEmpty(t, diff.Hunks()[0].Lines)
 }
 
 func TestDiffView_View(t *testing.T) {
@@ -112,7 +112,7 @@ func TestDiffView_Scroll(t *testing.T) {
 
 	// Scroll down
 	diff, _ = diff.Update(tea.KeyMsg{Type: tea.KeyDown})
-	assert.True(t, diff.ScrollOffset() >= 0)
+	assert.GreaterOrEqual(t, diff.ScrollOffset(), 0)
 }
 
 func TestDiffView_Width(t *testing.T) {
@@ -134,9 +134,9 @@ func TestDiffView_Height(t *testing.T) {
 func TestDiffLine_Types(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, DiffLineType("context"), DiffLineContext)
-	assert.Equal(t, DiffLineType("add"), DiffLineAdd)
-	assert.Equal(t, DiffLineType("remove"), DiffLineRemove)
+	assert.Equal(t, DiffLineContext, DiffLineType("context"))
+	assert.Equal(t, DiffLineAdd, DiffLineType("add"))
+	assert.Equal(t, DiffLineRemove, DiffLineType("remove"))
 }
 
 func TestDiffView_Summary(t *testing.T) {

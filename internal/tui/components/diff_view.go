@@ -147,13 +147,14 @@ func (d DiffView) FromUnified(diff string) DiffView {
 		var lineType DiffLineType
 		var content string
 
-		if strings.HasPrefix(line, "+") {
+		switch {
+		case strings.HasPrefix(line, "+"):
 			lineType = DiffLineAdd
 			content = strings.TrimPrefix(line, "+")
-		} else if strings.HasPrefix(line, "-") {
+		case strings.HasPrefix(line, "-"):
 			lineType = DiffLineRemove
 			content = strings.TrimPrefix(line, "-")
-		} else {
+		default:
 			lineType = DiffLineContext
 			content = strings.TrimPrefix(line, " ")
 		}
@@ -226,8 +227,7 @@ func (d DiffView) Init() tea.Cmd {
 
 // Update implements tea.Model.
 func (d DiffView) Update(msg tea.Msg) (DiffView, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		return d.handleKeyMsg(msg)
 	}
 	return d, nil

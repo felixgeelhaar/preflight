@@ -169,8 +169,7 @@ func (e Explain) Init() tea.Cmd {
 
 // Update implements tea.Model.
 func (e Explain) Update(msg tea.Msg) (Explain, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		return e.handleKeyMsg(msg)
 	}
 	return e, nil

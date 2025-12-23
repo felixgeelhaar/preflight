@@ -122,7 +122,7 @@ func TestAdvisorInterface_Suggest(t *testing.T) {
 	expectedSuggestion, _ := NewSuggestion("mock", []Recommendation{rec})
 
 	advisor := &MockAdvisor{
-		suggestFunc: func(ctx context.Context, suggestCtx SuggestContext) (Suggestion, error) {
+		suggestFunc: func(_ context.Context, _ SuggestContext) (Suggestion, error) {
 			return expectedSuggestion, nil
 		},
 	}
@@ -143,7 +143,7 @@ func TestAdvisorInterface_Explain(t *testing.T) {
 	expectedExplanation, _ := NewDetailedExplanation("nvim:balanced", "A balanced preset")
 
 	advisor := &MockAdvisor{
-		explainFunc: func(ctx context.Context, req ExplainRequest) (DetailedExplanation, error) {
+		explainFunc: func(_ context.Context, _ ExplainRequest) (DetailedExplanation, error) {
 			return expectedExplanation, nil
 		},
 	}

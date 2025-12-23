@@ -22,7 +22,7 @@ func (p *Provider) Name() string {
 }
 
 // Complete returns an empty response.
-func (p *Provider) Complete(ctx context.Context, prompt advisor.Prompt) (advisor.Response, error) {
+func (p *Provider) Complete(_ context.Context, _ advisor.Prompt) (advisor.Response, error) {
 	return advisor.NewResponse("", 0, "noop"), nil
 }
 
@@ -31,17 +31,17 @@ func (p *Provider) Available() bool {
 	return true
 }
 
-// NoopAdvisor is an Advisor implementation that works without AI.
+// Advisor is an Advisor implementation that works without AI.
 // It provides default recommendations based on the catalog.
-type NoopAdvisor struct{}
+type Advisor struct{}
 
-// NewNoopAdvisor creates a new NoopAdvisor.
-func NewNoopAdvisor() *NoopAdvisor {
-	return &NoopAdvisor{}
+// NewAdvisor creates a new noop Advisor.
+func NewAdvisor() *Advisor {
+	return &Advisor{}
 }
 
 // Suggest returns default recommendations without AI.
-func (a *NoopAdvisor) Suggest(ctx context.Context, suggestCtx advisor.SuggestContext) (advisor.Suggestion, error) {
+func (a *Advisor) Suggest(_ context.Context, suggestCtx advisor.SuggestContext) (advisor.Suggestion, error) {
 	// Return a sensible default based on category and experience
 	category := suggestCtx.Category()
 	experience := suggestCtx.UserProfile().Experience()
@@ -81,7 +81,7 @@ func (a *NoopAdvisor) Suggest(ctx context.Context, suggestCtx advisor.SuggestCon
 }
 
 // Explain returns a basic explanation without AI.
-func (a *NoopAdvisor) Explain(ctx context.Context, req advisor.ExplainRequest) (advisor.DetailedExplanation, error) {
+func (a *Advisor) Explain(_ context.Context, req advisor.ExplainRequest) (advisor.DetailedExplanation, error) {
 	summary := fmt.Sprintf("This is the %s preset. AI explanations are disabled.", req.PresetID())
 
 	return advisor.NewDetailedExplanation(req.PresetID(), summary)

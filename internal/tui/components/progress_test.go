@@ -11,7 +11,7 @@ func TestNewProgress(t *testing.T) {
 
 	progress := NewProgress()
 
-	assert.Equal(t, 0.0, progress.Percent())
+	assert.InDelta(t, 0.0, progress.Percent(), 0.001)
 	assert.Empty(t, progress.Message())
 }
 
@@ -20,7 +20,7 @@ func TestProgress_SetPercent(t *testing.T) {
 
 	progress := NewProgress().SetPercent(0.5)
 
-	assert.Equal(t, 0.5, progress.Percent())
+	assert.InDelta(t, 0.5, progress.Percent(), 0.001)
 }
 
 func TestProgress_SetPercent_Clamps(t *testing.T) {
@@ -28,11 +28,11 @@ func TestProgress_SetPercent_Clamps(t *testing.T) {
 
 	// Test upper bound
 	progress := NewProgress().SetPercent(1.5)
-	assert.Equal(t, 1.0, progress.Percent())
+	assert.InDelta(t, 1.0, progress.Percent(), 0.001)
 
 	// Test lower bound
 	progress = NewProgress().SetPercent(-0.5)
-	assert.Equal(t, 0.0, progress.Percent())
+	assert.InDelta(t, 0.0, progress.Percent(), 0.001)
 }
 
 func TestProgress_SetMessage(t *testing.T) {
@@ -50,7 +50,7 @@ func TestProgress_SetCurrent(t *testing.T) {
 
 	assert.Equal(t, 5, progress.Current())
 	assert.Equal(t, 10, progress.Total())
-	assert.Equal(t, 0.5, progress.Percent())
+	assert.InDelta(t, 0.5, progress.Percent(), 0.001)
 }
 
 func TestProgress_IncrementCurrent(t *testing.T) {

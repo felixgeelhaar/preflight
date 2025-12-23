@@ -46,18 +46,18 @@ func TestProvider_ImplementsAIProvider(t *testing.T) {
 	var _ advisor.AIProvider = (*Provider)(nil)
 }
 
-func TestNewNoopAdvisor(t *testing.T) {
+func TestNewAdvisor(t *testing.T) {
 	t.Parallel()
 
-	adv := NewNoopAdvisor()
+	adv := NewAdvisor()
 
 	assert.NotNil(t, adv)
 }
 
-func TestNoopAdvisor_Suggest(t *testing.T) {
+func TestAdvisor_Suggest(t *testing.T) {
 	t.Parallel()
 
-	adv := NewNoopAdvisor()
+	adv := NewAdvisor()
 	profile, _ := advisor.NewUserProfile(advisor.ExperienceIntermediate)
 	ctx, _ := advisor.NewSuggestContext("nvim", profile)
 
@@ -69,10 +69,10 @@ func TestNoopAdvisor_Suggest(t *testing.T) {
 	assert.True(t, suggestion.HasRecommendations())
 }
 
-func TestNoopAdvisor_Explain(t *testing.T) {
+func TestAdvisor_Explain(t *testing.T) {
 	t.Parallel()
 
-	adv := NewNoopAdvisor()
+	adv := NewAdvisor()
 	req, _ := advisor.NewExplainRequest("nvim:balanced")
 
 	explanation, err := adv.Explain(context.Background(), req)
@@ -81,8 +81,8 @@ func TestNoopAdvisor_Explain(t *testing.T) {
 	assert.Equal(t, "nvim:balanced", explanation.PresetID())
 }
 
-func TestNoopAdvisor_ImplementsAdvisor(t *testing.T) {
+func TestAdvisor_ImplementsAdvisor(t *testing.T) {
 	t.Parallel()
 
-	var _ advisor.Advisor = (*NoopAdvisor)(nil)
+	var _ advisor.Advisor = (*Advisor)(nil)
 }

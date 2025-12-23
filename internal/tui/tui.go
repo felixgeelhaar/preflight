@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/felixgeelhaar/preflight/internal/domain/execution"
 	"github.com/felixgeelhaar/preflight/internal/tui/common"
 )
 
@@ -148,11 +149,33 @@ type PlanReviewResult struct {
 }
 
 // RunPlanReview runs the interactive plan review.
-func RunPlanReview(_ context.Context, opts PlanReviewOptions) (*PlanReviewResult, error) {
-	// This will be implemented with a full plan review model
-	// For now, return a placeholder
+func RunPlanReview(ctx context.Context, plan *execution.Plan, opts PlanReviewOptions) (*PlanReviewResult, error) {
+	// Handle auto-approve case
+	if opts.AutoApprove {
+		return &PlanReviewResult{
+			Approved: true,
+		}, nil
+	}
+
+	// Create the plan review model
+	model := newPlanReviewModel(plan, opts)
+
+	// Run the program
+	p := tea.NewProgram(model, tea.WithContext(ctx))
+	finalModel, err := p.Run()
+	if err != nil {
+		return nil, fmt.Errorf("plan review failed: %w", err)
+	}
+
+	// Extract result from final model
+	m, ok := finalModel.(planReviewModel)
+	if !ok {
+		return nil, fmt.Errorf("unexpected model type")
+	}
+
 	return &PlanReviewResult{
-		Approved: opts.AutoApprove,
+		Approved:  m.approved,
+		Cancelled: m.cancelled,
 	}, nil
 }
 
@@ -184,10 +207,45 @@ type ApplyProgressResult struct {
 }
 
 // RunApplyProgress runs the apply progress display.
-func RunApplyProgress(_ context.Context, _ ApplyProgressOptions) (*ApplyProgressResult, error) {
-	// This will be implemented with a full apply progress model
+func RunApplyProgress(ctx context.Context, plan *execution.Plan, opts ApplyProgressOptions) (*ApplyProgressResult, error) {
+	// Handle quiet mode - just return success without TUI
+	if opts.Quiet {
+		return &ApplyProgressResult{
+			Success:    true,
+			StepsTotal: len(plan.NeedsApply()),
+			StepsDone:  len(plan.NeedsApply()),
+		}, nil
+	}
+
+	// Create the apply progress model
+	model := newApplyProgressModel(plan, opts)
+
+	// Run the program
+	p := tea.NewProgram(model, tea.WithContext(ctx))
+	finalModel, err := p.Run()
+	if err != nil {
+		return nil, fmt.Errorf("apply progress failed: %w", err)
+	}
+
+	// Extract result from final model
+	m, ok := finalModel.(applyProgressModel)
+	if !ok {
+		return nil, fmt.Errorf("unexpected model type")
+	}
+
+	// Collect errors from failed steps
+	var errors []error
+	for _, result := range m.completed {
+		if result.Error() != nil {
+			errors = append(errors, result.Error())
+		}
+	}
+
 	return &ApplyProgressResult{
-		Success: true,
+		Success:    m.stepsFailed == 0 && !m.cancelled,
+		StepsTotal: m.stepsTotal,
+		StepsDone:  m.stepsCompleted,
+		Errors:     errors,
 	}, nil
 }
 
@@ -218,9 +276,28 @@ type DoctorReportResult struct {
 }
 
 // RunDoctorReport runs the doctor report display.
-func RunDoctorReport(_ context.Context, _ DoctorReportOptions) (*DoctorReportResult, error) {
-	// This will be implemented with a full doctor report model
-	return &DoctorReportResult{}, nil
+func RunDoctorReport(ctx context.Context, report *DoctorReport, opts DoctorReportOptions) (*DoctorReportResult, error) {
+	// Create the doctor report model
+	model := newDoctorReportModel(report, opts)
+
+	// Run the program
+	p := tea.NewProgram(model, tea.WithContext(ctx))
+	finalModel, err := p.Run()
+	if err != nil {
+		return nil, fmt.Errorf("doctor report failed: %w", err)
+	}
+
+	// Extract result from final model
+	m, ok := finalModel.(doctorReportModel)
+	if !ok {
+		return nil, fmt.Errorf("unexpected model type")
+	}
+
+	return &DoctorReportResult{
+		Issues:     len(m.report.Issues),
+		FixesFound: m.report.FixableCount(),
+		Fixed:      0, // Will be populated when fix functionality is implemented
+	}, nil
 }
 
 // CaptureReviewOptions configures the capture review TUI.
@@ -250,7 +327,49 @@ type CaptureReviewResult struct {
 }
 
 // RunCaptureReview runs the capture review interface.
-func RunCaptureReview(_ context.Context, _ CaptureReviewOptions) (*CaptureReviewResult, error) {
-	// This will be implemented with a full capture review model
-	return &CaptureReviewResult{}, nil
+func RunCaptureReview(ctx context.Context, items []CaptureItem, opts CaptureReviewOptions) (*CaptureReviewResult, error) {
+	// Handle accept all case
+	if opts.AcceptAll {
+		accepted := make([]string, 0, len(items))
+		for _, item := range items {
+			accepted = append(accepted, item.Name)
+		}
+		return &CaptureReviewResult{
+			AcceptedItems: accepted,
+			RejectedItems: []string{},
+		}, nil
+	}
+
+	// Create the capture review model
+	model := newCaptureReviewModel(items, opts)
+
+	// Run the program
+	p := tea.NewProgram(model, tea.WithContext(ctx))
+	finalModel, err := p.Run()
+	if err != nil {
+		return nil, fmt.Errorf("capture review failed: %w", err)
+	}
+
+	// Extract result from final model
+	m, ok := finalModel.(captureReviewModel)
+	if !ok {
+		return nil, fmt.Errorf("unexpected model type")
+	}
+
+	// Build result lists
+	accepted := make([]string, 0, len(m.accepted))
+	for _, item := range m.accepted {
+		accepted = append(accepted, item.Name)
+	}
+
+	rejected := make([]string, 0, len(m.rejected))
+	for _, item := range m.rejected {
+		rejected = append(rejected, item.Name)
+	}
+
+	return &CaptureReviewResult{
+		AcceptedItems: accepted,
+		RejectedItems: rejected,
+		Cancelled:     m.cancelled,
+	}, nil
 }

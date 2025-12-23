@@ -15,7 +15,7 @@ func TestManifestBuilder(t *testing.T) {
 		Build()
 
 	assert.Equal(t, 1, manifest.Version)
-	assert.Equal(t, 1, len(manifest.Targets))
+	assert.Len(t, manifest.Targets, 1)
 	assert.Equal(t, "default", manifest.Targets[0].Name)
 	assert.Equal(t, []string{"base", "work"}, manifest.Targets[0].Layers)
 }
@@ -28,7 +28,7 @@ func TestManifestBuilder_MultipleTargets(t *testing.T) {
 		WithTarget("personal", "base", "personal").
 		Build()
 
-	assert.Equal(t, 2, len(manifest.Targets))
+	assert.Len(t, manifest.Targets, 2)
 }
 
 func TestManifestBuilder_Defaults(t *testing.T) {

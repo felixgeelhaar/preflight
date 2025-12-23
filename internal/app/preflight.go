@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 
+	lockadapter "github.com/felixgeelhaar/preflight/internal/adapters/lockfile"
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
+	"github.com/felixgeelhaar/preflight/internal/domain/lock"
 	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/provider/apt"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
@@ -26,6 +28,7 @@ type Preflight struct {
 	compiler *compiler.Compiler
 	planner  *execution.Planner
 	executor *execution.Executor
+	lockRepo lock.Repository
 	out      io.Writer
 }
 
@@ -51,8 +54,15 @@ func New(out io.Writer) *Preflight {
 		compiler: comp,
 		planner:  execution.NewPlanner(),
 		executor: execution.NewExecutor(),
+		lockRepo: lockadapter.NewYAMLRepository(),
 		out:      out,
 	}
+}
+
+// WithLockRepo sets the lock repository for lockfile operations.
+func (p *Preflight) WithLockRepo(repo lock.Repository) *Preflight {
+	p.lockRepo = repo
+	return p
 }
 
 // Plan loads configuration and creates an execution plan.

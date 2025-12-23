@@ -30,7 +30,24 @@
       "Bash(gh search:*)",
       "Bash(chmod:*)",
       "Bash(make build:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git push:*)",
+      "Bash(git tag:*)",
+      "mcp__github__list_pull_requests",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(git pull:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh release view:*)",
+      "Bash(./scripts/update-homebrew-formula.sh:*)",
+      "Bash(brew untap:*)",
+      "Bash(brew tap:*)",
+      "Bash(brew install:*)",
+      "Bash(preflight version:*)",
+      "Bash(git -C /Users/felixgeelhaar/Developer/projects/preflight tag -l)",
+      "Bash(jq:*)",
+      "Bash(ls:*)",
+      "Bash(go run:*)"
     ]
   }
 }

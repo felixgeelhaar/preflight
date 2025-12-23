@@ -94,7 +94,7 @@ func (p *Provider) Available() bool {
 // Complete sends a prompt to OpenAI and returns the response.
 // Note: This is a skeleton implementation. Actual HTTP calls would be made
 // in production, but tests use mocks.
-func (p *Provider) Complete(ctx context.Context, prompt advisor.Prompt) (advisor.Response, error) {
+func (p *Provider) Complete(_ context.Context, _ advisor.Prompt) (advisor.Response, error) {
 	if !p.Available() {
 		return advisor.Response{}, ErrNotConfigured
 	}

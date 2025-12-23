@@ -16,6 +16,7 @@ var (
 // ExperienceLevel indicates the user's experience level.
 type ExperienceLevel string
 
+// Experience level constants.
 const (
 	ExperienceBeginner     ExperienceLevel = "beginner"
 	ExperienceIntermediate ExperienceLevel = "intermediate"
@@ -212,13 +213,13 @@ func (c SuggestContext) WithAdditionalContext(ctx string) SuggestContext {
 }
 
 // WithMaxRecommendations returns a new SuggestContext with max recommendations set.
-func (c SuggestContext) WithMaxRecommendations(max int) SuggestContext {
+func (c SuggestContext) WithMaxRecommendations(maxRec int) SuggestContext {
 	return SuggestContext{
 		category:           c.category,
 		userProfile:        c.userProfile,
 		constraints:        c.constraints,
 		additionalContext:  c.additionalContext,
-		maxRecommendations: max,
+		maxRecommendations: maxRec,
 	}
 }
 
