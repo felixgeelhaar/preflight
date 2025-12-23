@@ -2008,6 +2008,10 @@ func TestRunRepoPush_WithRemote(t *testing.T) {
 	cmd = exec.Command("git", "-C", localDir, "commit", "-m", "Initial commit")
 	_ = cmd.Run()
 
+	// Set up upstream tracking branch (required for git push without -u)
+	cmd = exec.Command("git", "-C", localDir, "push", "-u", "origin", "master")
+	_ = cmd.Run()
+
 	// Save and restore flags
 	originalCfgFile := cfgFile
 	originalRepoForce := repoForce
@@ -2051,6 +2055,10 @@ func TestRunRepoPush_SuccessPath(t *testing.T) {
 	cmd = exec.Command("git", "-C", localDir, "add", ".")
 	_ = cmd.Run()
 	cmd = exec.Command("git", "-C", localDir, "commit", "-m", "Initial commit")
+	_ = cmd.Run()
+
+	// Set up upstream tracking branch (required for git push without -u)
+	cmd = exec.Command("git", "-C", localDir, "push", "-u", "origin", "master")
 	_ = cmd.Run()
 
 	// Save and restore flags
