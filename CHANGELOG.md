@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-12-23
+
+### Fixed
+- Fix all golangci-lint warnings (errorlint, revive, testifylint)
+- Rename `tui/common` to `tui/ui` to satisfy package naming requirements
+
+### Improved
+- Config domain test coverage improved from 65.8% to 86.7%
+- Add comprehensive tests for `Raw()` method covering SSH, Runtime, Shell, Nvim, VSCode, APT configurations
+
 ## [0.1.0] - 2025-12-23
 
 ### Added
@@ -72,5 +82,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Domain-Driven Design architecture
 - Test-Driven Development with >80% coverage requirement per domain
 
-[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/felixgeelhaar/preflight/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/felixgeelhaar/preflight/releases/tag/v0.1.0
