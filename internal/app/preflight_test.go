@@ -15,6 +15,14 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/lock"
 )
 
+// skipIfNoHomebrew skips the test if Homebrew is not available.
+func skipIfNoHomebrew(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("brew"); err != nil {
+		t.Skip("Skipping test: Homebrew is not available")
+	}
+}
+
 func TestPreflight_New(t *testing.T) {
 	var buf bytes.Buffer
 	pf := New(&buf)
@@ -24,6 +32,8 @@ func TestPreflight_New(t *testing.T) {
 }
 
 func TestPreflight_Plan_Integration(t *testing.T) {
+	skipIfNoHomebrew(t)
+
 	// Create temp directory structure
 	tmpDir := t.TempDir()
 
@@ -70,6 +80,8 @@ packages:
 }
 
 func TestPreflight_PrintPlan(t *testing.T) {
+	skipIfNoHomebrew(t)
+
 	var buf bytes.Buffer
 	pf := New(&buf)
 
@@ -762,6 +774,8 @@ targets:
 }
 
 func TestPreflight_Doctor_WithDrift(t *testing.T) {
+	skipIfNoHomebrew(t)
+
 	tmpDir := t.TempDir()
 
 	// Create config with a package that needs install (will cause NeedsApply)
