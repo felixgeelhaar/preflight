@@ -20,7 +20,7 @@ type ExtensionStep struct {
 func NewExtensionStep(extension string, runner ports.CommandRunner) *ExtensionStep {
 	// Replace dots with underscores for valid step ID (dots not allowed in StepID pattern)
 	safeExt := strings.ReplaceAll(extension, ".", "_")
-	id, _ := compiler.NewStepID(fmt.Sprintf("vscode:extension:%s", safeExt))
+	id := compiler.MustNewStepID(fmt.Sprintf("vscode:extension:%s", safeExt))
 	return &ExtensionStep{
 		extension: extension,
 		id:        id,
@@ -96,7 +96,7 @@ type SettingsStep struct {
 
 // NewSettingsStep creates a new SettingsStep.
 func NewSettingsStep(settings map[string]interface{}, fs ports.FileSystem) *SettingsStep {
-	id, _ := compiler.NewStepID("vscode:settings")
+	id := compiler.MustNewStepID("vscode:settings")
 	return &SettingsStep{
 		settings: settings,
 		id:       id,
@@ -191,7 +191,7 @@ type KeybindingsStep struct {
 
 // NewKeybindingsStep creates a new KeybindingsStep.
 func NewKeybindingsStep(keybindings []Keybinding, fs ports.FileSystem) *KeybindingsStep {
-	id, _ := compiler.NewStepID("vscode:keybindings")
+	id := compiler.MustNewStepID("vscode:keybindings")
 	return &KeybindingsStep{
 		keybindings: keybindings,
 		id:          id,

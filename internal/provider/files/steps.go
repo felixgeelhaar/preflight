@@ -8,6 +8,7 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/validation"
 )
 
 // LinkStep represents a symlink creation step.
@@ -19,7 +20,7 @@ type LinkStep struct {
 
 // NewLinkStep creates a new LinkStep.
 func NewLinkStep(link Link, fs ports.FileSystem) *LinkStep {
-	id, _ := compiler.NewStepID("files:link:" + link.ID())
+	id := compiler.MustNewStepID("files:link:" + link.ID())
 	return &LinkStep{
 		link: link,
 		id:   id,
@@ -56,6 +57,14 @@ func (s *LinkStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 
 // Apply creates the symlink.
 func (s *LinkStep) Apply(_ compiler.RunContext) error {
+	// Validate paths to prevent path traversal attacks
+	if err := validation.ValidatePath(s.link.Src); err != nil {
+		return fmt.Errorf("invalid source path: %w", err)
+	}
+	if err := validation.ValidatePath(s.link.Dest); err != nil {
+		return fmt.Errorf("invalid destination path: %w", err)
+	}
+
 	dest := ports.ExpandPath(s.link.Dest)
 
 	// Handle existing file
@@ -100,7 +109,7 @@ type CopyStep struct {
 
 // NewCopyStep creates a new CopyStep.
 func NewCopyStep(cp Copy, fs ports.FileSystem) *CopyStep {
-	id, _ := compiler.NewStepID("files:copy:" + cp.ID())
+	id := compiler.MustNewStepID("files:copy:" + cp.ID())
 	return &CopyStep{
 		cp: cp,
 		id: id,
@@ -152,6 +161,14 @@ func (s *CopyStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 
 // Apply copies the file.
 func (s *CopyStep) Apply(_ compiler.RunContext) error {
+	// Validate paths to prevent path traversal attacks
+	if err := validation.ValidatePath(s.cp.Src); err != nil {
+		return fmt.Errorf("invalid source path: %w", err)
+	}
+	if err := validation.ValidatePath(s.cp.Dest); err != nil {
+		return fmt.Errorf("invalid destination path: %w", err)
+	}
+
 	src := ports.ExpandPath(s.cp.Src)
 	dest := ports.ExpandPath(s.cp.Dest)
 
@@ -186,7 +203,7 @@ type TemplateStep struct {
 
 // NewTemplateStep creates a new TemplateStep.
 func NewTemplateStep(tmpl Template, fs ports.FileSystem) *TemplateStep {
-	id, _ := compiler.NewStepID("files:template:" + tmpl.ID())
+	id := compiler.MustNewStepID("files:template:" + tmpl.ID())
 	return &TemplateStep{
 		tmpl: tmpl,
 		id:   id,
@@ -212,10 +229,33 @@ func (s *TemplateStep) Check(_ compiler.RunContext) (compiler.StepStatus, error)
 		return compiler.StatusNeedsApply, nil
 	}
 
-	// TODO: Compare rendered content with existing file
-	// For now, always consider as needing apply if file exists
-	// This is a simplification; proper implementation would render and compare
-	return compiler.StatusSatisfied, nil
+	// Render the template and compare with existing file
+	src := ports.ExpandPath(s.tmpl.Src)
+	templateContent, err := s.fs.ReadFile(src)
+	if err != nil {
+		return compiler.StatusUnknown, err
+	}
+
+	tmpl, err := template.New("file").Parse(string(templateContent))
+	if err != nil {
+		return compiler.StatusUnknown, err
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, s.tmpl.Vars); err != nil {
+		return compiler.StatusUnknown, err
+	}
+
+	existingContent, err := s.fs.ReadFile(dest)
+	if err != nil {
+		return compiler.StatusUnknown, err
+	}
+
+	if bytes.Equal(buf.Bytes(), existingContent) {
+		return compiler.StatusSatisfied, nil
+	}
+
+	return compiler.StatusNeedsApply, nil
 }
 
 // Plan returns the diff for this step.
@@ -225,6 +265,14 @@ func (s *TemplateStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 
 // Apply renders the template.
 func (s *TemplateStep) Apply(_ compiler.RunContext) error {
+	// Validate paths to prevent path traversal attacks
+	if err := validation.ValidatePath(s.tmpl.Src); err != nil {
+		return fmt.Errorf("invalid source path: %w", err)
+	}
+	if err := validation.ValidatePath(s.tmpl.Dest); err != nil {
+		return fmt.Errorf("invalid destination path: %w", err)
+	}
+
 	src := ports.ExpandPath(s.tmpl.Src)
 	dest := ports.ExpandPath(s.tmpl.Dest)
 

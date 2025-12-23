@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
-	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 )
 
 func TestBrewProvider_Name(t *testing.T) {
@@ -15,7 +15,7 @@ func TestBrewProvider_Name(t *testing.T) {
 }
 
 func TestBrewProvider_Compile_Empty(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	provider := NewProvider(runner)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{})
@@ -29,7 +29,7 @@ func TestBrewProvider_Compile_Empty(t *testing.T) {
 }
 
 func TestBrewProvider_Compile_NoBrewSection(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	provider := NewProvider(runner)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -45,7 +45,7 @@ func TestBrewProvider_Compile_NoBrewSection(t *testing.T) {
 }
 
 func TestBrewProvider_Compile_Taps(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	provider := NewProvider(runner)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -75,7 +75,7 @@ func TestBrewProvider_Compile_Taps(t *testing.T) {
 }
 
 func TestBrewProvider_Compile_Formulae(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	provider := NewProvider(runner)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -93,7 +93,7 @@ func TestBrewProvider_Compile_Formulae(t *testing.T) {
 }
 
 func TestBrewProvider_Compile_Casks(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	provider := NewProvider(runner)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -111,7 +111,7 @@ func TestBrewProvider_Compile_Casks(t *testing.T) {
 }
 
 func TestBrewProvider_Compile_Full(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	provider := NewProvider(runner)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -131,7 +131,7 @@ func TestBrewProvider_Compile_Full(t *testing.T) {
 }
 
 func TestBrewProvider_Compile_InvalidConfig(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	provider := NewProvider(runner)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -146,7 +146,7 @@ func TestBrewProvider_Compile_InvalidConfig(t *testing.T) {
 }
 
 func TestBrewProvider_Compile_FormulaWithTap(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	provider := NewProvider(runner)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -179,7 +179,7 @@ func TestBrewProvider_Compile_FormulaWithTap(t *testing.T) {
 }
 
 func TestBrewProvider_Compile_StepsOrder(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	provider := NewProvider(runner)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{

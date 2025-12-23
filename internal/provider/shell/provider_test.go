@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
-	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/provider/shell"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +13,7 @@ import (
 func TestProvider_Name(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := shell.NewProvider(fs)
 
 	assert.Equal(t, "shell", p.Name())
@@ -22,7 +22,7 @@ func TestProvider_Name(t *testing.T) {
 func TestProvider_Compile_NoConfig(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := shell.NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{})
@@ -35,7 +35,7 @@ func TestProvider_Compile_NoConfig(t *testing.T) {
 func TestProvider_Compile_EmptyShellSection(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := shell.NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -50,7 +50,7 @@ func TestProvider_Compile_EmptyShellSection(t *testing.T) {
 func TestProvider_Compile_SingleShellWithFramework(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := shell.NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -73,7 +73,7 @@ func TestProvider_Compile_SingleShellWithFramework(t *testing.T) {
 func TestProvider_Compile_ShellWithPlugins(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := shell.NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -101,7 +101,7 @@ func TestProvider_Compile_ShellWithPlugins(t *testing.T) {
 func TestProvider_Compile_ShellWithCustomPlugins(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := shell.NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -130,7 +130,7 @@ func TestProvider_Compile_ShellWithCustomPlugins(t *testing.T) {
 func TestProvider_Compile_WithStarship(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := shell.NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -151,7 +151,7 @@ func TestProvider_Compile_WithStarship(t *testing.T) {
 func TestProvider_Compile_WithEnvAndAliases(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := shell.NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -179,7 +179,7 @@ func TestProvider_Compile_WithEnvAndAliases(t *testing.T) {
 func TestProvider_Compile_FishWithFisher(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := shell.NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{

@@ -17,7 +17,7 @@ type ToolVersionStep struct {
 
 // NewToolVersionStep creates a new ToolVersionStep.
 func NewToolVersionStep(cfg *Config, fs ports.FileSystem) *ToolVersionStep {
-	id, _ := compiler.NewStepID("runtime:tool-versions")
+	id := compiler.MustNewStepID("runtime:tool-versions")
 	return &ToolVersionStep{
 		cfg: cfg,
 		id:  id,
@@ -110,7 +110,7 @@ type PluginStep struct {
 
 // NewPluginStep creates a new PluginStep.
 func NewPluginStep(plugin PluginConfig) *PluginStep {
-	id, _ := compiler.NewStepID(fmt.Sprintf("runtime:plugin:%s", plugin.Name))
+	id := compiler.MustNewStepID(fmt.Sprintf("runtime:plugin:%s", plugin.Name))
 	return &PluginStep{
 		plugin: plugin,
 		id:     id,

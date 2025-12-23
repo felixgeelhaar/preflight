@@ -49,3 +49,6 @@ func hasDefaults(cfg *Config) bool {
 	return d.AddKeysToAgent || d.IdentitiesOnly || d.ForwardAgent ||
 		d.ServerAliveInterval > 0 || d.ServerAliveCountMax > 0
 }
+
+// Ensure Provider implements compiler.Provider.
+var _ compiler.Provider = (*Provider)(nil)

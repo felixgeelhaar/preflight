@@ -17,7 +17,7 @@ type PresetStep struct {
 
 // NewPresetStep creates a new PresetStep.
 func NewPresetStep(preset string, fs ports.FileSystem, runner ports.CommandRunner) *PresetStep {
-	id, _ := compiler.NewStepID(fmt.Sprintf("nvim:preset:%s", preset))
+	id := compiler.MustNewStepID(fmt.Sprintf("nvim:preset:%s", preset))
 	return &PresetStep{
 		preset: preset,
 		id:     id,
@@ -115,7 +115,7 @@ type ConfigRepoStep struct {
 
 // NewConfigRepoStep creates a new ConfigRepoStep.
 func NewConfigRepoStep(repo string, fs ports.FileSystem, runner ports.CommandRunner) *ConfigRepoStep {
-	id, _ := compiler.NewStepID("nvim:config-repo")
+	id := compiler.MustNewStepID("nvim:config-repo")
 	return &ConfigRepoStep{
 		repo:   repo,
 		id:     id,
@@ -184,7 +184,7 @@ type LazyLockStep struct {
 
 // NewLazyLockStep creates a new LazyLockStep.
 func NewLazyLockStep(fs ports.FileSystem) *LazyLockStep {
-	id, _ := compiler.NewStepID("nvim:lazy-lock")
+	id := compiler.MustNewStepID("nvim:lazy-lock")
 	return &LazyLockStep{
 		id: id,
 		fs: fs,

@@ -18,7 +18,7 @@ type ConfigStep struct {
 
 // NewConfigStep creates a new ConfigStep.
 func NewConfigStep(cfg *Config, fs ports.FileSystem) *ConfigStep {
-	id, _ := compiler.NewStepID("git:config")
+	id := compiler.MustNewStepID("git:config")
 	return &ConfigStep{
 		cfg: cfg,
 		id:  id,

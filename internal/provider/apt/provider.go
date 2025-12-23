@@ -46,3 +46,6 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 
 	return steps, nil
 }
+
+// Ensure Provider implements compiler.Provider.
+var _ compiler.Provider = (*Provider)(nil)

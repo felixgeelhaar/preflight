@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
-	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/provider/vscode"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,8 +13,8 @@ import (
 func TestProvider_Name(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
-	runner := ports.NewMockCommandRunner()
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
 	p := vscode.NewProvider(fs, runner)
 
 	assert.Equal(t, "vscode", p.Name())
@@ -23,8 +23,8 @@ func TestProvider_Name(t *testing.T) {
 func TestProvider_Compile_Empty(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
-	runner := ports.NewMockCommandRunner()
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
 	p := vscode.NewProvider(fs, runner)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{})
@@ -37,8 +37,8 @@ func TestProvider_Compile_Empty(t *testing.T) {
 func TestProvider_Compile_WithExtensions(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
-	runner := ports.NewMockCommandRunner()
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
 	p := vscode.NewProvider(fs, runner)
 
 	raw := map[string]interface{}{
@@ -61,8 +61,8 @@ func TestProvider_Compile_WithExtensions(t *testing.T) {
 func TestProvider_Compile_WithSettings(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
-	runner := ports.NewMockCommandRunner()
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
 	p := vscode.NewProvider(fs, runner)
 
 	raw := map[string]interface{}{
@@ -83,8 +83,8 @@ func TestProvider_Compile_WithSettings(t *testing.T) {
 func TestProvider_Compile_WithKeybindings(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
-	runner := ports.NewMockCommandRunner()
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
 	p := vscode.NewProvider(fs, runner)
 
 	raw := map[string]interface{}{
@@ -108,8 +108,8 @@ func TestProvider_Compile_WithKeybindings(t *testing.T) {
 func TestProvider_Compile_Full(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
-	runner := ports.NewMockCommandRunner()
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
 	p := vscode.NewProvider(fs, runner)
 
 	raw := map[string]interface{}{

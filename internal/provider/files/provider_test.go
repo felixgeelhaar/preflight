@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
-	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 )
 
 func TestFilesProvider_Name(t *testing.T) {
@@ -15,7 +15,7 @@ func TestFilesProvider_Name(t *testing.T) {
 }
 
 func TestFilesProvider_Compile_Empty(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{})
@@ -29,7 +29,7 @@ func TestFilesProvider_Compile_Empty(t *testing.T) {
 }
 
 func TestFilesProvider_Compile_NoFilesSection(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -45,7 +45,7 @@ func TestFilesProvider_Compile_NoFilesSection(t *testing.T) {
 }
 
 func TestFilesProvider_Compile_Links(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -72,7 +72,7 @@ func TestFilesProvider_Compile_Links(t *testing.T) {
 }
 
 func TestFilesProvider_Compile_Templates(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -95,7 +95,7 @@ func TestFilesProvider_Compile_Templates(t *testing.T) {
 }
 
 func TestFilesProvider_Compile_Copies(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -118,7 +118,7 @@ func TestFilesProvider_Compile_Copies(t *testing.T) {
 }
 
 func TestFilesProvider_Compile_Full(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -153,7 +153,7 @@ func TestFilesProvider_Compile_Full(t *testing.T) {
 }
 
 func TestFilesProvider_Compile_InvalidConfig(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -168,7 +168,7 @@ func TestFilesProvider_Compile_InvalidConfig(t *testing.T) {
 }
 
 func TestFilesProvider_Compile_StepsOrder(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{

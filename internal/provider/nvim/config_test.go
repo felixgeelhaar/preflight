@@ -94,3 +94,17 @@ func TestParseConfig_PresetTypes(t *testing.T) {
 		})
 	}
 }
+
+func TestConfig_ConfigPath(t *testing.T) {
+	t.Parallel()
+
+	cfg := &nvim.Config{}
+	assert.Equal(t, "~/.config/nvim", cfg.ConfigPath())
+}
+
+func TestConfig_LazyLockPath(t *testing.T) {
+	t.Parallel()
+
+	cfg := &nvim.Config{}
+	assert.Equal(t, "~/.config/nvim/lazy-lock.json", cfg.LazyLockPath())
+}

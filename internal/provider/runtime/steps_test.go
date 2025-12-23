@@ -5,6 +5,7 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 )
 
 func TestToolVersionStep_ID(t *testing.T) {
@@ -13,7 +14,7 @@ func TestToolVersionStep_ID(t *testing.T) {
 			{Name: "node", Version: "20.10.0"},
 		},
 	}
-	step := NewToolVersionStep(cfg, ports.NewMockFileSystem())
+	step := NewToolVersionStep(cfg, mocks.NewFileSystem())
 
 	if step.ID().String() != "runtime:tool-versions" {
 		t.Errorf("ID() = %q, want %q", step.ID().String(), "runtime:tool-versions")
@@ -26,7 +27,7 @@ func TestToolVersionStep_DependsOn_Empty(t *testing.T) {
 			{Name: "node", Version: "20.10.0"},
 		},
 	}
-	step := NewToolVersionStep(cfg, ports.NewMockFileSystem())
+	step := NewToolVersionStep(cfg, mocks.NewFileSystem())
 
 	deps := step.DependsOn()
 	if len(deps) != 0 {
@@ -40,7 +41,7 @@ func TestToolVersionStep_Check_FileNotExists_ReturnsNeedsApply(t *testing.T) {
 			{Name: "node", Version: "20.10.0"},
 		},
 	}
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	step := NewToolVersionStep(cfg, fs)
 
 	status, err := step.Check(compiler.RunContext{})
@@ -60,7 +61,7 @@ func TestToolVersionStep_Check_FileExistsWithCorrectContent_ReturnsSatisfied(t *
 			{Name: "python", Version: "3.12.0"},
 		},
 	}
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	path := ports.ExpandPath("~/.tool-versions")
 	fs.SetFileContent(path, []byte("node 20.10.0\npython 3.12.0\n"))
 
@@ -82,7 +83,7 @@ func TestToolVersionStep_Check_FileExistsWithDifferentContent_ReturnsNeedsApply(
 			{Name: "node", Version: "20.10.0"},
 		},
 	}
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	path := ports.ExpandPath("~/.tool-versions")
 	fs.SetFileContent(path, []byte("node 18.0.0\n"))
 
@@ -106,7 +107,7 @@ func TestToolVersionStep_Apply_WritesToolVersionsFile(t *testing.T) {
 			{Name: "golang", Version: "1.21.5"},
 		},
 	}
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	step := NewToolVersionStep(cfg, fs)
 
 	err := step.Apply(compiler.RunContext{})
@@ -132,7 +133,7 @@ func TestToolVersionStep_Plan_ReturnsDiff(t *testing.T) {
 			{Name: "node", Version: "20.10.0"},
 		},
 	}
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	step := NewToolVersionStep(cfg, fs)
 
 	diff, err := step.Plan(compiler.RunContext{})
@@ -175,7 +176,7 @@ func TestToolVersionStep_ProjectScope_WritesToProjectPath(t *testing.T) {
 			{Name: "node", Version: "20.10.0"},
 		},
 	}
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	step := NewToolVersionStep(cfg, fs)
 
 	err := step.Apply(compiler.RunContext{})
@@ -195,7 +196,7 @@ func TestToolVersionStep_Explain(t *testing.T) {
 			{Name: "node", Version: "20.10.0"},
 		},
 	}
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	step := NewToolVersionStep(cfg, fs)
 
 	explanation := step.Explain(compiler.ExplainContext{})

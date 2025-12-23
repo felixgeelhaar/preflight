@@ -6,6 +6,7 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/validation"
 )
 
 // PPAStep represents an apt PPA addition step.
@@ -19,7 +20,7 @@ type PPAStep struct {
 func NewPPAStep(ppa string, runner ports.CommandRunner) *PPAStep {
 	// Sanitize PPA name for step ID (replace colon with dash)
 	sanitizedPPA := strings.ReplaceAll(ppa, ":", "-")
-	id, _ := compiler.NewStepID("apt:ppa:" + sanitizedPPA)
+	id := compiler.MustNewStepID("apt:ppa:" + sanitizedPPA)
 	return &PPAStep{
 		ppa:    ppa,
 		id:     id,
@@ -62,6 +63,11 @@ func (s *PPAStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 
 // Apply executes the PPA addition.
 func (s *PPAStep) Apply(ctx compiler.RunContext) error {
+	// Validate PPA name before execution to prevent command injection
+	if err := validation.ValidatePPA(s.ppa); err != nil {
+		return fmt.Errorf("invalid PPA: %w", err)
+	}
+
 	result, err := s.runner.Run(ctx.Context(), "sudo", "add-apt-repository", "-y", s.ppa)
 	if err != nil {
 		return err
@@ -90,7 +96,7 @@ type PackageStep struct {
 
 // NewPackageStep creates a new PackageStep.
 func NewPackageStep(pkg Package, runner ports.CommandRunner) *PackageStep {
-	id, _ := compiler.NewStepID("apt:package:" + pkg.Name)
+	id := compiler.MustNewStepID("apt:package:" + pkg.Name)
 	return &PackageStep{
 		pkg:    pkg,
 		id:     id,
@@ -138,8 +144,17 @@ func (s *PackageStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 
 // Apply executes the package installation.
 func (s *PackageStep) Apply(ctx compiler.RunContext) error {
+	// Validate package name before execution to prevent command injection
+	if err := validation.ValidatePackageName(s.pkg.Name); err != nil {
+		return fmt.Errorf("invalid package name: %w", err)
+	}
+
 	pkgSpec := s.pkg.Name
 	if s.pkg.Version != "" && s.pkg.Version != "latest" {
+		// Also validate version string
+		if err := validation.ValidatePackageName(s.pkg.Version); err != nil {
+			return fmt.Errorf("invalid package version: %w", err)
+		}
 		pkgSpec = s.pkg.FullName()
 	}
 

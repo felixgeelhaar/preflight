@@ -5,10 +5,11 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 )
 
 func TestGitConfigStep_ID(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		User: UserConfig{
 			Name:  "John Doe",
@@ -25,7 +26,7 @@ func TestGitConfigStep_ID(t *testing.T) {
 }
 
 func TestGitConfigStep_DependsOn(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{}
 	step := NewConfigStep(cfg, fs)
 
@@ -36,7 +37,7 @@ func TestGitConfigStep_DependsOn(t *testing.T) {
 }
 
 func TestGitConfigStep_Check_NotExists(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		User: UserConfig{
 			Name:  "John Doe",
@@ -55,7 +56,7 @@ func TestGitConfigStep_Check_NotExists(t *testing.T) {
 }
 
 func TestGitConfigStep_Check_ExistsWithSameContent(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		User: UserConfig{
 			Name:  "John Doe",
@@ -78,7 +79,7 @@ func TestGitConfigStep_Check_ExistsWithSameContent(t *testing.T) {
 }
 
 func TestGitConfigStep_Check_ExistsWithDifferentContent(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		User: UserConfig{
 			Name:  "John Doe",
@@ -100,7 +101,7 @@ func TestGitConfigStep_Check_ExistsWithDifferentContent(t *testing.T) {
 }
 
 func TestGitConfigStep_Plan(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		User: UserConfig{
 			Name:  "John Doe",
@@ -119,7 +120,7 @@ func TestGitConfigStep_Plan(t *testing.T) {
 }
 
 func TestGitConfigStep_Apply(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		User: UserConfig{
 			Name:  "John Doe",
@@ -158,7 +159,7 @@ func TestGitConfigStep_Apply(t *testing.T) {
 }
 
 func TestGitConfigStep_Apply_WithAliases(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		User: UserConfig{
 			Name:  "John Doe",
@@ -189,7 +190,7 @@ func TestGitConfigStep_Apply_WithAliases(t *testing.T) {
 }
 
 func TestGitConfigStep_Apply_WithIncludes(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		User: UserConfig{
 			Name:  "John Doe",
@@ -219,7 +220,7 @@ func TestGitConfigStep_Apply_WithIncludes(t *testing.T) {
 }
 
 func TestGitConfigStep_Apply_WithGPGSigning(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		User: UserConfig{
 			Name:       "John Doe",
@@ -256,7 +257,7 @@ func TestGitConfigStep_Apply_WithGPGSigning(t *testing.T) {
 }
 
 func TestGitConfigStep_Explain(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		User: UserConfig{
 			Name:  "John Doe",

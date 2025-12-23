@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/felixgeelhaar/preflight/internal/adapters/filesystem"
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
 )
@@ -17,12 +18,12 @@ type FrameworkStep struct {
 
 // NewFrameworkStep creates a new FrameworkStep.
 func NewFrameworkStep(config Entry) *FrameworkStep {
-	return NewFrameworkStepWithFS(config, ports.NewRealFileSystem())
+	return NewFrameworkStepWithFS(config, filesystem.NewRealFileSystem())
 }
 
 // NewFrameworkStepWithFS creates a new FrameworkStep with a custom filesystem.
 func NewFrameworkStepWithFS(config Entry, fs ports.FileSystem) *FrameworkStep {
-	id, _ := compiler.NewStepID(fmt.Sprintf("shell:framework:%s:%s", config.Name, config.Framework))
+	id := compiler.MustNewStepID(fmt.Sprintf("shell:framework:%s:%s", config.Name, config.Framework))
 	return &FrameworkStep{
 		config: config,
 		id:     id,
@@ -100,7 +101,7 @@ type PluginStep struct {
 
 // NewPluginStep creates a new PluginStep.
 func NewPluginStep(shell, framework, plugin string) *PluginStep {
-	id, _ := compiler.NewStepID(fmt.Sprintf("shell:plugin:%s:%s", shell, plugin))
+	id := compiler.MustNewStepID(fmt.Sprintf("shell:plugin:%s:%s", shell, plugin))
 	return &PluginStep{
 		shell:     shell,
 		framework: framework,
@@ -116,7 +117,7 @@ func (s *PluginStep) ID() compiler.StepID {
 
 // DependsOn returns dependencies for this step.
 func (s *PluginStep) DependsOn() []compiler.StepID {
-	frameworkID, _ := compiler.NewStepID(fmt.Sprintf("shell:framework:%s:%s", s.shell, s.framework))
+	frameworkID := compiler.MustNewStepID(fmt.Sprintf("shell:framework:%s:%s", s.shell, s.framework))
 	return []compiler.StepID{frameworkID}
 }
 
@@ -163,12 +164,12 @@ type CustomPluginStep struct {
 
 // NewCustomPluginStep creates a new CustomPluginStep.
 func NewCustomPluginStep(shell, framework string, plugin CustomPlugin) *CustomPluginStep {
-	return NewCustomPluginStepWithFS(shell, framework, plugin, ports.NewRealFileSystem())
+	return NewCustomPluginStepWithFS(shell, framework, plugin, filesystem.NewRealFileSystem())
 }
 
 // NewCustomPluginStepWithFS creates a new CustomPluginStep with a custom filesystem.
 func NewCustomPluginStepWithFS(shell, framework string, plugin CustomPlugin, fs ports.FileSystem) *CustomPluginStep {
-	id, _ := compiler.NewStepID(fmt.Sprintf("shell:custom-plugin:%s:%s", shell, plugin.Name))
+	id := compiler.MustNewStepID(fmt.Sprintf("shell:custom-plugin:%s:%s", shell, plugin.Name))
 	return &CustomPluginStep{
 		shell:     shell,
 		framework: framework,
@@ -185,7 +186,7 @@ func (s *CustomPluginStep) ID() compiler.StepID {
 
 // DependsOn returns dependencies for this step.
 func (s *CustomPluginStep) DependsOn() []compiler.StepID {
-	frameworkID, _ := compiler.NewStepID(fmt.Sprintf("shell:framework:%s:%s", s.shell, s.framework))
+	frameworkID := compiler.MustNewStepID(fmt.Sprintf("shell:framework:%s:%s", s.shell, s.framework))
 	return []compiler.StepID{frameworkID}
 }
 
@@ -243,7 +244,7 @@ type EnvStep struct {
 
 // NewEnvStep creates a new EnvStep.
 func NewEnvStep(shell string, env map[string]string) *EnvStep {
-	id, _ := compiler.NewStepID(fmt.Sprintf("shell:env:%s", shell))
+	id := compiler.MustNewStepID(fmt.Sprintf("shell:env:%s", shell))
 	return &EnvStep{
 		shell: shell,
 		env:   env,
@@ -300,7 +301,7 @@ type AliasStep struct {
 
 // NewAliasStep creates a new AliasStep.
 func NewAliasStep(shell string, aliases map[string]string) *AliasStep {
-	id, _ := compiler.NewStepID(fmt.Sprintf("shell:aliases:%s", shell))
+	id := compiler.MustNewStepID(fmt.Sprintf("shell:aliases:%s", shell))
 	return &AliasStep{
 		shell:   shell,
 		aliases: aliases,
@@ -357,12 +358,12 @@ type StarshipStep struct {
 
 // NewStarshipStep creates a new StarshipStep.
 func NewStarshipStep(config StarshipConfig) *StarshipStep {
-	return NewStarshipStepWithFS(config, ports.NewRealFileSystem())
+	return NewStarshipStepWithFS(config, filesystem.NewRealFileSystem())
 }
 
 // NewStarshipStepWithFS creates a new StarshipStep with a custom filesystem.
 func NewStarshipStepWithFS(config StarshipConfig, fs ports.FileSystem) *StarshipStep {
-	id, _ := compiler.NewStepID("shell:starship")
+	id := compiler.MustNewStepID("shell:starship")
 	return &StarshipStep{
 		config: config,
 		id:     id,
@@ -434,14 +435,14 @@ type FisherPluginStep struct {
 
 // NewFisherPluginStep creates a new FisherPluginStep.
 func NewFisherPluginStep(plugin string) *FisherPluginStep {
-	return NewFisherPluginStepWithFS(plugin, ports.NewRealFileSystem())
+	return NewFisherPluginStepWithFS(plugin, filesystem.NewRealFileSystem())
 }
 
 // NewFisherPluginStepWithFS creates a new FisherPluginStep with a custom filesystem.
 func NewFisherPluginStepWithFS(plugin string, fs ports.FileSystem) *FisherPluginStep {
 	// Sanitize plugin name for step ID (replace dots with dashes)
 	sanitizedPlugin := strings.ReplaceAll(plugin, ".", "-")
-	id, _ := compiler.NewStepID(fmt.Sprintf("shell:fisher:%s", sanitizedPlugin))
+	id := compiler.MustNewStepID(fmt.Sprintf("shell:fisher:%s", sanitizedPlugin))
 	return &FisherPluginStep{
 		plugin: plugin,
 		id:     id,
@@ -456,7 +457,7 @@ func (s *FisherPluginStep) ID() compiler.StepID {
 
 // DependsOn returns dependencies for this step.
 func (s *FisherPluginStep) DependsOn() []compiler.StepID {
-	frameworkID, _ := compiler.NewStepID("shell:framework:fish:fisher")
+	frameworkID := compiler.MustNewStepID("shell:framework:fish:fisher")
 	return []compiler.StepID{frameworkID}
 }
 

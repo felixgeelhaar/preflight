@@ -4,18 +4,18 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
-	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 )
 
 func TestProvider_Name(t *testing.T) {
-	p := NewProvider(ports.NewMockFileSystem())
+	p := NewProvider(mocks.NewFileSystem())
 	if p.Name() != "runtime" {
 		t.Errorf("Name() = %q, want %q", p.Name(), "runtime")
 	}
 }
 
 func TestProvider_Compile_WithTools_ReturnsToolVersionStep(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -45,7 +45,7 @@ func TestProvider_Compile_WithTools_ReturnsToolVersionStep(t *testing.T) {
 }
 
 func TestProvider_Compile_WithPlugins_ReturnsPluginSteps(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -80,7 +80,7 @@ func TestProvider_Compile_WithPlugins_ReturnsPluginSteps(t *testing.T) {
 }
 
 func TestProvider_Compile_NoConfig_ReturnsNoSteps(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{})
@@ -96,7 +96,7 @@ func TestProvider_Compile_NoConfig_ReturnsNoSteps(t *testing.T) {
 }
 
 func TestProvider_Compile_EmptyTools_ReturnsNoSteps(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{

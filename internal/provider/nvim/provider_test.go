@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
-	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/provider/nvim"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,8 +13,8 @@ import (
 func TestProvider_Name(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
-	runner := ports.NewMockCommandRunner()
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
 	p := nvim.NewProvider(fs, runner)
 
 	assert.Equal(t, "nvim", p.Name())
@@ -23,8 +23,8 @@ func TestProvider_Name(t *testing.T) {
 func TestProvider_Compile_Empty(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
-	runner := ports.NewMockCommandRunner()
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
 	p := nvim.NewProvider(fs, runner)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{})
@@ -37,8 +37,8 @@ func TestProvider_Compile_Empty(t *testing.T) {
 func TestProvider_Compile_WithPreset(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
-	runner := ports.NewMockCommandRunner()
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
 	p := nvim.NewProvider(fs, runner)
 
 	raw := map[string]interface{}{
@@ -57,8 +57,8 @@ func TestProvider_Compile_WithPreset(t *testing.T) {
 func TestProvider_Compile_WithConfigRepo(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
-	runner := ports.NewMockCommandRunner()
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
 	p := nvim.NewProvider(fs, runner)
 
 	raw := map[string]interface{}{
@@ -77,8 +77,8 @@ func TestProvider_Compile_WithConfigRepo(t *testing.T) {
 func TestProvider_Compile_PresetWithLazyLock(t *testing.T) {
 	t.Parallel()
 
-	fs := ports.NewMockFileSystem()
-	runner := ports.NewMockCommandRunner()
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
 	p := nvim.NewProvider(fs, runner)
 
 	raw := map[string]interface{}{

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
-	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 )
 
 func TestGitProvider_Name(t *testing.T) {
@@ -15,7 +15,7 @@ func TestGitProvider_Name(t *testing.T) {
 }
 
 func TestGitProvider_Compile_Empty(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{})
@@ -29,7 +29,7 @@ func TestGitProvider_Compile_Empty(t *testing.T) {
 }
 
 func TestGitProvider_Compile_NoGitSection(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -45,7 +45,7 @@ func TestGitProvider_Compile_NoGitSection(t *testing.T) {
 }
 
 func TestGitProvider_Compile_WithUserConfig(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -66,7 +66,7 @@ func TestGitProvider_Compile_WithUserConfig(t *testing.T) {
 }
 
 func TestGitProvider_Compile_WithAliases(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -91,7 +91,7 @@ func TestGitProvider_Compile_WithAliases(t *testing.T) {
 }
 
 func TestGitProvider_Compile_WithIncludes(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -118,7 +118,7 @@ func TestGitProvider_Compile_WithIncludes(t *testing.T) {
 }
 
 func TestGitProvider_Compile_InvalidConfig(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	provider := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{

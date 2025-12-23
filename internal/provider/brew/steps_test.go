@@ -6,6 +6,7 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 )
 
 func TestTapStep_ID(t *testing.T) {
@@ -25,7 +26,7 @@ func TestTapStep_DependsOn(t *testing.T) {
 }
 
 func TestTapStep_Check_AlreadyTapped(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"tap"}, ports.CommandResult{
 		ExitCode: 0,
 		Stdout:   "homebrew/cask\nhomebrew/core\n",
@@ -44,7 +45,7 @@ func TestTapStep_Check_AlreadyTapped(t *testing.T) {
 }
 
 func TestTapStep_Check_NotTapped(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"tap"}, ports.CommandResult{
 		ExitCode: 0,
 		Stdout:   "homebrew/core\n",
@@ -79,7 +80,7 @@ func TestTapStep_Plan(t *testing.T) {
 }
 
 func TestTapStep_Apply(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"tap", "homebrew/cask"}, ports.CommandResult{
 		ExitCode: 0,
 	})
@@ -102,7 +103,7 @@ func TestTapStep_Apply(t *testing.T) {
 }
 
 func TestTapStep_Apply_Failure(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"tap", "invalid/tap"}, ports.CommandResult{
 		ExitCode: 1,
 		Stderr:   "Error: invalid tap",
@@ -148,7 +149,7 @@ func TestFormulaStep_DependsOn_WithTap(t *testing.T) {
 }
 
 func TestFormulaStep_Check_Installed(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"list", "--formula"}, ports.CommandResult{
 		ExitCode: 0,
 		Stdout:   "git\ncurl\nwget\n",
@@ -168,7 +169,7 @@ func TestFormulaStep_Check_Installed(t *testing.T) {
 }
 
 func TestFormulaStep_Check_NotInstalled(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"list", "--formula"}, ports.CommandResult{
 		ExitCode: 0,
 		Stdout:   "curl\nwget\n",
@@ -188,7 +189,7 @@ func TestFormulaStep_Check_NotInstalled(t *testing.T) {
 }
 
 func TestFormulaStep_Apply(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"install", "git"}, ports.CommandResult{
 		ExitCode: 0,
 	})
@@ -204,7 +205,7 @@ func TestFormulaStep_Apply(t *testing.T) {
 }
 
 func TestFormulaStep_Apply_WithArgs(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"install", "neovim", "--HEAD"}, ports.CommandResult{
 		ExitCode: 0,
 	})
@@ -234,7 +235,7 @@ func TestCaskStep_ID(t *testing.T) {
 }
 
 func TestCaskStep_Check_Installed(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"list", "--cask"}, ports.CommandResult{
 		ExitCode: 0,
 		Stdout:   "docker\nslack\n",
@@ -254,7 +255,7 @@ func TestCaskStep_Check_Installed(t *testing.T) {
 }
 
 func TestCaskStep_Check_NotInstalled(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"list", "--cask"}, ports.CommandResult{
 		ExitCode: 0,
 		Stdout:   "slack\n",
@@ -274,7 +275,7 @@ func TestCaskStep_Check_NotInstalled(t *testing.T) {
 }
 
 func TestCaskStep_Apply(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"install", "--cask", "docker"}, ports.CommandResult{
 		ExitCode: 0,
 	})
@@ -392,7 +393,7 @@ func TestCaskStep_Explain(t *testing.T) {
 }
 
 func TestFormulaStep_Apply_Failure(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"install", "invalid-formula"}, ports.CommandResult{
 		ExitCode: 1,
 		Stderr:   "Error: No formula found",
@@ -409,7 +410,7 @@ func TestFormulaStep_Apply_Failure(t *testing.T) {
 }
 
 func TestCaskStep_Apply_Failure(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"install", "--cask", "invalid-cask"}, ports.CommandResult{
 		ExitCode: 1,
 		Stderr:   "Error: No cask found",
@@ -426,7 +427,7 @@ func TestCaskStep_Apply_Failure(t *testing.T) {
 }
 
 func TestTapStep_Check_CommandError(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"tap"}, ports.CommandResult{
 		ExitCode: 1,
 		Stderr:   "Homebrew not installed",
@@ -445,7 +446,7 @@ func TestTapStep_Check_CommandError(t *testing.T) {
 }
 
 func TestFormulaStep_Check_CommandError(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"list", "--formula"}, ports.CommandResult{
 		ExitCode: 1,
 		Stderr:   "Homebrew not installed",
@@ -465,7 +466,7 @@ func TestFormulaStep_Check_CommandError(t *testing.T) {
 }
 
 func TestCaskStep_Check_CommandError(t *testing.T) {
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	runner.AddResult("brew", []string{"list", "--cask"}, ports.CommandResult{
 		ExitCode: 1,
 		Stderr:   "Homebrew not installed",

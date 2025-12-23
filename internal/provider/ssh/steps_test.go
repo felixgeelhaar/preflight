@@ -5,10 +5,11 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 )
 
 func TestSSHConfigStep_ID(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		Hosts: []HostConfig{
 			{Host: "github.com", User: "git"},
@@ -24,7 +25,7 @@ func TestSSHConfigStep_ID(t *testing.T) {
 }
 
 func TestSSHConfigStep_DependsOn(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{}
 	step := NewConfigStep(cfg, fs)
 
@@ -35,7 +36,7 @@ func TestSSHConfigStep_DependsOn(t *testing.T) {
 }
 
 func TestSSHConfigStep_Check_NotExists(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		Hosts: []HostConfig{
 			{Host: "github.com", User: "git"},
@@ -53,7 +54,7 @@ func TestSSHConfigStep_Check_NotExists(t *testing.T) {
 }
 
 func TestSSHConfigStep_Check_ExistsWithSameContent(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		Hosts: []HostConfig{
 			{Host: "github.com", User: "git", IdentityFile: "~/.ssh/id_ed25519"},
@@ -75,7 +76,7 @@ func TestSSHConfigStep_Check_ExistsWithSameContent(t *testing.T) {
 }
 
 func TestSSHConfigStep_Check_ExistsWithDifferentContent(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		Hosts: []HostConfig{
 			{Host: "github.com", User: "git"},
@@ -96,7 +97,7 @@ func TestSSHConfigStep_Check_ExistsWithDifferentContent(t *testing.T) {
 }
 
 func TestSSHConfigStep_Apply(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		Hosts: []HostConfig{
 			{
@@ -142,7 +143,7 @@ func TestSSHConfigStep_Apply(t *testing.T) {
 }
 
 func TestSSHConfigStep_Apply_WithDefaults(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		Defaults: DefaultsConfig{
 			AddKeysToAgent:      true,
@@ -180,7 +181,7 @@ func TestSSHConfigStep_Apply_WithDefaults(t *testing.T) {
 }
 
 func TestSSHConfigStep_Apply_WithInclude(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		Include: "~/.ssh/config.d/*",
 	}
@@ -201,7 +202,7 @@ func TestSSHConfigStep_Apply_WithInclude(t *testing.T) {
 }
 
 func TestSSHConfigStep_Apply_WithMatch(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		Matches: []MatchConfig{
 			{
@@ -230,7 +231,7 @@ func TestSSHConfigStep_Apply_WithMatch(t *testing.T) {
 }
 
 func TestSSHConfigStep_Apply_WithProxyJump(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		Hosts: []HostConfig{
 			{
@@ -258,7 +259,7 @@ func TestSSHConfigStep_Apply_WithProxyJump(t *testing.T) {
 }
 
 func TestSSHConfigStep_Plan(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		Hosts: []HostConfig{
 			{Host: "github.com", User: "git"},
@@ -276,7 +277,7 @@ func TestSSHConfigStep_Plan(t *testing.T) {
 }
 
 func TestSSHConfigStep_Explain(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	cfg := &Config{
 		Hosts: []HostConfig{
 			{Host: "github.com", User: "git"},
@@ -298,4 +299,236 @@ func contains(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// Validation error tests
+
+func TestSSHConfigStep_Apply_InvalidInclude(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	cfg := &Config{
+		Include: "invalid\ninclude", // Contains newline - invalid
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err == nil {
+		t.Error("Apply() should return error for invalid Include")
+	}
+}
+
+func TestSSHConfigStep_Apply_InvalidHostPattern(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	cfg := &Config{
+		Hosts: []HostConfig{
+			{Host: "invalid\nhost"}, // Contains newline - invalid
+		},
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err == nil {
+		t.Error("Apply() should return error for invalid Host pattern")
+	}
+}
+
+func TestSSHConfigStep_Apply_InvalidHostName(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	cfg := &Config{
+		Hosts: []HostConfig{
+			{Host: "myhost", HostName: "invalid\nhostname"},
+		},
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err == nil {
+		t.Error("Apply() should return error for invalid HostName")
+	}
+}
+
+func TestSSHConfigStep_Apply_InvalidUser(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	cfg := &Config{
+		Hosts: []HostConfig{
+			{Host: "myhost", User: "invalid\nuser"},
+		},
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err == nil {
+		t.Error("Apply() should return error for invalid User")
+	}
+}
+
+func TestSSHConfigStep_Apply_InvalidIdentityFile(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	cfg := &Config{
+		Hosts: []HostConfig{
+			{Host: "myhost", IdentityFile: "../../../etc/passwd"},
+		},
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err == nil {
+		t.Error("Apply() should return error for invalid IdentityFile")
+	}
+}
+
+func TestSSHConfigStep_Apply_InvalidProxyCommand(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	cfg := &Config{
+		Hosts: []HostConfig{
+			{Host: "myhost", ProxyCommand: "ssh; rm -rf /"},
+		},
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err == nil {
+		t.Error("Apply() should return error for invalid ProxyCommand")
+	}
+}
+
+func TestSSHConfigStep_Apply_InvalidProxyJump(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	cfg := &Config{
+		Hosts: []HostConfig{
+			{Host: "myhost", ProxyJump: "invalid\nproxyjump"},
+		},
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err == nil {
+		t.Error("Apply() should return error for invalid ProxyJump")
+	}
+}
+
+func TestSSHConfigStep_Apply_InvalidLocalForward(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	cfg := &Config{
+		Hosts: []HostConfig{
+			{Host: "myhost", LocalForward: "invalid\nforward"},
+		},
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err == nil {
+		t.Error("Apply() should return error for invalid LocalForward")
+	}
+}
+
+func TestSSHConfigStep_Apply_InvalidRemoteForward(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	cfg := &Config{
+		Hosts: []HostConfig{
+			{Host: "myhost", RemoteForward: "invalid\nforward"},
+		},
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err == nil {
+		t.Error("Apply() should return error for invalid RemoteForward")
+	}
+}
+
+func TestSSHConfigStep_Apply_InvalidRequestTTY(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	cfg := &Config{
+		Hosts: []HostConfig{
+			{Host: "myhost", RequestTTY: "invalid\ntty"},
+		},
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err == nil {
+		t.Error("Apply() should return error for invalid RequestTTY")
+	}
+}
+
+func TestSSHConfigStep_Apply_InvalidIgnoreUnknown(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	cfg := &Config{
+		Hosts: []HostConfig{
+			{Host: "myhost", IgnoreUnknown: "invalid\nunknown"},
+		},
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err == nil {
+		t.Error("Apply() should return error for invalid IgnoreUnknown")
+	}
+}
+
+func TestSSHConfigStep_Apply_WithAllHostFields(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	cfg := &Config{
+		Hosts: []HostConfig{
+			{
+				Host:          "fullhost",
+				HostName:      "full.example.com",
+				User:          "admin",
+				IdentityFile:  "~/.ssh/id_rsa",
+				Port:          2222,
+				LocalForward:  "8080:localhost:80",
+				RemoteForward: "9090:localhost:90",
+				RequestTTY:    "yes",
+				IgnoreUnknown: "SomeOption",
+			},
+		},
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err != nil {
+		t.Fatalf("Apply() error = %v", err)
+	}
+
+	path := ports.ExpandPath("~/.ssh/config")
+	content, _ := fs.ReadFile(path)
+	contentStr := string(content)
+
+	if !contains(contentStr, "Port 2222") {
+		t.Error("config should contain Port")
+	}
+	if !contains(contentStr, "LocalForward 8080:localhost:80") {
+		t.Error("config should contain LocalForward")
+	}
+	if !contains(contentStr, "RemoteForward 9090:localhost:90") {
+		t.Error("config should contain RemoteForward")
+	}
+	if !contains(contentStr, "RequestTTY yes") {
+		t.Error("config should contain RequestTTY")
+	}
+	if !contains(contentStr, "IgnoreUnknown SomeOption") {
+		t.Error("config should contain IgnoreUnknown")
+	}
+}
+
+func TestSSHConfigStep_Apply_WithSSHDirCreation(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	// Clear any existing .ssh directory
+	cfg := &Config{
+		Hosts: []HostConfig{
+			{Host: "github.com", User: "git"},
+		},
+	}
+
+	step := NewConfigStep(cfg, fs)
+	err := step.Apply(compiler.RunContext{})
+	if err != nil {
+		t.Fatalf("Apply() error = %v", err)
+	}
+
+	// Verify .ssh directory was created
+	sshDir := ports.ExpandPath("~/.ssh")
+	if !fs.Exists(sshDir) {
+		t.Error("Apply() should create .ssh directory")
+	}
 }

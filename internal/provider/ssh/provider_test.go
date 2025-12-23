@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
-	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 )
 
 func TestProvider_Name(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := NewProvider(fs)
 
 	if p.Name() != "ssh" {
@@ -17,7 +17,7 @@ func TestProvider_Name(t *testing.T) {
 }
 
 func TestProvider_Compile_NoConfig_ReturnsNil(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{})
@@ -32,7 +32,7 @@ func TestProvider_Compile_NoConfig_ReturnsNil(t *testing.T) {
 }
 
 func TestProvider_Compile_WithHosts_ReturnsConfigStep(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -62,7 +62,7 @@ func TestProvider_Compile_WithHosts_ReturnsConfigStep(t *testing.T) {
 }
 
 func TestProvider_Compile_WithDefaults_ReturnsConfigStep(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{
@@ -84,7 +84,7 @@ func TestProvider_Compile_WithDefaults_ReturnsConfigStep(t *testing.T) {
 }
 
 func TestProvider_Compile_EmptySSHSection_ReturnsNil(t *testing.T) {
-	fs := ports.NewMockFileSystem()
+	fs := mocks.NewFileSystem()
 	p := NewProvider(fs)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{

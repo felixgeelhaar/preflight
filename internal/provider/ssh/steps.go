@@ -6,6 +6,7 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/validation"
 )
 
 // ConfigStep generates the ~/.ssh/config file.
@@ -17,7 +18,7 @@ type ConfigStep struct {
 
 // NewConfigStep creates a new ConfigStep.
 func NewConfigStep(cfg *Config, fs ports.FileSystem) *ConfigStep {
-	id, _ := compiler.NewStepID("ssh:config")
+	id := compiler.MustNewStepID("ssh:config")
 	return &ConfigStep{
 		cfg: cfg,
 		id:  id,
@@ -70,6 +71,11 @@ func (s *ConfigStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 
 // Apply generates and writes the ~/.ssh/config file.
 func (s *ConfigStep) Apply(_ compiler.RunContext) error {
+	// Validate all SSH config values before writing to prevent injection attacks
+	if err := s.validateConfig(); err != nil {
+		return fmt.Errorf("SSH config validation failed: %w", err)
+	}
+
 	path := ports.ExpandPath(s.cfg.ConfigPath())
 	content := s.generateConfig()
 
@@ -209,4 +215,106 @@ func (s *ConfigStep) hasDefaults() bool {
 	d := s.cfg.Defaults
 	return d.AddKeysToAgent || d.IdentitiesOnly || d.ForwardAgent ||
 		d.ServerAliveInterval > 0 || d.ServerAliveCountMax > 0
+}
+
+// validateConfig validates all SSH config values to prevent injection attacks.
+func (s *ConfigStep) validateConfig() error {
+	// Validate Include directive
+	if s.cfg.Include != "" {
+		if err := validation.ValidateSSHParameter(s.cfg.Include); err != nil {
+			return fmt.Errorf("invalid Include directive: %w", err)
+		}
+	}
+
+	// Validate host blocks
+	for i, host := range s.cfg.Hosts {
+		if host.Host != "" {
+			if err := validation.ValidateHostname(host.Host); err != nil {
+				return fmt.Errorf("host[%d] invalid Host pattern: %w", i, err)
+			}
+		}
+		if host.HostName != "" {
+			if err := validation.ValidateHostname(host.HostName); err != nil {
+				return fmt.Errorf("host[%d] invalid HostName: %w", i, err)
+			}
+		}
+		if host.User != "" {
+			if err := validation.ValidateSSHParameter(host.User); err != nil {
+				return fmt.Errorf("host[%d] invalid User: %w", i, err)
+			}
+		}
+		if host.IdentityFile != "" {
+			if err := validation.ValidatePath(host.IdentityFile); err != nil {
+				return fmt.Errorf("host[%d] invalid IdentityFile: %w", i, err)
+			}
+		}
+		// ProxyCommand is particularly security-sensitive
+		if host.ProxyCommand != "" {
+			if err := validation.ValidateSSHProxyCommand(host.ProxyCommand); err != nil {
+				return fmt.Errorf("host[%d] invalid ProxyCommand: %w", i, err)
+			}
+		}
+		if host.ProxyJump != "" {
+			if err := validation.ValidateSSHParameter(host.ProxyJump); err != nil {
+				return fmt.Errorf("host[%d] invalid ProxyJump: %w", i, err)
+			}
+		}
+		if host.LocalForward != "" {
+			if err := validation.ValidateSSHParameter(host.LocalForward); err != nil {
+				return fmt.Errorf("host[%d] invalid LocalForward: %w", i, err)
+			}
+		}
+		if host.RemoteForward != "" {
+			if err := validation.ValidateSSHParameter(host.RemoteForward); err != nil {
+				return fmt.Errorf("host[%d] invalid RemoteForward: %w", i, err)
+			}
+		}
+		if host.RequestTTY != "" {
+			if err := validation.ValidateSSHParameter(host.RequestTTY); err != nil {
+				return fmt.Errorf("host[%d] invalid RequestTTY: %w", i, err)
+			}
+		}
+		if host.IgnoreUnknown != "" {
+			if err := validation.ValidateSSHParameter(host.IgnoreUnknown); err != nil {
+				return fmt.Errorf("host[%d] invalid IgnoreUnknown: %w", i, err)
+			}
+		}
+	}
+
+	// Validate match blocks
+	for i, match := range s.cfg.Matches {
+		if match.Match != "" {
+			if err := validation.ValidateSSHParameter(match.Match); err != nil {
+				return fmt.Errorf("match[%d] invalid Match pattern: %w", i, err)
+			}
+		}
+		if match.HostName != "" {
+			if err := validation.ValidateHostname(match.HostName); err != nil {
+				return fmt.Errorf("match[%d] invalid HostName: %w", i, err)
+			}
+		}
+		if match.User != "" {
+			if err := validation.ValidateSSHParameter(match.User); err != nil {
+				return fmt.Errorf("match[%d] invalid User: %w", i, err)
+			}
+		}
+		if match.IdentityFile != "" {
+			if err := validation.ValidatePath(match.IdentityFile); err != nil {
+				return fmt.Errorf("match[%d] invalid IdentityFile: %w", i, err)
+			}
+		}
+		// ProxyCommand is particularly security-sensitive
+		if match.ProxyCommand != "" {
+			if err := validation.ValidateSSHProxyCommand(match.ProxyCommand); err != nil {
+				return fmt.Errorf("match[%d] invalid ProxyCommand: %w", i, err)
+			}
+		}
+		if match.ProxyJump != "" {
+			if err := validation.ValidateSSHParameter(match.ProxyJump); err != nil {
+				return fmt.Errorf("match[%d] invalid ProxyJump: %w", i, err)
+			}
+		}
+	}
+
+	return nil
 }

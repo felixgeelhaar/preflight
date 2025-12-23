@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
-	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/provider/apt"
+	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +13,7 @@ import (
 func TestProvider_Name(t *testing.T) {
 	t.Parallel()
 
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	p := apt.NewProvider(runner)
 
 	assert.Equal(t, "apt", p.Name())
@@ -22,7 +22,7 @@ func TestProvider_Name(t *testing.T) {
 func TestProvider_Compile_Empty(t *testing.T) {
 	t.Parallel()
 
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	p := apt.NewProvider(runner)
 
 	ctx := compiler.NewCompileContext(map[string]interface{}{})
@@ -35,7 +35,7 @@ func TestProvider_Compile_Empty(t *testing.T) {
 func TestProvider_Compile_WithPackages(t *testing.T) {
 	t.Parallel()
 
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	p := apt.NewProvider(runner)
 
 	raw := map[string]interface{}{
@@ -53,7 +53,7 @@ func TestProvider_Compile_WithPackages(t *testing.T) {
 func TestProvider_Compile_WithPPAs(t *testing.T) {
 	t.Parallel()
 
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	p := apt.NewProvider(runner)
 
 	raw := map[string]interface{}{
@@ -71,7 +71,7 @@ func TestProvider_Compile_WithPPAs(t *testing.T) {
 func TestProvider_Compile_Full(t *testing.T) {
 	t.Parallel()
 
-	runner := ports.NewMockCommandRunner()
+	runner := mocks.NewCommandRunner()
 	p := apt.NewProvider(runner)
 
 	raw := map[string]interface{}{

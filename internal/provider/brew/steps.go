@@ -6,6 +6,7 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/validation"
 )
 
 // TapStep represents a Homebrew tap installation step.
@@ -17,7 +18,7 @@ type TapStep struct {
 
 // NewTapStep creates a new TapStep.
 func NewTapStep(tap string, runner ports.CommandRunner) *TapStep {
-	id, _ := compiler.NewStepID("brew:tap:" + tap)
+	id := compiler.MustNewStepID("brew:tap:" + tap)
 	return &TapStep{
 		tap:    tap,
 		id:     id,
@@ -61,6 +62,11 @@ func (s *TapStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 
 // Apply executes the tap installation.
 func (s *TapStep) Apply(ctx compiler.RunContext) error {
+	// Validate tap name before execution to prevent command injection
+	if err := validation.ValidateTapName(s.tap); err != nil {
+		return fmt.Errorf("invalid tap name: %w", err)
+	}
+
 	result, err := s.runner.Run(ctx.Context(), "brew", "tap", s.tap)
 	if err != nil {
 		return err
@@ -89,7 +95,7 @@ type FormulaStep struct {
 
 // NewFormulaStep creates a new FormulaStep.
 func NewFormulaStep(formula Formula, runner ports.CommandRunner) *FormulaStep {
-	id, _ := compiler.NewStepID("brew:formula:" + formula.FullName())
+	id := compiler.MustNewStepID("brew:formula:" + formula.FullName())
 	return &FormulaStep{
 		formula: formula,
 		id:      id,
@@ -105,7 +111,7 @@ func (s *FormulaStep) ID() compiler.StepID {
 // DependsOn returns the step dependencies.
 func (s *FormulaStep) DependsOn() []compiler.StepID {
 	if s.formula.Tap != "" {
-		tapID, _ := compiler.NewStepID("brew:tap:" + s.formula.Tap)
+		tapID := compiler.MustNewStepID("brew:tap:" + s.formula.Tap)
 		return []compiler.StepID{tapID}
 	}
 	return nil
@@ -137,6 +143,18 @@ func (s *FormulaStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 
 // Apply executes the formula installation.
 func (s *FormulaStep) Apply(ctx compiler.RunContext) error {
+	// Validate formula name before execution to prevent command injection
+	if err := validation.ValidatePackageName(s.formula.Name); err != nil {
+		return fmt.Errorf("invalid formula name: %w", err)
+	}
+
+	// Validate args - each arg should be a valid brew argument (e.g., --HEAD)
+	for _, arg := range s.formula.Args {
+		if err := validation.ValidateBrewArg(arg); err != nil {
+			return fmt.Errorf("invalid formula argument %q: %w", arg, err)
+		}
+	}
+
 	args := []string{"install", s.formula.Name}
 	args = append(args, s.formula.Args...)
 
@@ -172,7 +190,7 @@ type CaskStep struct {
 
 // NewCaskStep creates a new CaskStep.
 func NewCaskStep(cask Cask, runner ports.CommandRunner) *CaskStep {
-	id, _ := compiler.NewStepID("brew:cask:" + cask.FullName())
+	id := compiler.MustNewStepID("brew:cask:" + cask.FullName())
 	return &CaskStep{
 		cask:   cask,
 		id:     id,
@@ -188,7 +206,7 @@ func (s *CaskStep) ID() compiler.StepID {
 // DependsOn returns the step dependencies.
 func (s *CaskStep) DependsOn() []compiler.StepID {
 	if s.cask.Tap != "" {
-		tapID, _ := compiler.NewStepID("brew:tap:" + s.cask.Tap)
+		tapID := compiler.MustNewStepID("brew:tap:" + s.cask.Tap)
 		return []compiler.StepID{tapID}
 	}
 	return nil
@@ -220,6 +238,11 @@ func (s *CaskStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 
 // Apply executes the cask installation.
 func (s *CaskStep) Apply(ctx compiler.RunContext) error {
+	// Validate cask name before execution to prevent command injection
+	if err := validation.ValidatePackageName(s.cask.Name); err != nil {
+		return fmt.Errorf("invalid cask name: %w", err)
+	}
+
 	result, err := s.runner.Run(ctx.Context(), "brew", "install", "--cask", s.cask.Name)
 	if err != nil {
 		return err
