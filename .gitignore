@@ -35,3 +35,4 @@ dist/
 # Local config
 .env
 .env.local
+.claude/settings.local.json
