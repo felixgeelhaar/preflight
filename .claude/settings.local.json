@@ -13,7 +13,24 @@
       "Bash(./bin/preflight:*)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(mkdir:*)",
+      "Bash(cat:*)",
+      "Bash(git push)",
+      "mcp__github__create_repository",
+      "Bash(gh repo create:*)",
+      "mcp__exa__web_search_exa",
+      "mcp__github__search_repositories",
+      "Bash(git -C /Users/felixgeelhaar/Developer/projects/preflight log --oneline -5)",
+      "Bash(wc:*)",
+      "Bash(go mod graph:*)",
+      "mcp__github__get_file_contents",
+      "Bash(gh repo view:*)",
+      "Bash(gh api:*)",
+      "Bash(gh search:*)",
+      "Bash(chmod:*)",
+      "Bash(make build:*)",
+      "Bash(find:*)"
     ]
   }
 }

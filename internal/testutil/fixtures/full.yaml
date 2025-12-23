@@ -1,0 +1,16 @@
+version: 1
+targets:
+  - name: work
+    layers:
+      - base
+      - work
+      - identity.work
+  - name: personal
+    layers:
+      - base
+      - personal
+defaults:
+  shell:
+    preferred: zsh
+  git:
+    gpgSign: true

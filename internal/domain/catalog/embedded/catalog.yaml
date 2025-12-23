@@ -1,0 +1,252 @@
+# Preflight Built-in Catalog
+# Contains default presets and capability packs
+
+presets:
+  - id: "nvim:minimal"
+    metadata:
+      title: "Minimal Neovim"
+      description: "A lightweight Neovim setup with essential features only"
+      tradeoffs:
+        - "Fewer features but faster startup"
+        - "Manual configuration for additional features"
+      doc_links:
+        neovim: "https://neovim.io/doc/"
+      tags:
+        - "editor"
+        - "minimal"
+    difficulty: "beginner"
+    config:
+      plugins:
+        - "lazy.nvim"
+        - "nvim-lspconfig"
+      colorscheme: "default"
+
+  - id: "nvim:balanced"
+    metadata:
+      title: "Balanced Neovim"
+      description: "A well-balanced Neovim configuration with common plugins"
+      tradeoffs:
+        - "Good balance of features and performance"
+        - "Some learning curve for new Neovim users"
+      doc_links:
+        neovim: "https://neovim.io/doc/"
+        lazyvim: "https://www.lazyvim.org/"
+      tags:
+        - "editor"
+        - "productivity"
+    difficulty: "intermediate"
+    config:
+      plugins:
+        - "lazy.nvim"
+        - "nvim-lspconfig"
+        - "telescope.nvim"
+        - "nvim-treesitter"
+        - "nvim-cmp"
+      colorscheme: "catppuccin"
+    requires:
+      - "shell:zsh"
+
+  - id: "nvim:pro"
+    metadata:
+      title: "Pro Neovim"
+      description: "Full-featured Neovim IDE with advanced tools and debugging"
+      tradeoffs:
+        - "Maximum productivity features"
+        - "Higher resource usage and startup time"
+        - "Steeper learning curve"
+      doc_links:
+        neovim: "https://neovim.io/doc/"
+        lazyvim: "https://www.lazyvim.org/"
+        dap: "https://github.com/mfussenegger/nvim-dap"
+      tags:
+        - "editor"
+        - "ide"
+        - "advanced"
+    difficulty: "advanced"
+    config:
+      plugins:
+        - "lazy.nvim"
+        - "nvim-lspconfig"
+        - "telescope.nvim"
+        - "nvim-treesitter"
+        - "nvim-cmp"
+        - "nvim-dap"
+        - "trouble.nvim"
+        - "which-key.nvim"
+        - "gitsigns.nvim"
+      colorscheme: "catppuccin"
+    requires:
+      - "shell:zsh"
+    conflicts:
+      - "nvim:minimal"
+
+  - id: "shell:zsh"
+    metadata:
+      title: "Zsh Shell"
+      description: "Zsh shell with essential configuration"
+      tradeoffs:
+        - "More features than bash"
+        - "Widely supported"
+      doc_links:
+        zsh: "https://www.zsh.org/"
+      tags:
+        - "shell"
+    difficulty: "beginner"
+    config:
+      shell: "zsh"
+      framework: "none"
+
+  - id: "shell:oh-my-zsh"
+    metadata:
+      title: "Oh My Zsh"
+      description: "Zsh with Oh My Zsh framework for easy customization"
+      tradeoffs:
+        - "Easy to configure with plugins"
+        - "May slow down shell startup"
+      doc_links:
+        ohmyzsh: "https://ohmyz.sh/"
+      tags:
+        - "shell"
+        - "productivity"
+    difficulty: "beginner"
+    config:
+      shell: "zsh"
+      framework: "oh-my-zsh"
+      theme: "robbyrussell"
+    requires:
+      - "shell:zsh"
+
+  - id: "shell:starship"
+    metadata:
+      title: "Starship Prompt"
+      description: "Cross-shell prompt with modern features"
+      tradeoffs:
+        - "Fast and customizable"
+        - "Works across multiple shells"
+        - "Requires Nerd Fonts for icons"
+      doc_links:
+        starship: "https://starship.rs/"
+      tags:
+        - "shell"
+        - "prompt"
+        - "productivity"
+    difficulty: "beginner"
+    config:
+      prompt: "starship"
+      preset: "nerd-font-symbols"
+
+  - id: "git:standard"
+    metadata:
+      title: "Standard Git"
+      description: "Standard Git configuration with sensible defaults"
+      tradeoffs:
+        - "Works out of the box"
+        - "No GPG signing by default"
+      doc_links:
+        git: "https://git-scm.com/doc"
+      tags:
+        - "git"
+        - "version-control"
+    difficulty: "beginner"
+    config:
+      default_branch: "main"
+      pull_rebase: true
+
+  - id: "git:secure"
+    metadata:
+      title: "Secure Git"
+      description: "Git configuration with GPG signing enabled"
+      tradeoffs:
+        - "All commits are signed"
+        - "Requires GPG setup"
+      doc_links:
+        git: "https://git-scm.com/doc"
+        gpg: "https://gnupg.org/documentation/"
+      tags:
+        - "git"
+        - "security"
+    difficulty: "intermediate"
+    config:
+      default_branch: "main"
+      pull_rebase: true
+      sign_commits: true
+    requires:
+      - "git:standard"
+
+capability_packs:
+  - id: "go-developer"
+    metadata:
+      title: "Go Developer"
+      description: "Complete Go development environment"
+      tradeoffs:
+        - "Optimized for Go development"
+        - "Includes LSP, debugging, and linting tools"
+      doc_links:
+        go: "https://go.dev/doc/"
+      tags:
+        - "go"
+        - "backend"
+        - "developer"
+    presets:
+      - "nvim:balanced"
+      - "shell:starship"
+      - "git:secure"
+    tools:
+      - "go"
+      - "gopls"
+      - "golangci-lint"
+      - "delve"
+      - "gofumpt"
+
+  - id: "frontend-developer"
+    metadata:
+      title: "Frontend Developer"
+      description: "Modern frontend development environment"
+      tradeoffs:
+        - "Optimized for JavaScript/TypeScript development"
+        - "Includes React and Vue tooling"
+      doc_links:
+        nodejs: "https://nodejs.org/en/docs/"
+        typescript: "https://www.typescriptlang.org/docs/"
+      tags:
+        - "frontend"
+        - "javascript"
+        - "typescript"
+        - "developer"
+    presets:
+      - "nvim:balanced"
+      - "shell:oh-my-zsh"
+      - "git:standard"
+    tools:
+      - "node"
+      - "pnpm"
+      - "typescript"
+      - "eslint"
+      - "prettier"
+
+  - id: "devops-engineer"
+    metadata:
+      title: "DevOps Engineer"
+      description: "Infrastructure and operations tooling"
+      tradeoffs:
+        - "Comprehensive DevOps toolkit"
+        - "Many tools to learn"
+      doc_links:
+        docker: "https://docs.docker.com/"
+        kubernetes: "https://kubernetes.io/docs/"
+        terraform: "https://www.terraform.io/docs/"
+      tags:
+        - "devops"
+        - "infrastructure"
+        - "cloud"
+    presets:
+      - "nvim:pro"
+      - "shell:starship"
+      - "git:secure"
+    tools:
+      - "docker"
+      - "kubectl"
+      - "terraform"
+      - "aws-cli"
+      - "helm"
+      - "k9s"

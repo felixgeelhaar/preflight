@@ -1,0 +1,14 @@
+name: base
+brew:
+  taps:
+    - homebrew/cask
+  formulae:
+    - git
+    - curl
+    - jq
+  casks:
+    - visual-studio-code
+git:
+  config:
+    core.editor: nvim
+    init.defaultBranch: main
