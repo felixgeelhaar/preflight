@@ -74,8 +74,8 @@ func runApply(_ *cobra.Command, _ []string) error {
 	preflight.PrintResults(results)
 
 	// Check for failures
-	for _, r := range results {
-		if r.Error() != nil {
+	for i := range results {
+		if results[i].Error() != nil {
 			return fmt.Errorf("some steps failed")
 		}
 	}

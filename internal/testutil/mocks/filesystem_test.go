@@ -30,7 +30,7 @@ func TestFileSystem_ReadFile_NotFound(t *testing.T) {
 func TestFileSystem_WriteFile(t *testing.T) {
 	fs := NewFileSystem()
 
-	err := fs.WriteFile("/home/user/.config/test", []byte("content"), 0644)
+	err := fs.WriteFile("/home/user/.config/test", []byte("content"), 0o644)
 	if err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
@@ -110,7 +110,7 @@ func TestFileSystem_Remove(t *testing.T) {
 func TestFileSystem_MkdirAll(t *testing.T) {
 	fs := NewFileSystem()
 
-	err := fs.MkdirAll("/home/user/.config/app", 0755)
+	err := fs.MkdirAll("/home/user/.config/app", 0o755)
 	if err != nil {
 		t.Fatalf("MkdirAll() error = %v", err)
 	}
@@ -172,7 +172,7 @@ func TestFileSystem_ThreadSafety(_ *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			path := "/file" + string(rune('a'+idx%26))
-			_ = fs.WriteFile(path, []byte("content"), 0644)
+			_ = fs.WriteFile(path, []byte("content"), 0o644)
 			_, _ = fs.ReadFile(path)
 			_ = fs.Exists(path)
 		}(i)

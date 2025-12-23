@@ -161,7 +161,7 @@ func (s *SettingsStep) Apply(_ compiler.RunContext) error {
 		return fmt.Errorf("failed to marshal settings: %w", err)
 	}
 
-	if err := s.fs.WriteFile(settingsPath, data, 0644); err != nil {
+	if err := s.fs.WriteFile(settingsPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write settings: %w", err)
 	}
 
@@ -240,7 +240,7 @@ func (s *KeybindingsStep) Apply(_ compiler.RunContext) error {
 		return fmt.Errorf("failed to marshal keybindings: %w", err)
 	}
 
-	if err := s.fs.WriteFile(keybindingsPath, data, 0644); err != nil {
+	if err := s.fs.WriteFile(keybindingsPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write keybindings: %w", err)
 	}
 

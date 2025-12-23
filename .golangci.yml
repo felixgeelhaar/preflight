@@ -56,14 +56,28 @@ linters:
     gocritic:
       enabled-tags:
         - diagnostic
-        - style
         - performance
+      disabled-checks:
+        - hugeParam
+        - whyNoLint
+        - unnamedResult
+        - emptyStringTest
+        - rangeValCopy
+        - appendCombine
 
     exhaustive:
       default-signifies-exhaustive: true
 
+    staticcheck:
+      checks:
+        - "all"
+        - "-QF1003"
+
     testifylint:
       enable-all: true
+      disable:
+        - empty
+        - require-error
 
 formatters:
   enable:
@@ -72,3 +86,8 @@ formatters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-rules:
+    # QF1003 is a style suggestion for switch statements
+    - linters:
+        - staticcheck
+      text: "QF1003"

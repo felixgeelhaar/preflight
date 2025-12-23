@@ -133,21 +133,21 @@ func (p *Preflight) PrintResults(results []execution.StepResult) {
 	p.printf("=================\n\n")
 
 	var succeeded, failed, skipped int
-	for _, r := range results {
-		switch r.Status() {
+	for i := range results {
+		switch results[i].Status() {
 		case compiler.StatusSatisfied:
 			succeeded++
-			p.printf("  ✓ %s\n", r.StepID().String())
+			p.printf("  ✓ %s\n", results[i].StepID().String())
 		case compiler.StatusFailed:
 			failed++
-			p.printf("  ✗ %s: %v\n", r.StepID().String(), r.Error())
+			p.printf("  ✗ %s: %v\n", results[i].StepID().String(), results[i].Error())
 		case compiler.StatusSkipped:
 			skipped++
-			p.printf("  - %s (skipped)\n", r.StepID().String())
+			p.printf("  - %s (skipped)\n", results[i].StepID().String())
 		case compiler.StatusNeedsApply:
-			p.printf("  + %s (needs apply)\n", r.StepID().String())
+			p.printf("  + %s (needs apply)\n", results[i].StepID().String())
 		case compiler.StatusUnknown:
-			p.printf("  ? %s (unknown)\n", r.StepID().String())
+			p.printf("  ? %s (unknown)\n", results[i].StepID().String())
 		}
 	}
 

@@ -70,7 +70,7 @@ func (s *ToolVersionStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 func (s *ToolVersionStep) Apply(_ compiler.RunContext) error {
 	path := s.resolvedPath()
 	content := s.generateContent()
-	return s.fs.WriteFile(path, content, 0644)
+	return s.fs.WriteFile(path, content, 0o644)
 }
 
 // Explain provides context for this step.

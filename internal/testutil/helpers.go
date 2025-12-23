@@ -36,7 +36,7 @@ func WriteTempFile(t *testing.T, dir, filename, content string) string {
 	t.Helper()
 
 	path := filepath.Join(dir, filename)
-	err := os.WriteFile(path, []byte(content), 0644)
+	err := os.WriteFile(path, []byte(content), 0o644)
 	require.NoError(t, err, "failed to write temp file: %s", filename)
 
 	return path
@@ -47,7 +47,7 @@ func WriteTempDir(t *testing.T, dir, dirname string) string {
 	t.Helper()
 
 	path := filepath.Join(dir, dirname)
-	err := os.MkdirAll(path, 0755)
+	err := os.MkdirAll(path, 0o755)
 	require.NoError(t, err, "failed to create temp subdirectory: %s", dirname)
 
 	return path

@@ -764,7 +764,7 @@ func TestRunLockStatus_ExistingLockfile(t *testing.T) {
 	lockPath := tmpDir + "/preflight.lock"
 
 	// Create a fake lockfile
-	err := os.WriteFile(lockPath, []byte("version: 1\n"), 0644)
+	err := os.WriteFile(lockPath, []byte("version: 1\n"), 0o644)
 	require.NoError(t, err)
 
 	// Save original
@@ -791,13 +791,13 @@ targets:
   default:
     - base
 `
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644)
 	require.NoError(t, err)
 
 	// Create layers directory and base layer
-	err = os.MkdirAll(tmpDir+"/layers", 0755)
+	err = os.MkdirAll(tmpDir+"/layers", 0o755)
 	require.NoError(t, err)
-	err = os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0644)
+	err = os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0o644)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -847,13 +847,13 @@ targets:
   default:
     - base
 `
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644)
 	require.NoError(t, err)
 
 	// Create layers directory and base layer
-	err = os.MkdirAll(tmpDir+"/layers", 0755)
+	err = os.MkdirAll(tmpDir+"/layers", 0o755)
 	require.NoError(t, err)
-	err = os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0644)
+	err = os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0o644)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -903,13 +903,13 @@ targets:
   default:
     - base
 `
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644)
 	require.NoError(t, err)
 
 	// Create layers directory and base layer
-	err = os.MkdirAll(tmpDir+"/layers", 0755)
+	err = os.MkdirAll(tmpDir+"/layers", 0o755)
 	require.NoError(t, err)
-	err = os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0644)
+	err = os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0o644)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -945,7 +945,7 @@ func TestRunLockUpdate_ValidConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create config file
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0o644)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -964,7 +964,7 @@ func TestRunLockFreeze_MissingLockfile(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create config file but no lockfile
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0o644)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -986,7 +986,7 @@ func TestRunLockFreeze_MissingLockfile(t *testing.T) {
 func TestRunRepoInit_NewDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoDir := tmpDir + "/myrepo"
-	err := os.MkdirAll(repoDir, 0755)
+	err := os.MkdirAll(repoDir, 0o755)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -1015,7 +1015,7 @@ func TestRunRepoInit_AlreadyInitialized(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create .git directory to simulate existing repo
-	err := os.MkdirAll(tmpDir+"/.git", 0755)
+	err := os.MkdirAll(tmpDir+"/.git", 0o755)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -1062,7 +1062,7 @@ func TestRunRepoStatus_InitializedRepo(t *testing.T) {
 	_ = cmd.Run()
 
 	// Create initial commit
-	err := os.WriteFile(tmpDir+"/README.md", []byte("# Test\n"), 0644)
+	err := os.WriteFile(tmpDir+"/README.md", []byte("# Test\n"), 0o644)
 	require.NoError(t, err)
 	cmd = exec.Command("git", "-C", tmpDir, "add", ".")
 	_ = cmd.Run()
@@ -1164,7 +1164,7 @@ func TestRunLockUpdate_WithProvider(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create config file
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0o644)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -1186,7 +1186,7 @@ func TestRunLockUpdate_EmptyConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create empty config file
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0o644)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -1205,7 +1205,7 @@ func TestRunLockFreeze_WithExistingLock(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create config file
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0o644)
 	require.NoError(t, err)
 
 	// Create a lockfile with proper format (machine_info with snapshot)
@@ -1218,7 +1218,7 @@ machine_info:
   snapshot: "2024-01-01T00:00:00Z"
 packages: {}
 `
-	err = os.WriteFile(tmpDir+"/preflight.lock", []byte(lockContent), 0644)
+	err = os.WriteFile(tmpDir+"/preflight.lock", []byte(lockContent), 0o644)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -1237,11 +1237,11 @@ func TestRunLockStatus_WithExistingLock(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create config file
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0o644)
 	require.NoError(t, err)
 
 	// Create a lockfile
-	err = os.WriteFile(tmpDir+"/preflight.lock", []byte("version: 1\n"), 0644)
+	err = os.WriteFile(tmpDir+"/preflight.lock", []byte("version: 1\n"), 0o644)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -1260,7 +1260,7 @@ func TestRunLockStatus_DefaultConfigPath(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create the expected default config and lock files
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0o644)
 	require.NoError(t, err)
 
 	// Change to tmpDir temporarily
@@ -1289,7 +1289,7 @@ func TestRunLockStatus_DefaultConfigPath(t *testing.T) {
 func TestRunRepoInit_WithRemote(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoDir := tmpDir + "/myrepo-remote"
-	err := os.MkdirAll(repoDir, 0755)
+	err := os.MkdirAll(repoDir, 0o755)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -1466,13 +1466,13 @@ targets:
   default:
     - base
 `
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644)
 	require.NoError(t, err)
 
 	// Create layers directory
-	err = os.MkdirAll(tmpDir+"/layers", 0755)
+	err = os.MkdirAll(tmpDir+"/layers", 0o755)
 	require.NoError(t, err)
-	err = os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0644)
+	err = os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0o644)
 	require.NoError(t, err)
 
 	// Change to tmpDir temporarily
@@ -1543,13 +1543,13 @@ targets:
   default:
     - base
 `
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644)
 	require.NoError(t, err)
 
 	// Create layers directory and base layer (empty, so no steps/changes)
-	err = os.MkdirAll(tmpDir+"/layers", 0755)
+	err = os.MkdirAll(tmpDir+"/layers", 0o755)
 	require.NoError(t, err)
-	err = os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0644)
+	err = os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0o644)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -1590,7 +1590,7 @@ func TestRunRepoPush_SuccessfulRepo(t *testing.T) {
 	_ = cmd.Run()
 
 	// Create initial commit
-	err := os.WriteFile(tmpDir+"/README.md", []byte("# Test\n"), 0644)
+	err := os.WriteFile(tmpDir+"/README.md", []byte("# Test\n"), 0o644)
 	require.NoError(t, err)
 	cmd = exec.Command("git", "-C", tmpDir, "add", ".")
 	_ = cmd.Run()
@@ -1629,7 +1629,7 @@ func TestRunRepoPull_InitializedRepo(t *testing.T) {
 	_ = cmd.Run()
 
 	// Create initial commit
-	err := os.WriteFile(tmpDir+"/README.md", []byte("# Test\n"), 0644)
+	err := os.WriteFile(tmpDir+"/README.md", []byte("# Test\n"), 0o644)
 	require.NoError(t, err)
 	cmd = exec.Command("git", "-C", tmpDir, "add", ".")
 	_ = cmd.Run()
@@ -1657,7 +1657,7 @@ func TestRunLockUpdate_DefaultPath(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create config file
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0o644)
 	require.NoError(t, err)
 
 	// Change to tmpDir temporarily
@@ -1686,7 +1686,7 @@ func TestRunLockFreeze_DefaultPath(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create config file
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0o644)
 	require.NoError(t, err)
 
 	// Create a lockfile with proper format
@@ -1699,7 +1699,7 @@ machine_info:
   snapshot: "2024-01-01T00:00:00Z"
 packages: {}
 `
-	err = os.WriteFile(tmpDir+"/preflight.lock", []byte(lockContent), 0644)
+	err = os.WriteFile(tmpDir+"/preflight.lock", []byte(lockContent), 0o644)
 	require.NoError(t, err)
 
 	// Change to tmpDir temporarily
@@ -1729,7 +1729,7 @@ func TestRunInit_ConfigAlreadyExists(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create existing preflight.yaml
-	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0644)
+	err := os.WriteFile(tmpDir+"/preflight.yaml", []byte("targets:\n  default: []\n"), 0o644)
 	require.NoError(t, err)
 
 	// Change to tmpDir temporarily (runInit checks current directory)
@@ -1782,17 +1782,17 @@ targets:
   default:
     - base
 `
-	err = os.WriteFile("preflight.yaml", []byte(manifest), 0644)
+	err = os.WriteFile("preflight.yaml", []byte(manifest), 0o644)
 	require.NoError(t, err)
 
 	// Create layers directory with files config
-	err = os.MkdirAll("layers", 0755)
+	err = os.MkdirAll("layers", 0o755)
 	require.NoError(t, err)
 
 	// Create dotfiles directory with source file
-	err = os.MkdirAll("dotfiles", 0755)
+	err = os.MkdirAll("dotfiles", 0o755)
 	require.NoError(t, err)
-	err = os.WriteFile("dotfiles/test.conf", []byte("# test config\n"), 0644)
+	err = os.WriteFile("dotfiles/test.conf", []byte("# test config\n"), 0o644)
 	require.NoError(t, err)
 
 	// Base layer with files config - target doesn't exist so it will generate changes
@@ -1804,7 +1804,7 @@ files:
     mode: generated
     template: dotfiles/test.conf
 `
-	err = os.WriteFile("layers/base.yaml", []byte(baseLayer), 0644)
+	err = os.WriteFile("layers/base.yaml", []byte(baseLayer), 0o644)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -1857,19 +1857,19 @@ targets:
   default:
     - base
 `
-	err = os.WriteFile("preflight.yaml", []byte(manifest), 0644)
+	err = os.WriteFile("preflight.yaml", []byte(manifest), 0o644)
 	require.NoError(t, err)
 
 	// Create layers directory and dotfiles
-	err = os.MkdirAll("layers", 0755)
+	err = os.MkdirAll("layers", 0o755)
 	require.NoError(t, err)
-	err = os.MkdirAll("dotfiles", 0755)
+	err = os.MkdirAll("dotfiles", 0o755)
 	require.NoError(t, err)
-	err = os.WriteFile("dotfiles/test.conf", []byte("# test config\n"), 0644)
+	err = os.WriteFile("dotfiles/test.conf", []byte("# test config\n"), 0o644)
 	require.NoError(t, err)
 
 	// Create output directory for target
-	err = os.MkdirAll("output", 0755)
+	err = os.MkdirAll("output", 0o755)
 	require.NoError(t, err)
 
 	// Base layer with files config
@@ -1881,7 +1881,7 @@ files:
     mode: generated
     template: dotfiles/test.conf
 `
-	err = os.WriteFile("layers/base.yaml", []byte(baseLayer), 0644)
+	err = os.WriteFile("layers/base.yaml", []byte(baseLayer), 0o644)
 	require.NoError(t, err)
 
 	// Save and restore flags
@@ -1946,7 +1946,7 @@ func TestRunRepoStatus_GetConfigDirError(t *testing.T) {
 	_ = cmd.Run()
 
 	// Create initial commit
-	err := os.WriteFile(tmpDir+"/README.md", []byte("# Test\n"), 0644)
+	err := os.WriteFile(tmpDir+"/README.md", []byte("# Test\n"), 0o644)
 	require.NoError(t, err)
 	cmd = exec.Command("git", "-C", tmpDir, "add", ".")
 	_ = cmd.Run()
@@ -2001,7 +2001,7 @@ func TestRunRepoPush_WithRemote(t *testing.T) {
 	require.NoError(t, cmd.Run())
 
 	// Create and commit a file
-	err := os.WriteFile(localDir+"/README.md", []byte("# Test\n"), 0644)
+	err := os.WriteFile(localDir+"/README.md", []byte("# Test\n"), 0o644)
 	require.NoError(t, err)
 	cmd = exec.Command("git", "-C", localDir, "add", ".")
 	_ = cmd.Run()
@@ -2046,7 +2046,7 @@ func TestRunRepoPush_SuccessPath(t *testing.T) {
 	require.NoError(t, cmd.Run())
 
 	// Create and commit a file
-	err := os.WriteFile(localDir+"/README.md", []byte("# Test\n"), 0644)
+	err := os.WriteFile(localDir+"/README.md", []byte("# Test\n"), 0o644)
 	require.NoError(t, err)
 	cmd = exec.Command("git", "-C", localDir, "add", ".")
 	_ = cmd.Run()
@@ -2096,7 +2096,7 @@ func TestRunRepoPull_WithRemote(t *testing.T) {
 	require.NoError(t, cmd.Run())
 
 	// Create and commit a file
-	err := os.WriteFile(localDir+"/README.md", []byte("# Test\n"), 0644)
+	err := os.WriteFile(localDir+"/README.md", []byte("# Test\n"), 0o644)
 	require.NoError(t, err)
 	cmd = exec.Command("git", "-C", localDir, "add", ".")
 	_ = cmd.Run()

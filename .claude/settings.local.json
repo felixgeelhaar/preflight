@@ -47,7 +47,11 @@
       "Bash(git -C /Users/felixgeelhaar/Developer/projects/preflight tag -l)",
       "Bash(jq:*)",
       "Bash(ls:*)",
-      "Bash(go run:*)"
+      "Bash(go run:*)",
+      "Bash(NONINTERACTIVE=1 ./scripts/update-homebrew-formula.sh:*)",
+      "Bash(gh run view:*)",
+      "Bash(go version:*)",
+      "Bash(gh pr close:*)"
     ]
   }
 }

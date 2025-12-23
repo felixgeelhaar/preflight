@@ -52,7 +52,7 @@ func TestPresetStep_Check_Installed(t *testing.T) {
 	fs := mocks.NewFileSystem()
 	// Simulate nvim config directory exists
 	configPath := ports.ExpandPath("~/.config/nvim")
-	_ = fs.MkdirAll(configPath, 0755)
+	_ = fs.MkdirAll(configPath, 0o755)
 
 	runner := mocks.NewCommandRunner()
 	step := nvim.NewPresetStep("lazyvim", fs, runner)
@@ -123,7 +123,7 @@ func TestConfigRepoStep_Check_Cloned(t *testing.T) {
 	fs := mocks.NewFileSystem()
 	// Simulate nvim config directory exists
 	configPath := ports.ExpandPath("~/.config/nvim")
-	_ = fs.MkdirAll(configPath, 0755)
+	_ = fs.MkdirAll(configPath, 0o755)
 
 	runner := mocks.NewCommandRunner()
 	step := nvim.NewConfigRepoStep("https://github.com/user/nvim-config", fs, runner)

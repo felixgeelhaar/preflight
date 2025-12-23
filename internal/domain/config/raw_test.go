@@ -732,10 +732,10 @@ func TestMergedConfig_Raw_FileModeTemplate(t *testing.T) {
 
 func writeFile(t *testing.T, path, content string) error {
 	t.Helper()
-	return os.WriteFile(path, []byte(content), 0644)
+	return os.WriteFile(path, []byte(content), 0o644)
 }
 
 func mkdir(t *testing.T, path string) error {
 	t.Helper()
-	return os.MkdirAll(path, 0755)
+	return os.MkdirAll(path, 0o755)
 }

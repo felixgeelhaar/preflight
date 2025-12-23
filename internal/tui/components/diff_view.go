@@ -239,14 +239,14 @@ func (d DiffView) handleKeyMsg(msg tea.KeyMsg) (DiffView, tea.Cmd) {
 		if d.scrollOffset > 0 {
 			d.scrollOffset--
 		}
-		d.viewport.LineUp(1)
+		d.viewport.ScrollUp(1)
 	case key.Matches(msg, d.keys.Down) || key.Matches(msg, d.keys.VimDown):
 		d.scrollOffset++
-		d.viewport.LineDown(1)
+		d.viewport.ScrollDown(1)
 	case key.Matches(msg, d.keys.PageUp):
-		d.viewport.HalfViewUp()
+		d.viewport.HalfPageUp()
 	case key.Matches(msg, d.keys.PageDown):
-		d.viewport.HalfViewDown()
+		d.viewport.HalfPageDown()
 	}
 	return d, nil
 }

@@ -25,7 +25,7 @@ func TestRealFileSystem_Integration(t *testing.T) {
 
 	// Test WriteFile and ReadFile
 	testFile := filepath.Join(tmpDir, "test.txt")
-	err = fs.WriteFile(testFile, []byte("hello world"), 0644)
+	err = fs.WriteFile(testFile, []byte("hello world"), 0o644)
 	if err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
@@ -77,7 +77,7 @@ func TestRealFileSystem_Integration(t *testing.T) {
 
 	// Test MkdirAll
 	nestedDir := filepath.Join(tmpDir, "nested", "dir")
-	err = fs.MkdirAll(nestedDir, 0755)
+	err = fs.MkdirAll(nestedDir, 0o755)
 	if err != nil {
 		t.Fatalf("MkdirAll() error = %v", err)
 	}
@@ -118,7 +118,7 @@ func TestRealFileSystem_NotSymlink(t *testing.T) {
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	testFile := filepath.Join(tmpDir, "regular.txt")
-	err = fs.WriteFile(testFile, []byte("content"), 0644)
+	err = fs.WriteFile(testFile, []byte("content"), 0o644)
 	if err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}

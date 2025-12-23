@@ -181,14 +181,14 @@ func (e Explain) handleKeyMsg(msg tea.KeyMsg) (Explain, tea.Cmd) {
 		if e.scrollOffset > 0 {
 			e.scrollOffset--
 		}
-		e.viewport.LineUp(1)
+		e.viewport.ScrollUp(1)
 	case key.Matches(msg, e.keys.Down) || key.Matches(msg, e.keys.VimDown):
 		e.scrollOffset++
-		e.viewport.LineDown(1)
+		e.viewport.ScrollDown(1)
 	case key.Matches(msg, e.keys.PageUp):
-		e.viewport.HalfViewUp()
+		e.viewport.HalfPageUp()
 	case key.Matches(msg, e.keys.PageDown):
-		e.viewport.HalfViewDown()
+		e.viewport.HalfPageDown()
 	}
 	return e, nil
 }

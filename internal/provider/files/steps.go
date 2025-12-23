@@ -177,7 +177,7 @@ func (s *CopyStep) Apply(_ compiler.RunContext) error {
 		return fmt.Errorf("failed to read source: %w", err)
 	}
 
-	mode := parseFileMode(s.cp.Mode, 0644)
+	mode := parseFileMode(s.cp.Mode, 0o644)
 	if err := s.fs.WriteFile(dest, content, mode); err != nil {
 		return fmt.Errorf("failed to write destination: %w", err)
 	}
@@ -291,7 +291,7 @@ func (s *TemplateStep) Apply(_ compiler.RunContext) error {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	mode := parseFileMode(s.tmpl.Mode, 0644)
+	mode := parseFileMode(s.tmpl.Mode, 0o644)
 	if err := s.fs.WriteFile(dest, buf.Bytes(), mode); err != nil {
 		return fmt.Errorf("failed to write output: %w", err)
 	}

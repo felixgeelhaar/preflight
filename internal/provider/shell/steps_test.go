@@ -63,7 +63,7 @@ func TestFrameworkStep_Check_Installed(t *testing.T) {
 	fs := mocks.NewFileSystem()
 	// Simulate oh-my-zsh is installed (directory exists)
 	ohmyzshPath := ports.ExpandPath("~/.oh-my-zsh")
-	_ = fs.MkdirAll(ohmyzshPath, 0755)
+	_ = fs.MkdirAll(ohmyzshPath, 0o755)
 
 	step := shell.NewFrameworkStepWithFS(sc, fs)
 
@@ -179,7 +179,7 @@ func TestCustomPluginStep_Check_Cloned(t *testing.T) {
 	fs := mocks.NewFileSystem()
 	// Simulate plugin is already cloned (directory exists)
 	pluginPath := ports.ExpandPath("~/.oh-my-zsh/custom/plugins/zsh-autosuggestions")
-	_ = fs.MkdirAll(pluginPath, 0755)
+	_ = fs.MkdirAll(pluginPath, 0o755)
 
 	step := shell.NewCustomPluginStepWithFS("zsh", "oh-my-zsh", plugin, fs)
 
@@ -322,7 +322,7 @@ func TestFrameworkStep_FrameworkPath_OhMyFish(t *testing.T) {
 	}
 	fs := mocks.NewFileSystem()
 	omfPath := ports.ExpandPath("~/.local/share/omf")
-	_ = fs.MkdirAll(omfPath, 0755)
+	_ = fs.MkdirAll(omfPath, 0o755)
 
 	step := shell.NewFrameworkStepWithFS(sc, fs)
 	ctx := compiler.NewRunContext(context.TODO())

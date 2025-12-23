@@ -74,7 +74,7 @@ func (s *ConfigStep) Apply(_ compiler.RunContext) error {
 	path := ports.ExpandPath(s.cfg.ConfigPath())
 	content := s.generateConfig()
 
-	if err := s.fs.WriteFile(path, content, 0644); err != nil {
+	if err := s.fs.WriteFile(path, content, 0o644); err != nil {
 		return fmt.Errorf("failed to write gitconfig: %w", err)
 	}
 

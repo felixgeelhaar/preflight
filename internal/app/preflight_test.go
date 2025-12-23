@@ -33,12 +33,12 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create layers directory
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -51,7 +51,7 @@ packages:
       - git
       - ripgrep
 `
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -82,12 +82,12 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create layers directory
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -99,7 +99,7 @@ packages:
     formulae:
       - git
 `
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -130,13 +130,13 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -171,12 +171,12 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create layers directory
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -193,7 +193,7 @@ git:
     co: checkout
     st: status
 `
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -229,12 +229,12 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create layers directory
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -251,7 +251,7 @@ ssh:
       user: git
       identityfile: ~/.ssh/id_ed25519
 `
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -287,12 +287,12 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create layers directory
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -307,7 +307,7 @@ runtime:
     - name: golang
       version: "1.21.5"
 `
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -343,12 +343,12 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create layers directory
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -367,7 +367,7 @@ shell:
     enabled: true
     preset: nerd-font-symbols
 `
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -467,11 +467,11 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -479,7 +479,7 @@ targets:
 	baseLayer := `
 name: base
 `
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -533,20 +533,20 @@ func TestPreflight_Capture_AllProviders(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create .gitconfig
-	if err := os.WriteFile(tmpDir+"/.gitconfig", []byte("[user]\n    name = Test User\n"), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/.gitconfig", []byte("[user]\n    name = Test User\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create .ssh/config
-	if err := os.MkdirAll(tmpDir+"/.ssh", 0700); err != nil {
+	if err := os.MkdirAll(tmpDir+"/.ssh", 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(tmpDir+"/.ssh/config", []byte("Host github.com\n    User git\n"), 0600); err != nil {
+	if err := os.WriteFile(tmpDir+"/.ssh/config", []byte("Host github.com\n    User git\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create .zshrc
-	if err := os.WriteFile(tmpDir+"/.zshrc", []byte("# zsh config\n"), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/.zshrc", []byte("# zsh config\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -629,7 +629,7 @@ func TestPreflight_Capture_GitConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create .gitconfig file
-	if err := os.WriteFile(tmpDir+"/.gitconfig", []byte("[user]\n    name = Test\n"), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/.gitconfig", []byte("[user]\n    name = Test\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -649,10 +649,9 @@ func TestPreflight_Capture_GitConfig(t *testing.T) {
 
 	// Git provider should be captured
 	byProvider := findings.ItemsByProvider()
-	if len(byProvider["git"]) == 0 {
-		// Git items depend on system git config, so may be empty
-		// This is OK as long as no error occurred
-	}
+	// Git items depend on system git config, so may be empty
+	// This is OK as long as no error occurred
+	_ = byProvider["git"]
 }
 
 func TestPreflight_Capture_SSHConfig(t *testing.T) {
@@ -660,10 +659,10 @@ func TestPreflight_Capture_SSHConfig(t *testing.T) {
 
 	// Create .ssh directory and config
 	sshDir := tmpDir + "/.ssh"
-	if err := os.MkdirAll(sshDir, 0700); err != nil {
+	if err := os.MkdirAll(sshDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(sshDir+"/config", []byte("Host *\n    ServerAliveInterval 60\n"), 0600); err != nil {
+	if err := os.WriteFile(sshDir+"/config", []byte("Host *\n    ServerAliveInterval 60\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -692,10 +691,10 @@ func TestPreflight_Capture_ShellConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create shell config files
-	if err := os.WriteFile(tmpDir+"/.zshrc", []byte("# zsh\n"), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/.zshrc", []byte("# zsh\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(tmpDir+"/.bashrc", []byte("# bash\n"), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/.bashrc", []byte("# bash\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -733,16 +732,16 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Empty layer = no steps = no drift
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -771,11 +770,11 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -787,7 +786,7 @@ packages:
     formulae:
       - somenonexistentpackage12345
 `
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -816,14 +815,14 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -889,15 +888,15 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1058,7 +1057,7 @@ func TestPreflight_RepoInit_NewRepo(t *testing.T) {
 	repoPath := tmpDir + "/myconfig"
 
 	// Create the directory (but not .git)
-	if err := os.MkdirAll(repoPath, 0755); err != nil {
+	if err := os.MkdirAll(repoPath, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1088,7 +1087,7 @@ func TestPreflight_RepoInit_AlreadyInitialized(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create .git directory to simulate existing repo
-	if err := os.MkdirAll(tmpDir+"/.git", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/.git", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1111,7 +1110,7 @@ func TestPreflight_RepoInit_WithRemote(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoPath := tmpDir + "/myconfig"
 
-	if err := os.MkdirAll(repoPath, 0755); err != nil {
+	if err := os.MkdirAll(repoPath, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1166,7 +1165,7 @@ func TestPreflight_RepoStatus_Initialized(t *testing.T) {
 	_ = cmd.Run()
 
 	// Create initial commit
-	if err := os.WriteFile(tmpDir+"/README.md", []byte("# Test\n"), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/README.md", []byte("# Test\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	cmd = exec.Command("git", "-C", tmpDir, "add", ".")
@@ -1451,16 +1450,16 @@ targets:
   default:
     - base
 `
-	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+	if err := os.MkdirAll(tmpDir+"/layers", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Empty layer = no steps to apply
-	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0644); err != nil {
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte("name: base\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

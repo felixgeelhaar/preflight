@@ -82,13 +82,13 @@ func (s *ConfigStep) Apply(_ compiler.RunContext) error {
 	// Ensure ~/.ssh directory exists
 	sshDir := ports.ExpandPath("~/.ssh")
 	if !s.fs.Exists(sshDir) {
-		if err := s.fs.MkdirAll(sshDir, 0700); err != nil {
+		if err := s.fs.MkdirAll(sshDir, 0o700); err != nil {
 			return fmt.Errorf("failed to create .ssh directory: %w", err)
 		}
 	}
 
 	// Write with restrictive permissions (SSH requires 0600 or more restrictive)
-	if err := s.fs.WriteFile(path, content, 0600); err != nil {
+	if err := s.fs.WriteFile(path, content, 0o600); err != nil {
 		return fmt.Errorf("failed to write ssh config: %w", err)
 	}
 

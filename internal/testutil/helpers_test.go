@@ -22,7 +22,7 @@ func TestTempConfigDir(t *testing.T) {
 
 	// Should be able to create files in it
 	testFile := filepath.Join(dir, "test.yaml")
-	err = os.WriteFile(testFile, []byte("test: true"), 0644)
+	err = os.WriteFile(testFile, []byte("test: true"), 0o644)
 	require.NoError(t, err)
 }
 
