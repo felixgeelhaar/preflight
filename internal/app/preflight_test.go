@@ -325,6 +325,70 @@ runtime:
 	}
 }
 
+func TestPreflight_Plan_WithShellConfig(t *testing.T) {
+	// Create temp directory structure
+	tmpDir := t.TempDir()
+
+	// Create manifest
+	manifest := `
+targets:
+  default:
+    - base
+`
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create layers directory
+	if err := os.MkdirAll(tmpDir+"/layers", 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create base layer with shell config
+	baseLayer := `
+name: base
+shell:
+  shells:
+    - name: zsh
+      framework: oh-my-zsh
+      theme: robbyrussell
+      plugins:
+        - git
+        - docker
+  starship:
+    enabled: true
+    preset: nerd-font-symbols
+`
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	pf := New(&buf)
+
+	ctx := context.Background()
+	plan, err := pf.Plan(ctx, tmpDir+"/preflight.yaml", "default")
+	if err != nil {
+		t.Fatalf("Plan() error = %v", err)
+	}
+
+	if plan == nil {
+		t.Fatal("Plan() returned nil plan")
+	}
+
+	// The plan should include shell framework and starship steps
+	pf.PrintPlan(plan)
+	output := buf.String()
+
+	if !contains(output, "shell:framework:zsh:oh-my-zsh") {
+		t.Errorf("output should contain 'shell:framework:zsh:oh-my-zsh' step, got: %s", output)
+	}
+
+	if !contains(output, "shell:starship") {
+		t.Errorf("output should contain 'shell:starship' step, got: %s", output)
+	}
+}
+
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
 }

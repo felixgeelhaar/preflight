@@ -10,6 +10,7 @@ type MergedConfig struct {
 	Git        GitConfig
 	SSH        SSHConfig
 	Runtime    RuntimeConfig
+	Shell      ShellConfig
 	provenance ProvenanceMap
 }
 
@@ -52,6 +53,9 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 	sshMatchesSet := make(map[string]bool)
 	runtimeToolsMap := make(map[string]RuntimeToolConfig)
 	runtimePluginsMap := make(map[string]RuntimePluginConfig)
+	shellsMap := make(map[string]ShellConfigEntry)
+	shellEnvMap := make(map[string]string)
+	shellAliasesMap := make(map[string]string)
 
 	for _, layer := range layers {
 		// Merge brew formulae
@@ -212,6 +216,40 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 			runtimePluginsMap[plugin.Name] = plugin
 			m.trackProvenance(merged, "runtime.plugins", plugin.Name, layer.Provenance)
 		}
+
+		// Merge shell config (scalars: last-wins)
+		if layer.Shell.Default != "" {
+			merged.Shell.Default = layer.Shell.Default
+			m.trackProvenance(merged, "shell.default", layer.Shell.Default, layer.Provenance)
+		}
+
+		// Merge shells (last-wins per shell name)
+		for _, sh := range layer.Shell.Shells {
+			shellsMap[sh.Name] = sh
+			m.trackProvenance(merged, "shell.shells", sh.Name, layer.Provenance)
+		}
+
+		// Merge starship (scalars: last-wins)
+		if layer.Shell.Starship.Enabled {
+			merged.Shell.Starship.Enabled = true
+			m.trackProvenance(merged, "shell.starship.enabled", "true", layer.Provenance)
+		}
+		if layer.Shell.Starship.Preset != "" {
+			merged.Shell.Starship.Preset = layer.Shell.Starship.Preset
+			m.trackProvenance(merged, "shell.starship.preset", layer.Shell.Starship.Preset, layer.Provenance)
+		}
+
+		// Merge shell env (deep merge, last-wins per key)
+		for key, value := range layer.Shell.Env {
+			shellEnvMap[key] = value
+			m.trackProvenance(merged, "shell.env", key, layer.Provenance)
+		}
+
+		// Merge shell aliases (deep merge, last-wins per key)
+		for key, value := range layer.Shell.Aliases {
+			shellAliasesMap[key] = value
+			m.trackProvenance(merged, "shell.aliases", key, layer.Provenance)
+		}
 	}
 
 	// Convert files map to slice
@@ -237,6 +275,17 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 	// Convert runtime plugins map to slice
 	for _, plugin := range runtimePluginsMap {
 		merged.Runtime.Plugins = append(merged.Runtime.Plugins, plugin)
+	}
+
+	// Convert shell maps to slices
+	for _, sh := range shellsMap {
+		merged.Shell.Shells = append(merged.Shell.Shells, sh)
+	}
+	if len(shellEnvMap) > 0 {
+		merged.Shell.Env = shellEnvMap
+	}
+	if len(shellAliasesMap) > 0 {
+		merged.Shell.Aliases = shellAliasesMap
 	}
 
 	return merged, nil

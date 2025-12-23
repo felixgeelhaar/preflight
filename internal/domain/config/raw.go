@@ -276,6 +276,77 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 		raw["runtime"] = runtime
 	}
 
+	// Convert shell config
+	shell := make(map[string]interface{})
+
+	if m.Shell.Default != "" {
+		shell["default"] = m.Shell.Default
+	}
+
+	// Shells section
+	if len(m.Shell.Shells) > 0 {
+		var shells []interface{}
+		for _, s := range m.Shell.Shells {
+			shellMap := map[string]interface{}{
+				"name": s.Name,
+			}
+			if s.Framework != "" {
+				shellMap["framework"] = s.Framework
+			}
+			if s.Theme != "" {
+				shellMap["theme"] = s.Theme
+			}
+			if len(s.Plugins) > 0 {
+				shellMap["plugins"] = toInterfaceSlice(s.Plugins)
+			}
+			if len(s.CustomPlugins) > 0 {
+				var customPlugins []interface{}
+				for _, cp := range s.CustomPlugins {
+					customPlugins = append(customPlugins, map[string]interface{}{
+						"name": cp.Name,
+						"repo": cp.Repo,
+					})
+				}
+				shellMap["custom_plugins"] = customPlugins
+			}
+			shells = append(shells, shellMap)
+		}
+		shell["shells"] = shells
+	}
+
+	// Starship section
+	if m.Shell.Starship.Enabled {
+		starship := map[string]interface{}{
+			"enabled": true,
+		}
+		if m.Shell.Starship.Preset != "" {
+			starship["preset"] = m.Shell.Starship.Preset
+		}
+		shell["starship"] = starship
+	}
+
+	// Env section
+	if len(m.Shell.Env) > 0 {
+		env := make(map[string]interface{})
+		for k, v := range m.Shell.Env {
+			env[k] = v
+		}
+		shell["env"] = env
+	}
+
+	// Aliases section
+	if len(m.Shell.Aliases) > 0 {
+		aliases := make(map[string]interface{})
+		for k, v := range m.Shell.Aliases {
+			aliases[k] = v
+		}
+		shell["aliases"] = aliases
+	}
+
+	if len(shell) > 0 {
+		raw["shell"] = shell
+	}
+
 	return raw
 }
 

@@ -148,6 +148,36 @@ type RuntimeConfig struct {
 	Plugins []RuntimePluginConfig `yaml:"plugins,omitempty"`
 }
 
+// ShellCustomPlugin represents a custom shell plugin from a git repository.
+type ShellCustomPlugin struct {
+	Name string `yaml:"name"`
+	Repo string `yaml:"repo"`
+}
+
+// ShellConfigEntry represents a single shell configuration.
+type ShellConfigEntry struct {
+	Name          string              `yaml:"name"`
+	Framework     string              `yaml:"framework,omitempty"`
+	Theme         string              `yaml:"theme,omitempty"`
+	Plugins       []string            `yaml:"plugins,omitempty"`
+	CustomPlugins []ShellCustomPlugin `yaml:"custom_plugins,omitempty"`
+}
+
+// ShellStarshipConfig represents starship prompt configuration.
+type ShellStarshipConfig struct {
+	Enabled bool   `yaml:"enabled,omitempty"`
+	Preset  string `yaml:"preset,omitempty"`
+}
+
+// ShellConfig represents shell configuration.
+type ShellConfig struct {
+	Default  string              `yaml:"default,omitempty"`
+	Shells   []ShellConfigEntry  `yaml:"shells,omitempty"`
+	Starship ShellStarshipConfig `yaml:"starship,omitempty"`
+	Env      map[string]string   `yaml:"env,omitempty"`
+	Aliases  map[string]string   `yaml:"aliases,omitempty"`
+}
+
 // Layer is a composable configuration overlay.
 type Layer struct {
 	Name       LayerName
@@ -157,6 +187,7 @@ type Layer struct {
 	Git        GitConfig
 	SSH        SSHConfig
 	Runtime    RuntimeConfig
+	Shell      ShellConfig
 }
 
 // layerYAML is the YAML representation for unmarshaling.
@@ -167,6 +198,7 @@ type layerYAML struct {
 	Git      GitConfig         `yaml:"git,omitempty"`
 	SSH      SSHConfig         `yaml:"ssh,omitempty"`
 	Runtime  RuntimeConfig     `yaml:"runtime,omitempty"`
+	Shell    ShellConfig       `yaml:"shell,omitempty"`
 }
 
 // ParseLayer parses a Layer from YAML bytes.
@@ -188,6 +220,7 @@ func ParseLayer(data []byte) (*Layer, error) {
 		Git:      raw.Git,
 		SSH:      raw.SSH,
 		Runtime:  raw.Runtime,
+		Shell:    raw.Shell,
 	}, nil
 }
 

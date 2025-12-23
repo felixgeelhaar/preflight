@@ -485,3 +485,137 @@ runtime:
 	assert.Equal(t, "rtx", merged.Runtime.Backend)
 	assert.Equal(t, "global", merged.Runtime.Scope)
 }
+
+func TestMerger_Merge_Shell_SingleShell(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+shell:
+  shells:
+    - name: zsh
+      framework: oh-my-zsh
+      theme: robbyrussell
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer})
+
+	require.NoError(t, err)
+	require.Len(t, merged.Shell.Shells, 1)
+	assert.Equal(t, "zsh", merged.Shell.Shells[0].Name)
+	assert.Equal(t, "oh-my-zsh", merged.Shell.Shells[0].Framework)
+	assert.Equal(t, "robbyrussell", merged.Shell.Shells[0].Theme)
+}
+
+func TestMerger_Merge_Shell_LastWinsPerName(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+shell:
+  shells:
+    - name: zsh
+      framework: oh-my-zsh
+      theme: agnoster
+`))
+	require.NoError(t, err)
+
+	workLayer, err := config.ParseLayer([]byte(`
+name: identity.work
+shell:
+  shells:
+    - name: zsh
+      framework: oh-my-zsh
+      theme: powerlevel10k
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer, *workLayer})
+
+	require.NoError(t, err)
+	require.Len(t, merged.Shell.Shells, 1)
+	assert.Equal(t, "powerlevel10k", merged.Shell.Shells[0].Theme)
+}
+
+func TestMerger_Merge_Shell_Starship(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+shell:
+  starship:
+    enabled: true
+    preset: nerd-font-symbols
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer})
+
+	require.NoError(t, err)
+	assert.True(t, merged.Shell.Starship.Enabled)
+	assert.Equal(t, "nerd-font-symbols", merged.Shell.Starship.Preset)
+}
+
+func TestMerger_Merge_Shell_Env_DeepMerge(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+shell:
+  env:
+    EDITOR: vim
+    PAGER: less
+`))
+	require.NoError(t, err)
+
+	workLayer, err := config.ParseLayer([]byte(`
+name: identity.work
+shell:
+  env:
+    EDITOR: nvim
+    PATH_EXTRA: /usr/local/bin
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer, *workLayer})
+
+	require.NoError(t, err)
+	assert.Equal(t, "nvim", merged.Shell.Env["EDITOR"])
+	assert.Equal(t, "less", merged.Shell.Env["PAGER"])
+	assert.Equal(t, "/usr/local/bin", merged.Shell.Env["PATH_EXTRA"])
+}
+
+func TestMerger_Merge_Shell_Aliases_DeepMerge(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+shell:
+  aliases:
+    ll: ls -la
+    vim: nvim
+`))
+	require.NoError(t, err)
+
+	workLayer, err := config.ParseLayer([]byte(`
+name: identity.work
+shell:
+  aliases:
+    ll: ls -lah
+    k: kubectl
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer, *workLayer})
+
+	require.NoError(t, err)
+	assert.Equal(t, "ls -lah", merged.Shell.Aliases["ll"])
+	assert.Equal(t, "nvim", merged.Shell.Aliases["vim"])
+	assert.Equal(t, "kubectl", merged.Shell.Aliases["k"])
+}
