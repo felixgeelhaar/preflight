@@ -1,0 +1,34 @@
+version: 1
+
+policy:
+  default:
+    min: 80
+
+  domains:
+    - name: config
+      match: ["./internal/domain/config/..."]
+      min: 80
+
+    - name: compiler
+      match: ["./internal/domain/compiler/..."]
+      min: 80
+
+    - name: execution
+      match: ["./internal/domain/execution/..."]
+      min: 80
+
+    - name: providers
+      match: ["./internal/provider/..."]
+      min: 80
+
+    - name: app
+      match: ["./internal/app/..."]
+      min: 75
+
+    - name: cli
+      match: ["./cmd/..."]
+      min: 60
+
+exclude:
+  - "internal/generated/*"
+  - "**/*_test.go"

@@ -8,9 +8,9 @@ import (
 
 // Version information set by build flags.
 var (
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
+	version   = "dev"
+	commit    = "none"
+	buildDate = "unknown"
 )
 
 var versionCmd = &cobra.Command{
@@ -19,6 +19,6 @@ var versionCmd = &cobra.Command{
 	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Printf("preflight %s\n", version)
 		fmt.Printf("  commit: %s\n", commit)
-		fmt.Printf("  built:  %s\n", date)
+		fmt.Printf("  built:  %s\n", buildDate)
 	},
 }

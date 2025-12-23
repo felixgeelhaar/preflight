@@ -31,6 +31,12 @@ jobs:
           go install github.com/felixgeelhaar/coverctl@latest
           coverctl check --threshold 80
 
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -45,3 +51,18 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Run govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...

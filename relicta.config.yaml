@@ -1,0 +1,31 @@
+version: 2
+
+project:
+  name: preflight
+  repo: felixgeelhaar/preflight
+
+versioning:
+  strategy: conventional
+  initial: 0.1.0
+
+changelog:
+  enabled: true
+  path: CHANGELOG.md
+
+release:
+  github:
+    enabled: true
+    draft: false
+    prerelease: false
+
+pre_release_hook: scripts/build-artifacts.sh
+
+assets:
+  - path: dist/preflight-linux-amd64.tar.gz
+    name: preflight-linux-amd64.tar.gz
+  - path: dist/preflight-darwin-amd64.tar.gz
+    name: preflight-darwin-amd64.tar.gz
+  - path: dist/preflight-darwin-arm64.tar.gz
+    name: preflight-darwin-arm64.tar.gz
+  - path: dist/preflight-windows-amd64.zip
+    name: preflight-windows-amd64.zip

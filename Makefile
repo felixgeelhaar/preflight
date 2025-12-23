@@ -1,4 +1,4 @@
-.PHONY: build test lint coverage clean install
+.PHONY: build test lint coverage clean install release-local security
 
 # Binary name
 BINARY_NAME=preflight
@@ -11,8 +11,13 @@ GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 
+# Version info
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
+BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+
 # Build flags
-LDFLAGS=-ldflags "-s -w"
+LDFLAGS=-ldflags "-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.buildDate=$(BUILD_DATE)"
 
 ## build: Build the binary
 build:
@@ -60,6 +65,15 @@ install: build
 ## deps: Download dependencies
 deps:
 	$(GOMOD) download
+
+## release-local: Build release artifacts for all platforms locally
+release-local:
+	./scripts/build-artifacts.sh $(VERSION) $(COMMIT) $(BUILD_DATE)
+
+## security: Run security vulnerability check
+security:
+	go install golang.org/x/vuln/cmd/govulncheck@latest
+	govulncheck ./...
 
 ## help: Show this help
 help:
