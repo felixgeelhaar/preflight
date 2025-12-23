@@ -19,15 +19,17 @@ const (
 
 // initWizardModel implements the init wizard TUI.
 type initWizardModel struct {
-	step           initWizardStep
-	opts           InitWizardOptions
-	styles         ui.Styles
-	keys           ui.KeyMap
-	width          int
-	height         int
-	configPath     string
-	selectedPreset string
-	cancelled      bool
+	step             initWizardStep
+	opts             InitWizardOptions
+	styles           ui.Styles
+	keys             ui.KeyMap
+	width            int
+	height           int
+	configPath       string
+	selectedProvider string
+	selectedPreset   string
+	cancelled        bool
+	catalogService   CatalogServiceInterface
 
 	// Components
 	providerList components.List
@@ -39,13 +41,33 @@ func newInitWizardModel(opts InitWizardOptions) initWizardModel {
 	styles := ui.DefaultStyles()
 	keys := ui.DefaultKeyMap()
 
-	// Initialize provider list
-	providers := []components.ListItem{
-		{ID: "nvim", Title: "Neovim", Description: "Terminal-based code editor"},
-		{ID: "shell", Title: "Shell", Description: "Zsh/Bash configuration"},
-		{ID: "git", Title: "Git", Description: "Version control configuration"},
-		{ID: "brew", Title: "Homebrew", Description: "Package manager (macOS)"},
+	// Use catalog service if provided, otherwise use fallback
+	catalogService := opts.CatalogService
+	if catalogService == nil {
+		catalogService = &fallbackCatalogService{}
 	}
+
+	// Initialize provider list from catalog
+	providerNames := catalogService.GetProviders()
+	providers := make([]components.ListItem, 0, len(providerNames))
+	for _, name := range providerNames {
+		providers = append(providers, components.ListItem{
+			ID:          name,
+			Title:       providerDisplayName(name),
+			Description: providerDescription(name),
+		})
+	}
+
+	// If no providers from catalog, use fallback defaults
+	if len(providers) == 0 {
+		providers = []components.ListItem{
+			{ID: "nvim", Title: "Neovim", Description: "Terminal-based code editor"},
+			{ID: "shell", Title: "Shell", Description: "Zsh/Bash configuration"},
+			{ID: "git", Title: "Git", Description: "Version control configuration"},
+			{ID: "brew", Title: "Homebrew", Description: "Package manager (macOS)"},
+		}
+	}
+
 	providerList := components.NewList(providers).
 		WithWidth(60).
 		WithHeight(10)
@@ -66,16 +88,55 @@ func newInitWizardModel(opts InitWizardOptions) initWizardModel {
 	}
 
 	return initWizardModel{
-		step:         startStep,
-		opts:         opts,
-		styles:       styles,
-		keys:         keys,
-		width:        80,
-		height:       24,
-		providerList: providerList,
-		presetList:   presetList,
-		confirm:      confirm,
+		step:           startStep,
+		opts:           opts,
+		styles:         styles,
+		keys:           keys,
+		width:          80,
+		height:         24,
+		catalogService: catalogService,
+		providerList:   providerList,
+		presetList:     presetList,
+		confirm:        confirm,
 	}
+}
+
+// providerDisplayName returns a human-readable name for a provider.
+func providerDisplayName(id string) string {
+	names := map[string]string{
+		"nvim":    "Neovim",
+		"shell":   "Shell",
+		"git":     "Git",
+		"brew":    "Homebrew",
+		"apt":     "APT",
+		"files":   "Files",
+		"ssh":     "SSH",
+		"runtime": "Runtime",
+		"vscode":  "VS Code",
+	}
+	if name, ok := names[id]; ok {
+		return name
+	}
+	return id
+}
+
+// providerDescription returns a description for a provider.
+func providerDescription(id string) string {
+	descriptions := map[string]string{
+		"nvim":    "Terminal-based code editor",
+		"shell":   "Zsh/Bash configuration",
+		"git":     "Version control configuration",
+		"brew":    "Package manager (macOS)",
+		"apt":     "Package manager (Linux)",
+		"files":   "Dotfile management",
+		"ssh":     "SSH configuration",
+		"runtime": "Runtime version management",
+		"vscode":  "Visual Studio Code",
+	}
+	if desc, ok := descriptions[id]; ok {
+		return desc
+	}
+	return "Configuration for " + id
 }
 
 func (m initWizardModel) Init() tea.Cmd {
@@ -159,6 +220,7 @@ func (m initWizardModel) handleSelection(msg components.ListSelectedMsg) (tea.Mo
 		// No selection handling in these steps
 	case stepSelectProvider:
 		// Provider selected, populate presets
+		m.selectedProvider = msg.Item.ID
 		presets := m.getPresetsForProvider(msg.Item.ID)
 		m.presetList = m.presetList.SetItems(presets)
 		m.step = stepSelectPreset
@@ -175,6 +237,30 @@ func (m initWizardModel) handleSelection(msg components.ListSelectedMsg) (tea.Mo
 
 func (m initWizardModel) handleConfirm(msg components.ConfirmResultMsg) (tea.Model, tea.Cmd) {
 	if msg.Confirmed {
+		// Generate configuration files
+		targetDir := "."
+		if m.opts.TargetDir != "" {
+			targetDir = m.opts.TargetDir
+		}
+
+		generator := NewConfigGenerator(targetDir)
+
+		// Get preset details from catalog
+		preset, found := m.catalogService.GetPreset(m.selectedPreset)
+		if !found {
+			// Fallback to basic preset info
+			preset = PresetItem{
+				ID:    m.selectedPreset,
+				Title: m.selectedPreset,
+			}
+		}
+
+		if err := generator.GenerateFromPreset(preset); err != nil {
+			// TODO: Show error in TUI
+			m.step = stepComplete
+			return m, tea.Quit
+		}
+
 		m.configPath = "preflight.yaml"
 		m.step = stepComplete
 		return m, tea.Quit
@@ -185,6 +271,21 @@ func (m initWizardModel) handleConfirm(msg components.ConfirmResultMsg) (tea.Mod
 }
 
 func (m initWizardModel) getPresetsForProvider(provider string) []components.ListItem {
+	// Use catalog service to get presets
+	presetItems := m.catalogService.GetPresetsForProvider(provider)
+	if len(presetItems) > 0 {
+		items := make([]components.ListItem, len(presetItems))
+		for i, p := range presetItems {
+			items[i] = components.ListItem{
+				ID:          p.ID,
+				Title:       p.Title,
+				Description: p.Description,
+			}
+		}
+		return items
+	}
+
+	// Fallback to hardcoded presets if catalog returns nothing
 	switch provider {
 	case "nvim":
 		return []components.ListItem{
@@ -211,6 +312,26 @@ func (m initWizardModel) getPresetsForProvider(provider string) []components.Lis
 	default:
 		return []components.ListItem{}
 	}
+}
+
+// fallbackCatalogService provides hardcoded fallback data when no catalog is available.
+type fallbackCatalogService struct{}
+
+func (f *fallbackCatalogService) GetProviders() []string {
+	return []string{"brew", "git", "nvim", "shell"}
+}
+
+func (f *fallbackCatalogService) GetPresetsForProvider(_ string) []PresetItem {
+	// Return empty to trigger hardcoded fallback in getPresetsForProvider
+	return nil
+}
+
+func (f *fallbackCatalogService) GetCapabilityPacks() []PackItem {
+	return nil
+}
+
+func (f *fallbackCatalogService) GetPreset(_ string) (PresetItem, bool) {
+	return PresetItem{}, false
 }
 
 func (m initWizardModel) View() string {

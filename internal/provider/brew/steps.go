@@ -82,8 +82,15 @@ func (s *TapStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 	return compiler.NewExplanation(
 		"Add Homebrew Tap",
 		fmt.Sprintf("Adds the %s tap to Homebrew, enabling installation of formulae and casks from this repository.", s.tap),
-		[]string{fmt.Sprintf("https://github.com/%s", s.tap)},
-	)
+		[]string{
+			fmt.Sprintf("https://github.com/%s", s.tap),
+			"https://docs.brew.sh/Taps",
+		},
+	).WithTradeoffs([]string{
+		"+ Access to additional packages not in core Homebrew",
+		"- Third-party taps may have less stability than core formulae",
+		"- Requires trust in the tap maintainer",
+	})
 }
 
 // FormulaStep represents a Homebrew formula installation step.
@@ -177,8 +184,15 @@ func (s *FormulaStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 	return compiler.NewExplanation(
 		"Install Homebrew Formula",
 		desc,
-		[]string{fmt.Sprintf("https://formulae.brew.sh/formula/%s", s.formula.Name)},
-	)
+		[]string{
+			fmt.Sprintf("https://formulae.brew.sh/formula/%s", s.formula.Name),
+			"https://docs.brew.sh/Formula-Cookbook",
+		},
+	).WithTradeoffs([]string{
+		"+ Managed updates via 'brew upgrade'",
+		"+ Consistent installation across macOS versions",
+		"- May install additional dependencies",
+	})
 }
 
 // CaskStep represents a Homebrew cask installation step.
@@ -258,6 +272,13 @@ func (s *CaskStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 	return compiler.NewExplanation(
 		"Install Homebrew Cask",
 		fmt.Sprintf("Installs the %s application via Homebrew Cask.", s.cask.Name),
-		[]string{fmt.Sprintf("https://formulae.brew.sh/cask/%s", s.cask.Name)},
-	)
+		[]string{
+			fmt.Sprintf("https://formulae.brew.sh/cask/%s", s.cask.Name),
+			"https://docs.brew.sh/Cask-Cookbook",
+		},
+	).WithTradeoffs([]string{
+		"+ Managed by Homebrew for easy updates and removal",
+		"+ Reproducible installation across machines",
+		"- May require admin password for /Applications",
+	})
 }

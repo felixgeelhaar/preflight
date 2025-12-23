@@ -36,13 +36,15 @@ func (r RunContext) WithDryRun(dryRun bool) RunContext {
 
 // ExplainContext provides context for generating step explanations.
 type ExplainContext struct {
-	verbose bool
+	verbose    bool
+	provenance string
 }
 
 // NewExplainContext creates a new ExplainContext.
 func NewExplainContext() ExplainContext {
 	return ExplainContext{
-		verbose: false,
+		verbose:    false,
+		provenance: "",
 	}
 }
 
@@ -53,7 +55,19 @@ func (e ExplainContext) Verbose() bool {
 
 // WithVerbose returns a new ExplainContext with verbose mode set.
 func (e ExplainContext) WithVerbose(verbose bool) ExplainContext {
-	return ExplainContext{
-		verbose: verbose,
-	}
+	newCtx := e
+	newCtx.verbose = verbose
+	return newCtx
+}
+
+// Provenance returns the source layer path that defined this configuration.
+func (e ExplainContext) Provenance() string {
+	return e.provenance
+}
+
+// WithProvenance returns a new ExplainContext with provenance set.
+func (e ExplainContext) WithProvenance(provenance string) ExplainContext {
+	newCtx := e
+	newCtx.provenance = provenance
+	return newCtx
 }

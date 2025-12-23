@@ -175,6 +175,31 @@ func (r DoctorReport) WarningCount() int {
 	return count
 }
 
+// FixResult holds the results of a fix operation.
+type FixResult struct {
+	// FixedIssues are issues that were successfully fixed
+	FixedIssues []DoctorIssue
+	// RemainingIssues are issues that could not be fixed
+	RemainingIssues []DoctorIssue
+	// VerificationReport is the doctor report after fixing
+	VerificationReport *DoctorReport
+}
+
+// FixedCount returns the number of fixed issues.
+func (r FixResult) FixedCount() int {
+	return len(r.FixedIssues)
+}
+
+// RemainingCount returns the number of remaining issues.
+func (r FixResult) RemainingCount() int {
+	return len(r.RemainingIssues)
+}
+
+// AllFixed returns true if all fixable issues were resolved.
+func (r FixResult) AllFixed() bool {
+	return len(r.RemainingIssues) == 0
+}
+
 // DiffEntry represents a single difference between config and system.
 type DiffEntry struct {
 	Provider string

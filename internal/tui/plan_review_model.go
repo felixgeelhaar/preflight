@@ -326,7 +326,10 @@ func statusIndicator(status compiler.StepStatus) string {
 func updateExplanationForEntry(explain components.Explain, entry execution.PlanEntry) components.Explain {
 	step := entry.Step()
 
-	// Get explanation from step if available
+	// Get explanation from step
+	explainCtx := compiler.NewExplainContext()
+	explanation := step.Explain(explainCtx)
+
 	sections := []components.ExplainSection{
 		{
 			Title:   "Step",
@@ -338,11 +341,54 @@ func updateExplanationForEntry(explain components.Explain, entry execution.PlanE
 		},
 	}
 
+	// Add summary from step explanation
+	if explanation.Summary() != "" {
+		sections = append(sections, components.ExplainSection{
+			Title:   "Summary",
+			Content: explanation.Summary(),
+		})
+	}
+
+	// Add detail from step explanation
+	if explanation.Detail() != "" {
+		sections = append(sections, components.ExplainSection{
+			Title:   "Details",
+			Content: explanation.Detail(),
+		})
+	}
+
+	// Add diff/change information
 	diff := entry.Diff()
 	if !diff.IsEmpty() {
 		sections = append(sections, components.ExplainSection{
 			Title:   "Change",
 			Content: diff.Summary(),
+		})
+	}
+
+	// Add tradeoffs from step explanation
+	tradeoffs := explanation.Tradeoffs()
+	if len(tradeoffs) > 0 {
+		sections = append(sections, components.ExplainSection{
+			Title:   "Tradeoffs",
+			Content: strings.Join(tradeoffs, "\n"),
+		})
+	}
+
+	// Add provenance from step explanation
+	if explanation.Provenance() != "" {
+		sections = append(sections, components.ExplainSection{
+			Title:   "Source",
+			Content: explanation.Provenance(),
+		})
+	}
+
+	// Add doc links
+	docLinks := explanation.DocLinks()
+	if len(docLinks) > 0 {
+		sections = append(sections, components.ExplainSection{
+			Title:   "Documentation",
+			Content: strings.Join(docLinks, "\n"),
 		})
 	}
 

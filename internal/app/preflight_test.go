@@ -631,9 +631,9 @@ func TestPreflight_Capture_DefaultProviders(t *testing.T) {
 		t.Fatalf("Capture() error = %v", err)
 	}
 
-	// Should have default providers
-	if len(findings.Providers) != 4 {
-		t.Errorf("expected 4 default providers, got %d: %v", len(findings.Providers), findings.Providers)
+	// Should have default providers (brew, git, ssh, shell, nvim, vscode, runtime)
+	if len(findings.Providers) != 7 {
+		t.Errorf("expected 7 default providers, got %d: %v", len(findings.Providers), findings.Providers)
 	}
 }
 
@@ -728,6 +728,91 @@ func TestPreflight_Capture_ShellConfig(t *testing.T) {
 	byProvider := findings.ItemsByProvider()
 	if len(byProvider["shell"]) != 2 {
 		t.Errorf("expected 2 shell items, got %d", len(byProvider["shell"]))
+	}
+}
+
+func TestPreflight_Capture_NvimConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create nvim config directory structure
+	nvimDir := tmpDir + "/.config/nvim"
+	if err := os.MkdirAll(nvimDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create lazy-lock.json (Lazy.nvim plugin manager)
+	if err := os.WriteFile(nvimDir+"/lazy-lock.json", []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	pf := New(&buf)
+
+	ctx := context.Background()
+	opts := CaptureOptions{
+		Providers: []string{"nvim"},
+		HomeDir:   tmpDir,
+	}
+
+	findings, err := pf.Capture(ctx, opts)
+	if err != nil {
+		t.Fatalf("Capture() error = %v", err)
+	}
+
+	// Nvim provider should have captured config and lazy-lock.json
+	byProvider := findings.ItemsByProvider()
+	if len(byProvider["nvim"]) != 2 {
+		t.Errorf("expected 2 nvim items, got %d: %v", len(byProvider["nvim"]), byProvider["nvim"])
+	}
+
+	// Check that both config and lazy-lock.json were captured
+	foundConfig := false
+	foundLazyLock := false
+	for _, item := range byProvider["nvim"] {
+		if item.Name == "config" {
+			foundConfig = true
+		}
+		if item.Name == "lazy-lock.json" {
+			foundLazyLock = true
+		}
+	}
+	if !foundConfig {
+		t.Error("expected to find nvim config item")
+	}
+	if !foundLazyLock {
+		t.Error("expected to find lazy-lock.json item")
+	}
+}
+
+func TestPreflight_Capture_NvimWithVimrc(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create legacy .vimrc file
+	if err := os.WriteFile(tmpDir+"/.vimrc", []byte("\" vim config\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	pf := New(&buf)
+
+	ctx := context.Background()
+	opts := CaptureOptions{
+		Providers: []string{"nvim"},
+		HomeDir:   tmpDir,
+	}
+
+	findings, err := pf.Capture(ctx, opts)
+	if err != nil {
+		t.Fatalf("Capture() error = %v", err)
+	}
+
+	// Should have captured .vimrc
+	byProvider := findings.ItemsByProvider()
+	if len(byProvider["nvim"]) != 1 {
+		t.Errorf("expected 1 nvim item, got %d", len(byProvider["nvim"]))
+	}
+	if byProvider["nvim"][0].Name != ".vimrc" {
+		t.Errorf("expected .vimrc item, got %s", byProvider["nvim"][0].Name)
 	}
 }
 
@@ -862,12 +947,18 @@ func TestPreflight_Fix_NilReport(t *testing.T) {
 
 	ctx := context.Background()
 
-	fixed, err := pf.Fix(ctx, nil)
+	result, err := pf.Fix(ctx, nil)
 	if err != nil {
 		t.Errorf("Fix() should not error on nil report, got %v", err)
 	}
-	if fixed != nil {
-		t.Error("Fix() should return nil for nil report")
+	if result == nil {
+		t.Fatal("Fix() should return empty FixResult, not nil")
+	}
+	if result.FixedCount() != 0 {
+		t.Errorf("FixedCount() should be 0, got %d", result.FixedCount())
+	}
+	if result.RemainingCount() != 0 {
+		t.Errorf("RemainingCount() should be 0, got %d", result.RemainingCount())
 	}
 }
 
@@ -880,12 +971,18 @@ func TestPreflight_Fix_EmptyReport(t *testing.T) {
 		Issues: []DoctorIssue{},
 	}
 
-	fixed, err := pf.Fix(ctx, report)
+	result, err := pf.Fix(ctx, report)
 	if err != nil {
 		t.Errorf("Fix() should not error on empty report, got %v", err)
 	}
-	if fixed != nil {
-		t.Error("Fix() should return nil for empty report")
+	if result == nil {
+		t.Fatal("Fix() should return empty FixResult, not nil")
+	}
+	if result.FixedCount() != 0 {
+		t.Errorf("FixedCount() should be 0, got %d", result.FixedCount())
+	}
+	if result.RemainingCount() != 0 {
+		t.Errorf("RemainingCount() should be 0, got %d", result.RemainingCount())
 	}
 }
 

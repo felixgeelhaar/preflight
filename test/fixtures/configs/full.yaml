@@ -1,0 +1,13 @@
+# Full test configuration with all providers
+defaults:
+  mode: intent
+
+targets:
+  default:
+    - base
+    - git
+    - shell
+  work:
+    - base
+    - git
+    - work-git

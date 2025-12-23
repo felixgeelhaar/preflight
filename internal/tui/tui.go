@@ -10,6 +10,30 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
+// CatalogServiceInterface defines the catalog service interface for the TUI.
+// This allows for dependency injection and testing.
+type CatalogServiceInterface interface {
+	GetProviders() []string
+	GetPresetsForProvider(provider string) []PresetItem
+	GetCapabilityPacks() []PackItem
+	GetPreset(id string) (PresetItem, bool)
+}
+
+// PresetItem represents a preset for display in the TUI.
+type PresetItem struct {
+	ID          string
+	Title       string
+	Description string
+	Difficulty  string
+}
+
+// PackItem represents a capability pack for display in the TUI.
+type PackItem struct {
+	ID          string
+	Title       string
+	Description string
+}
+
 // App represents the main TUI application state.
 type App struct {
 	width  int
@@ -66,6 +90,8 @@ type InitWizardOptions struct {
 	SkipWelcome         bool
 	PreselectedProvider string
 	PreselectedPreset   string
+	CatalogService      CatalogServiceInterface
+	TargetDir           string
 }
 
 // NewInitWizardOptions creates default init wizard options.
@@ -88,6 +114,18 @@ func (o InitWizardOptions) WithPreselectedPreset(preset string) InitWizardOption
 // WithSkipWelcome skips the welcome screen.
 func (o InitWizardOptions) WithSkipWelcome(skip bool) InitWizardOptions {
 	o.SkipWelcome = skip
+	return o
+}
+
+// WithCatalogService sets the catalog service.
+func (o InitWizardOptions) WithCatalogService(service CatalogServiceInterface) InitWizardOptions {
+	o.CatalogService = service
+	return o
+}
+
+// WithTargetDir sets the target directory for generated config files.
+func (o InitWizardOptions) WithTargetDir(dir string) InitWizardOptions {
+	o.TargetDir = dir
 	return o
 }
 

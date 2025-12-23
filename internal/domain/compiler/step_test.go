@@ -185,3 +185,24 @@ func TestExplainContext_WithVerbose(t *testing.T) {
 		t.Error("original context should be unchanged")
 	}
 }
+
+func TestExplainContext_Provenance(t *testing.T) {
+	ctx := NewExplainContext()
+	if ctx.Provenance() != "" {
+		t.Error("Provenance() should default to empty string")
+	}
+}
+
+func TestExplainContext_WithProvenance(t *testing.T) {
+	ctx := NewExplainContext()
+	layerPath := "layers/identity.work.yaml"
+	ctxWithProv := ctx.WithProvenance(layerPath)
+
+	if ctxWithProv.Provenance() != layerPath {
+		t.Errorf("Provenance() = %q, want %q", ctxWithProv.Provenance(), layerPath)
+	}
+	// Original should be unchanged (immutable)
+	if ctx.Provenance() != "" {
+		t.Error("original context should be unchanged")
+	}
+}

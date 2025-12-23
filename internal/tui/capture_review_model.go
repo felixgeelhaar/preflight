@@ -13,13 +13,16 @@ type CaptureType string
 
 // CaptureType constants define the types of items that can be captured.
 const (
-	CaptureTypeFormula CaptureType = "formula"
-	CaptureTypeCask    CaptureType = "cask"
-	CaptureTypeTap     CaptureType = "tap"
-	CaptureTypeFile    CaptureType = "file"
-	CaptureTypeRuntime CaptureType = "runtime"
-	CaptureTypeSSH     CaptureType = "ssh"
-	CaptureTypeGit     CaptureType = "git"
+	CaptureTypeFormula   CaptureType = "formula"
+	CaptureTypeCask      CaptureType = "cask"
+	CaptureTypeTap       CaptureType = "tap"
+	CaptureTypeFile      CaptureType = "file"
+	CaptureTypeRuntime   CaptureType = "runtime"
+	CaptureTypeSSH       CaptureType = "ssh"
+	CaptureTypeGit       CaptureType = "git"
+	CaptureTypeNvim      CaptureType = "nvim"
+	CaptureTypeExtension CaptureType = "extension"
+	CaptureTypeShell     CaptureType = "shell"
 )
 
 // CaptureItem represents an item discovered during capture.

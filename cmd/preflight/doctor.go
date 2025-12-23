@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
+	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/spf13/cobra"
 )
@@ -35,36 +37,57 @@ func init() {
 }
 
 func runDoctor(_ *cobra.Command, _ []string) error {
-	opts := tui.NewDoctorReportOptions().
+	ctx := context.Background()
+
+	// Resolve config path
+	configPath := cfgFile
+	if configPath == "" {
+		configPath = "preflight.yaml"
+	}
+
+	// Create app instance
+	preflight := app.New(os.Stdout)
+
+	// Run doctor check
+	doctorOpts := app.NewDoctorOptions(configPath, "default").
+		WithVerbose(doctorVerbose)
+
+	appReport, err := preflight.Doctor(ctx, doctorOpts)
+	if err != nil {
+		return fmt.Errorf("doctor check failed: %w", err)
+	}
+
+	// Convert to TUI types
+	tuiReport := tui.ConvertDoctorReport(appReport)
+
+	// Setup TUI options
+	tuiOpts := tui.NewDoctorReportOptions().
 		WithAutoFix(doctorFix)
 
 	if !doctorVerbose {
-		opts.Verbose = false
+		tuiOpts.Verbose = false
 	}
 
-	// Phase 5 implementation: Wire up to Preflight.Doctor() when app layer is complete.
-	// The doctor command will compare current system state against compiled config
-	// and detect drift (packages installed/removed, files modified, etc.).
-	report := &tui.DoctorReport{
-		Issues: []tui.DoctorIssue{},
-	}
-
-	ctx := context.Background()
-	result, err := tui.RunDoctorReport(ctx, report, opts)
+	// Run TUI report display
+	result, err := tui.RunDoctorReport(ctx, tuiReport, tuiOpts)
 	if err != nil {
-		return fmt.Errorf("doctor failed: %w", err)
+		return fmt.Errorf("doctor display failed: %w", err)
 	}
 
-	if result.Issues == 0 {
+	// Handle fix if requested
+	switch {
+	case doctorFix && appReport.FixableCount() > 0:
+		fixResult, err := preflight.Fix(ctx, appReport)
+		if err != nil {
+			return fmt.Errorf("fix failed: %w", err)
+		}
+		fmt.Printf("Fixed %d of %d issues.\n", fixResult.FixedCount(), appReport.FixableCount())
+		if fixResult.RemainingCount() > 0 {
+			fmt.Printf("%d issues could not be automatically fixed.\n", fixResult.RemainingCount())
+		}
+	case result.Issues == 0:
 		fmt.Println("No issues found. Your system is in sync.")
-		return nil
-	}
-
-	fmt.Printf("Found %d issues.\n", result.Issues)
-
-	if doctorFix {
-		fmt.Printf("Fixed %d of %d issues.\n", result.Fixed, result.FixesFound)
-	} else {
+	case appReport.FixableCount() > 0:
 		fmt.Println("\nRun 'preflight doctor --fix' to automatically fix issues.")
 	}
 

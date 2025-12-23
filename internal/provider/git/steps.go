@@ -85,9 +85,16 @@ func (s *ConfigStep) Apply(_ compiler.RunContext) error {
 func (s *ConfigStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 	return compiler.NewExplanation(
 		"Generate Git Config",
-		fmt.Sprintf("Generates %s with user, core, and alias settings.", s.cfg.ConfigPath()),
-		nil,
-	)
+		fmt.Sprintf("Generates %s with user identity, core settings, and aliases. This ensures consistent Git configuration across machines.", s.cfg.ConfigPath()),
+		[]string{
+			"https://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration",
+			"https://git-scm.com/docs/git-config",
+		},
+	).WithTradeoffs([]string{
+		"+ Consistent identity (name/email) across all repositories",
+		"+ Reproducible Git experience on any machine",
+		"- Overwrites existing ~/.gitconfig (backup recommended)",
+	})
 }
 
 // generateConfig generates the .gitconfig content.

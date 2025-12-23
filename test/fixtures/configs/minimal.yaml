@@ -1,0 +1,7 @@
+# Minimal test configuration
+defaults:
+  mode: intent
+
+targets:
+  default:
+    - base

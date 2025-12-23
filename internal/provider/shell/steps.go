@@ -71,11 +71,26 @@ func (s *FrameworkStep) Apply(_ compiler.RunContext) error {
 
 // Explain provides context for this step.
 func (s *FrameworkStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
+	var docLinks []string
+	switch s.config.Framework {
+	case "oh-my-zsh":
+		docLinks = []string{"https://ohmyz.sh/", "https://github.com/ohmyzsh/ohmyzsh"}
+	case "fisher":
+		docLinks = []string{"https://github.com/jorgebucaran/fisher"}
+	case "oh-my-fish":
+		docLinks = []string{"https://github.com/oh-my-fish/oh-my-fish"}
+	}
+
 	return compiler.NewExplanation(
 		"Install Shell Framework",
-		fmt.Sprintf("Install %s framework for %s shell", s.config.Framework, s.config.Name),
-		nil,
-	)
+		fmt.Sprintf("Install %s framework for %s shell. Provides plugin management, themes, and enhanced shell experience.", s.config.Framework, s.config.Name),
+		docLinks,
+	).WithTradeoffs([]string{
+		"+ Easy plugin and theme management",
+		"+ Enhanced shell productivity features",
+		"- Slight shell startup time increase",
+		"- Framework updates may require maintenance",
+	})
 }
 
 func (s *FrameworkStep) frameworkPath() string {

@@ -34,7 +34,7 @@ func (p *Preflight) Capture(ctx context.Context, opts CaptureOptions) (*CaptureF
 	// Determine which providers to capture
 	providers := opts.Providers
 	if len(providers) == 0 {
-		providers = []string{"brew", "git", "ssh", "shell"}
+		providers = []string{"brew", "git", "ssh", "shell", "nvim", "vscode", "runtime"}
 	}
 
 	for _, provider := range providers {
@@ -65,6 +65,12 @@ func (p *Preflight) captureProvider(ctx context.Context, provider, homeDir strin
 		items = p.captureSSHConfig(homeDir, now, includeSecrets)
 	case "shell":
 		items = p.captureShellConfig(homeDir, now)
+	case "nvim":
+		items = p.captureNvimConfig(homeDir, now)
+	case "vscode":
+		items = p.captureVSCodeExtensions(ctx, now)
+	case "runtime":
+		items = p.captureRuntimeVersions(ctx, now)
 	default:
 		return nil, fmt.Errorf("unknown provider: %s", provider)
 	}
@@ -160,6 +166,166 @@ func (p *Preflight) captureShellConfig(homeDir string, capturedAt time.Time) []C
 	return items
 }
 
+func (p *Preflight) captureNvimConfig(homeDir string, capturedAt time.Time) []CapturedItem {
+	var items []CapturedItem
+
+	// Check for Neovim configuration directory
+	nvimConfigDir := filepath.Join(homeDir, ".config", "nvim")
+	if info, err := os.Stat(nvimConfigDir); err == nil && info.IsDir() {
+		items = append(items, CapturedItem{
+			Provider:   "nvim",
+			Name:       "config",
+			Value:      nvimConfigDir,
+			Source:     nvimConfigDir,
+			CapturedAt: capturedAt,
+		})
+
+		// Check for lazy-lock.json (Lazy.nvim plugin manager)
+		lazyLockPath := filepath.Join(nvimConfigDir, "lazy-lock.json")
+		if _, err := os.Stat(lazyLockPath); err == nil {
+			items = append(items, CapturedItem{
+				Provider:   "nvim",
+				Name:       "lazy-lock.json",
+				Value:      lazyLockPath,
+				Source:     lazyLockPath,
+				CapturedAt: capturedAt,
+			})
+		}
+
+		// Check for packer compiled (Packer plugin manager)
+		packerPath := filepath.Join(nvimConfigDir, "plugin", "packer_compiled.lua")
+		if _, err := os.Stat(packerPath); err == nil {
+			items = append(items, CapturedItem{
+				Provider:   "nvim",
+				Name:       "packer_compiled.lua",
+				Value:      packerPath,
+				Source:     packerPath,
+				CapturedAt: capturedAt,
+			})
+		}
+	}
+
+	// Also check for init.vim in legacy location
+	legacyInitVim := filepath.Join(homeDir, ".vimrc")
+	if _, err := os.Stat(legacyInitVim); err == nil {
+		items = append(items, CapturedItem{
+			Provider:   "nvim",
+			Name:       ".vimrc",
+			Value:      legacyInitVim,
+			Source:     legacyInitVim,
+			CapturedAt: capturedAt,
+		})
+	}
+
+	return items
+}
+
+func (p *Preflight) captureVSCodeExtensions(_ context.Context, capturedAt time.Time) []CapturedItem {
+	// Try to list installed extensions
+	cmd := exec.Command("code", "--list-extensions")
+	output, err := cmd.Output()
+	if err != nil {
+		// VS Code not installed or command failed
+		return nil
+	}
+
+	extensions := strings.Split(strings.TrimSpace(string(output)), "\n")
+	items := make([]CapturedItem, 0, len(extensions))
+	for _, ext := range extensions {
+		if ext == "" {
+			continue
+		}
+		items = append(items, CapturedItem{
+			Provider:   "vscode",
+			Name:       ext,
+			Value:      ext,
+			Source:     "code --list-extensions",
+			CapturedAt: capturedAt,
+		})
+	}
+
+	return items
+}
+
+func (p *Preflight) captureRuntimeVersions(_ context.Context, capturedAt time.Time) []CapturedItem {
+	var items []CapturedItem
+
+	// Try mise (formerly rtx) first
+	if miseItems := p.captureMiseVersions(capturedAt); len(miseItems) > 0 {
+		items = append(items, miseItems...)
+		return items
+	}
+
+	// Fall back to asdf
+	if asdfItems := p.captureAsdfVersions(capturedAt); len(asdfItems) > 0 {
+		items = append(items, asdfItems...)
+	}
+
+	return items
+}
+
+func (p *Preflight) captureMiseVersions(capturedAt time.Time) []CapturedItem {
+	var items []CapturedItem
+
+	// Try 'mise list' command
+	cmd := exec.Command("mise", "list", "--current")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		// Parse mise output format: tool@version
+		fields := strings.Fields(line)
+		if len(fields) >= 2 {
+			items = append(items, CapturedItem{
+				Provider:   "runtime",
+				Name:       fields[0],
+				Value:      fields[1],
+				Source:     "mise list",
+				CapturedAt: capturedAt,
+			})
+		}
+	}
+
+	return items
+}
+
+func (p *Preflight) captureAsdfVersions(capturedAt time.Time) []CapturedItem {
+	var items []CapturedItem
+
+	// Try 'asdf current' command
+	cmd := exec.Command("asdf", "current")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		// Parse asdf output format: tool  version  (source)
+		fields := strings.Fields(line)
+		if len(fields) >= 2 {
+			items = append(items, CapturedItem{
+				Provider:   "runtime",
+				Name:       fields[0],
+				Value:      fields[1],
+				Source:     "asdf current",
+				CapturedAt: capturedAt,
+			})
+		}
+	}
+
+	return items
+}
+
 // Doctor checks system state against configuration and reports issues.
 func (p *Preflight) Doctor(ctx context.Context, opts DoctorOptions) (*DoctorReport, error) {
 	startTime := time.Now()
@@ -223,10 +389,24 @@ func (p *Preflight) Doctor(ctx context.Context, opts DoctorOptions) (*DoctorRepo
 	return report, nil
 }
 
-// Fix applies fixes for issues found by Doctor.
-func (p *Preflight) Fix(ctx context.Context, report *DoctorReport) ([]DoctorIssue, error) {
+// Fix applies fixes for issues found by Doctor and verifies the result.
+func (p *Preflight) Fix(ctx context.Context, report *DoctorReport) (*FixResult, error) {
 	if report == nil || !report.HasIssues() {
-		return nil, nil
+		return &FixResult{}, nil
+	}
+
+	// Collect fixable issues
+	var fixableIssues []DoctorIssue
+	for _, issue := range report.Issues {
+		if issue.Fixable {
+			fixableIssues = append(fixableIssues, issue)
+		}
+	}
+
+	if len(fixableIssues) == 0 {
+		return &FixResult{
+			RemainingIssues: report.Issues,
+		}, nil
 	}
 
 	// Re-run plan and apply
@@ -240,15 +420,34 @@ func (p *Preflight) Fix(ctx context.Context, report *DoctorReport) ([]DoctorIssu
 		return nil, fmt.Errorf("failed to apply fixes: %w", err)
 	}
 
-	// Return list of issues that were fixed
+	// Verify by re-running doctor
+	verifyOpts := NewDoctorOptions(report.ConfigPath, report.Target)
+	verifyReport, err := p.Doctor(ctx, verifyOpts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify fixes: %w", err)
+	}
+
+	// Determine which issues were fixed
+	remainingStepIDs := make(map[string]bool)
+	for _, issue := range verifyReport.Issues {
+		remainingStepIDs[issue.StepID] = true
+	}
+
 	var fixed []DoctorIssue
-	for _, issue := range report.Issues {
-		if issue.Fixable {
+	var remaining []DoctorIssue
+	for _, issue := range fixableIssues {
+		if remainingStepIDs[issue.StepID] {
+			remaining = append(remaining, issue)
+		} else {
 			fixed = append(fixed, issue)
 		}
 	}
 
-	return fixed, nil
+	return &FixResult{
+		FixedIssues:        fixed,
+		RemainingIssues:    remaining,
+		VerificationReport: verifyReport,
+	}, nil
 }
 
 // Diff shows differences between configuration and current system state.
