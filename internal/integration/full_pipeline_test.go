@@ -12,7 +12,8 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
-	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/adapters/command"
+	"github.com/felixgeelhaar/preflight/internal/adapters/filesystem"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
 	"github.com/felixgeelhaar/preflight/internal/provider/files"
 	"github.com/felixgeelhaar/preflight/internal/provider/git"
@@ -76,8 +77,8 @@ packages:
 	require.NotNil(t, merged)
 
 	// Phase 2: Compile to step graph
-	cmdRunner := ports.NewRealCommandRunner()
-	fs := ports.NewRealFileSystem()
+	cmdRunner := command.NewRealRunner()
+	fs := filesystem.NewRealFileSystem()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 	comp.RegisterProvider(git.NewProvider(fs))
@@ -141,7 +142,7 @@ packages:
 	merged, err := loader.Load(filepath.Join(tmpDir, "preflight.yaml"), target)
 	require.NoError(t, err)
 
-	cmdRunner := ports.NewRealCommandRunner()
+	cmdRunner := command.NewRealRunner()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 
@@ -239,8 +240,8 @@ ssh:
 	testutil.WriteTempFile(t, layersDir, "base.yaml", baseLayer)
 
 	// Register multiple providers
-	cmdRunner := ports.NewRealCommandRunner()
-	fs := ports.NewRealFileSystem()
+	cmdRunner := command.NewRealRunner()
+	fs := filesystem.NewRealFileSystem()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 	comp.RegisterProvider(git.NewProvider(fs))
@@ -292,7 +293,7 @@ files:
 	testutil.WriteTempFile(t, layersDir, "base.yaml", baseLayer)
 
 	// Full pipeline
-	fs := ports.NewRealFileSystem()
+	fs := filesystem.NewRealFileSystem()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(files.NewProvider(fs))
 
@@ -507,7 +508,7 @@ packages:
 `
 	testutil.WriteTempFile(t, layersDir, "base.yaml", baseLayer)
 
-	cmdRunner := ports.NewRealCommandRunner()
+	cmdRunner := command.NewRealRunner()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 

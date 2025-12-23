@@ -44,8 +44,8 @@ func NewList(items []ListItem) List {
 	return List{
 		items:    items,
 		selected: 0,
-		width:    40,
-		height:   10,
+		width:    ui.DefaultWidthSmall,
+		height:   ui.DefaultHeightSmall,
 		keys:     ui.DefaultKeyMap(),
 		styles:   ui.DefaultStyles(),
 	}

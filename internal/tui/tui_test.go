@@ -80,3 +80,57 @@ func TestNewCaptureReviewOptions(t *testing.T) {
 	assert.False(t, opts.AcceptAll)
 	assert.True(t, opts.Interactive)
 }
+
+func TestInitWizardOptions_WithPreselectedPreset(t *testing.T) {
+	t.Parallel()
+
+	opts := NewInitWizardOptions().
+		WithPreselectedPreset("nvim:balanced")
+
+	assert.Equal(t, "nvim:balanced", opts.PreselectedPreset)
+}
+
+func TestInitWizardOptions_WithSkipWelcome(t *testing.T) {
+	t.Parallel()
+
+	opts := NewInitWizardOptions().
+		WithSkipWelcome(true)
+
+	assert.True(t, opts.SkipWelcome)
+}
+
+func TestPlanReviewOptions_WithAutoApprove(t *testing.T) {
+	t.Parallel()
+
+	opts := NewPlanReviewOptions().
+		WithAutoApprove(true)
+
+	assert.True(t, opts.AutoApprove)
+}
+
+func TestApplyProgressOptions_WithQuiet(t *testing.T) {
+	t.Parallel()
+
+	opts := NewApplyProgressOptions().
+		WithQuiet(true)
+
+	assert.True(t, opts.Quiet)
+}
+
+func TestDoctorReportOptions_WithAutoFix(t *testing.T) {
+	t.Parallel()
+
+	opts := NewDoctorReportOptions().
+		WithAutoFix(true)
+
+	assert.True(t, opts.AutoFix)
+}
+
+func TestCaptureReviewOptions_WithAcceptAll(t *testing.T) {
+	t.Parallel()
+
+	opts := NewCaptureReviewOptions().
+		WithAcceptAll(true)
+
+	assert.True(t, opts.AcceptAll)
+}

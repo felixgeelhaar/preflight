@@ -212,6 +212,92 @@ func TestCaptureReviewModel_StatusIndicators(t *testing.T) {
 	assert.Contains(t, view, "1 rejected", "should show rejected count")
 }
 
+func TestCaptureReviewModel_IsItemReviewed(t *testing.T) {
+	t.Parallel()
+
+	items := createTestCaptureItemsMultiple(t)
+	model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+	model.width = 100
+	model.height = 24
+
+	// Before any action, no item should be reviewed
+	assert.False(t, model.isItemReviewed(0), "item 0 should not be reviewed")
+
+	// Accept first item
+	newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m := newModel.(captureReviewModel)
+
+	// Now item 0 should be reviewed
+	assert.True(t, m.isItemReviewed(0), "item 0 should be reviewed after accepting")
+	assert.False(t, m.isItemReviewed(1), "item 1 should not be reviewed yet")
+
+	// Index out of bounds should return true
+	assert.True(t, m.isItemReviewed(999), "out of bounds index should return true")
+}
+
+func TestCaptureReviewModel_FormatItemStatus(t *testing.T) {
+	t.Parallel()
+
+	items := createTestCaptureItemsMultiple(t)
+	model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+	model.width = 100
+	model.height = 24
+
+	// Initial status should be pending
+	status := model.formatItemStatus(0)
+	assert.Contains(t, status, "?", "unreviewed item should show ?")
+
+	// Accept first item
+	model.accepted = append(model.accepted, items[0])
+	status = model.formatItemStatus(0)
+	assert.Contains(t, status, "+", "accepted item should show +")
+
+	// Reject second item
+	model.rejected = append(model.rejected, items[1])
+	status = model.formatItemStatus(1)
+	assert.Contains(t, status, "-", "rejected item should show -")
+}
+
+func TestCaptureReviewModel_AdvanceCursor_WrapAround(t *testing.T) {
+	t.Parallel()
+
+	items := createTestCaptureItemsMultiple(t)
+	model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+	model.width = 100
+	model.height = 24
+
+	// Accept first two items
+	newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m := newModel.(captureReviewModel)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m = newModel.(captureReviewModel)
+
+	// Cursor should have found the remaining unreviewed item
+	assert.Equal(t, 2, m.cursor, "cursor should be at last item")
+}
+
+func TestCaptureReviewModel_AdvanceCursor_FindFromStart(t *testing.T) {
+	t.Parallel()
+
+	items := createTestCaptureItemsMultiple(t)
+	model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+	model.width = 100
+	model.height = 24
+
+	// Manually position cursor at the end
+	model.cursor = 2
+	// Mark last item as accepted
+	model.accepted = append(model.accepted, items[2])
+
+	// Accept item at cursor (which is already accepted, but tests the wrap around)
+	// Since cursor is at end and that item is reviewed, it should wrap to find first unreviewed
+	newModel, _ := model.advanceCursor()
+	m := newModel.(captureReviewModel)
+
+	// Should find the first unreviewed item (index 0)
+	assert.Equal(t, 0, m.cursor, "cursor should wrap around to first unreviewed item")
+}
+
 // Helper functions to create test capture items
 
 func createTestCaptureItems(t *testing.T) []CaptureItem {

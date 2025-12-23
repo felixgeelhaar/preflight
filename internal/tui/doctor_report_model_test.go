@@ -147,6 +147,32 @@ func TestDoctorReportModel_AutoFix(t *testing.T) {
 	assert.True(t, m.fixing, "should be in fixing state")
 }
 
+func TestDoctorReportModel_FormatSeverity(t *testing.T) {
+	t.Parallel()
+
+	report := createTestDoctorReport(t)
+	model := newDoctorReportModel(report, DoctorReportOptions{})
+
+	tests := []struct {
+		name     string
+		severity IssueSeverity
+		expected string
+	}{
+		{"error", IssueSeverityError, "✗"},
+		{"warning", IssueSeverityWarning, "!"},
+		{"info", IssueSeverityInfo, "i"},
+		{"unknown", IssueSeverity("other"), "?"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result := model.formatSeverity(tt.severity)
+			assert.Contains(t, result, tt.expected)
+		})
+	}
+}
+
 // Helper functions to create test doctor reports
 
 func createTestDoctorReport(t *testing.T) *DoctorReport {

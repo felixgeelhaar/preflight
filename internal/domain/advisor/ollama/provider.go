@@ -10,7 +10,8 @@ import (
 
 // Provider errors.
 var (
-	ErrEmptyModel = errors.New("model is required")
+	ErrNotConfigured = errors.New("ollama provider is not configured")
+	ErrEmptyModel    = errors.New("model is required")
 )
 
 // Config holds the configuration for the Ollama provider.
@@ -92,14 +93,13 @@ func (p *Provider) Available() bool {
 }
 
 // Complete sends a prompt to Ollama and returns the response.
-// Note: This is a skeleton implementation. Actual HTTP calls would be made
-// in production, but tests use mocks.
+// AI features require API integration which is planned for a future release.
 func (p *Provider) Complete(_ context.Context, _ advisor.Prompt) (advisor.Response, error) {
-	// In a full implementation, this would:
-	// 1. Build the Ollama API request
-	// 2. Make an HTTP POST to the /api/generate endpoint
-	// 3. Parse the response and return it
+	if !p.Available() {
+		return advisor.Response{}, ErrNotConfigured
+	}
 
-	// For now, return a placeholder that would be replaced by actual API call
-	return advisor.Response{}, errors.New("not implemented: requires API call")
+	// AI completion requires Ollama API integration.
+	// Use the noop provider or disable AI features with --no-ai flag.
+	return advisor.Response{}, ErrNotConfigured
 }

@@ -42,8 +42,9 @@ func runDoctor(_ *cobra.Command, _ []string) error {
 		opts.Verbose = false
 	}
 
-	// TODO: Run actual doctor checks to populate the report
-	// For now, create an empty report that will show "No issues found"
+	// Phase 5 implementation: Wire up to Preflight.Doctor() when app layer is complete.
+	// The doctor command will compare current system state against compiled config
+	// and detect drift (packages installed/removed, files modified, etc.).
 	report := &tui.DoctorReport{
 		Issues: []tui.DoctorIssue{},
 	}

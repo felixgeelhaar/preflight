@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/felixgeelhaar/preflight/internal/adapters/command"
+	"github.com/felixgeelhaar/preflight/internal/adapters/filesystem"
 	lockadapter "github.com/felixgeelhaar/preflight/internal/adapters/lockfile"
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
 	"github.com/felixgeelhaar/preflight/internal/domain/lock"
-	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/provider/apt"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
 	"github.com/felixgeelhaar/preflight/internal/provider/files"
@@ -35,8 +36,8 @@ type Preflight struct {
 // New creates a new Preflight application.
 func New(out io.Writer) *Preflight {
 	// Create real implementations
-	cmdRunner := ports.NewRealCommandRunner()
-	fs := ports.NewRealFileSystem()
+	cmdRunner := command.NewRealRunner()
+	fs := filesystem.NewRealFileSystem()
 
 	// Create compiler with providers
 	comp := compiler.NewCompiler()

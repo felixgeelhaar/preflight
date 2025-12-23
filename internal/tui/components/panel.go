@@ -21,8 +21,8 @@ type Panel struct {
 func NewPanel(title string) Panel {
 	return Panel{
 		title:     title,
-		width:     40,
-		height:    10,
+		width:     ui.DefaultWidthSmall,
+		height:    ui.DefaultHeightSmall,
 		hasBorder: true,
 		styles:    ui.DefaultStyles(),
 	}
@@ -133,8 +133,8 @@ func NewSplitPanel(left, right Panel) SplitPanel {
 		left:   left,
 		right:  right,
 		ratio:  0.5,
-		width:  80,
-		height: 20,
+		width:  ui.DefaultWidthLarge,
+		height: ui.DefaultHeightMedium,
 		gap:    1,
 		styles: ui.DefaultStyles(),
 	}

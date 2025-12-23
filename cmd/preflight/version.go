@@ -16,9 +16,10 @@ var (
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show version information",
-	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Printf("preflight %s\n", version)
-		fmt.Printf("  commit: %s\n", commit)
-		fmt.Printf("  built:  %s\n", buildDate)
+	Run: func(cmd *cobra.Command, _ []string) {
+		out := cmd.OutOrStdout()
+		_, _ = fmt.Fprintf(out, "preflight %s\n", version)
+		_, _ = fmt.Fprintf(out, "  commit: %s\n", commit)
+		_, _ = fmt.Fprintf(out, "  built:  %s\n", buildDate)
 	},
 }

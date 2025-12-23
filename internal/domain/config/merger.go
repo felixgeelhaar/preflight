@@ -40,26 +40,54 @@ func NewMerger() *Merger {
 // - Maps: deep merge
 // - Lists: set union (deduplicated)
 func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
-	merged := &MergedConfig{
-		provenance: make(ProvenanceMap),
+	// Calculate capacity hints for pre-allocation
+	var formulaeCount, casksCount, tapsCount, ppasCount, aptPkgCount int
+	var filesCount, aliasesCount, includesCount, sshHostsCount, sshMatchesCount int
+	var toolsCount, pluginsCount, shellsCount, envCount, aliasCount int
+	var extCount, keybindingsCount int
+
+	for _, layer := range layers {
+		formulaeCount += len(layer.Packages.Brew.Formulae)
+		casksCount += len(layer.Packages.Brew.Casks)
+		tapsCount += len(layer.Packages.Brew.Taps)
+		ppasCount += len(layer.Packages.Apt.PPAs)
+		aptPkgCount += len(layer.Packages.Apt.Packages)
+		filesCount += len(layer.Files)
+		aliasesCount += len(layer.Git.Aliases)
+		includesCount += len(layer.Git.Includes)
+		sshHostsCount += len(layer.SSH.Hosts)
+		sshMatchesCount += len(layer.SSH.Matches)
+		toolsCount += len(layer.Runtime.Tools)
+		pluginsCount += len(layer.Runtime.Plugins)
+		shellsCount += len(layer.Shell.Shells)
+		envCount += len(layer.Shell.Env)
+		aliasCount += len(layer.Shell.Aliases)
+		extCount += len(layer.VSCode.Extensions)
+		keybindingsCount += len(layer.VSCode.Keybindings)
 	}
 
-	// Track seen items for deduplication
-	formulaeSet := make(map[string]bool)
-	casksSet := make(map[string]bool)
-	tapsSet := make(map[string]bool)
-	ppasSet := make(map[string]bool)
-	aptPackagesSet := make(map[string]bool)
-	filesMap := make(map[string]FileDeclaration)
-	aliasesMap := make(map[string]string)
-	includesSet := make(map[string]bool)
-	sshHostsMap := make(map[string]SSHHostConfig)
-	sshMatchesSet := make(map[string]bool)
-	runtimeToolsMap := make(map[string]RuntimeToolConfig)
-	runtimePluginsMap := make(map[string]RuntimePluginConfig)
-	shellsMap := make(map[string]ShellConfigEntry)
-	shellEnvMap := make(map[string]string)
-	shellAliasesMap := make(map[string]string)
+	merged := &MergedConfig{
+		provenance: make(ProvenanceMap, 32), // Common paths are limited
+	}
+
+	// Pre-allocate maps with calculated capacity hints to avoid rehashing
+	formulaeSet := make(map[string]bool, formulaeCount)
+	casksSet := make(map[string]bool, casksCount)
+	tapsSet := make(map[string]bool, tapsCount)
+	ppasSet := make(map[string]bool, ppasCount)
+	aptPackagesSet := make(map[string]bool, aptPkgCount)
+	filesMap := make(map[string]FileDeclaration, filesCount)
+	aliasesMap := make(map[string]string, aliasesCount)
+	includesSet := make(map[string]bool, includesCount)
+	sshHostsMap := make(map[string]SSHHostConfig, sshHostsCount)
+	sshMatchesSet := make(map[string]bool, sshMatchesCount)
+	runtimeToolsMap := make(map[string]RuntimeToolConfig, toolsCount)
+	runtimePluginsMap := make(map[string]RuntimePluginConfig, pluginsCount)
+	shellsMap := make(map[string]ShellConfigEntry, shellsCount)
+	shellEnvMap := make(map[string]string, envCount)
+	shellAliasesMap := make(map[string]string, aliasCount)
+	vscodeExtensionsSet := make(map[string]bool, extCount)
+	vscodeKeybindingsSet := make(map[string]bool, keybindingsCount)
 
 	for _, layer := range layers {
 		// Merge brew formulae
@@ -284,17 +312,10 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 			m.trackProvenance(merged, "nvim.ensure_install", "true", layer.Provenance)
 		}
 
-		// Merge VSCode extensions (set union)
+		// Merge VSCode extensions (set union) - O(n) with map lookup
 		for _, ext := range layer.VSCode.Extensions {
-			// Check if already present
-			found := false
-			for _, existing := range merged.VSCode.Extensions {
-				if existing == ext {
-					found = true
-					break
-				}
-			}
-			if !found {
+			if !vscodeExtensionsSet[ext] {
+				vscodeExtensionsSet[ext] = true
 				merged.VSCode.Extensions = append(merged.VSCode.Extensions, ext)
 			}
 			m.trackProvenance(merged, "vscode.extensions", ext, layer.Provenance)
@@ -311,17 +332,11 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 			}
 		}
 
-		// Merge VSCode keybindings (set union by key+command)
+		// Merge VSCode keybindings (set union by key+command) - O(n) with map lookup
 		for _, kb := range layer.VSCode.Keybindings {
-			// Check if already present
-			found := false
-			for _, existing := range merged.VSCode.Keybindings {
-				if existing.Key == kb.Key && existing.Command == kb.Command {
-					found = true
-					break
-				}
-			}
-			if !found {
+			kbKey := kb.Key + ":" + kb.Command
+			if !vscodeKeybindingsSet[kbKey] {
+				vscodeKeybindingsSet[kbKey] = true
 				merged.VSCode.Keybindings = append(merged.VSCode.Keybindings, kb)
 			}
 			m.trackProvenance(merged, "vscode.keybindings", kb.Key, layer.Provenance)

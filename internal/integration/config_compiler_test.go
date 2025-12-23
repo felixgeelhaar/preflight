@@ -9,7 +9,8 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
-	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/adapters/command"
+	"github.com/felixgeelhaar/preflight/internal/adapters/filesystem"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
 	"github.com/felixgeelhaar/preflight/internal/provider/files"
 	"github.com/felixgeelhaar/preflight/internal/provider/git"
@@ -57,7 +58,7 @@ packages:
 	require.NotNil(t, merged)
 
 	// Compile to step graph
-	cmdRunner := ports.NewRealCommandRunner()
+	cmdRunner := command.NewRealRunner()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 
@@ -119,7 +120,7 @@ git:
 	require.NoError(t, err)
 
 	// Compile
-	fs := ports.NewRealFileSystem()
+	fs := filesystem.NewRealFileSystem()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(git.NewProvider(fs))
 
@@ -239,7 +240,7 @@ files:
 	require.NoError(t, err)
 
 	// Compile
-	fs := ports.NewRealFileSystem()
+	fs := filesystem.NewRealFileSystem()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(files.NewProvider(fs))
 
@@ -355,7 +356,7 @@ packages:
 	merged, err := loader.Load(filepath.Join(tmpDir, "preflight.yaml"), target)
 	require.NoError(t, err)
 
-	cmdRunner := ports.NewRealCommandRunner()
+	cmdRunner := command.NewRealRunner()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 

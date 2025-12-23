@@ -37,6 +37,16 @@ func NewStepID(value string) (StepID, error) {
 	return StepID{value: trimmed}, nil
 }
 
+// MustNewStepID creates a new StepID from a string, panicking on error.
+// Use this for compile-time known values that should never fail validation.
+func MustNewStepID(value string) StepID {
+	id, err := NewStepID(value)
+	if err != nil {
+		panic("invalid step ID: " + value + ": " + err.Error())
+	}
+	return id
+}
+
 // String returns the string representation.
 func (id StepID) String() string {
 	return id.value

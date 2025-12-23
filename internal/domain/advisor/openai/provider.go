@@ -92,21 +92,13 @@ func (p *Provider) Available() bool {
 }
 
 // Complete sends a prompt to OpenAI and returns the response.
-// Note: This is a skeleton implementation. Actual HTTP calls would be made
-// in production, but tests use mocks.
+// AI features require API integration which is planned for a future release.
 func (p *Provider) Complete(_ context.Context, _ advisor.Prompt) (advisor.Response, error) {
 	if !p.Available() {
 		return advisor.Response{}, ErrNotConfigured
 	}
 
-	// In a full implementation, this would:
-	// 1. Build the OpenAI API request
-	// 2. Make an HTTP POST to the chat completions endpoint
-	// 3. Parse the response and return it
-
-	// For now, return a placeholder that would be replaced by actual API call
-	// Production code would use the openai-go SDK or make HTTP requests directly
-
-	// This allows the interface to be tested without making real API calls
-	return advisor.Response{}, errors.New("not implemented: requires API call")
+	// AI completion requires OpenAI API integration.
+	// Use the noop provider or disable AI features with --no-ai flag.
+	return advisor.Response{}, ErrNotConfigured
 }

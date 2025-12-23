@@ -69,6 +69,79 @@ func TestAdvisor_Suggest(t *testing.T) {
 	assert.True(t, suggestion.HasRecommendations())
 }
 
+func TestAdvisor_Suggest_AllCases(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		category     string
+		experience   advisor.ExperienceLevel
+		wantPresetID string
+		wantHasRecs  bool
+	}{
+		{
+			name:         "nvim beginner",
+			category:     "nvim",
+			experience:   advisor.ExperienceBeginner,
+			wantPresetID: "nvim:minimal",
+			wantHasRecs:  true,
+		},
+		{
+			name:         "nvim intermediate",
+			category:     "nvim",
+			experience:   advisor.ExperienceIntermediate,
+			wantPresetID: "nvim:balanced",
+			wantHasRecs:  true,
+		},
+		{
+			name:         "nvim advanced",
+			category:     "nvim",
+			experience:   advisor.ExperienceAdvanced,
+			wantPresetID: "nvim:pro",
+			wantHasRecs:  true,
+		},
+		{
+			name:         "shell category",
+			category:     "shell",
+			experience:   advisor.ExperienceIntermediate,
+			wantPresetID: "shell:starship",
+			wantHasRecs:  true,
+		},
+		{
+			name:         "unknown category defaults",
+			category:     "unknown",
+			experience:   advisor.ExperienceIntermediate,
+			wantPresetID: "unknown:default",
+			wantHasRecs:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			adv := NewAdvisor()
+			profile, err := advisor.NewUserProfile(tt.experience)
+			require.NoError(t, err)
+
+			ctx, err := advisor.NewSuggestContext(tt.category, profile)
+			require.NoError(t, err)
+
+			suggestion, err := adv.Suggest(context.Background(), ctx)
+
+			require.NoError(t, err)
+			assert.Equal(t, "noop", suggestion.Provider())
+			assert.Equal(t, tt.wantHasRecs, suggestion.HasRecommendations())
+
+			if tt.wantHasRecs {
+				recs := suggestion.Recommendations()
+				assert.NotEmpty(t, recs)
+				assert.Equal(t, tt.wantPresetID, recs[0].PresetID())
+			}
+		})
+	}
+}
+
 func TestAdvisor_Explain(t *testing.T) {
 	t.Parallel()
 

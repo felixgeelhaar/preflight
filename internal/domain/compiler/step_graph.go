@@ -138,11 +138,10 @@ func (g *StepGraph) TopologicalSort() ([]Step, error) {
 
 	sorted := make([]Step, 0, len(g.steps))
 
-	for len(queue) > 0 {
-		// Pop from queue
-		id := queue[0]
-		queue = queue[1:]
-
+	// Use index-based queue traversal to avoid O(n) slice re-assignment
+	// and allow garbage collection of processed elements
+	for front := 0; front < len(queue); front++ {
+		id := queue[front]
 		sorted = append(sorted, g.steps[id])
 
 		// Reduce in-degree for all dependents

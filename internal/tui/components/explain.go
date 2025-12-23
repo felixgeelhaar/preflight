@@ -32,10 +32,10 @@ type Explain struct {
 
 // NewExplain creates a new explain panel.
 func NewExplain() Explain {
-	vp := viewport.New(40, 10)
+	vp := viewport.New(ui.DefaultWidthSmall, ui.DefaultHeightSmall)
 	return Explain{
-		width:    40,
-		height:   10,
+		width:    ui.DefaultWidthSmall,
+		height:   ui.DefaultHeightSmall,
 		links:    make(map[string]string),
 		sections: make([]ExplainSection, 0),
 		viewport: vp,

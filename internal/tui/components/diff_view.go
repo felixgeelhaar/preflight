@@ -54,11 +54,11 @@ type DiffView struct {
 
 // NewDiffView creates a new diff view.
 func NewDiffView() DiffView {
-	vp := viewport.New(60, 20)
+	vp := viewport.New(ui.DefaultWidthMedium, ui.DefaultHeightMedium)
 	return DiffView{
 		hunks:    make([]DiffHunk, 0),
-		width:    60,
-		height:   20,
+		width:    ui.DefaultWidthMedium,
+		height:   ui.DefaultHeightMedium,
 		viewport: vp,
 		keys:     ui.DefaultKeyMap(),
 		styles:   ui.DefaultStyles(),

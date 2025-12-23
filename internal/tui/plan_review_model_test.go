@@ -157,6 +157,30 @@ func TestPlanReviewModel_StatusIndicators(t *testing.T) {
 	assert.Contains(t, view, "✓", "should show ✓ for satisfied")
 }
 
+func TestStatusIndicator(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		status   compiler.StepStatus
+		expected string
+	}{
+		{"needs_apply", compiler.StatusNeedsApply, "+"},
+		{"satisfied", compiler.StatusSatisfied, "✓"},
+		{"failed", compiler.StatusFailed, "✗"},
+		{"skipped", compiler.StatusSkipped, "-"},
+		{"unknown", compiler.StatusUnknown, "?"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result := statusIndicator(tt.status)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 // Helper functions to create test plans
 
 func mustNewStepID(t *testing.T, value string) compiler.StepID {

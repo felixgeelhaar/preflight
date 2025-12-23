@@ -162,3 +162,89 @@ func TestYAMLRepository_SaveModes(t *testing.T) {
 		})
 	}
 }
+
+func TestYAMLRepository_LoadReadError(t *testing.T) {
+	t.Parallel()
+
+	repo := NewYAMLRepository()
+	ctx := context.Background()
+
+	tmpDir := t.TempDir()
+	lockPath := filepath.Join(tmpDir, "unreadable.lock")
+
+	// Create a directory instead of a file - reading a directory causes an error
+	err := os.MkdirAll(lockPath, 0o755)
+	require.NoError(t, err)
+
+	_, loadErr := repo.Load(ctx, lockPath)
+	assert.Error(t, loadErr)
+	assert.Contains(t, loadErr.Error(), "failed to read lockfile")
+}
+
+func TestYAMLRepository_LoadInvalidDTO(t *testing.T) {
+	t.Parallel()
+
+	repo := NewYAMLRepository()
+	ctx := context.Background()
+
+	tmpDir := t.TempDir()
+	lockPath := filepath.Join(tmpDir, "invalid_dto.lock")
+
+	// Write valid YAML but with invalid data for LockfileFromDTO
+	// Missing required fields or invalid mode
+	invalidYAML := `
+version: 1
+mode: invalid_mode
+machine_info:
+  os: darwin
+  arch: arm64
+  hostname: test
+packages: {}
+`
+	err := os.WriteFile(lockPath, []byte(invalidYAML), 0o644)
+	require.NoError(t, err)
+
+	_, loadErr := repo.Load(ctx, lockPath)
+	assert.ErrorIs(t, loadErr, lock.ErrLockfileCorrupt)
+}
+
+func TestYAMLRepository_SaveWriteError(t *testing.T) {
+	t.Parallel()
+
+	repo := NewYAMLRepository()
+	ctx := context.Background()
+
+	// Use a path that can't be written (non-existent root with no permission)
+	lockPath := "/nonexistent_root_dir_12345/nested/preflight.lock"
+
+	machineInfo := lock.MachineInfoFromSystem()
+	lockfile := lock.NewLockfile(config.ModeIntent, machineInfo)
+
+	err := repo.Save(ctx, lockPath, lockfile)
+	assert.ErrorIs(t, err, lock.ErrSaveFailed)
+}
+
+func TestYAMLRepository_SaveToReadOnlyDir(t *testing.T) {
+	t.Parallel()
+
+	repo := NewYAMLRepository()
+	ctx := context.Background()
+
+	tmpDir := t.TempDir()
+	readOnlyDir := filepath.Join(tmpDir, "readonly")
+	err := os.MkdirAll(readOnlyDir, 0o555)
+	require.NoError(t, err)
+
+	// Cleanup: restore permissions so TempDir cleanup works
+	t.Cleanup(func() {
+		_ = os.Chmod(readOnlyDir, 0o755)
+	})
+
+	lockPath := filepath.Join(readOnlyDir, "preflight.lock")
+
+	machineInfo := lock.MachineInfoFromSystem()
+	lockfile := lock.NewLockfile(config.ModeIntent, machineInfo)
+
+	err = repo.Save(ctx, lockPath, lockfile)
+	assert.ErrorIs(t, err, lock.ErrSaveFailed)
+}

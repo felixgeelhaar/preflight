@@ -10,7 +10,8 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
-	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/adapters/command"
+	"github.com/felixgeelhaar/preflight/internal/adapters/filesystem"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
 	"github.com/felixgeelhaar/preflight/internal/provider/git"
 	"github.com/felixgeelhaar/preflight/internal/testutil"
@@ -53,7 +54,7 @@ packages:
 	require.NoError(t, err)
 
 	// Compile
-	cmdRunner := ports.NewRealCommandRunner()
+	cmdRunner := command.NewRealRunner()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 
@@ -102,7 +103,7 @@ packages:
 	merged, err := loader.Load(filepath.Join(tmpDir, "preflight.yaml"), target)
 	require.NoError(t, err)
 
-	cmdRunner := ports.NewRealCommandRunner()
+	cmdRunner := command.NewRealRunner()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 
@@ -159,7 +160,7 @@ git:
 	merged, err := loader.Load(filepath.Join(tmpDir, "preflight.yaml"), target)
 	require.NoError(t, err)
 
-	fs := ports.NewRealFileSystem()
+	fs := filesystem.NewRealFileSystem()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(git.NewProvider(fs))
 
@@ -212,7 +213,7 @@ packages:
 	merged, err := loader.Load(filepath.Join(tmpDir, "preflight.yaml"), target)
 	require.NoError(t, err)
 
-	cmdRunner := ports.NewRealCommandRunner()
+	cmdRunner := command.NewRealRunner()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 
@@ -274,7 +275,7 @@ packages:
 	merged, err := loader.Load(filepath.Join(tmpDir, "preflight.yaml"), target)
 	require.NoError(t, err)
 
-	cmdRunner := ports.NewRealCommandRunner()
+	cmdRunner := command.NewRealRunner()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 
@@ -373,7 +374,7 @@ packages:
 	merged, err := loader.Load(filepath.Join(tmpDir, "preflight.yaml"), target)
 	require.NoError(t, err)
 
-	cmdRunner := ports.NewRealCommandRunner()
+	cmdRunner := command.NewRealRunner()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 
@@ -421,7 +422,7 @@ packages:
 	merged, err := loader.Load(filepath.Join(tmpDir, "preflight.yaml"), target)
 	require.NoError(t, err)
 
-	cmdRunner := ports.NewRealCommandRunner()
+	cmdRunner := command.NewRealRunner()
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 

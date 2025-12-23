@@ -43,8 +43,9 @@ func runCapture(_ *cobra.Command, _ []string) error {
 		opts.Interactive = false
 	}
 
-	// TODO: Run actual capture to discover items
-	// For now, create an empty list that will show "Nothing captured"
+	// Phase 5 implementation: Wire up to Preflight.Capture() when app layer is complete.
+	// The capture command will scan the system for installed packages (brew list, dpkg, etc.),
+	// dotfiles, and settings, presenting them in a git-add -p style review interface.
 	items := []tui.CaptureItem{}
 
 	ctx := context.Background()

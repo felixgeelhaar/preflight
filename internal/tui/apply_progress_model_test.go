@@ -182,3 +182,79 @@ func TestApplyProgressModel_ProgressCalculation(t *testing.T) {
 	model.stepsCompleted = 3
 	assert.InDelta(t, 1.0, model.progress(), 0.001)
 }
+
+func TestApplyProgressModel_ProgressWithZeroTotal(t *testing.T) {
+	t.Parallel()
+
+	plan := execution.NewExecutionPlan()
+	model := newApplyProgressModel(plan, ApplyProgressOptions{ShowDetails: true})
+	model.width = 100
+	model.height = 24
+	model.stepsTotal = 0
+
+	// Progress should be 0 when total is 0
+	assert.InDelta(t, 0.0, model.progress(), 0.001)
+}
+
+func TestApplyProgressModel_FormatResultStatus(t *testing.T) {
+	t.Parallel()
+
+	plan := createTestPlan(t)
+	model := newApplyProgressModel(plan, ApplyProgressOptions{})
+	stepID := mustNewStepID(t, "test:step")
+
+	tests := []struct {
+		name     string
+		status   compiler.StepStatus
+		expected string
+	}{
+		{"satisfied", compiler.StatusSatisfied, "✓"},
+		{"failed", compiler.StatusFailed, "✗"},
+		{"skipped", compiler.StatusSkipped, "-"},
+		{"needs_apply", compiler.StatusNeedsApply, "?"},
+		{"unknown", compiler.StatusUnknown, "?"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result := execution.NewStepResult(stepID, tt.status, nil)
+			status := model.formatResultStatus(result)
+			assert.Contains(t, status, tt.expected)
+		})
+	}
+}
+
+func TestApplyProgressModel_View_WithCompletedSteps(t *testing.T) {
+	t.Parallel()
+
+	plan := createTestPlan(t)
+	model := newApplyProgressModel(plan, ApplyProgressOptions{ShowDetails: true})
+	model.width = 100
+	model.height = 30
+
+	// Add a completed step
+	stepID := mustNewStepID(t, "brew:formula:git")
+	result := execution.NewStepResult(stepID, compiler.StatusSatisfied, nil)
+	model.completed = append(model.completed, result)
+	model.stepsCompleted = 1
+	model.stepsTotal = 2
+
+	view := model.View()
+	assert.NotEmpty(t, view)
+}
+
+func TestApplyProgressModel_View_Done(t *testing.T) {
+	t.Parallel()
+
+	plan := createTestPlan(t)
+	model := newApplyProgressModel(plan, ApplyProgressOptions{ShowDetails: true})
+	model.width = 100
+	model.height = 24
+	model.done = true
+	model.stepsCompleted = 1
+	model.stepsTotal = 1
+
+	view := model.View()
+	assert.Contains(t, view, "completed successfully")
+}

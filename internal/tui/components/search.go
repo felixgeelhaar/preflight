@@ -32,11 +32,11 @@ type Search struct {
 func NewSearch() Search {
 	ti := textinput.New()
 	ti.Placeholder = "Filter..."
-	ti.CharLimit = 100
+	ti.CharLimit = ui.DefaultSearchCharLimit
 
 	return Search{
 		input:  ti,
-		width:  40,
+		width:  ui.DefaultWidthSmall,
 		keys:   ui.DefaultKeyMap(),
 		styles: ui.DefaultStyles(),
 	}

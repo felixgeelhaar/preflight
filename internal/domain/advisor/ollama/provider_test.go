@@ -124,3 +124,74 @@ func TestConfig_Validate(t *testing.T) {
 		})
 	}
 }
+
+func TestNewProviderWithConfig(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		config      Config
+		wantErr     bool
+		wantErrType error
+	}{
+		{
+			name: "valid config with default endpoint",
+			config: Config{
+				Model: "llama3.2",
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid config with custom endpoint",
+			config: Config{
+				Endpoint: "http://custom:11434",
+				Model:    "codellama",
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing model",
+			config: Config{
+				Endpoint: "http://localhost:11434",
+			},
+			wantErr:     true,
+			wantErrType: ErrEmptyModel,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			p, err := NewProviderWithConfig(tt.config)
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.wantErrType != nil {
+					assert.ErrorIs(t, err, tt.wantErrType)
+				}
+				assert.Nil(t, p)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, p)
+				assert.Equal(t, tt.config.Model, p.model)
+				if tt.config.Endpoint != "" {
+					assert.Equal(t, tt.config.Endpoint, p.endpoint)
+				} else {
+					assert.Equal(t, "http://localhost:11434", p.endpoint)
+				}
+			}
+		})
+	}
+}
+
+func TestProvider_Complete_Available(t *testing.T) {
+	t.Parallel()
+
+	p := NewProvider("http://localhost:11434")
+	prompt := advisor.NewPrompt("system", "user")
+
+	_, err := p.Complete(context.Background(), prompt)
+
+	// The API is not actually integrated, so it returns ErrNotConfigured
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrNotConfigured)
+}
