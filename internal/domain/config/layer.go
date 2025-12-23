@@ -128,6 +128,26 @@ type SSHConfig struct {
 	Matches  []SSHMatchConfig  `yaml:"matches,omitempty"`
 }
 
+// RuntimeToolConfig represents a tool with its version.
+type RuntimeToolConfig struct {
+	Name    string `yaml:"name"`
+	Version string `yaml:"version"`
+}
+
+// RuntimePluginConfig represents a custom plugin source.
+type RuntimePluginConfig struct {
+	Name string `yaml:"name"`
+	URL  string `yaml:"url,omitempty"`
+}
+
+// RuntimeConfig represents runtime version manager configuration.
+type RuntimeConfig struct {
+	Backend string                `yaml:"backend,omitempty"`
+	Scope   string                `yaml:"scope,omitempty"`
+	Tools   []RuntimeToolConfig   `yaml:"tools,omitempty"`
+	Plugins []RuntimePluginConfig `yaml:"plugins,omitempty"`
+}
+
 // Layer is a composable configuration overlay.
 type Layer struct {
 	Name       LayerName
@@ -136,6 +156,7 @@ type Layer struct {
 	Files      []FileDeclaration
 	Git        GitConfig
 	SSH        SSHConfig
+	Runtime    RuntimeConfig
 }
 
 // layerYAML is the YAML representation for unmarshaling.
@@ -145,6 +166,7 @@ type layerYAML struct {
 	Files    []FileDeclaration `yaml:"files,omitempty"`
 	Git      GitConfig         `yaml:"git,omitempty"`
 	SSH      SSHConfig         `yaml:"ssh,omitempty"`
+	Runtime  RuntimeConfig     `yaml:"runtime,omitempty"`
 }
 
 // ParseLayer parses a Layer from YAML bytes.
@@ -165,6 +187,7 @@ func ParseLayer(data []byte) (*Layer, error) {
 		Files:    raw.Files,
 		Git:      raw.Git,
 		SSH:      raw.SSH,
+		Runtime:  raw.Runtime,
 	}, nil
 }
 

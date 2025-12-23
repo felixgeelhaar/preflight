@@ -100,6 +100,7 @@ internal/
     files/
     git/
     ssh/
+    shell/
     runtime/
     editor/
       nvim/
@@ -163,6 +164,7 @@ type Advisor interface {
 | files | Dotfile rendering, linking, drift detection |
 | git | .gitconfig generation, identity separation |
 | ssh | ~/.ssh/config rendering, never exports keys |
+| shell | Shell framework, plugins, themes (oh-my-zsh, fisher, starship) |
 | runtime | rtx/asdf tool version management |
 | nvim | Neovim install, preset bootstrap, lazy-lock |
 | vscode | Extension install, settings management |

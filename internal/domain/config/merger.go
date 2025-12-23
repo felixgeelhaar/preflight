@@ -9,6 +9,7 @@ type MergedConfig struct {
 	Files      []FileDeclaration
 	Git        GitConfig
 	SSH        SSHConfig
+	Runtime    RuntimeConfig
 	provenance ProvenanceMap
 }
 
@@ -49,6 +50,8 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 	includesSet := make(map[string]bool)
 	sshHostsMap := make(map[string]SSHHostConfig)
 	sshMatchesSet := make(map[string]bool)
+	runtimeToolsMap := make(map[string]RuntimeToolConfig)
+	runtimePluginsMap := make(map[string]RuntimePluginConfig)
 
 	for _, layer := range layers {
 		// Merge brew formulae
@@ -187,6 +190,28 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 				m.trackProvenance(merged, "ssh.matches", match.Match, layer.Provenance)
 			}
 		}
+
+		// Merge runtime config (scalars: last-wins)
+		if layer.Runtime.Backend != "" {
+			merged.Runtime.Backend = layer.Runtime.Backend
+			m.trackProvenance(merged, "runtime.backend", layer.Runtime.Backend, layer.Provenance)
+		}
+		if layer.Runtime.Scope != "" {
+			merged.Runtime.Scope = layer.Runtime.Scope
+			m.trackProvenance(merged, "runtime.scope", layer.Runtime.Scope, layer.Provenance)
+		}
+
+		// Merge runtime tools (last-wins per tool name)
+		for _, tool := range layer.Runtime.Tools {
+			runtimeToolsMap[tool.Name] = tool
+			m.trackProvenance(merged, "runtime.tools", tool.Name, layer.Provenance)
+		}
+
+		// Merge runtime plugins (last-wins per plugin name)
+		for _, plugin := range layer.Runtime.Plugins {
+			runtimePluginsMap[plugin.Name] = plugin
+			m.trackProvenance(merged, "runtime.plugins", plugin.Name, layer.Provenance)
+		}
 	}
 
 	// Convert files map to slice
@@ -202,6 +227,16 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 	// Convert SSH hosts map to slice
 	for _, host := range sshHostsMap {
 		merged.SSH.Hosts = append(merged.SSH.Hosts, host)
+	}
+
+	// Convert runtime tools map to slice
+	for _, tool := range runtimeToolsMap {
+		merged.Runtime.Tools = append(merged.Runtime.Tools, tool)
+	}
+
+	// Convert runtime plugins map to slice
+	for _, plugin := range runtimePluginsMap {
+		merged.Runtime.Plugins = append(merged.Runtime.Plugins, plugin)
 	}
 
 	return merged, nil

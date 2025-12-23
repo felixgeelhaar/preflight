@@ -234,6 +234,48 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 		raw["ssh"] = ssh
 	}
 
+	// Convert runtime config
+	runtime := make(map[string]interface{})
+
+	if m.Runtime.Backend != "" {
+		runtime["backend"] = m.Runtime.Backend
+	}
+	if m.Runtime.Scope != "" {
+		runtime["scope"] = m.Runtime.Scope
+	}
+
+	// Tools section
+	if len(m.Runtime.Tools) > 0 {
+		var tools []interface{}
+		for _, t := range m.Runtime.Tools {
+			toolMap := map[string]interface{}{
+				"name":    t.Name,
+				"version": t.Version,
+			}
+			tools = append(tools, toolMap)
+		}
+		runtime["tools"] = tools
+	}
+
+	// Plugins section
+	if len(m.Runtime.Plugins) > 0 {
+		var plugins []interface{}
+		for _, p := range m.Runtime.Plugins {
+			pluginMap := map[string]interface{}{
+				"name": p.Name,
+			}
+			if p.URL != "" {
+				pluginMap["url"] = p.URL
+			}
+			plugins = append(plugins, pluginMap)
+		}
+		runtime["plugins"] = plugins
+	}
+
+	if len(runtime) > 0 {
+		raw["runtime"] = runtime
+	}
+
 	return raw
 }
 

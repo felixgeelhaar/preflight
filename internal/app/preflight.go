@@ -13,6 +13,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
 	"github.com/felixgeelhaar/preflight/internal/provider/files"
 	"github.com/felixgeelhaar/preflight/internal/provider/git"
+	"github.com/felixgeelhaar/preflight/internal/provider/runtime"
 	"github.com/felixgeelhaar/preflight/internal/provider/ssh"
 )
 
@@ -36,6 +37,7 @@ func New(out io.Writer) *Preflight {
 	comp.RegisterProvider(files.NewProvider(fs))
 	comp.RegisterProvider(git.NewProvider(fs))
 	comp.RegisterProvider(ssh.NewProvider(fs))
+	comp.RegisterProvider(runtime.NewProvider(fs))
 
 	return &Preflight{
 		compiler: comp,

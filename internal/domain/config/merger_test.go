@@ -396,3 +396,92 @@ ssh:
 	require.NoError(t, err)
 	assert.Equal(t, "~/.ssh/config.d/*", merged.SSH.Include)
 }
+
+func TestMerger_Merge_Runtime_Tools(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+runtime:
+  tools:
+    - name: node
+      version: "20.10.0"
+    - name: golang
+      version: "1.21.5"
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer})
+
+	require.NoError(t, err)
+	assert.Len(t, merged.Runtime.Tools, 2)
+}
+
+func TestMerger_Merge_Runtime_Tools_LastWins(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+runtime:
+  tools:
+    - name: node
+      version: "18.0.0"
+`))
+	require.NoError(t, err)
+
+	workLayer, err := config.ParseLayer([]byte(`
+name: identity.work
+runtime:
+  tools:
+    - name: node
+      version: "20.10.0"
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer, *workLayer})
+
+	require.NoError(t, err)
+	assert.Len(t, merged.Runtime.Tools, 1)
+	assert.Equal(t, "20.10.0", merged.Runtime.Tools[0].Version)
+}
+
+func TestMerger_Merge_Runtime_Plugins(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+runtime:
+  plugins:
+    - name: golang
+      url: https://github.com/asdf-community/asdf-golang.git
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer})
+
+	require.NoError(t, err)
+	assert.Len(t, merged.Runtime.Plugins, 1)
+	assert.Equal(t, "golang", merged.Runtime.Plugins[0].Name)
+}
+
+func TestMerger_Merge_Runtime_Backend(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+runtime:
+  backend: rtx
+  scope: global
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+	merged, err := merger.Merge([]config.Layer{*baseLayer})
+
+	require.NoError(t, err)
+	assert.Equal(t, "rtx", merged.Runtime.Backend)
+	assert.Equal(t, "global", merged.Runtime.Scope)
+}
