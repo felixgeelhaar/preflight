@@ -86,8 +86,3 @@ formatters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-rules:
-    # QF1003 is a style suggestion for switch statements
-    - linters:
-        - staticcheck
-      text: "QF1003"
