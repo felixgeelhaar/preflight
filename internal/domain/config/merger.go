@@ -11,6 +11,7 @@ type MergedConfig struct {
 	SSH        SSHConfig
 	Runtime    RuntimeConfig
 	Shell      ShellConfig
+	Nvim       NvimConfig
 	provenance ProvenanceMap
 }
 
@@ -262,6 +263,24 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 		for key, value := range layer.Shell.Aliases {
 			shellAliasesMap[key] = value
 			m.trackProvenance(merged, "shell.aliases", key, layer.Provenance)
+		}
+
+		// Merge nvim config (scalars: last-wins)
+		if layer.Nvim.Preset != "" {
+			merged.Nvim.Preset = layer.Nvim.Preset
+			m.trackProvenance(merged, "nvim.preset", layer.Nvim.Preset, layer.Provenance)
+		}
+		if layer.Nvim.PluginManager != "" {
+			merged.Nvim.PluginManager = layer.Nvim.PluginManager
+			m.trackProvenance(merged, "nvim.plugin_manager", layer.Nvim.PluginManager, layer.Provenance)
+		}
+		if layer.Nvim.ConfigRepo != "" {
+			merged.Nvim.ConfigRepo = layer.Nvim.ConfigRepo
+			m.trackProvenance(merged, "nvim.config_repo", layer.Nvim.ConfigRepo, layer.Provenance)
+		}
+		if layer.Nvim.EnsureInstall {
+			merged.Nvim.EnsureInstall = true
+			m.trackProvenance(merged, "nvim.ensure_install", "true", layer.Provenance)
 		}
 	}
 

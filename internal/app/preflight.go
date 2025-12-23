@@ -14,6 +14,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
 	"github.com/felixgeelhaar/preflight/internal/provider/files"
 	"github.com/felixgeelhaar/preflight/internal/provider/git"
+	"github.com/felixgeelhaar/preflight/internal/provider/nvim"
 	"github.com/felixgeelhaar/preflight/internal/provider/runtime"
 	"github.com/felixgeelhaar/preflight/internal/provider/shell"
 	"github.com/felixgeelhaar/preflight/internal/provider/ssh"
@@ -42,6 +43,7 @@ func New(out io.Writer) *Preflight {
 	comp.RegisterProvider(ssh.NewProvider(fs))
 	comp.RegisterProvider(runtime.NewProvider(fs))
 	comp.RegisterProvider(shell.NewProvider(fs))
+	comp.RegisterProvider(nvim.NewProvider(fs, cmdRunner))
 
 	return &Preflight{
 		compiler: comp,

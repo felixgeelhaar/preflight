@@ -179,6 +179,14 @@ type ShellConfig struct {
 	Aliases  map[string]string   `yaml:"aliases,omitempty"`
 }
 
+// NvimConfig represents Neovim editor configuration.
+type NvimConfig struct {
+	Preset        string `yaml:"preset,omitempty"`
+	PluginManager string `yaml:"plugin_manager,omitempty"`
+	ConfigRepo    string `yaml:"config_repo,omitempty"`
+	EnsureInstall bool   `yaml:"ensure_install,omitempty"`
+}
+
 // Layer is a composable configuration overlay.
 type Layer struct {
 	Name       LayerName
@@ -189,6 +197,7 @@ type Layer struct {
 	SSH        SSHConfig
 	Runtime    RuntimeConfig
 	Shell      ShellConfig
+	Nvim       NvimConfig
 }
 
 // layerYAML is the YAML representation for unmarshaling.
@@ -200,6 +209,7 @@ type layerYAML struct {
 	SSH      SSHConfig         `yaml:"ssh,omitempty"`
 	Runtime  RuntimeConfig     `yaml:"runtime,omitempty"`
 	Shell    ShellConfig       `yaml:"shell,omitempty"`
+	Nvim     NvimConfig        `yaml:"nvim,omitempty"`
 }
 
 // ParseLayer parses a Layer from YAML bytes.
@@ -222,6 +232,7 @@ func ParseLayer(data []byte) (*Layer, error) {
 		SSH:      raw.SSH,
 		Runtime:  raw.Runtime,
 		Shell:    raw.Shell,
+		Nvim:     raw.Nvim,
 	}, nil
 }
 

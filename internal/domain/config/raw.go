@@ -348,6 +348,26 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 		raw["shell"] = shell
 	}
 
+	// Convert nvim config
+	nvim := make(map[string]interface{})
+
+	if m.Nvim.Preset != "" {
+		nvim["preset"] = m.Nvim.Preset
+	}
+	if m.Nvim.PluginManager != "" {
+		nvim["plugin_manager"] = m.Nvim.PluginManager
+	}
+	if m.Nvim.ConfigRepo != "" {
+		nvim["config_repo"] = m.Nvim.ConfigRepo
+	}
+	if m.Nvim.EnsureInstall {
+		nvim["ensure_install"] = true
+	}
+
+	if len(nvim) > 0 {
+		raw["nvim"] = nvim
+	}
+
 	return raw
 }
 
