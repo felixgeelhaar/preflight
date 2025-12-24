@@ -384,7 +384,7 @@ preflight version
 **Output:**
 
 ```
-preflight version 1.4.0
+preflight version 1.5.0
 ```
 
 ---
