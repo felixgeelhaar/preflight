@@ -829,12 +829,62 @@ site-search button:hover {
 	box-shadow: 0 0 12px var(--pf-cyan-glow);
 }
 
+:root[data-theme='light'] site-search button,
+[data-theme='light'] site-search button {
+	background: #ffffff;
+	border-color: #e2e8f0;
+	color: #475569;
+}
+
+:root[data-theme='light'] site-search button:hover,
+[data-theme='light'] site-search button:hover {
+	border-color: var(--pf-cyan-dim);
+	box-shadow: 0 0 12px rgba(8, 145, 178, 0.2);
+}
+
 /* Search modal */
 dialog.pagefind-ui {
 	background: var(--pf-navy);
 	border: 1px solid var(--pf-steel);
 	border-radius: 12px;
 	box-shadow: var(--shadow-elevated), 0 0 40px var(--pf-cyan-glow);
+}
+
+:root[data-theme='light'] dialog.pagefind-ui,
+[data-theme='light'] dialog.pagefind-ui {
+	background: #ffffff;
+	border-color: #e2e8f0;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(8, 145, 178, 0.1);
+}
+
+/* Search input and results - light theme */
+:root[data-theme='light'] .pagefind-ui__search-input,
+[data-theme='light'] .pagefind-ui__search-input {
+	background: #f8fafc !important;
+	border-color: #e2e8f0 !important;
+	color: #0f172a !important;
+}
+
+:root[data-theme='light'] .pagefind-ui__result,
+[data-theme='light'] .pagefind-ui__result {
+	background: #ffffff !important;
+	border-color: #e2e8f0 !important;
+}
+
+:root[data-theme='light'] .pagefind-ui__result:hover,
+[data-theme='light'] .pagefind-ui__result:hover {
+	background: #f0f9ff !important;
+	border-color: var(--pf-cyan-dim) !important;
+}
+
+:root[data-theme='light'] .pagefind-ui__result-title,
+[data-theme='light'] .pagefind-ui__result-title {
+	color: #0f172a !important;
+}
+
+:root[data-theme='light'] .pagefind-ui__result-excerpt,
+[data-theme='light'] .pagefind-ui__result-excerpt {
+	color: #475569 !important;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
