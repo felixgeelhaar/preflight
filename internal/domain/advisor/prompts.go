@@ -34,6 +34,12 @@ type InterviewProfile struct {
 	Tools           []string // IDEs, editors, etc.
 	Workflows       []string // docker, kubernetes, etc.
 	Goals           []string // what they want to achieve
+
+	// Context inference fields
+	WorkContext  WorkContext // inferred work/personal context
+	DeviceType   DeviceType  // inferred device type
+	EmailDomains []string    // detected email domains
+	SSHKeyNames  []string    // detected SSH key names
 }
 
 // AIRecommendation represents a parsed configuration recommendation from AI.
@@ -70,6 +76,17 @@ func BuildInterviewPrompt(profile InterviewProfile) Prompt {
 		parts = append(parts, fmt.Sprintf("Goals: %s", strings.Join(profile.Goals, ", ")))
 	}
 
+	// Add inferred context information
+	if profile.WorkContext != "" && profile.WorkContext != WorkContextUnknown {
+		parts = append(parts, fmt.Sprintf("Detected Context: %s setup", profile.WorkContext))
+	}
+	if profile.DeviceType != "" && profile.DeviceType != DeviceTypeUnknown {
+		parts = append(parts, fmt.Sprintf("Device Type: %s", profile.DeviceType))
+	}
+	if len(profile.EmailDomains) > 0 {
+		parts = append(parts, fmt.Sprintf("Email Domains: %s", strings.Join(profile.EmailDomains, ", ")))
+	}
+
 	parts = append(parts, "")
 	parts = append(parts, "Available presets:")
 	parts = append(parts, "- minimal: Basic shell and git setup")
@@ -83,11 +100,12 @@ func BuildInterviewPrompt(profile InterviewProfile) Prompt {
 	parts = append(parts, "- role.python: Python development")
 	parts = append(parts, "- role.node: Node.js/JavaScript development")
 	parts = append(parts, "- role.rust: Rust development")
-	parts = append(parts, "- identity.work: Work-specific settings")
-	parts = append(parts, "- identity.personal: Personal settings")
-	parts = append(parts, "- device.laptop: Laptop-specific settings")
-	parts = append(parts, "- device.desktop: Desktop-specific settings")
+	parts = append(parts, "- identity.work: Work-specific settings (use when corporate email detected)")
+	parts = append(parts, "- identity.personal: Personal settings (use when personal email detected)")
+	parts = append(parts, "- device.laptop: Laptop-specific settings (battery management, portability)")
+	parts = append(parts, "- device.desktop: Desktop-specific settings (performance, multi-monitor)")
 	parts = append(parts, "")
+	parts = append(parts, "Based on the detected context, suggest appropriate identity and device layers.")
 	parts = append(parts, "Respond with a JSON object containing presets, layers, and explanation.")
 
 	userPrompt := strings.Join(parts, "\n")

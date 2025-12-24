@@ -23,6 +23,57 @@ const (
 	ExperienceAdvanced     ExperienceLevel = "advanced"
 )
 
+// WorkContext indicates whether this is a work or personal setup.
+type WorkContext string
+
+// Work context constants.
+const (
+	WorkContextUnknown  WorkContext = "unknown"
+	WorkContextWork     WorkContext = "work"
+	WorkContextPersonal WorkContext = "personal"
+	WorkContextMixed    WorkContext = "mixed" // Both work and personal use
+)
+
+// String returns the work context as a string.
+func (w WorkContext) String() string {
+	return string(w)
+}
+
+// IsValid returns true if this is a known work context.
+func (w WorkContext) IsValid() bool {
+	switch w {
+	case WorkContextUnknown, WorkContextWork, WorkContextPersonal, WorkContextMixed:
+		return true
+	default:
+		return false
+	}
+}
+
+// DeviceType indicates the type of device.
+type DeviceType string
+
+// Device type constants.
+const (
+	DeviceTypeUnknown DeviceType = "unknown"
+	DeviceTypeLaptop  DeviceType = "laptop"
+	DeviceTypeDesktop DeviceType = "desktop"
+)
+
+// String returns the device type as a string.
+func (d DeviceType) String() string {
+	return string(d)
+}
+
+// IsValid returns true if this is a known device type.
+func (d DeviceType) IsValid() bool {
+	switch d {
+	case DeviceTypeUnknown, DeviceTypeLaptop, DeviceTypeDesktop:
+		return true
+	default:
+		return false
+	}
+}
+
 // String returns the experience level as a string.
 func (e ExperienceLevel) String() string {
 	return string(e)
@@ -53,6 +104,10 @@ type UserProfile struct {
 	preferences     map[string]string
 	existingTools   []string
 	operatingSystem string
+	workContext     WorkContext
+	deviceType      DeviceType
+	emailDomains    []string // Detected email domains (for work/personal inference)
+	teamSize        int      // 0 = unknown, 1 = solo, 2+ = team
 }
 
 // NewUserProfile creates a new UserProfile.
@@ -90,6 +145,28 @@ func (p UserProfile) OperatingSystem() string {
 	return p.operatingSystem
 }
 
+// WorkContext returns the detected work context.
+func (p UserProfile) WorkContext() WorkContext {
+	return p.workContext
+}
+
+// DeviceType returns the detected device type.
+func (p UserProfile) DeviceType() DeviceType {
+	return p.deviceType
+}
+
+// EmailDomains returns detected email domains.
+func (p UserProfile) EmailDomains() []string {
+	result := make([]string, len(p.emailDomains))
+	copy(result, p.emailDomains)
+	return result
+}
+
+// TeamSize returns the detected team size (0 = unknown, 1 = solo, 2+ = team).
+func (p UserProfile) TeamSize() int {
+	return p.teamSize
+}
+
 // WithPreferences returns a new UserProfile with preferences set.
 func (p UserProfile) WithPreferences(prefs map[string]string) UserProfile {
 	newPrefs := make(map[string]string, len(prefs))
@@ -102,6 +179,10 @@ func (p UserProfile) WithPreferences(prefs map[string]string) UserProfile {
 		preferences:     newPrefs,
 		existingTools:   p.existingTools,
 		operatingSystem: p.operatingSystem,
+		workContext:     p.workContext,
+		deviceType:      p.deviceType,
+		emailDomains:    p.emailDomains,
+		teamSize:        p.teamSize,
 	}
 }
 
@@ -115,6 +196,10 @@ func (p UserProfile) WithExistingTools(tools []string) UserProfile {
 		preferences:     p.preferences,
 		existingTools:   newTools,
 		operatingSystem: p.operatingSystem,
+		workContext:     p.workContext,
+		deviceType:      p.deviceType,
+		emailDomains:    p.emailDomains,
+		teamSize:        p.teamSize,
 	}
 }
 
@@ -125,6 +210,69 @@ func (p UserProfile) WithOperatingSystem(os string) UserProfile {
 		preferences:     p.preferences,
 		existingTools:   p.existingTools,
 		operatingSystem: os,
+		workContext:     p.workContext,
+		deviceType:      p.deviceType,
+		emailDomains:    p.emailDomains,
+		teamSize:        p.teamSize,
+	}
+}
+
+// WithWorkContext returns a new UserProfile with work context set.
+func (p UserProfile) WithWorkContext(ctx WorkContext) UserProfile {
+	return UserProfile{
+		experience:      p.experience,
+		preferences:     p.preferences,
+		existingTools:   p.existingTools,
+		operatingSystem: p.operatingSystem,
+		workContext:     ctx,
+		deviceType:      p.deviceType,
+		emailDomains:    p.emailDomains,
+		teamSize:        p.teamSize,
+	}
+}
+
+// WithDeviceType returns a new UserProfile with device type set.
+func (p UserProfile) WithDeviceType(dt DeviceType) UserProfile {
+	return UserProfile{
+		experience:      p.experience,
+		preferences:     p.preferences,
+		existingTools:   p.existingTools,
+		operatingSystem: p.operatingSystem,
+		workContext:     p.workContext,
+		deviceType:      dt,
+		emailDomains:    p.emailDomains,
+		teamSize:        p.teamSize,
+	}
+}
+
+// WithEmailDomains returns a new UserProfile with email domains set.
+func (p UserProfile) WithEmailDomains(domains []string) UserProfile {
+	newDomains := make([]string, len(domains))
+	copy(newDomains, domains)
+
+	return UserProfile{
+		experience:      p.experience,
+		preferences:     p.preferences,
+		existingTools:   p.existingTools,
+		operatingSystem: p.operatingSystem,
+		workContext:     p.workContext,
+		deviceType:      p.deviceType,
+		emailDomains:    newDomains,
+		teamSize:        p.teamSize,
+	}
+}
+
+// WithTeamSize returns a new UserProfile with team size set.
+func (p UserProfile) WithTeamSize(size int) UserProfile {
+	return UserProfile{
+		experience:      p.experience,
+		preferences:     p.preferences,
+		existingTools:   p.existingTools,
+		operatingSystem: p.operatingSystem,
+		workContext:     p.workContext,
+		deviceType:      p.deviceType,
+		emailDomains:    p.emailDomains,
+		teamSize:        size,
 	}
 }
 
