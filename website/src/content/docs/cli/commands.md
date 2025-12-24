@@ -507,6 +507,77 @@ preflight completion fish > ~/.config/fish/completions/preflight.fish
 
 ---
 
+### preflight plugin
+
+Manage Preflight plugins that extend functionality.
+
+```bash
+preflight plugin <command> [flags]
+```
+
+**Subcommands:**
+
+| Command | Description |
+|---------|-------------|
+| `list` | List all installed plugins |
+| `install <source>` | Install a plugin from path or Git URL |
+| `remove <name>` | Remove an installed plugin |
+| `info <name>` | Show detailed plugin information |
+
+**Examples:**
+
+```bash
+# List installed plugins
+preflight plugin list
+
+# Install from local path
+preflight plugin install /path/to/plugin
+
+# Install from Git repository
+preflight plugin install https://github.com/example/preflight-docker.git
+
+# View plugin details
+preflight plugin info docker
+
+# Remove a plugin
+preflight plugin remove docker
+```
+
+**Output (list):**
+
+```
+NAME          VERSION   STATUS    DESCRIPTION
+────          ───────   ──────    ───────────
+docker        1.0.0     enabled   Docker provider for Preflight
+kubernetes    2.0.0     enabled   Kubernetes tooling
+```
+
+**Output (info):**
+
+```
+Name:        kubernetes
+Version:     2.0.0
+API Version: v1
+Description: Kubernetes tooling for Preflight
+Author:      K8s Team
+License:     Apache-2.0
+
+Providers:
+  • kubectl (kubernetes.kubectl)
+    kubectl installation
+  • helm (kubernetes.helm)
+    Helm chart management
+
+Presets:
+  • k8s:dev
+  • k8s:prod
+
+Dependencies:
+  • docker >=1.0.0
+```
+
+---
+
 ### preflight version
 
 Display version information.
@@ -518,7 +589,7 @@ preflight version
 **Output:**
 
 ```
-preflight version 2.0.0
+preflight version 2.1.0
 ```
 
 ---

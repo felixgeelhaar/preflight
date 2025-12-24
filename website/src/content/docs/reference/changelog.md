@@ -7,6 +7,55 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2024-12-24
+
+### Added
+
+- **Plugin System**: Extensible architecture for community-developed providers
+  - `internal/domain/plugin/` domain with Manifest, Plugin, Registry, Loader types
+  - Plugin manifest schema (`plugin.yaml`) with apiVersion, name, version, provides, requires
+  - Plugin discovery from `~/.preflight/plugins/` and `/usr/local/share/preflight/plugins/`
+  - Plugin validation with comprehensive manifest checks
+
+- **Plugin CLI Commands**: Full plugin management interface
+  - `preflight plugin list` - List installed plugins with version and status
+  - `preflight plugin install <source>` - Install from local path or Git URL
+  - `preflight plugin remove <name>` - Remove installed plugins
+  - `preflight plugin info <name>` - Show detailed plugin information
+
+- **Plugin Capabilities**: Plugins can provide
+  - Custom providers with config key mappings
+  - Presets for catalog integration
+  - Capability packs for role-based tooling
+  - Dependencies on other plugins with version constraints
+
+### Example Plugin Manifest
+
+```yaml
+apiVersion: v1
+name: kubernetes
+version: 1.0.0
+description: Kubernetes tooling for Preflight
+author: K8s Team
+license: Apache-2.0
+provides:
+  providers:
+    - name: kubectl
+      configKey: kubernetes.kubectl
+    - name: helm
+      configKey: kubernetes.helm
+  presets:
+    - k8s:dev
+    - k8s:prod
+  capabilityPacks:
+    - k8s-developer
+requires:
+  - name: docker
+    version: ">=1.0.0"
+```
+
+---
+
 ## [2.0.0] - 2024-12-24
 
 ### Added
@@ -401,6 +450,7 @@ policies:
 
 ---
 
+[2.1.0]: https://github.com/felixgeelhaar/preflight/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/felixgeelhaar/preflight/compare/v1.8.0...v2.0.0
 [1.8.0]: https://github.com/felixgeelhaar/preflight/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/felixgeelhaar/preflight/compare/v1.6.0...v1.7.0
