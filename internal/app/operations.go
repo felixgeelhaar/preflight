@@ -395,6 +395,17 @@ func (p *Preflight) Doctor(ctx context.Context, opts DoctorOptions) (*DoctorRepo
 	// Run provider-specific doctor checks
 	p.runProviderDoctorChecks(ctx, plan, report)
 
+	// Generate config patches if UpdateConfig is enabled
+	if opts.UpdateConfig && len(report.Issues) > 0 {
+		configDir := filepath.Dir(opts.ConfigPath)
+		driftService, err := DefaultDriftService()
+		if err == nil {
+			generator := NewPatchGenerator(driftService)
+			patches := generator.GenerateFromIssues(report.Issues, configDir)
+			report.SuggestedPatches = patches
+		}
+	}
+
 	report.Duration = time.Since(startTime)
 	return report, nil
 }

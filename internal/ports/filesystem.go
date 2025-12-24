@@ -4,7 +4,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
+
+// FileInfo contains file metadata.
+type FileInfo struct {
+	Size    int64
+	Mode    os.FileMode
+	ModTime time.Time
+	IsDir   bool
+}
 
 // FileSystem provides file system operations.
 type FileSystem interface {
@@ -18,6 +27,8 @@ type FileSystem interface {
 	Rename(oldPath, newPath string) error
 	FileHash(path string) (string, error)
 	IsDir(path string) bool
+	CopyFile(src, dest string) error
+	GetFileInfo(path string) (FileInfo, error)
 }
 
 // ExpandPath expands ~ to the user's home directory.

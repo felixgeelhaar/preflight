@@ -95,8 +95,8 @@ func runCapture(_ *cobra.Command, _ []string) error {
 	if accepted > 0 {
 		// Filter findings to only include accepted items
 		acceptedSet := make(map[string]bool)
-		for _, name := range result.AcceptedItems {
-			acceptedSet[name] = true
+		for _, item := range result.AcceptedItems {
+			acceptedSet[item.Name] = true
 		}
 
 		filteredItems := make([]app.CapturedItem, 0, len(result.AcceptedItems))

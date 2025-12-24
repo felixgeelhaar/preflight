@@ -32,20 +32,25 @@ type CaptureItem struct {
 	Type     CaptureType
 	Details  string
 	Value    string
+	Layer    string // Target layer (default: "captured")
 }
 
 // captureReviewModel is the Bubble Tea model for capture review.
 type captureReviewModel struct {
-	items     []CaptureItem
-	options   CaptureReviewOptions
-	styles    ui.Styles
-	width     int
-	height    int
-	cursor    int
-	accepted  []CaptureItem
-	rejected  []CaptureItem
-	done      bool
-	cancelled bool
+	items        []CaptureItem
+	options      CaptureReviewOptions
+	styles       ui.Styles
+	width        int
+	height       int
+	cursor       int
+	accepted     []CaptureItem
+	rejected     []CaptureItem
+	done         bool
+	cancelled    bool
+	history      *ReviewHistory
+	searchActive bool
+	searchQuery  string
+	filteredIdx  []int
 }
 
 // newCaptureReviewModel creates a new capture review model.
@@ -61,6 +66,7 @@ func newCaptureReviewModel(items []CaptureItem, opts CaptureReviewOptions) captu
 		cursor:   0,
 		accepted: make([]CaptureItem, 0),
 		rejected: make([]CaptureItem, 0),
+		history:  NewReviewHistory(),
 	}
 }
 
@@ -79,25 +85,40 @@ func (m captureReviewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		// When search is active, handle it specially
+		if m.searchActive {
+			return m.handleSearchKey(msg)
+		}
+
 		// Handle quit keys
-		if msg.Type == tea.KeyCtrlC || msg.Type == tea.KeyEsc || msg.String() == "q" {
+		if msg.Type == tea.KeyCtrlC || msg.String() == "q" {
+			m.cancelled = true
+			return m, tea.Quit
+		}
+
+		// Handle escape: clear filter if active, else cancel
+		if msg.Type == tea.KeyEsc {
+			if m.filteredIdx != nil {
+				m.filteredIdx = nil
+				m.searchQuery = ""
+				return m, nil
+			}
 			m.cancelled = true
 			return m, tea.Quit
 		}
 
 		// Handle navigation
 		if msg.Type == tea.KeyUp || msg.String() == "k" {
-			if m.cursor > 0 {
-				m.cursor--
-			}
-			return m, nil
+			return m.navigateUp()
 		}
 
 		if msg.Type == tea.KeyDown || msg.String() == "j" {
-			if m.cursor < len(m.items)-1 {
-				m.cursor++
-			}
-			return m, nil
+			return m.navigateDown()
+		}
+
+		// Handle undo/redo
+		if msg.Type == tea.KeyCtrlR {
+			return m.redo()
 		}
 
 		// Handle accept/reject actions
@@ -110,10 +131,159 @@ func (m captureReviewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.acceptAll()
 		case "d":
 			return m.rejectAll()
+		case "u":
+			return m.undo()
+		case "/":
+			m.searchActive = true
+			return m, nil
+		case "g":
+			return m.goToTop()
+		case "G":
+			return m.goToBottom()
 		}
 	}
 
 	return m, nil
+}
+
+// handleSearchKey handles key input when search is active.
+func (m captureReviewModel) handleSearchKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.Type {
+	case tea.KeyEsc:
+		m.searchActive = false
+		return m, nil
+	case tea.KeyEnter:
+		m.searchActive = false
+		m.filteredIdx = m.filterItems(m.searchQuery)
+		// Move cursor to first filtered item if filter is active
+		if len(m.filteredIdx) > 0 {
+			m.cursor = m.filteredIdx[0]
+		}
+		return m, nil
+	case tea.KeyBackspace:
+		if len(m.searchQuery) > 0 {
+			m.searchQuery = m.searchQuery[:len(m.searchQuery)-1]
+			// Live filtering
+			m.filteredIdx = m.filterItems(m.searchQuery)
+		}
+		return m, nil
+	default:
+		if msg.Type == tea.KeyRunes {
+			m.searchQuery += string(msg.Runes)
+			// Live filtering
+			m.filteredIdx = m.filterItems(m.searchQuery)
+		}
+		return m, nil
+	}
+}
+
+// navigateUp moves cursor up, respecting filter.
+func (m captureReviewModel) navigateUp() (tea.Model, tea.Cmd) {
+	if m.filteredIdx == nil {
+		// No filter, simple navigation
+		if m.cursor > 0 {
+			m.cursor--
+		}
+		return m, nil
+	}
+
+	// Find current position in filtered list
+	currentPos := -1
+	for i, idx := range m.filteredIdx {
+		if idx == m.cursor {
+			currentPos = i
+			break
+		}
+	}
+
+	// Move to previous filtered item
+	if currentPos > 0 {
+		m.cursor = m.filteredIdx[currentPos-1]
+	}
+	return m, nil
+}
+
+// navigateDown moves cursor down, respecting filter.
+func (m captureReviewModel) navigateDown() (tea.Model, tea.Cmd) {
+	if m.filteredIdx == nil {
+		// No filter, simple navigation
+		if m.cursor < len(m.items)-1 {
+			m.cursor++
+		}
+		return m, nil
+	}
+
+	// Find current position in filtered list
+	currentPos := -1
+	for i, idx := range m.filteredIdx {
+		if idx == m.cursor {
+			currentPos = i
+			break
+		}
+	}
+
+	// Move to next filtered item
+	if currentPos >= 0 && currentPos < len(m.filteredIdx)-1 {
+		m.cursor = m.filteredIdx[currentPos+1]
+	} else if currentPos == -1 && len(m.filteredIdx) > 0 {
+		// Cursor not on filtered item, jump to first filtered item
+		m.cursor = m.filteredIdx[0]
+	}
+	return m, nil
+}
+
+// goToTop moves cursor to the first item (or first filtered item).
+func (m captureReviewModel) goToTop() (tea.Model, tea.Cmd) {
+	if len(m.filteredIdx) > 0 {
+		m.cursor = m.filteredIdx[0]
+	} else {
+		m.cursor = 0
+	}
+	return m, nil
+}
+
+// goToBottom moves cursor to the last item (or last filtered item).
+func (m captureReviewModel) goToBottom() (tea.Model, tea.Cmd) {
+	if len(m.filteredIdx) > 0 {
+		m.cursor = m.filteredIdx[len(m.filteredIdx)-1]
+	} else if len(m.items) > 0 {
+		m.cursor = len(m.items) - 1
+	}
+	return m, nil
+}
+
+// filterItems returns indices of items matching the query.
+func (m captureReviewModel) filterItems(query string) []int {
+	if query == "" {
+		return nil
+	}
+
+	query = strings.ToLower(query)
+	result := make([]int, 0)
+
+	for i, item := range m.items {
+		name := strings.ToLower(item.Name)
+		category := strings.ToLower(item.Category)
+		typeStr := strings.ToLower(string(item.Type))
+
+		if strings.Contains(name, query) ||
+			strings.Contains(category, query) ||
+			strings.Contains(typeStr, query) {
+			result = append(result, i)
+		}
+	}
+
+	return result
+}
+
+// isInFilter checks if an index is in the filtered set.
+func (m captureReviewModel) isInFilter(index int) bool {
+	for _, idx := range m.filteredIdx {
+		if idx == index {
+			return true
+		}
+	}
+	return false
 }
 
 // acceptCurrent accepts the current item and moves to next.
@@ -121,6 +291,11 @@ func (m captureReviewModel) acceptCurrent() (tea.Model, tea.Cmd) {
 	if m.cursor < len(m.items) {
 		item := m.items[m.cursor]
 		m.accepted = append(m.accepted, item)
+		m.history.Push(ReviewAction{
+			Type:      ActionAccept,
+			ItemIndex: m.cursor,
+			Item:      item,
+		})
 		return m.advanceCursor()
 	}
 	return m, nil
@@ -131,9 +306,75 @@ func (m captureReviewModel) rejectCurrent() (tea.Model, tea.Cmd) {
 	if m.cursor < len(m.items) {
 		item := m.items[m.cursor]
 		m.rejected = append(m.rejected, item)
+		m.history.Push(ReviewAction{
+			Type:      ActionReject,
+			ItemIndex: m.cursor,
+			Item:      item,
+		})
 		return m.advanceCursor()
 	}
 	return m, nil
+}
+
+// undo reverses the last review action.
+func (m captureReviewModel) undo() (tea.Model, tea.Cmd) {
+	action, ok := m.history.Undo()
+	if !ok {
+		return m, nil
+	}
+
+	switch action.Type {
+	case ActionAccept:
+		// Remove from accepted
+		m.accepted = removeItem(m.accepted, action.Item)
+	case ActionReject:
+		// Remove from rejected
+		m.rejected = removeItem(m.rejected, action.Item)
+	case ActionLayerChange:
+		// Layer changes not yet implemented, handled in future v1.1.x
+	}
+
+	// Restore cursor position
+	m.cursor = action.ItemIndex
+
+	return m, nil
+}
+
+// redo re-applies the last undone action.
+func (m captureReviewModel) redo() (tea.Model, tea.Cmd) {
+	action, ok := m.history.Redo()
+	if !ok {
+		return m, nil
+	}
+
+	switch action.Type {
+	case ActionAccept:
+		m.accepted = append(m.accepted, action.Item)
+	case ActionReject:
+		m.rejected = append(m.rejected, action.Item)
+	case ActionLayerChange:
+		// Layer changes not yet implemented, handled in future v1.1.x
+	}
+
+	// Move cursor to next unreviewed item
+	return m.advanceCursorFrom(action.ItemIndex)
+}
+
+// advanceCursorFrom advances cursor from a specific position.
+func (m captureReviewModel) advanceCursorFrom(from int) (tea.Model, tea.Cmd) {
+	m.cursor = from
+	return m.advanceCursor()
+}
+
+// removeItem removes an item from a slice by matching name and category.
+func removeItem(items []CaptureItem, target CaptureItem) []CaptureItem {
+	result := make([]CaptureItem, 0, len(items))
+	for _, item := range items {
+		if item.Name != target.Name || item.Category != target.Category {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 // advanceCursor moves to the next unreviewed item.
@@ -216,6 +457,18 @@ func (m captureReviewModel) View() string {
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
+	// Show search input when active
+	if m.searchActive {
+		searchPrompt := fmt.Sprintf("Filter: %s_", m.searchQuery)
+		b.WriteString(m.styles.Help.Render(searchPrompt))
+		b.WriteString("\n\n")
+	} else if m.searchQuery != "" {
+		// Show active filter
+		filterInfo := fmt.Sprintf("Filter: %s (Esc to clear)", m.searchQuery)
+		b.WriteString(m.styles.Help.Render(filterInfo))
+		b.WriteString("\n\n")
+	}
+
 	// Handle empty items
 	if len(m.items) == 0 {
 		noItems := m.styles.Help.Render("Nothing captured. Your system scan found no items to review.")
@@ -243,6 +496,11 @@ func (m captureReviewModel) View() string {
 
 	// Items list
 	for i, item := range m.items {
+		// Skip items not in filter when filter is active
+		if m.filteredIdx != nil && !m.isInFilter(i) {
+			continue
+		}
+
 		prefix := "  "
 		if i == m.cursor {
 			prefix = "> "
@@ -269,7 +527,7 @@ func (m captureReviewModel) View() string {
 	b.WriteString("\n")
 
 	// Footer with keybindings
-	helpItems := []string{"y accept", "n reject", "a accept all", "d reject all", "j/k navigate", "q quit"}
+	helpItems := []string{"y accept", "n reject", "a all", "d reject all", "u undo", "ctrl+r redo", "/ filter", "g/G top/bottom", "j/k up/down", "q quit"}
 	help := m.styles.Help.Render(strings.Join(helpItems, " • "))
 	b.WriteString(help)
 

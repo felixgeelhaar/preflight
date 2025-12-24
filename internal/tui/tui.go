@@ -372,24 +372,56 @@ func (o CaptureReviewOptions) WithAcceptAll(all bool) CaptureReviewOptions {
 	return o
 }
 
+// CaptureItemResult holds rich information about a reviewed capture item.
+type CaptureItemResult struct {
+	Name     string
+	Category string
+	Type     CaptureType
+	Layer    string
+	Value    string
+}
+
 // CaptureReviewResult holds the result of capture review.
 type CaptureReviewResult struct {
-	AcceptedItems []string
-	RejectedItems []string
+	AcceptedItems []CaptureItemResult
+	RejectedItems []CaptureItemResult
 	Cancelled     bool
+}
+
+// ToCaptureItemResult converts a CaptureItem to a CaptureItemResult.
+func ToCaptureItemResult(item CaptureItem) CaptureItemResult {
+	layer := item.Layer
+	if layer == "" {
+		layer = "captured"
+	}
+	return CaptureItemResult{
+		Name:     item.Name,
+		Category: item.Category,
+		Type:     item.Type,
+		Layer:    layer,
+		Value:    item.Value,
+	}
+}
+
+// ToCaptureItemResults converts a slice of CaptureItems to CaptureItemResults.
+func ToCaptureItemResults(items []CaptureItem) []CaptureItemResult {
+	if items == nil {
+		return []CaptureItemResult{}
+	}
+	results := make([]CaptureItemResult, 0, len(items))
+	for _, item := range items {
+		results = append(results, ToCaptureItemResult(item))
+	}
+	return results
 }
 
 // RunCaptureReview runs the capture review interface.
 func RunCaptureReview(ctx context.Context, items []CaptureItem, opts CaptureReviewOptions) (*CaptureReviewResult, error) {
 	// Handle accept all case
 	if opts.AcceptAll {
-		accepted := make([]string, 0, len(items))
-		for _, item := range items {
-			accepted = append(accepted, item.Name)
-		}
 		return &CaptureReviewResult{
-			AcceptedItems: accepted,
-			RejectedItems: []string{},
+			AcceptedItems: ToCaptureItemResults(items),
+			RejectedItems: []CaptureItemResult{},
 		}, nil
 	}
 
@@ -409,20 +441,9 @@ func RunCaptureReview(ctx context.Context, items []CaptureItem, opts CaptureRevi
 		return nil, fmt.Errorf("unexpected model type")
 	}
 
-	// Build result lists
-	accepted := make([]string, 0, len(m.accepted))
-	for _, item := range m.accepted {
-		accepted = append(accepted, item.Name)
-	}
-
-	rejected := make([]string, 0, len(m.rejected))
-	for _, item := range m.rejected {
-		rejected = append(rejected, item.Name)
-	}
-
 	return &CaptureReviewResult{
-		AcceptedItems: accepted,
-		RejectedItems: rejected,
+		AcceptedItems: ToCaptureItemResults(m.accepted),
+		RejectedItems: ToCaptureItemResults(m.rejected),
 		Cancelled:     m.cancelled,
 	}, nil
 }

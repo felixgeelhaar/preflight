@@ -75,20 +75,38 @@ type DoctorOptions struct {
 	Target string
 	// Verbose enables detailed output
 	Verbose bool
+	// UpdateConfig merges drift back into layer files
+	UpdateConfig bool
+	// DryRun shows changes without writing
+	DryRun bool
 }
 
 // NewDoctorOptions creates default doctor options.
 func NewDoctorOptions(configPath, target string) DoctorOptions {
 	return DoctorOptions{
-		ConfigPath: configPath,
-		Target:     target,
-		Verbose:    false,
+		ConfigPath:   configPath,
+		Target:       target,
+		Verbose:      false,
+		UpdateConfig: false,
+		DryRun:       false,
 	}
 }
 
 // WithVerbose enables verbose output.
 func (o DoctorOptions) WithVerbose(verbose bool) DoctorOptions {
 	o.Verbose = verbose
+	return o
+}
+
+// WithUpdateConfig enables config update mode.
+func (o DoctorOptions) WithUpdateConfig(updateConfig bool) DoctorOptions {
+	o.UpdateConfig = updateConfig
+	return o
+}
+
+// WithDryRun enables dry run mode.
+func (o DoctorOptions) WithDryRun(dryRun bool) DoctorOptions {
+	o.DryRun = dryRun
 	return o
 }
 
@@ -126,14 +144,61 @@ type BinaryCheckResult struct {
 	Purpose    string
 }
 
+// PatchOp indicates the type of patch operation.
+type PatchOp string
+
+// PatchOp constants.
+const (
+	PatchOpAdd    PatchOp = "add"
+	PatchOpModify PatchOp = "modify"
+	PatchOpRemove PatchOp = "remove"
+)
+
+// ConfigPatch represents a change to be made to a layer file.
+type ConfigPatch struct {
+	LayerPath  string
+	YAMLPath   string
+	Operation  PatchOp
+	OldValue   interface{}
+	NewValue   interface{}
+	Provenance string
+}
+
+// NewConfigPatch creates a new ConfigPatch.
+func NewConfigPatch(layerPath, yamlPath string, op PatchOp, oldValue, newValue interface{}, provenance string) ConfigPatch {
+	return ConfigPatch{
+		LayerPath:  layerPath,
+		YAMLPath:   yamlPath,
+		Operation:  op,
+		OldValue:   oldValue,
+		NewValue:   newValue,
+		Provenance: provenance,
+	}
+}
+
+// Description returns a human-readable description of the patch.
+func (p ConfigPatch) Description() string {
+	switch p.Operation {
+	case PatchOpAdd:
+		return "Add " + p.YAMLPath + " to " + p.LayerPath
+	case PatchOpModify:
+		return "Modify " + p.YAMLPath + " in " + p.LayerPath
+	case PatchOpRemove:
+		return "Remove " + p.YAMLPath + " from " + p.LayerPath
+	default:
+		return "Unknown operation on " + p.YAMLPath
+	}
+}
+
 // DoctorReport holds the results of a doctor check.
 type DoctorReport struct {
-	ConfigPath   string
-	Target       string
-	Issues       []DoctorIssue
-	BinaryChecks []BinaryCheckResult
-	CheckedAt    time.Time
-	Duration     time.Duration
+	ConfigPath       string
+	Target           string
+	Issues           []DoctorIssue
+	BinaryChecks     []BinaryCheckResult
+	SuggestedPatches []ConfigPatch
+	CheckedAt        time.Time
+	Duration         time.Duration
 }
 
 // IssueCount returns the total number of issues.
@@ -207,6 +272,25 @@ func (r DoctorReport) BinaryIssueCount() int {
 		}
 	}
 	return count
+}
+
+// HasPatches returns true if there are any suggested patches.
+func (r DoctorReport) HasPatches() bool {
+	return len(r.SuggestedPatches) > 0
+}
+
+// PatchCount returns the number of suggested patches.
+func (r DoctorReport) PatchCount() int {
+	return len(r.SuggestedPatches)
+}
+
+// PatchesByLayer returns patches grouped by layer path.
+func (r DoctorReport) PatchesByLayer() map[string][]ConfigPatch {
+	result := make(map[string][]ConfigPatch)
+	for _, patch := range r.SuggestedPatches {
+		result[patch.LayerPath] = append(result[patch.LayerPath], patch)
+	}
+	return result
 }
 
 // FixResult holds the results of a fix operation.

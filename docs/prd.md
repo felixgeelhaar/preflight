@@ -1,4 +1,4 @@
-Preflight — Product Requirements Document (PRD) v1
+Preflight — Product Requirements Document (PRD)
 
 1. Product Summary
    Preflight is a CLI/TUI tool that compiles a workstation from declarative configuration into a reproducible machine setup, with optional AI-guided discovery and explainability.
@@ -149,8 +149,105 @@ Preflight — Product Requirements Document (PRD) v1
 
 ---
 
-8. Out of Scope (explicit)
-   • Marketplace (future)
-   • Org policy and compliance engine (future)
-   • Remote execution and fleet management
-   • Continuous background reconciliation
+8. Out of Scope (v1)
+   • Marketplace (v2)
+   • Org policy and compliance engine (v2)
+   • Remote execution and fleet management (v3+)
+   • Continuous background reconciliation (v3+)
+
+---
+
+9. v1.x Roadmap — Remaining Features
+   The following v1 PRD requirements are planned for v1.x releases:
+
+   9.1 Enhanced Capture TUI (v1.1)
+   Completes PRD 5.2 and 6.1 requirements for capture workflow:
+   • Search/filter items by name, provider, category
+   • Layer reassignment — move items between layers in TUI
+   • Preview layer structure before commit
+   • Undo/redo for review decisions
+   • Keyboard shortcuts for power users
+
+   9.2 Full Dotfile Lifecycle (v1.2)
+   Completes PRD 6.2 requirements for dotfile management:
+   • Snapshot before applying changes (automatic backup)
+   • Three-way merge for conflict resolution
+   • Preserve manual edits with conflict markers
+   • VS Code settings drift detection (PRD 6.3)
+
+   9.3 Doctor `--update-config` (v1.2)
+   Completes PRD 5.4 requirements:
+   • Detect drift and generate layer patches
+   • Interactive review of suggested changes
+   • Merge drift back into layer files
+
+   9.4 v1.0 Known Limitations
+   The following have workarounds until v1.x:
+   • TUI search/filter — use grep on capture output
+   • Dotfile snapshots — git commit before apply
+   • VS Code settings drift — manual comparison
+
+---
+
+10. v2 Goals
+    10.1 Primary Goals (v2)
+    • Plugin/Capability Marketplace — Community-contributed presets and capability packs
+    • Org Policy Engine — Define org-level constraints (local-first, no central server)
+    • WSL/Windows Support — Extend to Windows Subsystem for Linux
+    • Learning Tours — Interactive guidance for new users (walkthrough mode)
+
+    10.2 Non-Goals (v2)
+    • Remote fleet management (v3+)
+    • SaaS backend requirement (never)
+    • Background daemon with continuous reconciliation (v3+)
+
+---
+
+11. v2 Feature Requirements
+
+    11.1 Plugin Marketplace
+    • Registry of community presets, capability packs, and layer templates
+    • Versioned with integrity verification (SHA256)
+    • `preflight marketplace search <query>`
+    • `preflight marketplace install <pack>`
+    • Local cache for offline use
+    • Provenance tracking (author, source repo, license)
+
+    11.2 Org Policy Engine
+    • Define constraints in `org-policy.yaml`
+    • Policies: required packages, forbidden packages, required layers
+    • Enforcement: warn or block on plan
+    • No central server — policies distributed via git
+    • Override mechanism for exceptions with justification
+
+    11.3 WSL/Windows Support
+    • Detect WSL environment
+    • Windows-native package managers: winget, scoop, chocolatey
+    • Path translation between Windows and WSL
+    • Dotfile symlink compatibility (Windows junctions)
+    • VS Code Remote-WSL integration
+
+    11.4 Learning Tours
+    • Interactive mode: `preflight tour <topic>`
+    • Topics: nvim-basics, git-workflow, shell-customization
+    • AI-powered personalization (optional)
+    • Step-by-step with checkpoints
+    • Completion tracking
+
+---
+
+12. v2 Success Metrics
+    • Marketplace has ≥50 community-contributed presets
+    • WSL support enables full workflow on Windows machines
+    • Org policy adoption by ≥3 teams in beta
+    • Learning tour completion rate ≥70%
+    • Time to onboard new user reduced by 50% vs v1
+
+---
+
+13. Future Considerations (v3+)
+    • Remote execution and fleet management
+    • Background agent with scheduled reconciliation
+    • Integration with enterprise identity providers
+    • Audit logging for compliance requirements
+    • Multi-machine sync and conflict resolution

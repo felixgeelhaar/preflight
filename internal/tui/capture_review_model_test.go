@@ -298,6 +298,388 @@ func TestCaptureReviewModel_AdvanceCursor_FindFromStart(t *testing.T) {
 	assert.Equal(t, 0, m.cursor, "cursor should wrap around to first unreviewed item")
 }
 
+func TestCaptureReviewModel_Undo(t *testing.T) {
+	t.Parallel()
+
+	t.Run("undo restores accepted item", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+
+		// Accept first item
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+		m := newModel.(captureReviewModel)
+		assert.Len(t, m.accepted, 1, "should have one accepted item")
+
+		// Undo
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+		m = newModel.(captureReviewModel)
+
+		assert.Len(t, m.accepted, 0, "accepted should be empty after undo")
+		assert.Equal(t, 0, m.cursor, "cursor should return to undone item")
+	})
+
+	t.Run("undo restores rejected item", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+
+		// Reject first item
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+		m := newModel.(captureReviewModel)
+		assert.Len(t, m.rejected, 1, "should have one rejected item")
+
+		// Undo
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+		m = newModel.(captureReviewModel)
+
+		assert.Len(t, m.rejected, 0, "rejected should be empty after undo")
+		assert.Equal(t, 0, m.cursor, "cursor should return to undone item")
+	})
+
+	t.Run("undo multiple actions in order", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+
+		// Accept first, reject second
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+		m := newModel.(captureReviewModel)
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+		m = newModel.(captureReviewModel)
+
+		assert.Len(t, m.accepted, 1)
+		assert.Len(t, m.rejected, 1)
+
+		// Undo reject
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+		m = newModel.(captureReviewModel)
+		assert.Len(t, m.rejected, 0, "should undo reject first")
+		assert.Len(t, m.accepted, 1, "accept should remain")
+		assert.Equal(t, 1, m.cursor, "cursor should be at second item")
+
+		// Undo accept
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+		m = newModel.(captureReviewModel)
+		assert.Len(t, m.accepted, 0, "should undo accept")
+		assert.Equal(t, 0, m.cursor, "cursor should be at first item")
+	})
+
+	t.Run("undo does nothing when history empty", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+		model.cursor = 1 // Move cursor
+
+		// Undo with nothing to undo
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+		m := newModel.(captureReviewModel)
+
+		assert.Equal(t, 1, m.cursor, "cursor should not change")
+		assert.Len(t, m.accepted, 0, "accepted should remain empty")
+	})
+}
+
+func TestCaptureReviewModel_Redo(t *testing.T) {
+	t.Parallel()
+
+	t.Run("redo restores undone action", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+
+		// Accept, undo, then redo
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+		m := newModel.(captureReviewModel)
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+		m = newModel.(captureReviewModel)
+		assert.Len(t, m.accepted, 0)
+
+		// Redo
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlR})
+		m = newModel.(captureReviewModel)
+
+		assert.Len(t, m.accepted, 1, "should restore accepted item")
+		assert.Equal(t, 1, m.cursor, "cursor should advance after redo")
+	})
+
+	t.Run("redo does nothing when nothing to redo", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+
+		// Redo with nothing to redo
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyCtrlR})
+		m := newModel.(captureReviewModel)
+
+		assert.Equal(t, 0, m.cursor, "cursor should not change")
+		assert.Len(t, m.accepted, 0, "accepted should remain empty")
+	})
+
+	t.Run("new action clears redo stack", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+
+		// Accept, undo, then perform new action
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+		m := newModel.(captureReviewModel)
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+		m = newModel.(captureReviewModel)
+
+		// New action should clear redo stack
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+		m = newModel.(captureReviewModel)
+
+		// Try to redo (should do nothing)
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlR})
+		m = newModel.(captureReviewModel)
+
+		assert.Len(t, m.rejected, 1, "only the new rejection should exist")
+		assert.Len(t, m.accepted, 0, "original accept should not be restored via redo")
+	})
+}
+
+func TestCaptureReviewModel_UndoRedoWithHistory(t *testing.T) {
+	t.Parallel()
+
+	t.Run("model has history after initialization", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+
+		assert.NotNil(t, model.history, "model should have history initialized")
+		assert.False(t, model.history.CanUndo(), "should not be able to undo initially")
+		assert.False(t, model.history.CanRedo(), "should not be able to redo initially")
+	})
+
+	t.Run("history tracks actions", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+
+		// Accept first item
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+		m := newModel.(captureReviewModel)
+
+		assert.True(t, m.history.CanUndo(), "should be able to undo after action")
+	})
+}
+
+func TestCaptureReviewModel_SearchActivation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("slash key activates search", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+
+		assert.False(t, model.searchActive, "search should be inactive initially")
+
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+		m := newModel.(captureReviewModel)
+
+		assert.True(t, m.searchActive, "search should be active after /")
+	})
+
+	t.Run("escape key deactivates search", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+		model.searchActive = true
+
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
+		m := newModel.(captureReviewModel)
+
+		assert.False(t, m.searchActive, "search should be deactivated on Esc")
+	})
+}
+
+func TestCaptureReviewModel_FilterItems(t *testing.T) {
+	t.Parallel()
+
+	t.Run("filters by name", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+
+		filtered := model.filterItems("git")
+
+		assert.Len(t, filtered, 2, "should match 'git' and '~/.gitconfig'")
+		assert.Contains(t, filtered, 0, "should include git (index 0)")
+		assert.Contains(t, filtered, 2, "should include ~/.gitconfig (index 2)")
+	})
+
+	t.Run("filters by category", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+
+		filtered := model.filterItems("brew")
+
+		assert.Len(t, filtered, 2, "should match brew category items")
+		assert.Contains(t, filtered, 0, "should include git (brew)")
+		assert.Contains(t, filtered, 1, "should include neovim (brew)")
+	})
+
+	t.Run("case insensitive matching", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+
+		filtered := model.filterItems("NEOVIM")
+
+		assert.Len(t, filtered, 1, "should match neovim case-insensitively")
+		assert.Contains(t, filtered, 1, "should include neovim")
+	})
+
+	t.Run("empty query returns all items", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+
+		filtered := model.filterItems("")
+
+		assert.Nil(t, filtered, "empty query should return nil (no filter)")
+	})
+
+	t.Run("no matches returns empty slice", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+
+		filtered := model.filterItems("nonexistent")
+
+		assert.NotNil(t, filtered, "should return non-nil slice")
+		assert.Len(t, filtered, 0, "should return empty slice for no matches")
+	})
+}
+
+func TestCaptureReviewModel_FilteredNavigation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("navigation respects filter", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+		model.filteredIdx = []int{0, 2} // Only git and ~/.gitconfig visible
+
+		// Start at first filtered item
+		model.cursor = 0
+
+		// Navigate down should skip neovim (index 1)
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyDown})
+		m := newModel.(captureReviewModel)
+
+		assert.Equal(t, 2, m.cursor, "cursor should skip to next filtered item")
+	})
+}
+
+func TestCaptureReviewModel_ViewWithFilter(t *testing.T) {
+	t.Parallel()
+
+	t.Run("view shows search input when active", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+		model.searchActive = true
+
+		view := model.View()
+
+		assert.Contains(t, view, "Filter", "should show filter prompt when search active")
+	})
+}
+
+func TestCaptureReviewModel_GoToTop(t *testing.T) {
+	t.Parallel()
+
+	t.Run("g moves cursor to first item", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+		model.cursor = 2 // Start at last item
+
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}})
+		m := newModel.(captureReviewModel)
+
+		assert.Equal(t, 0, m.cursor, "cursor should move to first item")
+	})
+
+	t.Run("g moves to first filtered item when filter active", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+		model.filteredIdx = []int{1, 2} // Only neovim and .gitconfig
+		model.cursor = 2
+
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}})
+		m := newModel.(captureReviewModel)
+
+		assert.Equal(t, 1, m.cursor, "cursor should move to first filtered item")
+	})
+}
+
+func TestCaptureReviewModel_GoToBottom(t *testing.T) {
+	t.Parallel()
+
+	t.Run("G moves cursor to last item", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+		model.cursor = 0 // Start at first item
+
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}})
+		m := newModel.(captureReviewModel)
+
+		assert.Equal(t, 2, m.cursor, "cursor should move to last item")
+	})
+
+	t.Run("G moves to last filtered item when filter active", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		model := newCaptureReviewModel(items, CaptureReviewOptions{Interactive: true})
+		model.width = 100
+		model.height = 24
+		model.filteredIdx = []int{0, 1} // Only git and neovim
+		model.cursor = 0
+
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}})
+		m := newModel.(captureReviewModel)
+
+		assert.Equal(t, 1, m.cursor, "cursor should move to last filtered item")
+	})
+}
+
 // Helper functions to create test capture items
 
 func createTestCaptureItems(t *testing.T) []CaptureItem {

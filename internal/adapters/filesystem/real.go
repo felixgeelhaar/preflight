@@ -88,5 +88,36 @@ func (fs *RealFileSystem) IsDir(path string) bool {
 	return info.IsDir()
 }
 
+// CopyFile copies a file from src to dest.
+func (fs *RealFileSystem) CopyFile(src, dest string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+
+	// Get source file permissions
+	info, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(dest, data, info.Mode())
+}
+
+// GetFileInfo returns metadata about a file.
+func (fs *RealFileSystem) GetFileInfo(path string) (ports.FileInfo, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return ports.FileInfo{}, err
+	}
+
+	return ports.FileInfo{
+		Size:    info.Size(),
+		Mode:    info.Mode(),
+		ModTime: info.ModTime(),
+		IsDir:   info.IsDir(),
+	}, nil
+}
+
 // Ensure RealFileSystem implements ports.FileSystem.
 var _ ports.FileSystem = (*RealFileSystem)(nil)

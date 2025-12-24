@@ -1,6 +1,7 @@
 package filesystem
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -144,5 +145,133 @@ func TestRealFileSystem_FileHash_NotFound(t *testing.T) {
 	_, err := fs.FileHash("/nonexistent/path/file.txt")
 	if err == nil {
 		t.Error("FileHash() should return error for non-existent file")
+	}
+}
+
+func TestRealFileSystem_CopyFile(t *testing.T) {
+	fs := NewRealFileSystem()
+
+	tmpDir, err := os.MkdirTemp("", "preflight-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	// Create source file
+	srcFile := filepath.Join(tmpDir, "source.txt")
+	content := []byte("file content to copy")
+	err = fs.WriteFile(srcFile, content, 0o644)
+	if err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	// Copy file
+	dstFile := filepath.Join(tmpDir, "destination.txt")
+	err = fs.CopyFile(srcFile, dstFile)
+	if err != nil {
+		t.Fatalf("CopyFile() error = %v", err)
+	}
+
+	// Verify destination exists
+	if !fs.Exists(dstFile) {
+		t.Error("CopyFile() should create destination file")
+	}
+
+	// Verify content matches
+	dstContent, err := fs.ReadFile(dstFile)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if !bytes.Equal(dstContent, content) {
+		t.Errorf("CopyFile() content mismatch: got %q, want %q", string(dstContent), string(content))
+	}
+
+	// Verify source still exists
+	if !fs.Exists(srcFile) {
+		t.Error("CopyFile() should not delete source file")
+	}
+}
+
+func TestRealFileSystem_CopyFile_NotFound(t *testing.T) {
+	fs := NewRealFileSystem()
+
+	tmpDir, err := os.MkdirTemp("", "preflight-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	dstFile := filepath.Join(tmpDir, "destination.txt")
+	err = fs.CopyFile("/nonexistent/source.txt", dstFile)
+	if err == nil {
+		t.Error("CopyFile() should return error for non-existent source")
+	}
+}
+
+func TestRealFileSystem_GetFileInfo(t *testing.T) {
+	fs := NewRealFileSystem()
+
+	tmpDir, err := os.MkdirTemp("", "preflight-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	// Create test file
+	testFile := filepath.Join(tmpDir, "test.txt")
+	content := []byte("test content")
+	err = fs.WriteFile(testFile, content, 0o644)
+	if err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	// Get file info
+	info, err := fs.GetFileInfo(testFile)
+	if err != nil {
+		t.Fatalf("GetFileInfo() error = %v", err)
+	}
+
+	if info.Size != int64(len(content)) {
+		t.Errorf("GetFileInfo() Size = %d, want %d", info.Size, len(content))
+	}
+
+	if info.Mode == 0 {
+		t.Error("GetFileInfo() Mode should not be 0")
+	}
+
+	if info.ModTime.IsZero() {
+		t.Error("GetFileInfo() ModTime should not be zero")
+	}
+
+	if info.IsDir {
+		t.Error("GetFileInfo() IsDir should be false for file")
+	}
+}
+
+func TestRealFileSystem_GetFileInfo_Directory(t *testing.T) {
+	fs := NewRealFileSystem()
+
+	tmpDir, err := os.MkdirTemp("", "preflight-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	info, err := fs.GetFileInfo(tmpDir)
+	if err != nil {
+		t.Fatalf("GetFileInfo() error = %v", err)
+	}
+
+	if !info.IsDir {
+		t.Error("GetFileInfo() IsDir should be true for directory")
+	}
+}
+
+func TestRealFileSystem_GetFileInfo_NotFound(t *testing.T) {
+	fs := NewRealFileSystem()
+
+	_, err := fs.GetFileInfo("/nonexistent/path/file.txt")
+	if err == nil {
+		t.Error("GetFileInfo() should return error for non-existent file")
 	}
 }

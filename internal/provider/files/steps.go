@@ -2,6 +2,7 @@ package files
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"text/template"
@@ -13,18 +14,23 @@ import (
 
 // LinkStep represents a symlink creation step.
 type LinkStep struct {
-	link Link
-	id   compiler.StepID
-	fs   ports.FileSystem
+	link      Link
+	id        compiler.StepID
+	fs        ports.FileSystem
+	lifecycle ports.FileLifecycle
 }
 
 // NewLinkStep creates a new LinkStep.
-func NewLinkStep(link Link, fs ports.FileSystem) *LinkStep {
+func NewLinkStep(link Link, fs ports.FileSystem, lifecycle ports.FileLifecycle) *LinkStep {
+	if lifecycle == nil {
+		lifecycle = &ports.NoopLifecycle{}
+	}
 	id := compiler.MustNewStepID("files:link:" + link.ID())
 	return &LinkStep{
-		link: link,
-		id:   id,
-		fs:   fs,
+		link:      link,
+		id:        id,
+		fs:        fs,
+		lifecycle: lifecycle,
 	}
 }
 
@@ -66,6 +72,12 @@ func (s *LinkStep) Apply(_ compiler.RunContext) error {
 	}
 
 	dest := ports.ExpandPath(s.link.Dest)
+	ctx := context.Background()
+
+	// Snapshot before modification
+	if err := s.lifecycle.BeforeModify(ctx, dest); err != nil {
+		return fmt.Errorf("failed to snapshot before modify: %w", err)
+	}
 
 	// Handle existing file
 	if s.fs.Exists(dest) {
@@ -88,6 +100,11 @@ func (s *LinkStep) Apply(_ compiler.RunContext) error {
 		return fmt.Errorf("failed to create symlink: %w", err)
 	}
 
+	// Record for drift tracking
+	if err := s.lifecycle.AfterApply(ctx, dest, "files"); err != nil {
+		return fmt.Errorf("failed to record apply: %w", err)
+	}
+
 	return nil
 }
 
@@ -102,18 +119,23 @@ func (s *LinkStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 
 // CopyStep represents a file copy step.
 type CopyStep struct {
-	cp Copy
-	id compiler.StepID
-	fs ports.FileSystem
+	cp        Copy
+	id        compiler.StepID
+	fs        ports.FileSystem
+	lifecycle ports.FileLifecycle
 }
 
 // NewCopyStep creates a new CopyStep.
-func NewCopyStep(cp Copy, fs ports.FileSystem) *CopyStep {
+func NewCopyStep(cp Copy, fs ports.FileSystem, lifecycle ports.FileLifecycle) *CopyStep {
+	if lifecycle == nil {
+		lifecycle = &ports.NoopLifecycle{}
+	}
 	id := compiler.MustNewStepID("files:copy:" + cp.ID())
 	return &CopyStep{
-		cp: cp,
-		id: id,
-		fs: fs,
+		cp:        cp,
+		id:        id,
+		fs:        fs,
+		lifecycle: lifecycle,
 	}
 }
 
@@ -171,6 +193,12 @@ func (s *CopyStep) Apply(_ compiler.RunContext) error {
 
 	src := ports.ExpandPath(s.cp.Src)
 	dest := ports.ExpandPath(s.cp.Dest)
+	ctx := context.Background()
+
+	// Snapshot before modification
+	if err := s.lifecycle.BeforeModify(ctx, dest); err != nil {
+		return fmt.Errorf("failed to snapshot before modify: %w", err)
+	}
 
 	content, err := s.fs.ReadFile(src)
 	if err != nil {
@@ -180,6 +208,11 @@ func (s *CopyStep) Apply(_ compiler.RunContext) error {
 	mode := parseFileMode(s.cp.Mode, 0o644)
 	if err := s.fs.WriteFile(dest, content, mode); err != nil {
 		return fmt.Errorf("failed to write destination: %w", err)
+	}
+
+	// Record for drift tracking
+	if err := s.lifecycle.AfterApply(ctx, dest, "files"); err != nil {
+		return fmt.Errorf("failed to record apply: %w", err)
 	}
 
 	return nil
@@ -196,18 +229,23 @@ func (s *CopyStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 
 // TemplateStep represents a template rendering step.
 type TemplateStep struct {
-	tmpl Template
-	id   compiler.StepID
-	fs   ports.FileSystem
+	tmpl      Template
+	id        compiler.StepID
+	fs        ports.FileSystem
+	lifecycle ports.FileLifecycle
 }
 
 // NewTemplateStep creates a new TemplateStep.
-func NewTemplateStep(tmpl Template, fs ports.FileSystem) *TemplateStep {
+func NewTemplateStep(tmpl Template, fs ports.FileSystem, lifecycle ports.FileLifecycle) *TemplateStep {
+	if lifecycle == nil {
+		lifecycle = &ports.NoopLifecycle{}
+	}
 	id := compiler.MustNewStepID("files:template:" + tmpl.ID())
 	return &TemplateStep{
-		tmpl: tmpl,
-		id:   id,
-		fs:   fs,
+		tmpl:      tmpl,
+		id:        id,
+		fs:        fs,
+		lifecycle: lifecycle,
 	}
 }
 
@@ -275,6 +313,12 @@ func (s *TemplateStep) Apply(_ compiler.RunContext) error {
 
 	src := ports.ExpandPath(s.tmpl.Src)
 	dest := ports.ExpandPath(s.tmpl.Dest)
+	ctx := context.Background()
+
+	// Snapshot before modification
+	if err := s.lifecycle.BeforeModify(ctx, dest); err != nil {
+		return fmt.Errorf("failed to snapshot before modify: %w", err)
+	}
 
 	content, err := s.fs.ReadFile(src)
 	if err != nil {
@@ -294,6 +338,11 @@ func (s *TemplateStep) Apply(_ compiler.RunContext) error {
 	mode := parseFileMode(s.tmpl.Mode, 0o644)
 	if err := s.fs.WriteFile(dest, buf.Bytes(), mode); err != nil {
 		return fmt.Errorf("failed to write output: %w", err)
+	}
+
+	// Record for drift tracking
+	if err := s.lifecycle.AfterApply(ctx, dest, "files"); err != nil {
+		return fmt.Errorf("failed to record apply: %w", err)
 	}
 
 	return nil

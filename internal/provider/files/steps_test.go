@@ -10,7 +10,7 @@ import (
 
 func TestLinkStep_ID(t *testing.T) {
 	link := Link{Src: "dotfiles/.zshrc", Dest: "~/.zshrc"}
-	step := NewLinkStep(link, nil)
+	step := NewLinkStep(link, nil, nil)
 	if step.ID().String() == "" {
 		t.Error("ID() should not be empty")
 	}
@@ -18,7 +18,7 @@ func TestLinkStep_ID(t *testing.T) {
 
 func TestLinkStep_DependsOn(t *testing.T) {
 	link := Link{Src: "dotfiles/.zshrc", Dest: "~/.zshrc"}
-	step := NewLinkStep(link, nil)
+	step := NewLinkStep(link, nil, nil)
 	deps := step.DependsOn()
 	if len(deps) != 0 {
 		t.Errorf("DependsOn() len = %d, want 0", len(deps))
@@ -30,7 +30,7 @@ func TestLinkStep_Check_AlreadyLinked(t *testing.T) {
 	fs.AddSymlink("/home/user/.zshrc", "/dotfiles/.zshrc")
 
 	link := Link{Src: "/dotfiles/.zshrc", Dest: "/home/user/.zshrc"}
-	step := NewLinkStep(link, fs)
+	step := NewLinkStep(link, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -46,7 +46,7 @@ func TestLinkStep_Check_NotLinked(t *testing.T) {
 	fs := mocks.NewFileSystem()
 
 	link := Link{Src: "/dotfiles/.zshrc", Dest: "/home/user/.zshrc"}
-	step := NewLinkStep(link, fs)
+	step := NewLinkStep(link, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -63,7 +63,7 @@ func TestLinkStep_Check_WrongTarget(t *testing.T) {
 	fs.AddSymlink("/home/user/.zshrc", "/wrong/target")
 
 	link := Link{Src: "/dotfiles/.zshrc", Dest: "/home/user/.zshrc"}
-	step := NewLinkStep(link, fs)
+	step := NewLinkStep(link, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -77,7 +77,7 @@ func TestLinkStep_Check_WrongTarget(t *testing.T) {
 
 func TestLinkStep_Plan(t *testing.T) {
 	link := Link{Src: "/dotfiles/.zshrc", Dest: "/home/user/.zshrc"}
-	step := NewLinkStep(link, nil)
+	step := NewLinkStep(link, nil, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	diff, err := step.Plan(ctx)
@@ -94,7 +94,7 @@ func TestLinkStep_Apply(t *testing.T) {
 	fs.AddFile("/dotfiles/.zshrc", "export PATH=$PATH")
 
 	link := Link{Src: "/dotfiles/.zshrc", Dest: "/home/user/.zshrc"}
-	step := NewLinkStep(link, fs)
+	step := NewLinkStep(link, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -117,7 +117,7 @@ func TestLinkStep_Apply_WithBackup(t *testing.T) {
 	fs.AddFile("/home/user/.zshrc", "old content")
 
 	link := Link{Src: "/dotfiles/.zshrc", Dest: "/home/user/.zshrc", Backup: true}
-	step := NewLinkStep(link, fs)
+	step := NewLinkStep(link, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -136,7 +136,7 @@ func TestLinkStep_Apply_WithForce(t *testing.T) {
 	fs.AddFile("/home/user/.zshrc", "old content")
 
 	link := Link{Src: "/dotfiles/.zshrc", Dest: "/home/user/.zshrc", Force: true}
-	step := NewLinkStep(link, fs)
+	step := NewLinkStep(link, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -152,7 +152,7 @@ func TestLinkStep_Apply_WithForce(t *testing.T) {
 
 func TestLinkStep_Explain(t *testing.T) {
 	link := Link{Src: "/dotfiles/.zshrc", Dest: "/home/user/.zshrc"}
-	step := NewLinkStep(link, nil)
+	step := NewLinkStep(link, nil, nil)
 	ctx := compiler.NewExplainContext()
 
 	explanation := step.Explain(ctx)
@@ -163,7 +163,7 @@ func TestLinkStep_Explain(t *testing.T) {
 
 func TestCopyStep_ID(t *testing.T) {
 	cp := Copy{Src: "files/script.sh", Dest: "~/.local/bin/script.sh"}
-	step := NewCopyStep(cp, nil)
+	step := NewCopyStep(cp, nil, nil)
 	if step.ID().String() == "" {
 		t.Error("ID() should not be empty")
 	}
@@ -175,7 +175,7 @@ func TestCopyStep_Check_FileExists_SameContent(t *testing.T) {
 	fs.AddFile("/dest/script.sh", "#!/bin/bash\necho hello")
 
 	cp := Copy{Src: "/src/script.sh", Dest: "/dest/script.sh"}
-	step := NewCopyStep(cp, fs)
+	step := NewCopyStep(cp, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -193,7 +193,7 @@ func TestCopyStep_Check_FileExists_DifferentContent(t *testing.T) {
 	fs.AddFile("/dest/script.sh", "#!/bin/bash\necho goodbye")
 
 	cp := Copy{Src: "/src/script.sh", Dest: "/dest/script.sh"}
-	step := NewCopyStep(cp, fs)
+	step := NewCopyStep(cp, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -210,7 +210,7 @@ func TestCopyStep_Check_FileNotExists(t *testing.T) {
 	fs.AddFile("/src/script.sh", "#!/bin/bash\necho hello")
 
 	cp := Copy{Src: "/src/script.sh", Dest: "/dest/script.sh"}
-	step := NewCopyStep(cp, fs)
+	step := NewCopyStep(cp, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -227,7 +227,7 @@ func TestCopyStep_Apply(t *testing.T) {
 	fs.AddFile("/src/script.sh", "#!/bin/bash\necho hello")
 
 	cp := Copy{Src: "/src/script.sh", Dest: "/dest/script.sh"}
-	step := NewCopyStep(cp, fs)
+	step := NewCopyStep(cp, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -243,7 +243,7 @@ func TestCopyStep_Apply(t *testing.T) {
 
 func TestCopyStep_Plan(t *testing.T) {
 	cp := Copy{Src: "/src/script.sh", Dest: "/dest/script.sh"}
-	step := NewCopyStep(cp, nil)
+	step := NewCopyStep(cp, nil, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	diff, err := step.Plan(ctx)
@@ -257,7 +257,7 @@ func TestCopyStep_Plan(t *testing.T) {
 
 func TestCopyStep_Explain(t *testing.T) {
 	cp := Copy{Src: "/src/script.sh", Dest: "/dest/script.sh"}
-	step := NewCopyStep(cp, nil)
+	step := NewCopyStep(cp, nil, nil)
 	ctx := compiler.NewExplainContext()
 
 	explanation := step.Explain(ctx)
@@ -268,7 +268,7 @@ func TestCopyStep_Explain(t *testing.T) {
 
 func TestTemplateStep_ID(t *testing.T) {
 	tmpl := Template{Src: "templates/config.tmpl", Dest: "~/.config/app/config"}
-	step := NewTemplateStep(tmpl, nil)
+	step := NewTemplateStep(tmpl, nil, nil)
 	if step.ID().String() == "" {
 		t.Error("ID() should not be empty")
 	}
@@ -279,7 +279,7 @@ func TestTemplateStep_Check_NotExists(t *testing.T) {
 	fs.AddFile("/templates/config.tmpl", "name = {{ .name }}")
 
 	tmpl := Template{Src: "/templates/config.tmpl", Dest: "/home/user/.config"}
-	step := NewTemplateStep(tmpl, fs)
+	step := NewTemplateStep(tmpl, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -300,7 +300,7 @@ func TestTemplateStep_Apply(t *testing.T) {
 		Dest: "/home/user/.config",
 		Vars: map[string]string{"name": "John"},
 	}
-	step := NewTemplateStep(tmpl, fs)
+	step := NewTemplateStep(tmpl, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -316,7 +316,7 @@ func TestTemplateStep_Apply(t *testing.T) {
 
 func TestTemplateStep_Plan(t *testing.T) {
 	tmpl := Template{Src: "/templates/config.tmpl", Dest: "/home/user/.config"}
-	step := NewTemplateStep(tmpl, nil)
+	step := NewTemplateStep(tmpl, nil, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	diff, err := step.Plan(ctx)
@@ -330,7 +330,7 @@ func TestTemplateStep_Plan(t *testing.T) {
 
 func TestTemplateStep_Explain(t *testing.T) {
 	tmpl := Template{Src: "/templates/config.tmpl", Dest: "/home/user/.config"}
-	step := NewTemplateStep(tmpl, nil)
+	step := NewTemplateStep(tmpl, nil, nil)
 	ctx := compiler.NewExplainContext()
 
 	explanation := step.Explain(ctx)
@@ -343,7 +343,7 @@ func TestTemplateStep_Explain(t *testing.T) {
 
 func TestCopyStep_DependsOn(t *testing.T) {
 	cp := Copy{Src: "/src/script.sh", Dest: "/dest/script.sh"}
-	step := NewCopyStep(cp, nil)
+	step := NewCopyStep(cp, nil, nil)
 	deps := step.DependsOn()
 	if len(deps) != 0 {
 		t.Errorf("DependsOn() len = %d, want 0", len(deps))
@@ -352,7 +352,7 @@ func TestCopyStep_DependsOn(t *testing.T) {
 
 func TestTemplateStep_DependsOn(t *testing.T) {
 	tmpl := Template{Src: "/templates/config.tmpl", Dest: "/home/user/.config"}
-	step := NewTemplateStep(tmpl, nil)
+	step := NewTemplateStep(tmpl, nil, nil)
 	deps := step.DependsOn()
 	if len(deps) != 0 {
 		t.Errorf("DependsOn() len = %d, want 0", len(deps))
@@ -372,7 +372,7 @@ func TestTemplateStep_Check_ExistsWithSameContent(t *testing.T) {
 		Dest: "/home/user/.config",
 		Vars: map[string]string{"name": "John"},
 	}
-	step := NewTemplateStep(tmpl, fs)
+	step := NewTemplateStep(tmpl, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -394,7 +394,7 @@ func TestTemplateStep_Check_ExistsWithDifferentContent(t *testing.T) {
 		Dest: "/home/user/.config",
 		Vars: map[string]string{"name": "NewValue"},
 	}
-	step := NewTemplateStep(tmpl, fs)
+	step := NewTemplateStep(tmpl, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -415,7 +415,7 @@ func TestTemplateStep_Check_TemplateReadError(t *testing.T) {
 		Src:  "/templates/nonexistent.tmpl",
 		Dest: "/home/user/.config",
 	}
-	step := NewTemplateStep(tmpl, fs)
+	step := NewTemplateStep(tmpl, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -436,7 +436,7 @@ func TestTemplateStep_Check_TemplateParseError(t *testing.T) {
 		Src:  "/templates/bad.tmpl",
 		Dest: "/home/user/.config",
 	}
-	step := NewTemplateStep(tmpl, fs)
+	step := NewTemplateStep(tmpl, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -453,7 +453,7 @@ func TestTemplateStep_Check_TemplateParseError(t *testing.T) {
 func TestLinkStep_Apply_InvalidSrcPath(t *testing.T) {
 	fs := mocks.NewFileSystem()
 	link := Link{Src: "../../../etc/passwd", Dest: "/home/user/.zshrc"}
-	step := NewLinkStep(link, fs)
+	step := NewLinkStep(link, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -465,7 +465,7 @@ func TestLinkStep_Apply_InvalidSrcPath(t *testing.T) {
 func TestLinkStep_Apply_InvalidDestPath(t *testing.T) {
 	fs := mocks.NewFileSystem()
 	link := Link{Src: "/dotfiles/.zshrc", Dest: "../../../etc/shadow"}
-	step := NewLinkStep(link, fs)
+	step := NewLinkStep(link, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -480,7 +480,7 @@ func TestLinkStep_Apply_DestExistsNoForceNoBackup(t *testing.T) {
 	fs.AddFile("/home/user/.zshrc", "old content")
 
 	link := Link{Src: "/dotfiles/.zshrc", Dest: "/home/user/.zshrc", Force: false, Backup: false}
-	step := NewLinkStep(link, fs)
+	step := NewLinkStep(link, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -494,7 +494,7 @@ func TestLinkStep_Apply_DestExistsNoForceNoBackup(t *testing.T) {
 func TestCopyStep_Apply_InvalidSrcPath(t *testing.T) {
 	fs := mocks.NewFileSystem()
 	cp := Copy{Src: "../../../etc/passwd", Dest: "/dest/script.sh"}
-	step := NewCopyStep(cp, fs)
+	step := NewCopyStep(cp, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -507,7 +507,7 @@ func TestCopyStep_Apply_InvalidDestPath(t *testing.T) {
 	fs := mocks.NewFileSystem()
 	fs.AddFile("/src/script.sh", "#!/bin/bash")
 	cp := Copy{Src: "/src/script.sh", Dest: "../../../etc/shadow"}
-	step := NewCopyStep(cp, fs)
+	step := NewCopyStep(cp, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -520,7 +520,7 @@ func TestCopyStep_Apply_SrcReadError(t *testing.T) {
 	fs := mocks.NewFileSystem()
 	// Source file doesn't exist
 	cp := Copy{Src: "/src/nonexistent.sh", Dest: "/dest/script.sh"}
-	step := NewCopyStep(cp, fs)
+	step := NewCopyStep(cp, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -534,7 +534,7 @@ func TestCopyStep_Apply_WithMode(t *testing.T) {
 	fs.AddFile("/src/script.sh", "#!/bin/bash\necho hello")
 
 	cp := Copy{Src: "/src/script.sh", Dest: "/dest/script.sh", Mode: "0755"}
-	step := NewCopyStep(cp, fs)
+	step := NewCopyStep(cp, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -553,7 +553,7 @@ func TestCopyStep_Apply_WithMode(t *testing.T) {
 func TestTemplateStep_Apply_InvalidSrcPath(t *testing.T) {
 	fs := mocks.NewFileSystem()
 	tmpl := Template{Src: "../../../etc/passwd", Dest: "/home/user/.config"}
-	step := NewTemplateStep(tmpl, fs)
+	step := NewTemplateStep(tmpl, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -566,7 +566,7 @@ func TestTemplateStep_Apply_InvalidDestPath(t *testing.T) {
 	fs := mocks.NewFileSystem()
 	fs.AddFile("/templates/config.tmpl", "content")
 	tmpl := Template{Src: "/templates/config.tmpl", Dest: "../../../etc/shadow"}
-	step := NewTemplateStep(tmpl, fs)
+	step := NewTemplateStep(tmpl, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -578,7 +578,7 @@ func TestTemplateStep_Apply_InvalidDestPath(t *testing.T) {
 func TestTemplateStep_Apply_SrcReadError(t *testing.T) {
 	fs := mocks.NewFileSystem()
 	tmpl := Template{Src: "/templates/nonexistent.tmpl", Dest: "/home/user/.config"}
-	step := NewTemplateStep(tmpl, fs)
+	step := NewTemplateStep(tmpl, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -592,7 +592,7 @@ func TestTemplateStep_Apply_ParseError(t *testing.T) {
 	fs.AddFile("/templates/bad.tmpl", "name = {{ .name }") // Invalid template
 
 	tmpl := Template{Src: "/templates/bad.tmpl", Dest: "/home/user/.config"}
-	step := NewTemplateStep(tmpl, fs)
+	step := NewTemplateStep(tmpl, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -611,7 +611,7 @@ func TestTemplateStep_Apply_WithMode(t *testing.T) {
 		Vars: map[string]string{"name": "John"},
 		Mode: "0600",
 	}
-	step := NewTemplateStep(tmpl, fs)
+	step := NewTemplateStep(tmpl, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -633,7 +633,7 @@ func TestCopyStep_Check_SrcHashError(t *testing.T) {
 	fs.AddFile("/dest/script.sh", "content")
 
 	cp := Copy{Src: "/src/nonexistent.sh", Dest: "/dest/script.sh"}
-	step := NewCopyStep(cp, fs)
+	step := NewCopyStep(cp, fs, nil)
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)

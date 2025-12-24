@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/ports"
 )
@@ -153,6 +154,44 @@ func (fs *FileSystem) IsDir(path string) bool {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
 	return fs.dirs[path]
+}
+
+// CopyFile copies a file in the mock filesystem.
+func (fs *FileSystem) CopyFile(src, dest string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	content, ok := fs.files[src]
+	if !ok {
+		return fmt.Errorf("file not found: %s", src)
+	}
+	fs.files[dest] = append([]byte(nil), content...)
+	return nil
+}
+
+// GetFileInfo returns metadata about a file in the mock filesystem.
+func (fs *FileSystem) GetFileInfo(path string) (ports.FileInfo, error) {
+	fs.mu.RLock()
+	defer fs.mu.RUnlock()
+
+	if content, ok := fs.files[path]; ok {
+		return ports.FileInfo{
+			Size:    int64(len(content)),
+			Mode:    0o644,
+			ModTime: time.Now(),
+			IsDir:   false,
+		}, nil
+	}
+
+	if fs.dirs[path] {
+		return ports.FileInfo{
+			Size:    0,
+			Mode:    0o755,
+			ModTime: time.Now(),
+			IsDir:   true,
+		}, nil
+	}
+
+	return ports.FileInfo{}, fmt.Errorf("file not found: %s", path)
 }
 
 // Reset clears all files, symlinks, and directories.

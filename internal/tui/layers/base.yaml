@@ -1,0 +1,3 @@
+name: base
+nvim:
+    preset: balanced

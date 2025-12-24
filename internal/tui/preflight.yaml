@@ -1,0 +1,5 @@
+defaults:
+    mode: intent
+targets:
+    default:
+        - base

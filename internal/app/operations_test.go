@@ -598,3 +598,371 @@ func TestPrintDoctorReport_WithIssues(t *testing.T) {
 	assert.Contains(t, result, "Fix:")
 	assert.Contains(t, result, "[INFO]")
 }
+
+func TestPrintCaptureFindings(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+
+	findings := &CaptureFindings{
+		Items: []CapturedItem{
+			{Provider: "brew", Name: "git"},
+			{Provider: "brew", Name: "curl"},
+			{Provider: "shell", Name: ".zshrc"},
+		},
+		Providers: []string{"brew", "shell"},
+	}
+
+	p.PrintCaptureFindings(findings)
+
+	result := output.String()
+	assert.Contains(t, result, "Capture Results")
+	assert.Contains(t, result, "Captured 3 items")
+	assert.Contains(t, result, "brew")
+	assert.Contains(t, result, "shell")
+	assert.Contains(t, result, "git")
+	assert.Contains(t, result, ".zshrc")
+}
+
+func TestPrintCaptureFindings_WithWarnings(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+
+	findings := &CaptureFindings{
+		Items:     []CapturedItem{},
+		Providers: []string{"vscode"},
+		Warnings:  []string{"vscode: command not found"},
+	}
+
+	p.PrintCaptureFindings(findings)
+
+	result := output.String()
+	assert.Contains(t, result, "Warnings")
+	assert.Contains(t, result, "vscode: command not found")
+}
+
+func TestPrintDiff_NoDifferences(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+
+	result := &DiffResult{
+		ConfigPath: "preflight.yaml",
+		Target:     "work",
+		Entries:    []DiffEntry{},
+	}
+
+	p.PrintDiff(result)
+
+	out := output.String()
+	assert.Contains(t, out, "Configuration Diff")
+	assert.Contains(t, out, "No differences")
+}
+
+func TestPrintDiff_WithDifferences(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+
+	result := &DiffResult{
+		ConfigPath: "preflight.yaml",
+		Target:     "work",
+		Entries: []DiffEntry{
+			{Provider: "brew", Path: "brew:formula:git", Type: DiffTypeAdded, Expected: "git installed"},
+			{Provider: "files", Path: "files:link:bashrc", Type: DiffTypeModified, Expected: "linked to dotfiles"},
+			{Provider: "shell", Path: "shell:plugin:zsh", Type: DiffTypeRemoved},
+		},
+	}
+
+	p.PrintDiff(result)
+
+	out := output.String()
+	assert.Contains(t, out, "Configuration Diff")
+	assert.Contains(t, out, "Found 3 difference(s)")
+	assert.Contains(t, out, "brew")
+	assert.Contains(t, out, "files")
+	assert.Contains(t, out, "shell")
+	assert.Contains(t, out, "+") // Added
+	assert.Contains(t, out, "~") // Modified
+	assert.Contains(t, out, "-") // Removed
+	assert.Contains(t, out, "expected: git installed")
+}
+
+func TestCapture_UnknownProvider(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	opts := NewCaptureOptions().WithProviders("unknown")
+	findings, err := p.Capture(ctx, opts)
+
+	require.NoError(t, err)
+	assert.Len(t, findings.Warnings, 1)
+	assert.Contains(t, findings.Warnings[0], "unknown provider")
+}
+
+func TestCapture_EmptyHomeDir(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	// Test with git provider which reads from home dir
+	opts := CaptureOptions{
+		HomeDir:   t.TempDir(), // Empty temp directory
+		Providers: []string{"git"},
+	}
+	findings, err := p.Capture(ctx, opts)
+
+	require.NoError(t, err)
+	assert.Empty(t, findings.Items) // No .gitconfig in temp dir
+}
+
+func TestCaptureGitConfig(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+
+	// Create .gitconfig
+	gitconfigPath := filepath.Join(tmpDir, ".gitconfig")
+	require.NoError(t, os.WriteFile(gitconfigPath, []byte(`[user]
+	name = Test User
+	email = test@example.com
+`), 0o644))
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	opts := CaptureOptions{
+		HomeDir:   tmpDir,
+		Providers: []string{"git"},
+	}
+	findings, err := p.Capture(ctx, opts)
+
+	require.NoError(t, err)
+	// Items may or may not be found depending on git global config
+	assert.NotNil(t, findings)
+}
+
+func TestCaptureSSHConfig(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+
+	// Create .ssh/config
+	sshDir := filepath.Join(tmpDir, ".ssh")
+	require.NoError(t, os.MkdirAll(sshDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(sshDir, "config"), []byte("Host github.com\n  User git\n"), 0o600))
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	opts := CaptureOptions{
+		HomeDir:   tmpDir,
+		Providers: []string{"ssh"},
+	}
+	findings, err := p.Capture(ctx, opts)
+
+	require.NoError(t, err)
+	assert.Len(t, findings.Items, 1)
+	assert.Equal(t, "ssh", findings.Items[0].Provider)
+	assert.Equal(t, "config", findings.Items[0].Name)
+}
+
+func TestCaptureShellConfig(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+
+	// Create shell config files
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, ".zshrc"), []byte("# zshrc"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, ".bashrc"), []byte("# bashrc"), 0o644))
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	opts := CaptureOptions{
+		HomeDir:   tmpDir,
+		Providers: []string{"shell"},
+	}
+	findings, err := p.Capture(ctx, opts)
+
+	require.NoError(t, err)
+	assert.Len(t, findings.Items, 2)
+}
+
+func TestCaptureNvimConfig_WithLazyLock(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+
+	// Create nvim config directory with lazy-lock.json
+	nvimDir := filepath.Join(tmpDir, ".config", "nvim")
+	require.NoError(t, os.MkdirAll(nvimDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(nvimDir, "init.lua"), []byte("-- init"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(nvimDir, "lazy-lock.json"), []byte("{}"), 0o644))
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	opts := CaptureOptions{
+		HomeDir:   tmpDir,
+		Providers: []string{"nvim"},
+	}
+	findings, err := p.Capture(ctx, opts)
+
+	require.NoError(t, err)
+	assert.Len(t, findings.Items, 2) // config dir and lazy-lock.json
+}
+
+func TestCaptureNvimConfig_WithPacker(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+
+	// Create nvim config directory with packer_compiled.lua
+	nvimDir := filepath.Join(tmpDir, ".config", "nvim")
+	pluginDir := filepath.Join(nvimDir, "plugin")
+	require.NoError(t, os.MkdirAll(pluginDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(pluginDir, "packer_compiled.lua"), []byte("-- packer"), 0o644))
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	opts := CaptureOptions{
+		HomeDir:   tmpDir,
+		Providers: []string{"nvim"},
+	}
+	findings, err := p.Capture(ctx, opts)
+
+	require.NoError(t, err)
+	assert.Len(t, findings.Items, 2) // config dir and packer_compiled.lua
+}
+
+func TestCaptureNvimConfig_WithVimrc(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+
+	// Create legacy .vimrc (no nvim config dir)
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, ".vimrc"), []byte("\" vimrc"), 0o644))
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	opts := CaptureOptions{
+		HomeDir:   tmpDir,
+		Providers: []string{"nvim"},
+	}
+	findings, err := p.Capture(ctx, opts)
+
+	require.NoError(t, err)
+	assert.Len(t, findings.Items, 1)
+	assert.Equal(t, ".vimrc", findings.Items[0].Name)
+}
+
+func TestCaptureRuntimeVersions_NoTools(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	// Runtime capture when no mise or asdf is installed will return empty
+	opts := CaptureOptions{
+		HomeDir:   t.TempDir(),
+		Providers: []string{"runtime"},
+	}
+	findings, err := p.Capture(ctx, opts)
+
+	require.NoError(t, err)
+	// May or may not have items depending on system
+	assert.NotNil(t, findings)
+}
+
+func TestLockUpdate_NewLockfile(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "preflight.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte("version: \"1\"\n"), 0o644))
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	err := p.LockUpdate(ctx, configPath)
+
+	require.NoError(t, err)
+	assert.Contains(t, output.String(), "Lockfile updated")
+	// Verify lockfile was created
+	lockPath := filepath.Join(tmpDir, "preflight.lock")
+	assert.FileExists(t, lockPath)
+}
+
+func TestLockFreeze_LockfileNotFound(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "preflight.yaml")
+	// No lockfile exists
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	err := p.LockFreeze(ctx, configPath)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "lockfile not found")
+}
+
+func TestLockFreeze_Success(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "preflight.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte("version: \"1\"\n"), 0o644))
+
+	// First create a lockfile
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+	require.NoError(t, p.LockUpdate(ctx, configPath))
+
+	// Now freeze it
+	output.Reset()
+	err := p.LockFreeze(ctx, configPath)
+
+	require.NoError(t, err)
+	assert.Contains(t, output.String(), "Lockfile frozen")
+}
+
+func TestDoctorOptions_WithUpdateConfig(t *testing.T) {
+	t.Parallel()
+
+	opts := NewDoctorOptions("config.yaml", "work").
+		WithVerbose(true).
+		WithUpdateConfig(true).
+		WithDryRun(true)
+
+	assert.Equal(t, "config.yaml", opts.ConfigPath)
+	assert.Equal(t, "work", opts.Target)
+	assert.True(t, opts.Verbose)
+	assert.True(t, opts.UpdateConfig)
+	assert.True(t, opts.DryRun)
+}

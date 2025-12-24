@@ -84,6 +84,8 @@ func TestDoctorOptions(t *testing.T) {
 		assert.Equal(t, "preflight.yaml", opts.ConfigPath)
 		assert.Equal(t, "work", opts.Target)
 		assert.False(t, opts.Verbose)
+		assert.False(t, opts.UpdateConfig)
+		assert.False(t, opts.DryRun)
 	})
 
 	t.Run("with verbose", func(t *testing.T) {
@@ -91,6 +93,32 @@ func TestDoctorOptions(t *testing.T) {
 		opts := NewDoctorOptions("preflight.yaml", "work").WithVerbose(true)
 
 		assert.True(t, opts.Verbose)
+	})
+
+	t.Run("with update config", func(t *testing.T) {
+		t.Parallel()
+		opts := NewDoctorOptions("preflight.yaml", "work").WithUpdateConfig(true)
+
+		assert.True(t, opts.UpdateConfig)
+	})
+
+	t.Run("with dry run", func(t *testing.T) {
+		t.Parallel()
+		opts := NewDoctorOptions("preflight.yaml", "work").WithDryRun(true)
+
+		assert.True(t, opts.DryRun)
+	})
+
+	t.Run("chained options", func(t *testing.T) {
+		t.Parallel()
+		opts := NewDoctorOptions("preflight.yaml", "work").
+			WithVerbose(true).
+			WithUpdateConfig(true).
+			WithDryRun(true)
+
+		assert.True(t, opts.Verbose)
+		assert.True(t, opts.UpdateConfig)
+		assert.True(t, opts.DryRun)
 	})
 }
 
@@ -382,5 +410,95 @@ func TestRepoStatus(t *testing.T) {
 		assert.True(t, status.Initialized)
 		assert.Equal(t, "main", status.Branch)
 		assert.Equal(t, "abc123", status.LastCommit)
+	})
+}
+
+func TestConfigPatch(t *testing.T) {
+	t.Parallel()
+
+	t.Run("new patch", func(t *testing.T) {
+		t.Parallel()
+		patch := NewConfigPatch(
+			"layers/base.yaml",
+			"files.links[0].src",
+			PatchOpModify,
+			"old_value",
+			"new_value",
+			"drift",
+		)
+
+		assert.Equal(t, "layers/base.yaml", patch.LayerPath)
+		assert.Equal(t, "files.links[0].src", patch.YAMLPath)
+		assert.Equal(t, PatchOpModify, patch.Operation)
+		assert.Equal(t, "old_value", patch.OldValue)
+		assert.Equal(t, "new_value", patch.NewValue)
+		assert.Equal(t, "drift", patch.Provenance)
+	})
+
+	t.Run("patch operations", func(t *testing.T) {
+		t.Parallel()
+		assert.Equal(t, PatchOpAdd, PatchOp("add"))
+		assert.Equal(t, PatchOpModify, PatchOp("modify"))
+		assert.Equal(t, PatchOpRemove, PatchOp("remove"))
+	})
+
+	t.Run("patch description", func(t *testing.T) {
+		t.Parallel()
+
+		addPatch := NewConfigPatch("layer.yaml", "key", PatchOpAdd, nil, "value", "drift")
+		assert.Contains(t, addPatch.Description(), "Add")
+
+		modPatch := NewConfigPatch("layer.yaml", "key", PatchOpModify, "old", "new", "drift")
+		assert.Contains(t, modPatch.Description(), "Modify")
+
+		rmPatch := NewConfigPatch("layer.yaml", "key", PatchOpRemove, "old", nil, "drift")
+		assert.Contains(t, rmPatch.Description(), "Remove")
+
+		unknownPatch := ConfigPatch{
+			LayerPath: "layer.yaml",
+			YAMLPath:  "key",
+			Operation: PatchOp("unknown"),
+		}
+		assert.Contains(t, unknownPatch.Description(), "Unknown")
+	})
+}
+
+func TestDoctorReportWithPatches(t *testing.T) {
+	t.Parallel()
+
+	t.Run("no patches", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{}
+
+		assert.False(t, report.HasPatches())
+		assert.Equal(t, 0, report.PatchCount())
+	})
+
+	t.Run("with patches", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{
+			SuggestedPatches: []ConfigPatch{
+				NewConfigPatch("layer.yaml", "key1", PatchOpAdd, nil, "value1", "drift"),
+				NewConfigPatch("layer.yaml", "key2", PatchOpModify, "old", "new", "drift"),
+			},
+		}
+
+		assert.True(t, report.HasPatches())
+		assert.Equal(t, 2, report.PatchCount())
+	})
+
+	t.Run("patches by layer", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{
+			SuggestedPatches: []ConfigPatch{
+				NewConfigPatch("layers/base.yaml", "key1", PatchOpAdd, nil, "v1", "drift"),
+				NewConfigPatch("layers/base.yaml", "key2", PatchOpModify, "o", "n", "drift"),
+				NewConfigPatch("layers/work.yaml", "key3", PatchOpRemove, "v", nil, "drift"),
+			},
+		}
+
+		byLayer := report.PatchesByLayer()
+		assert.Len(t, byLayer["layers/base.yaml"], 2)
+		assert.Len(t, byLayer["layers/work.yaml"], 1)
 	})
 }
