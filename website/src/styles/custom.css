@@ -315,18 +315,22 @@ h3 {
 }
 
 .hero .action.primary,
-.hero a.action.primary {
+.hero a.action.primary,
+.hero .sl-link-button.primary {
 	background: linear-gradient(135deg, var(--pf-cyan) 0%, var(--pf-cyan-dim) 100%) !important;
-	color: var(--pf-midnight) !important;
+	color: #0a0e1a !important;
 	box-shadow: 0 4px 20px var(--pf-cyan-glow) !important;
 	border: none !important;
+	-webkit-text-fill-color: #0a0e1a !important;
 }
 
 .hero .action.primary:hover,
-.hero a.action.primary:hover {
+.hero a.action.primary:hover,
+.hero .sl-link-button.primary:hover {
 	transform: translateY(-2px) !important;
 	box-shadow: 0 8px 30px var(--pf-cyan-glow), var(--shadow-glow) !important;
-	color: var(--pf-midnight) !important;
+	color: #0a0e1a !important;
+	-webkit-text-fill-color: #0a0e1a !important;
 }
 
 .hero .action.minimal,
