@@ -258,6 +258,240 @@ presets:
       font_size: 14
       opacity: 0.95
 
+  - id: "fonts:nerd-essential"
+    metadata:
+      title: "Essential Nerd Fonts"
+      description: "Core Nerd Fonts for terminal and editor icons"
+      tradeoffs:
+        - "Enables icons in terminal and editors"
+        - "Smaller download size"
+      doc_links:
+        nerdfonts: "https://www.nerdfonts.com/"
+      tags:
+        - "fonts"
+        - "terminal"
+    difficulty: "beginner"
+    config:
+      nerd_fonts:
+        - "JetBrainsMono"
+        - "FiraCode"
+
+  - id: "fonts:nerd-complete"
+    metadata:
+      title: "Complete Nerd Fonts"
+      description: "Comprehensive Nerd Font collection for maximum compatibility"
+      tradeoffs:
+        - "All popular programming fonts"
+        - "Larger download size"
+      doc_links:
+        nerdfonts: "https://www.nerdfonts.com/"
+      tags:
+        - "fonts"
+        - "terminal"
+    difficulty: "beginner"
+    config:
+      nerd_fonts:
+        - "JetBrainsMono"
+        - "FiraCode"
+        - "Hack"
+        - "CascadiaCode"
+        - "SourceCodePro"
+        - "Meslo"
+
+  - id: "ssh:basic"
+    metadata:
+      title: "Basic SSH Configuration"
+      description: "Essential SSH settings with agent forwarding"
+      tradeoffs:
+        - "Simple, secure defaults"
+        - "Single identity setup"
+      doc_links:
+        ssh: "https://www.openssh.com/manual.html"
+      tags:
+        - "ssh"
+        - "security"
+    difficulty: "beginner"
+    config:
+      add_keys_to_agent: true
+      identity_file: "~/.ssh/id_ed25519"
+
+  - id: "ssh:github"
+    metadata:
+      title: "GitHub SSH Configuration"
+      description: "Optimized for GitHub authentication"
+      tradeoffs:
+        - "Dedicated key for GitHub"
+        - "Simplified GitHub workflow"
+      doc_links:
+        ssh: "https://www.openssh.com/manual.html"
+        github: "https://docs.github.com/en/authentication/connecting-to-github-with-ssh"
+      tags:
+        - "ssh"
+        - "github"
+    difficulty: "beginner"
+    config:
+      hosts:
+        - host: "github.com"
+          user: "git"
+          identity_file: "~/.ssh/id_github"
+          add_keys_to_agent: true
+
+  - id: "ssh:multi-identity"
+    metadata:
+      title: "Multi-Identity SSH"
+      description: "Separate SSH keys for work and personal accounts"
+      tradeoffs:
+        - "Clean separation of identities"
+        - "More keys to manage"
+      doc_links:
+        ssh: "https://www.openssh.com/manual.html"
+      tags:
+        - "ssh"
+        - "security"
+        - "multi-account"
+    difficulty: "intermediate"
+    config:
+      hosts:
+        - host: "github.com-work"
+          hostname: "github.com"
+          user: "git"
+          identity_file: "~/.ssh/id_work"
+        - host: "github.com-personal"
+          hostname: "github.com"
+          user: "git"
+          identity_file: "~/.ssh/id_personal"
+
+  - id: "docker:basic"
+    metadata:
+      title: "Basic Docker Setup"
+      description: "Docker Desktop with essential configuration"
+      tradeoffs:
+        - "Simple container workflow"
+        - "Docker Desktop license required for commercial use"
+      doc_links:
+        docker: "https://docs.docker.com/"
+      tags:
+        - "docker"
+        - "containers"
+    difficulty: "beginner"
+    config:
+      install: true
+      compose: true
+
+  - id: "docker:kubernetes"
+    metadata:
+      title: "Docker + Kubernetes"
+      description: "Docker with local Kubernetes enabled"
+      tradeoffs:
+        - "Local Kubernetes for testing"
+        - "Higher resource usage"
+      doc_links:
+        docker: "https://docs.docker.com/"
+        kubernetes: "https://kubernetes.io/docs/"
+      tags:
+        - "docker"
+        - "kubernetes"
+        - "containers"
+    difficulty: "intermediate"
+    config:
+      install: true
+      compose: true
+      kubernetes: true
+    requires:
+      - "docker:basic"
+
+  - id: "runtime:mise-node"
+    metadata:
+      title: "Node.js via mise"
+      description: "Node.js version management with mise"
+      tradeoffs:
+        - "Simple version management"
+        - "Auto-switching per project"
+      doc_links:
+        mise: "https://mise.jdx.dev/"
+        nodejs: "https://nodejs.org/en/docs/"
+      tags:
+        - "runtime"
+        - "node"
+        - "javascript"
+    difficulty: "beginner"
+    config:
+      tool: "mise"
+      languages:
+        - "node@lts"
+
+  - id: "runtime:mise-polyglot"
+    metadata:
+      title: "Polyglot Runtime"
+      description: "Multiple language runtimes via mise"
+      tradeoffs:
+        - "Unified version management"
+        - "More disk space for multiple runtimes"
+      doc_links:
+        mise: "https://mise.jdx.dev/"
+      tags:
+        - "runtime"
+        - "polyglot"
+    difficulty: "intermediate"
+    config:
+      tool: "mise"
+      languages:
+        - "node@lts"
+        - "python@3.12"
+        - "go@latest"
+        - "rust@stable"
+
+  - id: "brew:cli-essentials"
+    metadata:
+      title: "CLI Essentials"
+      description: "Must-have CLI tools for any developer"
+      tradeoffs:
+        - "Essential productivity tools"
+        - "Replaces some default macOS tools"
+      doc_links:
+        homebrew: "https://docs.brew.sh/"
+      tags:
+        - "brew"
+        - "cli"
+        - "tools"
+    difficulty: "beginner"
+    config:
+      formulae:
+        - "ripgrep"
+        - "fd"
+        - "bat"
+        - "fzf"
+        - "jq"
+        - "yq"
+        - "htop"
+        - "tree"
+
+  - id: "brew:dev-tools"
+    metadata:
+      title: "Developer Tools"
+      description: "Common development utilities and applications"
+      tradeoffs:
+        - "Comprehensive dev toolkit"
+        - "Multiple GUI applications"
+      doc_links:
+        homebrew: "https://docs.brew.sh/"
+      tags:
+        - "brew"
+        - "developer"
+        - "tools"
+    difficulty: "intermediate"
+    config:
+      formulae:
+        - "gh"
+        - "git-delta"
+        - "lazygit"
+        - "httpie"
+        - "watchexec"
+      casks:
+        - "iterm2"
+        - "rectangle"
+        - "raycast"
+
 capability_packs:
   - id: "go-developer"
     metadata:
@@ -463,3 +697,170 @@ capability_packs:
       - "docker"
       - "postgresql"
       - "redis"
+
+  - id: "mobile-developer"
+    metadata:
+      title: "Mobile Developer"
+      description: "React Native and Flutter development environment"
+      tradeoffs:
+        - "Cross-platform mobile development"
+        - "Multiple SDKs and simulators"
+      doc_links:
+        reactnative: "https://reactnative.dev/docs/getting-started"
+        flutter: "https://docs.flutter.dev/"
+      tags:
+        - "mobile"
+        - "react-native"
+        - "flutter"
+        - "developer"
+    presets:
+      - "vscode:full"
+      - "shell:starship"
+      - "git:standard"
+      - "runtime:mise-node"
+    tools:
+      - "node"
+      - "watchman"
+      - "cocoapods"
+      - "fastlane"
+      - "flutter"
+
+  - id: "qa-engineer"
+    metadata:
+      title: "QA/Test Engineer"
+      description: "Testing frameworks and automation tools"
+      tradeoffs:
+        - "Comprehensive test automation"
+        - "Multiple testing paradigms"
+      doc_links:
+        playwright: "https://playwright.dev/docs/intro"
+        cypress: "https://docs.cypress.io/"
+        pytest: "https://docs.pytest.org/"
+      tags:
+        - "qa"
+        - "testing"
+        - "automation"
+    presets:
+      - "nvim:balanced"
+      - "shell:oh-my-zsh"
+      - "git:standard"
+      - "docker:basic"
+    tools:
+      - "node"
+      - "playwright"
+      - "cypress"
+      - "pytest"
+      - "k6"
+      - "allure"
+
+  - id: "cloud-architect"
+    metadata:
+      title: "Cloud Architect"
+      description: "Multi-cloud infrastructure tooling"
+      tradeoffs:
+        - "Comprehensive cloud management"
+        - "Many tools and CLIs to learn"
+      doc_links:
+        terraform: "https://www.terraform.io/docs/"
+        aws: "https://docs.aws.amazon.com/"
+        kubernetes: "https://kubernetes.io/docs/"
+      tags:
+        - "cloud"
+        - "infrastructure"
+        - "architecture"
+    presets:
+      - "nvim:pro"
+      - "shell:starship"
+      - "git:secure"
+      - "terminal:tmux"
+    tools:
+      - "terraform"
+      - "pulumi"
+      - "aws-cli"
+      - "azure-cli"
+      - "gcloud"
+      - "kubectl"
+      - "helm"
+      - "vault"
+
+  - id: "java-developer"
+    metadata:
+      title: "Java Developer"
+      description: "JVM ecosystem development environment"
+      tradeoffs:
+        - "Mature enterprise tooling"
+        - "Higher memory requirements"
+      doc_links:
+        java: "https://docs.oracle.com/en/java/"
+        spring: "https://docs.spring.io/"
+        maven: "https://maven.apache.org/guides/"
+      tags:
+        - "java"
+        - "jvm"
+        - "enterprise"
+        - "developer"
+    presets:
+      - "vscode:full"
+      - "shell:starship"
+      - "git:standard"
+    tools:
+      - "openjdk"
+      - "maven"
+      - "gradle"
+      - "spring-boot-cli"
+      - "jenv"
+
+  - id: "security-engineer"
+    metadata:
+      title: "Security Engineer"
+      description: "Security testing and compliance tools"
+      tradeoffs:
+        - "Comprehensive security toolkit"
+        - "Requires security expertise"
+      doc_links:
+        trivy: "https://aquasecurity.github.io/trivy/"
+        vault: "https://www.vaultproject.io/docs"
+        sops: "https://github.com/getsops/sops"
+      tags:
+        - "security"
+        - "compliance"
+        - "devsecops"
+    presets:
+      - "nvim:pro"
+      - "shell:starship"
+      - "git:secure"
+      - "ssh:multi-identity"
+    tools:
+      - "trivy"
+      - "snyk"
+      - "vault"
+      - "age"
+      - "sops"
+      - "cosign"
+
+  - id: "technical-writer"
+    metadata:
+      title: "Technical Writer"
+      description: "Documentation and static site generation"
+      tradeoffs:
+        - "Focus on content creation"
+        - "Multiple documentation formats"
+      doc_links:
+        hugo: "https://gohugo.io/documentation/"
+        mkdocs: "https://www.mkdocs.org/"
+        vale: "https://vale.sh/docs/"
+      tags:
+        - "documentation"
+        - "writing"
+        - "static-site"
+    presets:
+      - "nvim:balanced"
+      - "shell:zsh"
+      - "git:standard"
+    tools:
+      - "hugo"
+      - "mkdocs"
+      - "vale"
+      - "pandoc"
+      - "mermaid-cli"
+      - "asciidoctor"

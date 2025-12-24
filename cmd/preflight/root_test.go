@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"testing"
 
+	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -401,56 +402,39 @@ func TestAllCommands_HelpWorks(t *testing.T) {
 }
 
 // Tour command execution tests
-// Note: These test that the commands run successfully. Output assertions
-// are limited because commands use fmt.Println (writes to os.Stdout)
-// rather than cmd.OutOrStdout().
-func TestRunTour_NoArgs(t *testing.T) {
-	rootCmd.SetArgs([]string{"tour"})
-	err := rootCmd.Execute()
-	require.NoError(t, err)
-	rootCmd.SetArgs([]string{})
-}
+// Note: Tour command now launches a TUI, so we test the --list flag and
+// topic validation instead of running the actual TUI.
 
-func TestRunTour_Basics(t *testing.T) {
-	rootCmd.SetArgs([]string{"tour", "basics"})
-	err := rootCmd.Execute()
-	require.NoError(t, err)
-	rootCmd.SetArgs([]string{})
-}
-
-func TestRunTour_Config(t *testing.T) {
-	rootCmd.SetArgs([]string{"tour", "config"})
-	err := rootCmd.Execute()
-	require.NoError(t, err)
-	rootCmd.SetArgs([]string{})
-}
-
-func TestRunTour_Layers(t *testing.T) {
-	rootCmd.SetArgs([]string{"tour", "layers"})
-	err := rootCmd.Execute()
-	require.NoError(t, err)
-	rootCmd.SetArgs([]string{})
-}
-
-func TestRunTour_Providers(t *testing.T) {
-	rootCmd.SetArgs([]string{"tour", "providers"})
-	err := rootCmd.Execute()
-	require.NoError(t, err)
-	rootCmd.SetArgs([]string{})
-}
-
-func TestRunTour_AI(t *testing.T) {
-	rootCmd.SetArgs([]string{"tour", "ai"})
+func TestRunTour_ListFlag(t *testing.T) {
+	// --list flag prints topics and doesn't launch TUI
+	rootCmd.SetArgs([]string{"tour", "--list"})
 	err := rootCmd.Execute()
 	require.NoError(t, err)
 	rootCmd.SetArgs([]string{})
 }
 
 func TestRunTour_UnknownTopic(t *testing.T) {
-	// Call runTour directly to avoid Cobra state issues between tests
+	// Reset global flag state that might be affected by other tests
+	tourListFlag = false
+	defer func() { tourListFlag = false }()
+
+	// Unknown topic should return an error before launching TUI
 	err := runTour(nil, []string{"invalid-topic"})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown tour")
+	assert.Contains(t, err.Error(), "unknown topic")
+}
+
+func TestRunTour_ValidTopicValidation(t *testing.T) {
+	// Test that valid topics are recognized
+	// (We can't test TUI launch, but we can verify topic validation)
+	topics := []string{"basics", "config", "layers", "providers", "presets", "workflow"}
+	for _, topic := range topics {
+		t.Run(topic, func(t *testing.T) {
+			// Verify topic exists in the registry
+			_, found := tui.GetTopic(topic)
+			assert.True(t, found, "topic %s should exist", topic)
+		})
+	}
 }
 
 // Lock status command execution test
@@ -547,17 +531,12 @@ func TestLockUpdateCommand_HasFlags(t *testing.T) {
 }
 
 // Direct function tests for better coverage
-func TestRunTour_DirectCall_AllTopics(t *testing.T) {
-	topics := []string{"basics", "config", "layers", "providers", "ai"}
-	for _, topic := range topics {
-		t.Run(topic, func(t *testing.T) {
-			err := runTour(nil, []string{topic})
-			require.NoError(t, err)
-		})
-	}
-}
+// Note: runTour now launches a TUI, so we test the --list flag path
+func TestRunTour_DirectCall_ListFlag(t *testing.T) {
+	// Set the flag and test the list path
+	tourListFlag = true
+	defer func() { tourListFlag = false }()
 
-func TestRunTour_DirectCall_NoArgs(t *testing.T) {
 	err := runTour(nil, []string{})
 	require.NoError(t, err)
 }
