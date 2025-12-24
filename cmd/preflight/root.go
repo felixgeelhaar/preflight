@@ -47,7 +47,7 @@ func init() {
 // registerFlagCompletions sets up custom completions for global flags.
 func registerFlagCompletions() {
 	// Complete --config with YAML files
-	_ = rootCmd.RegisterFlagCompletionFunc("config", func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	_ = rootCmd.RegisterFlagCompletionFunc("config", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 		return []string{"yaml", "yml"}, cobra.ShellCompDirectiveFilterFileExt
 	})
 

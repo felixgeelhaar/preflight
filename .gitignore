@@ -43,4 +43,4 @@ website/node_modules/
 website/dist/
 website/.astro/
 .playwright-mcp/
-preflight
+/preflight
