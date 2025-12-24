@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2024-12-24
+
+### Added
+- **Three-Way Merge Domain**: New `internal/domain/merge/` package for conflict detection
+  - `ThreeWayMerge`: Performs merge with automatic conflict detection
+  - `DetectChangeType`: Classifies changes as none/ours/theirs/both/same
+  - `HasConflictMarkers`: Detects conflict markers in content
+  - `ParseConflictRegions`: Extracts conflict sections from marked content
+  - `ResolveAllConflicts`: Programmatic resolution using ours/theirs/base
+  - Git-style and diff3-style conflict markers with descriptive labels
+
+### Changed
+- Updated PRD to mark v1.3 Three-Way Merge as complete
+
+## [1.2.0] - 2024-12-24
+
+### Added
+- **Snapshot Domain**: Automatic backup before file modifications
+  - `Snapshot`: Individual file backup with hash and metadata
+  - `Set`: Group of snapshots created together with reason tracking
+  - `FileStore`: Persistent storage in `~/.preflight/snapshots/`
+  - `Manager`: Orchestrates snapshot creation and restoration
+
+- **Drift Detection Domain**: Hash-based detection of external file changes
+  - `Detector`: Checks tracked files for modifications
+  - `AppliedState`: Tracks file state after apply operations
+  - `StateStore`: Persistent storage of applied state
+
+- **Doctor Enhancements**:
+  - `--update-config` flag to merge drift back into layer files
+  - `--dry-run` flag to preview config changes without writing
+  - Config patch generation from detected drift
+
+- **Lifecycle Integration**:
+  - `FileLifecycle` port for snapshot and drift tracking
+  - `LifecycleManager` combines snapshot and drift services
+  - Automatic state recording after apply operations
+
+### Changed
+- Files provider now snapshots before modifications
+- Updated PRD to mark v1.2 Full Dotfile Lifecycle as complete
+
+## [1.1.0] - 2024-12-24
+
+### Added
+- **TUI Layer Reassignment**: Move items between configuration layers during capture review
+  - `l` key enters layer selection mode for current item
+  - Navigate layers with `j`/`k` or arrow keys
+  - Quick selection with number keys 1-9
+  - Enter confirms selection, Esc cancels
+  - Layer shown in item list with arrow notation (→ layer_name)
+  - Full undo/redo support for layer changes
+
+- **Enhanced Capture Review Options**:
+  - `AvailableLayers` field for custom layer list
+  - `DefaultLayers()` provides standard layers: base, identity.work, identity.personal, role.dev, device.laptop, captured
+  - `WithAvailableLayers()` builder method
+
+- **Rich Capture Results**:
+  - `CaptureItemResult` with full item metadata
+  - `ToCaptureItemResult()` and `ToCaptureItemResults()` converters
+  - Layer information preserved in results
+
+### Changed
+- Updated PRD to mark v1.1 Enhanced Capture TUI as complete
+
+## [1.0.0] - 2024-12-24
+
+### Added
+- First stable release with all Horizon 1 features complete
+- Production-ready CLI with init, capture, plan, apply, doctor commands
+- Full provider suite: brew, apt, files, git, ssh, shell, runtime, nvim, vscode
+- Interactive TUI for init wizard, plan review, apply progress, doctor report
+- Lockfile support with intent/locked/frozen modes
+- AI advisor integration (OpenAI, Anthropic, Ollama) with BYOK support
+
+### Changed
+- Stabilized all public APIs
+- Coverage thresholds enforced per domain
+
 ## [0.1.1] - 2025-12-23
 
 ### Fixed
@@ -82,6 +162,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Domain-Driven Design architecture
 - Test-Driven Development with >80% coverage requirement per domain
 
-[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/felixgeelhaar/preflight/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/felixgeelhaar/preflight/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/felixgeelhaar/preflight/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/felixgeelhaar/preflight/compare/v0.1.1...v1.0.0
 [0.1.1]: https://github.com/felixgeelhaar/preflight/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/felixgeelhaar/preflight/releases/tag/v0.1.0

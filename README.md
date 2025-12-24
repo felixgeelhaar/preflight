@@ -26,8 +26,10 @@ Define your workstation configuration once, apply it anywhere.
 - **Multi-Platform**: macOS (Homebrew) and Linux (apt) package management
 - **Editor Support**: Neovim presets (LazyVim, NvChad, AstroNvim) and VSCode configuration
 - **Shell Configuration**: zsh/bash/fish with oh-my-zsh, starship, and custom plugins
-- **Dotfile Management**: Template, generate, or link your dotfiles
+- **Dotfile Management**: Template, generate, or link your dotfiles with drift detection
 - **Git & SSH**: Managed .gitconfig and ~/.ssh/config with identity separation
+- **Capture Review TUI**: Interactive review with search/filter, layer reassignment, and undo/redo
+- **Three-Way Merge**: Automatic conflict detection with git-style conflict markers
 
 ## Installation
 
@@ -113,8 +115,12 @@ shell:
 
 | Command | Description |
 |---------|-------------|
+| `preflight init` | Initialize configuration with interactive wizard |
+| `preflight capture` | Capture existing system configuration |
 | `preflight plan` | Preview changes without applying |
 | `preflight apply` | Apply the configuration |
+| `preflight doctor` | Check system health and detect drift |
+| `preflight doctor --update-config` | Merge drift back into config |
 | `preflight version` | Show version information |
 
 ## Architecture
@@ -128,6 +134,9 @@ internal/
     config/              # Configuration loading and merging
     compiler/            # Step graph compilation
     execution/           # Step execution engine
+    drift/               # File change detection
+    snapshot/            # Automatic backups before changes
+    merge/               # Three-way merge with conflict markers
   provider/              # System integration adapters
     brew/                # Homebrew packages
     apt/                 # Apt packages
@@ -138,6 +147,7 @@ internal/
     shell/               # Shell configuration
     nvim/                # Neovim configuration
     vscode/              # VSCode configuration
+  tui/                   # Bubble Tea interactive interfaces
 ```
 
 ## Design Principles
