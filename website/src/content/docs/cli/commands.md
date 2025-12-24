@@ -198,6 +198,97 @@ preflight doctor --update-config --dry-run
 
 ## Utility Commands
 
+### preflight validate
+
+Validate configuration for CI/CD pipelines.
+
+```bash
+preflight validate [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--config <path>` | Path to preflight.yaml (default: preflight.yaml) |
+| `--target <name>` | Target to validate (default: default) |
+| `--json` | Output results as JSON |
+| `--strict` | Treat warnings as errors |
+| `--policy <path>` | Path to policy YAML file |
+
+**Exit Codes:**
+
+| Code | Meaning |
+|------|---------|
+| `0` | Valid configuration |
+| `1` | Validation errors or policy violations |
+| `2` | Could not read configuration |
+
+**Examples:**
+
+```bash
+# Basic validation
+preflight validate
+
+# JSON output for CI
+preflight validate --json
+
+# With strict mode (warnings = errors)
+preflight validate --strict
+
+# With external policy file
+preflight validate --policy org-policy.yaml
+
+# Validate specific target
+preflight validate --target work
+```
+
+**Policy File Example:**
+
+```yaml
+# org-policy.yaml
+policies:
+  - name: security-baseline
+    description: Block insecure tools
+    rules:
+      - pattern: "*:telnet"
+        action: deny
+        message: use SSH instead
+      - pattern: "*:ftp"
+        action: deny
+        message: use sftp instead
+      - pattern: "*"
+        action: allow
+```
+
+**Output (text):**
+
+```
+✓ Configuration is valid
+  • Loaded config from preflight.yaml
+  • Target: default
+  • Compiled 15 steps
+```
+
+**Output (with violations):**
+
+```
+✗ Validation errors:
+  ✗ Compilation failed: missing provider
+
+⛔ Policy violations:
+  ⛔ policy violation: brew:install:telnet is denied by rule "*:telnet" (use SSH instead)
+
+⚠ Warnings:
+  ⚠ No steps generated - configuration may be empty
+
+ℹ Info:
+  • Loaded config from preflight.yaml
+  • Target: default
+```
+
+---
+
 ### preflight rollback
 
 Restore files from automatic snapshots.
@@ -427,7 +518,7 @@ preflight version
 **Output:**
 
 ```
-preflight version 1.8.0
+preflight version 2.0.0
 ```
 
 ---

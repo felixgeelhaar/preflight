@@ -7,6 +7,62 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2024-12-24
+
+### Added
+
+- **CI Validation Command**: New `preflight validate` command for CI/CD pipelines
+  - Validate configuration without applying changes
+  - `--json` flag for machine-readable output
+  - `--strict` flag to treat warnings as errors
+  - `--policy` flag to specify external policy file
+  - Exit codes: 0 (valid), 1 (errors/violations), 2 (cannot read config)
+  - Checks compilation, dependencies, and policy constraints
+
+- **Policy Constraints Domain**: New `internal/domain/policy/` package for deny/allow rules
+  - `Policy`: Named policy with description and ordered rules
+  - `Rule`: Pattern-based rules with action (deny/allow), message, and scope
+  - `Evaluator`: Evaluates step IDs against multiple policies
+  - `Result`: Contains violations and allowed items
+  - Glob pattern matching for flexible rules (e.g., `brew:*`, `*:telnet`)
+  - First-match-wins evaluation with explicit allow overrides
+  - Scoped rules for provider-specific constraints
+
+- **Policy Configuration**:
+  - Inline policies in `preflight.yaml` under `policies:` key
+  - External policy files loaded via `--policy` flag
+  - Helper functions: `DefaultDenyAll()`, `DefaultAllowAll()`
+  - Policy violations fail validation with actionable messages
+
+### Changed
+
+- `ValidationResult` now includes `PolicyViolations` field
+- Validation output shows policy violations with ⛔ indicator
+- JSON output includes `policy_violations` array
+
+### Example Policy
+
+```yaml
+# preflight.yaml
+policies:
+  - name: security-baseline
+    description: Block insecure tools and games
+    rules:
+      - pattern: "*:telnet"
+        action: deny
+        message: telnet is insecure, use SSH
+      - pattern: "*:ftp"
+        action: deny
+        message: use sftp instead
+      - pattern: "brew:cask:steam"
+        action: deny
+        message: no games on work machines
+      - pattern: "*"
+        action: allow
+```
+
+---
+
 ## [1.8.0] - 2024-12-24
 
 ### Added
@@ -345,6 +401,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+[2.0.0]: https://github.com/felixgeelhaar/preflight/compare/v1.8.0...v2.0.0
 [1.8.0]: https://github.com/felixgeelhaar/preflight/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/felixgeelhaar/preflight/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/felixgeelhaar/preflight/compare/v1.5.0...v1.6.0

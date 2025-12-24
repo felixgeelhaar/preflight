@@ -13,6 +13,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
 	"github.com/felixgeelhaar/preflight/internal/domain/lock"
+	"github.com/felixgeelhaar/preflight/internal/domain/policy"
 	"github.com/felixgeelhaar/preflight/internal/provider/apt"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
 	"github.com/felixgeelhaar/preflight/internal/provider/files"
@@ -160,6 +161,94 @@ func (p *Preflight) printf(format string, args ...interface{}) {
 	_, _ = fmt.Fprintf(p.out, format, args...)
 }
 
+// ValidationResult contains the results of configuration validation.
+type ValidationResult struct {
+	Errors           []string
+	Warnings         []string
+	Info             []string
+	PolicyViolations []string
+}
+
+// ValidateOptions configures validation behavior.
+type ValidateOptions struct {
+	// PolicyFile is an optional path to a policy YAML file
+	PolicyFile string
+}
+
+// Validate checks the configuration for errors without making changes.
+func (p *Preflight) Validate(ctx context.Context, configPath, targetName string) (*ValidationResult, error) {
+	return p.ValidateWithOptions(ctx, configPath, targetName, ValidateOptions{})
+}
+
+// ValidateWithOptions checks the configuration with additional options.
+func (p *Preflight) ValidateWithOptions(ctx context.Context, configPath, targetName string, opts ValidateOptions) (*ValidationResult, error) {
+	result := &ValidationResult{}
+
+	// Load configuration
+	cfg, err := p.loadConfig(configPath, targetName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Add info about loaded config
+	result.Info = append(result.Info, fmt.Sprintf("Loaded config from %s", configPath))
+	result.Info = append(result.Info, fmt.Sprintf("Target: %s", targetName))
+
+	// Try to compile - this validates providers and dependencies
+	graph, err := p.compiler.Compile(cfg)
+	if err != nil {
+		result.Errors = append(result.Errors, fmt.Sprintf("Compilation failed: %v", err))
+		return result, nil
+	}
+
+	// Get step count
+	steps := graph.Steps()
+	result.Info = append(result.Info, fmt.Sprintf("Compiled %d steps", len(steps)))
+
+	// Check for potential issues
+	p.validateSteps(ctx, graph, result)
+
+	// Check policies
+	p.validatePolicies(ctx, cfg, graph, opts, result)
+
+	return result, nil
+}
+
+// validateSteps performs additional validation on compiled steps.
+func (p *Preflight) validateSteps(_ context.Context, graph *compiler.StepGraph, result *ValidationResult) {
+	steps := graph.Steps()
+
+	// Check for duplicate step IDs (shouldn't happen but good to verify)
+	seen := make(map[string]bool)
+	for _, step := range steps {
+		id := step.ID().String()
+		if seen[id] {
+			result.Errors = append(result.Errors, fmt.Sprintf("Duplicate step ID: %s", id))
+		}
+		seen[id] = true
+	}
+
+	// Check for missing dependencies
+	for _, step := range steps {
+		for _, dep := range step.DependsOn() {
+			if _, exists := graph.Get(dep); !exists {
+				result.Errors = append(result.Errors, fmt.Sprintf("Step %s depends on missing step: %s", step.ID(), dep))
+			}
+		}
+	}
+
+	// Check for empty providers
+	providerCounts := make(map[string]int)
+	for _, step := range steps {
+		provider := step.ID().Provider()
+		providerCounts[provider]++
+	}
+
+	if len(providerCounts) == 0 {
+		result.Warnings = append(result.Warnings, "No steps generated - configuration may be empty")
+	}
+}
+
 // loadConfig loads and merges configuration from the given path.
 func (p *Preflight) loadConfig(configPath, targetName string) (map[string]interface{}, error) {
 	loader := config.NewLoader()
@@ -177,4 +266,57 @@ func (p *Preflight) loadConfig(configPath, targetName string) (map[string]interf
 	}
 
 	return merged.Raw(), nil
+}
+
+// validatePolicies checks compiled steps against policy constraints.
+func (p *Preflight) validatePolicies(_ context.Context, cfg map[string]interface{}, graph *compiler.StepGraph, opts ValidateOptions, result *ValidationResult) {
+	var policies []policy.Policy
+
+	// Load policies from config
+	configPolicies, err := policy.ParseFromConfig(cfg)
+	if err != nil {
+		result.Warnings = append(result.Warnings, fmt.Sprintf("Failed to parse inline policies: %v", err))
+	} else if len(configPolicies) > 0 {
+		policies = append(policies, configPolicies...)
+		result.Info = append(result.Info, fmt.Sprintf("Loaded %d inline policies", len(configPolicies)))
+	}
+
+	// Load policies from external file if specified
+	if opts.PolicyFile != "" {
+		filePolicies, err := policy.LoadFromFile(opts.PolicyFile)
+		if err != nil {
+			result.Warnings = append(result.Warnings, fmt.Sprintf("Failed to load policy file: %v", err))
+		} else if len(filePolicies) > 0 {
+			policies = append(policies, filePolicies...)
+			result.Info = append(result.Info, fmt.Sprintf("Loaded %d policies from %s", len(filePolicies), opts.PolicyFile))
+		}
+	}
+
+	// If no policies, skip evaluation
+	if len(policies) == 0 {
+		return
+	}
+
+	// Extract step IDs for policy evaluation
+	steps := graph.Steps()
+	stepIDs := make([]string, len(steps))
+	for i, step := range steps {
+		stepIDs[i] = step.ID().String()
+	}
+
+	// Evaluate policies
+	evaluator := policy.NewEvaluator(policies...)
+	policyResult := evaluator.EvaluateSteps(stepIDs)
+
+	// Add violations to result
+	for _, violation := range policyResult.Violations {
+		result.PolicyViolations = append(result.PolicyViolations, violation.Error())
+	}
+
+	if len(policyResult.Violations) > 0 {
+		result.Info = append(result.Info, fmt.Sprintf("Policy check: %d violations, %d allowed",
+			len(policyResult.Violations), len(policyResult.Allowed)))
+	} else {
+		result.Info = append(result.Info, fmt.Sprintf("Policy check: all %d steps allowed", len(policyResult.Allowed)))
+	}
 }

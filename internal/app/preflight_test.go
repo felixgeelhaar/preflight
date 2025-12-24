@@ -1594,3 +1594,119 @@ targets:
 		t.Errorf("expected 0 results for empty plan, got %d", len(results))
 	}
 }
+
+func TestPreflight_Validate_ValidConfig(t *testing.T) {
+	skipIfNoHomebrew(t)
+
+	// Create temp directory structure
+	tmpDir := t.TempDir()
+
+	// Create manifest
+	manifest := `
+targets:
+  default:
+    - base
+`
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create layers directory
+	if err := os.Mkdir(tmpDir+"/layers", 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create base layer
+	baseLayer := `
+name: base
+packages:
+  brew:
+    formulae:
+      - git
+`
+	if err := os.WriteFile(tmpDir+"/layers/base.yaml", []byte(baseLayer), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Change to temp directory
+	originalDir, _ := os.Getwd()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(originalDir) }()
+
+	var buf bytes.Buffer
+	pf := New(&buf)
+
+	result, err := pf.Validate(context.Background(), "preflight.yaml", "default")
+	if err != nil {
+		t.Fatalf("Validate() error = %v", err)
+	}
+
+	if len(result.Errors) > 0 {
+		t.Errorf("Expected no errors, got: %v", result.Errors)
+	}
+
+	if len(result.Info) == 0 {
+		t.Error("Expected info messages, got none")
+	}
+}
+
+func TestPreflight_Validate_MissingConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	originalDir, _ := os.Getwd()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(originalDir) }()
+
+	var buf bytes.Buffer
+	pf := New(&buf)
+
+	_, err := pf.Validate(context.Background(), "nonexistent.yaml", "default")
+	if err == nil {
+		t.Error("Expected error for missing config, got nil")
+	}
+}
+
+func TestPreflight_Validate_InvalidTarget(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create manifest without the requested target
+	manifest := `
+targets:
+  work:
+    - base
+`
+	if err := os.WriteFile(tmpDir+"/preflight.yaml", []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	originalDir, _ := os.Getwd()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(originalDir) }()
+
+	var buf bytes.Buffer
+	pf := New(&buf)
+
+	_, err := pf.Validate(context.Background(), "preflight.yaml", "personal")
+	if err == nil {
+		t.Error("Expected error for invalid target, got nil")
+	}
+}
+
+func TestValidationResult_Empty(t *testing.T) {
+	result := &ValidationResult{}
+	if len(result.Errors) != 0 {
+		t.Errorf("Expected 0 errors, got %d", len(result.Errors))
+	}
+	if len(result.Warnings) != 0 {
+		t.Errorf("Expected 0 warnings, got %d", len(result.Warnings))
+	}
+	if len(result.Info) != 0 {
+		t.Errorf("Expected 0 info, got %d", len(result.Info))
+	}
+}
