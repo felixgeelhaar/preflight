@@ -80,6 +80,12 @@ func ValidatePackageName(name string) error {
 	return nil
 }
 
+// ValidateCaskName validates a Homebrew cask name.
+// Cask names follow similar rules to package names.
+func ValidateCaskName(name string) error {
+	return ValidatePackageName(name)
+}
+
 // ValidateBrewArg validates a Homebrew install argument (e.g., --HEAD, --with-openssl).
 func ValidateBrewArg(arg string) error {
 	if arg == "" {

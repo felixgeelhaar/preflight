@@ -1,0 +1,46 @@
+package fonts
+
+import (
+	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
+	"github.com/felixgeelhaar/preflight/internal/ports"
+)
+
+// Provider implements the compiler.Provider interface for Fonts.
+type Provider struct {
+	runner ports.CommandRunner
+}
+
+// NewProvider creates a new Fonts provider.
+func NewProvider(runner ports.CommandRunner) *Provider {
+	return &Provider{runner: runner}
+}
+
+// Name returns the provider name.
+func (p *Provider) Name() string {
+	return "fonts"
+}
+
+// Compile transforms fonts configuration into executable steps.
+func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error) {
+	rawConfig := ctx.GetSection("fonts")
+	if rawConfig == nil {
+		return nil, nil
+	}
+
+	cfg, err := ParseConfig(rawConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	steps := make([]compiler.Step, 0, len(cfg.NerdFonts))
+
+	// Add Nerd Font steps
+	for _, font := range cfg.NerdFonts {
+		steps = append(steps, NewNerdFontStep(font, p.runner))
+	}
+
+	return steps, nil
+}
+
+// Ensure Provider implements compiler.Provider.
+var _ compiler.Provider = (*Provider)(nil)
