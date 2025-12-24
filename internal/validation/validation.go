@@ -27,6 +27,9 @@ var (
 	ErrInvalidWingetID     = errors.New("invalid winget package ID")
 	ErrInvalidWingetSource = errors.New("invalid winget source")
 	ErrInvalidScoopBucket  = errors.New("invalid scoop bucket")
+	ErrInvalidChocoPackage = errors.New("invalid chocolatey package name")
+	ErrInvalidChocoSource  = errors.New("invalid chocolatey source")
+	ErrInvalidURL          = errors.New("invalid URL")
 )
 
 // Compiled regex patterns for validation (compiled once for performance).
@@ -66,6 +69,19 @@ var (
 	// Can be simple names ("extras", "versions") or GitHub repos ("user/repo")
 	// Examples: "extras", "versions", "ScoopInstaller/Main"
 	scoopBucketRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*(/[a-zA-Z][a-zA-Z0-9_-]*)?$`)
+
+	// chocoPackageRegex matches valid Chocolatey package names
+	// Chocolatey uses lowercase names with dots and hyphens
+	// Examples: "git", "nodejs", "vscode", "7zip.install", "python3"
+	chocoPackageRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`)
+
+	// chocoSourceRegex matches valid Chocolatey source names
+	// Examples: "chocolatey", "internal", "my-feed"
+	chocoSourceRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*$`)
+
+	// urlRegex matches valid HTTP/HTTPS URLs for Chocolatey sources
+	// Examples: "https://community.chocolatey.org/api/v2/", "https://nuget.internal.com/v3/"
+	urlRegex = regexp.MustCompile(`^https?://[a-zA-Z0-9][a-zA-Z0-9._/-]*$`)
 
 	// shellMetaChars contains shell metacharacters that could enable injection
 	shellMetaChars = []string{";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r", "\\"}
@@ -220,6 +236,69 @@ func ValidateScoopBucket(bucket string) error {
 
 	if containsShellMeta(bucket) {
 		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, bucket)
+	}
+
+	return nil
+}
+
+// ValidateChocoPackage validates a Chocolatey package name.
+func ValidateChocoPackage(name string) error {
+	if name == "" {
+		return ErrEmptyInput
+	}
+
+	if len(name) > 256 {
+		return fmt.Errorf("%w: package name too long", ErrInvalidChocoPackage)
+	}
+
+	if !chocoPackageRegex.MatchString(name) {
+		return fmt.Errorf("%w: %q contains invalid characters", ErrInvalidChocoPackage, name)
+	}
+
+	if containsShellMeta(name) {
+		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, name)
+	}
+
+	return nil
+}
+
+// ValidateChocoSource validates a Chocolatey source name.
+func ValidateChocoSource(source string) error {
+	if source == "" {
+		return ErrEmptyInput
+	}
+
+	if len(source) > 128 {
+		return fmt.Errorf("%w: source name too long", ErrInvalidChocoSource)
+	}
+
+	if !chocoSourceRegex.MatchString(source) {
+		return fmt.Errorf("%w: %q contains invalid characters", ErrInvalidChocoSource, source)
+	}
+
+	if containsShellMeta(source) {
+		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, source)
+	}
+
+	return nil
+}
+
+// ValidateURL validates a URL for Chocolatey sources.
+func ValidateURL(urlStr string) error {
+	if urlStr == "" {
+		return ErrEmptyInput
+	}
+
+	if len(urlStr) > 2048 {
+		return fmt.Errorf("%w: URL too long", ErrInvalidURL)
+	}
+
+	if !urlRegex.MatchString(urlStr) {
+		return fmt.Errorf("%w: %q must be a valid HTTP/HTTPS URL", ErrInvalidURL, urlStr)
+	}
+
+	if containsShellMeta(urlStr) {
+		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, urlStr)
 	}
 
 	return nil

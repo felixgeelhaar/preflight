@@ -13,6 +13,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
 	"github.com/felixgeelhaar/preflight/internal/domain/lock"
+	"github.com/felixgeelhaar/preflight/internal/domain/platform"
 	"github.com/felixgeelhaar/preflight/internal/domain/policy"
 	"github.com/felixgeelhaar/preflight/internal/provider/apt"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
@@ -40,6 +41,9 @@ func New(out io.Writer) *Preflight {
 	cmdRunner := command.NewRealRunner()
 	fs := filesystem.NewRealFileSystem()
 
+	// Detect platform for platform-aware providers
+	plat, _ := platform.Detect()
+
 	// Create compiler with providers
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(apt.NewProvider(cmdRunner))
@@ -50,7 +54,7 @@ func New(out io.Writer) *Preflight {
 	comp.RegisterProvider(runtime.NewProvider(fs))
 	comp.RegisterProvider(shell.NewProvider(fs))
 	comp.RegisterProvider(nvim.NewProvider(fs, cmdRunner))
-	comp.RegisterProvider(vscode.NewProvider(fs, cmdRunner))
+	comp.RegisterProvider(vscode.NewProvider(fs, cmdRunner, plat))
 
 	return &Preflight{
 		compiler: comp,

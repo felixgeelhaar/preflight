@@ -7,6 +7,70 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2024-12-25
+
+### Added
+
+- **Chocolatey Provider**: Windows package manager integration
+  - Package installation with version pinning support
+  - WSL support via `choco.exe` interop from WSL environments
+  - Upgrade and uninstall operations
+  - Package validation against Chocolatey naming conventions
+  - Automatic Chocolatey installation check
+
+- **VS Code Remote-WSL Integration**: Development inside WSL from Windows
+  - `RemoteWSLSetupStep`: Installs the Remote-WSL extension
+  - `RemoteWSLExtensionStep`: Installs extensions in WSL remote context
+  - `RemoteWSLSettingsStep`: Manages WSL-specific VS Code settings
+  - Distro-specific targeting (e.g., `Ubuntu-22.04`)
+  - Platform-aware command selection (`code` vs `code.exe` in WSL)
+
+### Example Configuration
+
+```yaml
+# Chocolatey packages
+chocolatey:
+  packages:
+    - name: git
+    - name: vscode
+      version: "1.85.0"
+    - name: nodejs-lts
+
+# VS Code with WSL integration
+vscode:
+  extensions:
+    - ms-python.python
+  wsl:
+    auto_install: true
+    distro: Ubuntu-22.04
+    extensions:
+      - golang.go
+      - rust-lang.rust-analyzer
+    settings:
+      terminal.integrated.shell.linux: /bin/bash
+```
+
+---
+
+## [2.4.0] - 2024-12-25
+
+### Added
+
+- **WSL/Windows Support**: Cross-platform support for Windows and WSL environments
+  - New `platform` domain with OS, architecture, and environment detection
+  - WSL detection (WSL1/WSL2) with distro and mount path identification
+  - Path translation utilities between Windows and WSL formats
+
+- **Windows Package Managers**:
+  - **winget provider**: Windows Package Manager integration with `Publisher.PackageName` format
+  - **scoop provider**: Scoop package manager with bucket management
+
+- **Windows Junction Support**: Enhanced dotfile linking for Windows
+  - Junctions for directories (no admin privileges required)
+  - Symlinks for files (may require admin)
+
+---
+
 ## [2.3.0] - 2024-12-24
 
 ### Added

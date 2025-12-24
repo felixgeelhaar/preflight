@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2024-12-25
+
+### Added
+- **Chocolatey Provider**: Windows package manager integration
+  - Package installation with version pinning support
+  - WSL support via `choco.exe` interop from WSL environments
+  - Upgrade and uninstall operations
+  - Package validation against Chocolatey naming conventions
+  - Automatic Chocolatey installation check
+
+- **VS Code Remote-WSL Integration**: Development inside WSL from Windows
+  - `RemoteWSLSetupStep`: Installs `ms-vscode-remote.remote-wsl` extension
+  - `RemoteWSLExtensionStep`: Installs extensions in WSL remote context
+  - `RemoteWSLSettingsStep`: Manages WSL-specific VS Code settings
+  - Distro-specific targeting (e.g., `Ubuntu-22.04`)
+  - Platform-aware command selection (`code` vs `code.exe` in WSL)
+
+### Changed
+- VSCode provider now accepts platform parameter for WSL-aware compilation
+- Platform detection integrated into app initialization
+
 ## [2.4.0] - 2024-12-25
 
 ### Added
