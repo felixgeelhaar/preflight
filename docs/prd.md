@@ -467,16 +467,203 @@ Completes PRD 9.1 TUI requirements and adds rollback capability:
 
 ---
 
-## 15. Future Considerations (v3+)
+## 15. v3 Feature Requirements — Plugin Ecosystem & Security
+
+v3 introduces external plugin support with a defense-in-depth security model. Each phase builds on the previous to create a layered security stack.
+
+### 15.1 Plugin Foundation (v3.0)
+
+**Goal:** Enable external catalogs with basic security guarantees.
+
+#### External Catalog Support
+- Load catalog YAML from URLs or local paths
+- Catalog manifest with integrity hashes for all files
+- User approval required for new catalog sources
+- Local caching for offline use
+
+#### CLI Commands
+```bash
+preflight catalog add <url>       # Add external catalog
+preflight catalog list            # List installed catalogs
+preflight catalog remove <name>   # Remove catalog
+preflight catalog verify          # Verify all catalog integrity
+preflight catalog audit <name>    # Security audit of catalog
+```
+
+#### Integrity Verification
+- SHA256 hashes for all catalog files
+- Manifest validation before loading
+- Hash mismatch fails immediately
+
+```yaml
+# catalog-manifest.yaml
+version: "1.0"
+integrity:
+  algorithm: sha256
+  files:
+    catalog.yaml: "sha256:abc123..."
+    presets/base.yaml: "sha256:def456..."
+```
+
+### 15.2 Signature Verification (v3.1)
+
+**Goal:** Verify publisher identity and establish trust chains.
+
+#### Cryptographic Signatures
+- GPG signature verification on catalog manifests
+- Sigstore integration for keyless signing (OIDC-based)
+- SSH key signature support
+
+#### Trust Management
+```bash
+preflight trust list              # List trusted publishers
+preflight trust add <keyid>       # Trust a GPG key
+preflight trust remove <keyid>    # Untrust a key
+preflight trust show <keyid>      # Show key details
+```
+
+#### Trust Levels
+
+| Level | Description | Verification |
+|-------|-------------|--------------|
+| `builtin` | Embedded in binary | Compiled-in |
+| `verified` | Signed by known publisher | GPG/Sigstore signature |
+| `community` | Hash-verified, user-reviewed | SHA256 + user approval |
+| `untrusted` | No verification | Explicit `--allow-untrusted` |
+
+#### Configuration
+```yaml
+# preflight.yaml
+security:
+  min_trust_level: community
+  require_signatures: false
+  auto_approve_publishers:
+    - "Preflight Official <team@preflight.dev>"
+```
+
+### 15.3 Capability-Based Permissions (v3.2)
+
+**Goal:** Limit what plugins can do through declared capabilities.
+
+#### Capability Declaration
+Plugins declare required capabilities upfront:
+
+```yaml
+capabilities:
+  - files:read      # Read dotfiles
+  - files:write     # Write dotfiles
+  - packages:brew   # Install Homebrew packages
+  - packages:apt    # Install APT packages
+  - shell:execute   # Run shell commands
+  - network:fetch   # Fetch from network
+  - secrets:read    # Access secrets (SSH keys, etc.)
+```
+
+#### Enforcement
+- Plugins only get capabilities they declare
+- User must approve capabilities on first install
+- Dangerous capabilities (`shell:execute`, `secrets:read`) require explicit confirmation
+- Runtime enforcement prevents capability escalation
+
+#### Blocked Capabilities
+```yaml
+# preflight.yaml
+security:
+  blocked_capabilities:
+    - secrets:read
+    - shell:execute
+```
+
+#### Content Security Policy
+Pattern-based rules to block dangerous operations:
+
+```yaml
+# security-policy.yaml
+deny:
+  - pattern: "curl.*|.*sh"
+    reason: "Piped curl to shell is dangerous"
+  - pattern: "chmod.*777"
+    reason: "World-writable permissions"
+  - pattern: "sudo.*"
+    reason: "Sudo commands not allowed in presets"
+  - pattern: "rm.*-rf.*/"
+    reason: "Recursive delete of root paths"
+
+warn:
+  - pattern: ".*eval.*"
+    reason: "Eval can execute arbitrary code"
+```
+
+### 15.4 Plugin Sandbox (v3.3)
+
+**Goal:** Complete isolation for untrusted plugins.
+
+#### WASM Plugin Runtime
+- Plugins compile to WebAssembly
+- Run in isolated VM with no direct system access
+- Deterministic execution
+
+#### Resource Limits
+- CPU throttling
+- Memory caps
+- File descriptor limits
+- Network policy enforcement
+
+#### Sandbox Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `full` | Complete isolation, no side effects | Preview/audit unknown plugins |
+| `restricted` | Limited to declared capabilities | Normal operation |
+| `trusted` | Full access (like builtin) | Verified publishers only |
+
+### 15.5 Audit Logging
+
+All plugin operations are logged for security review:
+
+```json
+{
+  "timestamp": "2024-12-24T12:00:00Z",
+  "event": "catalog_installed",
+  "catalog": "company-devtools",
+  "source": "https://company.com/catalog.yaml",
+  "integrity": "sha256:abc123...",
+  "signature_verified": true,
+  "signer": "devops@company.com",
+  "capabilities_granted": ["files:write", "packages:brew"],
+  "user": "jane"
+}
+```
+
+### 15.6 Security Stack Summary
+
+Each layer catches different attack vectors:
+
+```
+┌─────────────────────────────────────┐
+│  v3.3: Sandbox (WASM isolation)     │  ← Can't escape even if malicious
+├─────────────────────────────────────┤
+│  v3.2: Capabilities (permissions)   │  ← Can only do what's declared
+├─────────────────────────────────────┤
+│  v3.1: Signatures (identity)        │  ← Know who published it
+├─────────────────────────────────────┤
+│  v3.0: Integrity (hashes)           │  ← Know it wasn't tampered with
+└─────────────────────────────────────┘
+```
+
+---
+
+## 16. Future Considerations (v4+)
 
 - Remote execution and fleet management
 - Background agent with scheduled reconciliation
 - Integration with enterprise identity providers
-- Audit logging for compliance requirements
 - Multi-machine sync and conflict resolution
+- Plugin marketplace with automated security scanning
+- Reproducible builds verification for catalogs
 
 ---
 
-## 16. Final Positioning Statement
+## 17. Final Positioning Statement
 
 > **Preflight is a deterministic workstation compiler that helps anyone design, reproduce, and understand their setup — safely, locally, and without lock-in.**
