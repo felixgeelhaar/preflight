@@ -173,6 +173,91 @@ presets:
     requires:
       - "git:standard"
 
+  - id: "vscode:minimal"
+    metadata:
+      title: "Minimal VS Code"
+      description: "Lightweight VS Code setup with essential extensions"
+      tradeoffs:
+        - "Fast startup and low resource usage"
+        - "Manual installation of language-specific extensions"
+      doc_links:
+        vscode: "https://code.visualstudio.com/docs"
+      tags:
+        - "editor"
+        - "vscode"
+        - "minimal"
+    difficulty: "beginner"
+    config:
+      extensions:
+        - "vscodevim.vim"
+        - "esbenp.prettier-vscode"
+      settings:
+        editor.formatOnSave: true
+        editor.minimap.enabled: false
+
+  - id: "vscode:full"
+    metadata:
+      title: "Full VS Code"
+      description: "Feature-rich VS Code configuration for professional development"
+      tradeoffs:
+        - "Comprehensive tooling and extensions"
+        - "Higher memory usage"
+      doc_links:
+        vscode: "https://code.visualstudio.com/docs"
+      tags:
+        - "editor"
+        - "vscode"
+        - "productivity"
+    difficulty: "intermediate"
+    config:
+      extensions:
+        - "vscodevim.vim"
+        - "esbenp.prettier-vscode"
+        - "dbaeumer.vscode-eslint"
+        - "eamodio.gitlens"
+        - "github.copilot"
+        - "ms-azuretools.vscode-docker"
+      settings:
+        editor.formatOnSave: true
+        editor.minimap.enabled: true
+        editor.bracketPairColorization.enabled: true
+
+  - id: "terminal:tmux"
+    metadata:
+      title: "Tmux Terminal Multiplexer"
+      description: "Terminal multiplexer for managing multiple sessions"
+      tradeoffs:
+        - "Powerful session management"
+        - "Learning curve for keybindings"
+      doc_links:
+        tmux: "https://github.com/tmux/tmux/wiki"
+      tags:
+        - "terminal"
+        - "productivity"
+    difficulty: "intermediate"
+    config:
+      prefix: "C-a"
+      mouse: true
+      vi_mode: true
+
+  - id: "terminal:alacritty"
+    metadata:
+      title: "Alacritty Terminal"
+      description: "GPU-accelerated terminal emulator"
+      tradeoffs:
+        - "Fast rendering performance"
+        - "Minimal features, relies on tmux for tabs"
+      doc_links:
+        alacritty: "https://alacritty.org/"
+      tags:
+        - "terminal"
+        - "performance"
+    difficulty: "intermediate"
+    config:
+      font_family: "JetBrainsMono Nerd Font"
+      font_size: 14
+      opacity: 0.95
+
 capability_packs:
   - id: "go-developer"
     metadata:
@@ -250,3 +335,131 @@ capability_packs:
       - "aws-cli"
       - "helm"
       - "k9s"
+
+  - id: "python-developer"
+    metadata:
+      title: "Python Developer"
+      description: "Complete Python development environment"
+      tradeoffs:
+        - "Optimized for Python development"
+        - "Includes type checking and linting tools"
+      doc_links:
+        python: "https://docs.python.org/3/"
+        poetry: "https://python-poetry.org/docs/"
+        ruff: "https://docs.astral.sh/ruff/"
+      tags:
+        - "python"
+        - "backend"
+        - "developer"
+    presets:
+      - "nvim:balanced"
+      - "shell:starship"
+      - "git:standard"
+    tools:
+      - "python"
+      - "poetry"
+      - "ruff"
+      - "mypy"
+      - "black"
+      - "pytest"
+
+  - id: "rust-developer"
+    metadata:
+      title: "Rust Developer"
+      description: "Complete Rust development environment"
+      tradeoffs:
+        - "Optimized for Rust development"
+        - "Includes cargo tools and LSP support"
+      doc_links:
+        rust: "https://doc.rust-lang.org/"
+        cargo: "https://doc.rust-lang.org/cargo/"
+      tags:
+        - "rust"
+        - "systems"
+        - "developer"
+    presets:
+      - "nvim:pro"
+      - "shell:starship"
+      - "git:secure"
+    tools:
+      - "rust"
+      - "rust-analyzer"
+      - "cargo-watch"
+      - "cargo-edit"
+      - "cargo-audit"
+
+  - id: "data-scientist"
+    metadata:
+      title: "Data Scientist"
+      description: "Python-based data science and ML environment"
+      tradeoffs:
+        - "Comprehensive data science toolkit"
+        - "Many dependencies to manage"
+      doc_links:
+        jupyter: "https://docs.jupyter.org/"
+        pandas: "https://pandas.pydata.org/docs/"
+        numpy: "https://numpy.org/doc/"
+      tags:
+        - "python"
+        - "data-science"
+        - "ml"
+    presets:
+      - "vscode:full"
+      - "shell:oh-my-zsh"
+      - "git:standard"
+    tools:
+      - "python"
+      - "poetry"
+      - "jupyter"
+      - "pandas"
+      - "numpy"
+      - "scikit-learn"
+
+  - id: "writer"
+    metadata:
+      title: "Writer & Note-taker"
+      description: "Tools for writing, documentation, and note-taking"
+      tradeoffs:
+        - "Focus on writing and markdown"
+        - "Minimal development tooling"
+      doc_links:
+        obsidian: "https://help.obsidian.md/"
+        markdown: "https://www.markdownguide.org/"
+      tags:
+        - "writing"
+        - "documentation"
+        - "productivity"
+    presets:
+      - "nvim:minimal"
+      - "shell:zsh"
+      - "git:standard"
+    tools:
+      - "vale"
+      - "pandoc"
+      - "markdownlint"
+
+  - id: "full-stack"
+    metadata:
+      title: "Full-Stack Developer"
+      description: "Complete environment for full-stack web development"
+      tradeoffs:
+        - "Both frontend and backend tooling"
+        - "Many tools to learn"
+      doc_links:
+        nodejs: "https://nodejs.org/en/docs/"
+        docker: "https://docs.docker.com/"
+      tags:
+        - "fullstack"
+        - "web"
+        - "developer"
+    presets:
+      - "nvim:pro"
+      - "shell:starship"
+      - "git:secure"
+      - "terminal:tmux"
+    tools:
+      - "node"
+      - "pnpm"
+      - "docker"
+      - "postgresql"
+      - "redis"
