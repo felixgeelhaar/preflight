@@ -337,14 +337,13 @@ Providers compile config sections into executable steps:
 
 The following v1 PRD requirements are planned for v1.x releases:
 
-### 10.1 Enhanced Capture TUI (v1.1)
+### 10.1 Enhanced Capture TUI (v1.1) ✓
 
 Completes PRD 6.2 and 9.1 requirements for capture workflow:
-- Search/filter items by name, provider, category
-- Layer reassignment — move items between layers in TUI
-- Preview layer structure before commit
-- Undo/redo for review decisions
-- Keyboard shortcuts for power users
+- Search/filter items by name, provider, category ✓
+- Layer reassignment — move items between layers in TUI ✓
+- Undo/redo for review decisions ✓
+- Keyboard shortcuts for power users ✓
 
 ### 10.2 Full Dotfile Lifecycle (v1.2) ✓
 
@@ -355,12 +354,21 @@ Completes PRD 7.3 requirements for dotfile management:
 - Config patch generation from drift ✓
 - VS Code settings drift detection ✓
 
-### 10.3 v1.0 Known Limitations
+### 10.3 Three-Way Merge (v1.3) ✓
 
-The following have workarounds until v1.x:
-- TUI layer reassignment — edit YAML directly
-- Three-way merge — manual conflict resolution
-- Conflict markers in files — deferred to v1.3
+Completes PRD 7.3 requirements for conflict resolution:
+- DetectChangeType: Classifies changes as none/ours/theirs/both/same ✓
+- ThreeWayMerge: Automatic merge when possible ✓
+- Conflict markers with descriptive labels (git/diff3 style) ✓
+- ParseConflictRegions: Extract conflicts from marked content ✓
+- ResolveAllConflicts: Programmatic conflict resolution ✓
+
+### 10.4 v1.x Known Limitations
+
+The following have workarounds until future releases:
+- Preview layer structure before commit — review generated YAML
+- TUI conflict resolution — manual editing of conflict markers
+- Rollback command — restore from snapshot manually
 
 ---
 
