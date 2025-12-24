@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
+	"github.com/felixgeelhaar/preflight/internal/domain/merge"
 	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
 
@@ -453,6 +454,47 @@ func (o LayerPreviewOptions) WithTitle(title string) LayerPreviewOptions {
 func (o LayerPreviewOptions) WithLineNumbers(show bool) LayerPreviewOptions {
 	o.ShowLineNums = show
 	return o
+}
+
+// NewConflictResolutionOptions creates default conflict resolution options.
+func NewConflictResolutionOptions() ConflictResolutionOptions {
+	return ConflictResolutionOptions{
+		ShowBase: true,
+	}
+}
+
+// WithShowBase sets whether to show base content.
+func (o ConflictResolutionOptions) WithShowBase(show bool) ConflictResolutionOptions {
+	o.ShowBase = show
+	return o
+}
+
+// RunConflictResolution runs the conflict resolution interface.
+func RunConflictResolution(ctx context.Context, filePath string, conflicts []merge.Conflict, opts ConflictResolutionOptions) (*ConflictResolutionResult, error) {
+	if len(conflicts) == 0 {
+		return &ConflictResolutionResult{Resolutions: nil}, nil
+	}
+
+	// Create the conflict resolution model
+	model := newConflictResolutionModel(filePath, conflicts, opts)
+
+	// Run the program
+	p := tea.NewProgram(model, tea.WithContext(ctx))
+	finalModel, err := p.Run()
+	if err != nil {
+		return nil, fmt.Errorf("conflict resolution failed: %w", err)
+	}
+
+	// Extract result from final model
+	m, ok := finalModel.(conflictResolutionModel)
+	if !ok {
+		return nil, fmt.Errorf("unexpected model type")
+	}
+
+	return &ConflictResolutionResult{
+		Resolutions: m.resolutions,
+		Cancelled:   m.cancelled,
+	}, nil
 }
 
 // RunLayerPreview runs the layer preview interface.
