@@ -1,9 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"strings"
 
+	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/spf13/cobra"
+)
+
+var (
+	tourListFlag bool
 )
 
 var tourCmd = &cobra.Command{
@@ -11,111 +18,101 @@ var tourCmd = &cobra.Command{
 	Short: "Interactive guided walkthroughs",
 	Long: `Tour provides interactive guided walkthroughs of preflight features.
 
-Available tours:
-  basics      - Introduction to preflight concepts
-  config      - Understanding configuration structure
-  layers      - Working with layers and composition
-  providers   - Available providers and their options
-  ai          - Using AI-powered suggestions
+Available topics:
+  basics      - Preflight fundamentals
+  config      - Configuration deep-dive
+  layers      - Layer composition
+  providers   - Provider overview
+  presets     - Using presets
+  workflow    - Daily workflow
 
 Examples:
-  preflight tour            # List available tours
+  preflight tour            # Open topic menu
   preflight tour basics     # Start the basics tour
-  preflight tour providers  # Learn about providers`,
+  preflight tour --list     # List available topics`,
 	RunE: runTour,
 }
 
 func init() {
+	tourCmd.Flags().BoolVar(&tourListFlag, "list", false, "List available topics")
 	rootCmd.AddCommand(tourCmd)
 }
 
 func runTour(_ *cobra.Command, args []string) error {
-	if len(args) == 0 {
-		fmt.Println("Available tours:")
-		fmt.Println()
-		fmt.Println("  basics      Introduction to preflight concepts")
-		fmt.Println("  config      Understanding configuration structure")
-		fmt.Println("  layers      Working with layers and composition")
-		fmt.Println("  providers   Available providers and their options")
-		fmt.Println("  ai          Using AI-powered suggestions")
-		fmt.Println()
-		fmt.Println("Run 'preflight tour <name>' to start a tour.")
+	// Handle --list flag
+	if tourListFlag {
+		printTourTopics()
 		return nil
 	}
 
-	topic := args[0]
-
-	switch topic {
-	case "basics":
-		fmt.Println("Welcome to the Preflight Basics Tour!")
-		fmt.Println()
-		fmt.Println("Preflight is a deterministic workstation compiler.")
-		fmt.Println("It turns declarative configuration into reproducible setups.")
-		fmt.Println()
-		fmt.Println("Key concepts:")
-		fmt.Println("  - Manifest: Your main preflight.yaml file")
-		fmt.Println("  - Layers: Composable configuration overlays")
-		fmt.Println("  - Targets: Different machine profiles")
-		fmt.Println("  - Providers: Integrations (brew, git, nvim, etc.)")
-		fmt.Println()
-		fmt.Println("Run 'preflight init' to get started!")
-
-	case "config":
-		fmt.Println("Configuration Structure Tour")
-		fmt.Println()
-		fmt.Println("preflight.yaml is your main configuration file:")
-		fmt.Println("  version: 1")
-		fmt.Println("  targets:")
-		fmt.Println("    - name: default")
-		fmt.Println("      layers: [base, work]")
-		fmt.Println()
-		fmt.Println("Layers live in layers/*.yaml and are merged together.")
-
-	case "layers":
-		fmt.Println("Layers Tour")
-		fmt.Println()
-		fmt.Println("Layers provide composition and reuse:")
-		fmt.Println("  base.yaml    - Common configuration")
-		fmt.Println("  work.yaml    - Work-specific settings")
-		fmt.Println("  personal.yaml - Personal overrides")
-		fmt.Println()
-		fmt.Println("Merge semantics:")
-		fmt.Println("  - Scalars: last wins")
-		fmt.Println("  - Maps: deep merge")
-		fmt.Println("  - Lists: set union with add/remove")
-
-	case "providers":
-		fmt.Println("Providers Tour")
-		fmt.Println()
-		fmt.Println("Available providers:")
-		fmt.Println("  brew    - Homebrew packages (macOS)")
-		fmt.Println("  apt     - APT packages (Linux)")
-		fmt.Println("  files   - Dotfile management")
-		fmt.Println("  git     - Git configuration")
-		fmt.Println("  ssh     - SSH config generation")
-		fmt.Println("  nvim    - Neovim setup")
-		fmt.Println("  vscode  - VS Code extensions")
-		fmt.Println("  runtime - Language version management")
-		fmt.Println("  shell   - Shell configuration")
-
-	case "ai":
-		fmt.Println("AI Features Tour")
-		fmt.Println()
-		fmt.Println("Preflight supports AI-powered suggestions (BYOK).")
-		fmt.Println()
-		fmt.Println("Set your API key:")
-		fmt.Println("  export PREFLIGHT_OPENAI_API_KEY=sk-...")
-		fmt.Println("  export PREFLIGHT_ANTHROPIC_API_KEY=sk-ant-...")
-		fmt.Println("  export PREFLIGHT_OLLAMA_ENDPOINT=http://localhost:11434")
-		fmt.Println()
-		fmt.Println("AI can help with:")
-		fmt.Println("  - Preset recommendations")
-		fmt.Println("  - Configuration explanations")
-		fmt.Println("  - Troubleshooting suggestions")
-
-	default:
-		return fmt.Errorf("unknown tour: %s", topic)
+	// Get initial topic if provided
+	var initialTopic string
+	if len(args) > 0 {
+		initialTopic = args[0]
+		// Validate topic exists
+		if _, found := tui.GetTopic(initialTopic); !found {
+			validTopics := tui.GetTopicIDs()
+			return fmt.Errorf("unknown topic: %s\nAvailable topics: %s",
+				initialTopic, strings.Join(validTopics, ", "))
+		}
 	}
 
+	// Initialize progress store for tracking
+	progressStore, err := tui.NewTourProgressStore()
+	if err != nil {
+		// Non-fatal: continue without progress tracking
+		progressStore = nil
+	}
+
+	// Build tour options
+	opts := tui.NewTourOptions()
+	if initialTopic != "" {
+		opts = opts.WithInitialTopic(initialTopic)
+	}
+	if progressStore != nil {
+		opts = opts.WithProgressStore(progressStore)
+	}
+
+	// Run the interactive tour
+	ctx := context.Background()
+	result, err := tui.RunTour(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("tour failed: %w", err)
+	}
+
+	if result.Cancelled {
+		return nil
+	}
+
+	// Show progress and next steps after completing tour
+	fmt.Println()
+	if result.TopicsCompleted > 0 {
+		fmt.Printf("Progress: %d/%d topics completed\n", result.TopicsCompleted, result.TotalTopics)
+		fmt.Println()
+	}
+
+	if result.TopicsCompleted == result.TotalTopics && result.TotalTopics > 0 {
+		fmt.Println("🎉 Congratulations! You've completed all tour topics!")
+		fmt.Println()
+	}
+
+	fmt.Println("Ready to get started?")
+	fmt.Println()
+	fmt.Println("  preflight init      Create new configuration")
+	fmt.Println("  preflight capture   Capture current machine")
+	fmt.Println("  preflight --help    See all commands")
+
 	return nil
+}
+
+func printTourTopics() {
+	topics := tui.GetAllTopics()
+
+	fmt.Println("Available tour topics:")
+	fmt.Println()
+	for _, topic := range topics {
+		fmt.Printf("  %-12s %s\n", topic.ID, topic.Description)
+	}
+	fmt.Println()
+	fmt.Println("Run 'preflight tour <topic>' to start a tour.")
 }

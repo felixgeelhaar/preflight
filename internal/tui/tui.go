@@ -557,3 +557,106 @@ func RunCaptureReview(ctx context.Context, items []CaptureItem, opts CaptureRevi
 		Cancelled:     m.cancelled,
 	}, nil
 }
+
+// TourOptions configures the interactive tour.
+type TourOptions struct {
+	InitialTopic   string
+	CatalogService CatalogServiceInterface
+	ProgressStore  TourProgressStore
+	TrackProgress  bool
+}
+
+// TourProgressStore defines the interface for tour progress persistence.
+type TourProgressStore interface {
+	Load() (TourProgress, error)
+	Save(progress TourProgress) error
+}
+
+// TourProgress defines the interface for tour progress tracking.
+type TourProgress interface {
+	StartTopic(topicID string, totalSections int)
+	CompleteSection(topicID string, sectionIndex int)
+	IsTopicCompleted(topicID string) bool
+	IsTopicStarted(topicID string) bool
+	IsSectionCompleted(topicID string, sectionIndex int) bool
+	TopicCompletionPercent(topicID string) int
+	OverallCompletionPercent(totalTopics int) int
+	CompletedTopicsCount() int
+}
+
+// NewTourOptions creates default tour options.
+func NewTourOptions() TourOptions {
+	return TourOptions{
+		TrackProgress: true,
+	}
+}
+
+// WithInitialTopic sets the initial topic to display.
+func (o TourOptions) WithInitialTopic(topic string) TourOptions {
+	o.InitialTopic = topic
+	return o
+}
+
+// WithCatalogService sets the catalog service for examples.
+func (o TourOptions) WithCatalogService(service CatalogServiceInterface) TourOptions {
+	o.CatalogService = service
+	return o
+}
+
+// WithProgressStore sets the progress store for persistence.
+func (o TourOptions) WithProgressStore(store TourProgressStore) TourOptions {
+	o.ProgressStore = store
+	return o
+}
+
+// WithTrackProgress enables or disables progress tracking.
+func (o TourOptions) WithTrackProgress(track bool) TourOptions {
+	o.TrackProgress = track
+	return o
+}
+
+// TourResult holds the result of the tour.
+type TourResult struct {
+	SelectedTopic   string
+	Cancelled       bool
+	Completed       bool
+	TopicsCompleted int
+	TotalTopics     int
+}
+
+// RunTour runs the interactive tour.
+func RunTour(ctx context.Context, opts TourOptions) (*TourResult, error) {
+	// Create the tour model
+	model := newTourModel(opts)
+
+	// Run the program
+	p := tea.NewProgram(model, tea.WithContext(ctx))
+	finalModel, err := p.Run()
+	if err != nil {
+		return nil, fmt.Errorf("tour failed: %w", err)
+	}
+
+	// Extract result from final model
+	m, ok := finalModel.(tourModel)
+	if !ok {
+		return nil, fmt.Errorf("unexpected model type")
+	}
+
+	// Save progress if tracking is enabled
+	if m.progressStore != nil && m.progress != nil {
+		_ = m.progressStore.Save(m.progress)
+	}
+
+	topicsCompleted := 0
+	if m.progress != nil {
+		topicsCompleted = m.progress.CompletedTopicsCount()
+	}
+
+	return &TourResult{
+		SelectedTopic:   m.SelectedTopic(),
+		Cancelled:       m.Cancelled(),
+		Completed:       m.Completed(),
+		TopicsCompleted: topicsCompleted,
+		TotalTopics:     len(GetAllTopics()),
+	}, nil
+}

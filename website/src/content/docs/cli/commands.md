@@ -247,27 +247,62 @@ e5f6g7h8   2024-12-24 10:15:00  6 hours    5       doctor-fix
 
 ### preflight tour
 
-Interactive learning walkthroughs.
+Interactive guided walkthroughs for learning Preflight with progress tracking.
 
 ```bash
-preflight tour [topic]
+preflight tour [topic] [flags]
 ```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--list` | List all available topics |
 
 **Topics:**
 
 | Topic | Description |
 |-------|-------------|
-| `nvim` | Neovim basics and installed features |
-| `editor` | VS Code / Cursor setup |
-| `git` | Git configuration and workflows |
-| `shell` | Shell environment |
+| `basics` | Preflight fundamentals and compiler model |
+| `config` | Configuration structure and YAML syntax |
+| `layers` | Layer composition and merge semantics |
+| `providers` | Provider overview (brew, git, shell, nvim, vscode) |
+| `presets` | Using presets and capability packs |
+| `workflow` | Daily workflow: plan, apply, doctor cycle |
 
 **Examples:**
 
 ```bash
-preflight tour nvim
-preflight tour git
+# Open interactive topic menu
+preflight tour
+
+# Start specific topic
+preflight tour basics
+preflight tour workflow
+
+# List all available topics
+preflight tour --list
 ```
+
+**Navigation:**
+
+| Key | Action |
+|-----|--------|
+| `↑/↓` or `j/k` | Navigate topics/scroll |
+| `Enter` | Select topic / advance |
+| `n` or `→` | Next section |
+| `p` or `←` | Previous section |
+| `1-9` | Jump to section number |
+| `g` / `G` | Go to first / last section |
+| `Esc` | Go back / exit |
+| `q` | Quit tour |
+
+**Progress Tracking:**
+
+Your progress is automatically saved to `~/.preflight/tour-progress.json`:
+- ✓ indicates completed topics
+- (%) shows partial completion
+- Progress persists between sessions
 
 ---
 
@@ -384,7 +419,7 @@ preflight version
 **Output:**
 
 ```
-preflight version 1.5.0
+preflight version 1.7.0
 ```
 
 ---

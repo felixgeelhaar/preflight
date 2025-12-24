@@ -7,6 +7,56 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2024-12-24
+
+### Added
+
+- **Tour Completion Tracking**: Persistent progress tracking for learning tours
+  - Progress saved to `~/.preflight/tour-progress.json`
+  - Per-topic and per-section completion tracking
+  - Progress indicators in topic list (✓ completed, % in progress)
+  - Overall progress display in tour menu
+  - Completion percentage shown per section
+  - Progress summary after exiting tour
+
+---
+
+## [1.6.0] - 2024-12-24
+
+### Added
+
+- **Interactive Tour System**: Full TUI for guided learning
+  - `preflight tour` opens topic selection menu
+  - `preflight tour <topic>` starts specific topic
+  - `preflight tour --list` lists available topics
+  - 6 comprehensive topics: basics, config, layers, providers, presets, workflow
+  - Section-based navigation with keyboard controls (n/p, h/l, 1-9, g/G)
+  - Code examples with syntax highlighting
+  - Next topic suggestions for learning path
+
+- **New Presets**: 10 new presets across 5 categories
+  - Fonts: `fonts:nerd-essential`, `fonts:nerd-complete`
+  - SSH: `ssh:basic`, `ssh:github`, `ssh:multi-identity`
+  - Docker: `docker:basic`, `docker:kubernetes`
+  - Runtime: `runtime:mise-node`, `runtime:mise-polyglot`
+  - Brew: `brew:cli-essentials`, `brew:dev-tools`
+
+- **New Capability Packs**: 6 new role-based packs
+  - `mobile-developer`: React Native and Flutter development
+  - `qa-engineer`: Testing frameworks and automation tools
+  - `cloud-architect`: Multi-cloud infrastructure tooling
+  - `java-developer`: JVM ecosystem development
+  - `security-engineer`: Security testing and compliance
+  - `technical-writer`: Documentation and static site generation
+
+### Changed
+
+- Tour command now launches interactive TUI instead of static output
+- Updated CLI commands documentation with tour navigation keys
+- Catalog expanded from 12 to 22 presets, 8 to 14 capability packs
+
+---
+
 ## [1.5.0] - 2024-12-24
 
 ### Added
@@ -267,6 +317,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+[1.7.0]: https://github.com/felixgeelhaar/preflight/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/felixgeelhaar/preflight/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/felixgeelhaar/preflight/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/felixgeelhaar/preflight/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/felixgeelhaar/preflight/compare/v1.2.0...v1.3.0
