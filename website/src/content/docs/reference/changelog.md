@@ -7,6 +7,55 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2024-12-24
+
+### Added
+
+- **Integration Tests**: Comprehensive Go-based test suite
+  - Init tests for configuration initialization and parsing
+  - Capture tests for system capture and review workflows
+  - Doctor tests for drift detection and fix scenarios
+  - Rollback tests for snapshot creation and restoration
+  - Discover tests for pattern detection in dotfile repositories
+  - Full workflow tests for end-to-end plan/apply cycles
+
+- **Performance Benchmarks**: New benchmark suite for critical paths
+  - `loader_bench_test.go`: Config loading benchmarks (LoadManifest ~21µs)
+  - `merger_bench_test.go`: Layer merging benchmarks (10 layers ~259µs)
+  - `step_graph_bench_test.go`: Step graph operations (TopologicalSort ~16µs, Get ~7.6ns)
+
+- **Migration Guide**: Step-by-step migration documentation
+  - From manual dotfiles with git and symlinks
+  - From chezmoi with template mapping
+  - From yadm with class-to-layer conversion
+  - From GNU stow with package mapping
+  - From Ansible/shell scripts with task conversion
+
+- **Troubleshooting Guide**: Comprehensive debugging documentation
+  - Common configuration errors and solutions
+  - Apply and doctor error resolution
+  - Debugging techniques (verbose, dry-run, explain modes)
+  - Recovery procedures (snapshots, manual recovery, reset)
+  - Provider-specific issues (Homebrew, Git, SSH, Neovim)
+
+- **Terminal Demo GIFs**: Animated demos for documentation
+  - `init-wizard.gif`: Interactive init flow
+  - `capture-review.gif`: Capture with TUI review
+  - `plan-apply.gif`: Plan preview and apply
+  - `doctor-fix.gif`: Doctor detection and fix
+  - `rollback.gif`: Snapshot rollback
+  - Demo recording script (`scripts/record-demos.sh`)
+  - Asciinema cast files for reproducible recordings
+
+### Changed
+
+- README now includes demo GIF in hero section
+- Quick Start guide includes inline demo GIFs for each step
+- CLI Commands page includes rollback demo GIF
+- Sidebar navigation includes Migration and Troubleshooting guides
+
+---
+
 ## [1.4.0] - 2024-12-24
 
 ### Added
