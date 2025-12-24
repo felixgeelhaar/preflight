@@ -411,6 +411,29 @@ func (m initWizardModel) View() string {
 }
 
 func (m initWizardModel) viewWelcome() string {
+	// ASCII art logo - Stylized "P" with verification badge
+	logoLines := []string{
+		"  ██████╗ ",
+		"  ██╔══██╗",
+		"  ██████╔╝",
+		"  ██╔═══╝    ✓",
+		"  ██║     ",
+		"  ╚═╝     ",
+	}
+
+	// Render logo with brand colors
+	var logo string
+	for i, line := range logoLines {
+		if i == 3 {
+			// Line with checkmark badge - split P and badge
+			pPart := line[:12]
+			badge := line[12:]
+			logo += m.styles.Logo.Render(pPart) + m.styles.LogoBadge.Render(badge) + "\n"
+		} else {
+			logo += m.styles.Logo.Render(line) + "\n"
+		}
+	}
+
 	title := m.styles.Title.Render("Welcome to Preflight")
 	subtitle := m.styles.Subtitle.Render("Deterministic workstation compiler")
 	body := m.styles.Paragraph.Render(
@@ -418,7 +441,7 @@ func (m initWizardModel) viewWelcome() string {
 			"This wizard will guide you through the initial setup.\n\n" +
 			"Press Enter to continue or Esc to exit.",
 	)
-	return m.styles.App.Render(title + "\n" + subtitle + "\n\n" + body)
+	return m.styles.App.Render(logo + "\n" + title + "\n" + subtitle + "\n\n" + body)
 }
 
 func (m initWizardModel) viewSelectProvider() string {

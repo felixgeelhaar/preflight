@@ -5,7 +5,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Theme colors (Catppuccin Mocha inspired).
+// Theme colors (Catppuccin Mocha inspired + Preflight brand colors).
 var (
 	ColorPrimary    = lipgloss.AdaptiveColor{Light: "#1e66f5", Dark: "#89b4fa"} // Blue
 	ColorSecondary  = lipgloss.AdaptiveColor{Light: "#7c3aed", Dark: "#cba6f7"} // Mauve
@@ -17,6 +17,11 @@ var (
 	ColorSubtle     = lipgloss.AdaptiveColor{Light: "#9ca0b0", Dark: "#a6adc8"} // Subtext0
 	ColorBackground = lipgloss.AdaptiveColor{Light: "#eff1f5", Dark: "#1e1e2e"} // Base
 	ColorSurface    = lipgloss.AdaptiveColor{Light: "#e6e9ef", Dark: "#313244"} // Surface0
+
+	// Preflight brand colors
+	ColorCyan  = lipgloss.AdaptiveColor{Light: "#0891b2", Dark: "#00d4ff"} // Preflight cyan
+	ColorTeal  = lipgloss.AdaptiveColor{Light: "#0e7490", Dark: "#0891b2"} // Preflight teal (badge)
+	ColorBrand = lipgloss.AdaptiveColor{Light: "#0891b2", Dark: "#00d4ff"} // Alias for brand primary
 )
 
 // Styles contains reusable lipgloss styles for the TUI.
@@ -26,6 +31,10 @@ type Styles struct {
 	Title     lipgloss.Style
 	Subtitle  lipgloss.Style
 	Paragraph lipgloss.Style
+
+	// Brand styles
+	Logo      lipgloss.Style
+	LogoBadge lipgloss.Style
 
 	// Status styles
 	Success lipgloss.Style
@@ -78,6 +87,15 @@ func DefaultStyles() Styles {
 
 		Paragraph: lipgloss.NewStyle().
 			Foreground(ColorText),
+
+		// Brand styles
+		Logo: lipgloss.NewStyle().
+			Foreground(ColorCyan).
+			Bold(true),
+
+		LogoBadge: lipgloss.NewStyle().
+			Foreground(ColorTeal).
+			Bold(true),
 
 		// Status styles
 		Success: lipgloss.NewStyle().
