@@ -7,6 +7,52 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2024-12-24
+
+### Added
+
+- **Rollback Command**: Restore files from automatic snapshots
+  - `preflight rollback` lists available snapshots with ID, date, age, file count
+  - `preflight rollback --to <id>` restores specific snapshot (supports partial ID matching)
+  - `preflight rollback --latest` restores most recent snapshot
+  - `preflight rollback --dry-run` previews restoration without applying
+  - Human-readable age formatting (mins, hours, days, weeks)
+  - Confirmation prompt before restoration
+
+- **Layer Preview Before Commit**: Preview generated YAML before writing to disk
+  - New preview step in init wizard between confirm and complete
+  - File tabs for navigating multiple layer files (h/l or ←/→)
+  - YAML syntax highlighting for keys, values, booleans, numbers, comments
+  - Scrollable content with j/k or ↑/↓
+  - Quick file selection with number keys 1-9
+  - `RunLayerPreview()` public API for standalone usage
+
+- **TUI Conflict Resolution**: Interactive resolution for three-way merge conflicts
+  - Side-by-side diff view showing ours (config) vs theirs (file)
+  - Color-coded differences between versions
+  - Navigate conflicts with n/p (next/previous)
+  - Resolve with o/t/b (ours/theirs/base) for current conflict
+  - Bulk resolve with O/T/B (uppercase) for all conflicts
+  - Scroll content with j/k
+  - Optional base content display
+  - `RunConflictResolution()` public API
+
+- **Enhanced Shell Completions**: Custom flag completions with descriptions
+  - `--config` completes with .yaml/.yml files
+  - `--ai-provider` completes with openai/anthropic/ollama
+  - `--mode` completes with intent/locked/frozen
+
+- **New Catalog Presets and Capability Packs**:
+  - Presets: vscode:minimal, vscode:full, terminal:tmux, terminal:alacritty
+  - Packs: python-developer, rust-developer, data-scientist, writer, full-stack
+
+### Changed
+
+- Init wizard now shows layer preview before writing config files
+- Updated PRD to mark v1.4 UX Polish & Rollback as complete
+
+---
+
 ## [1.3.0] - 2024-12-24
 
 ### Added
@@ -172,6 +218,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+[1.4.0]: https://github.com/felixgeelhaar/preflight/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/felixgeelhaar/preflight/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/felixgeelhaar/preflight/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/felixgeelhaar/preflight/compare/v1.0.0...v1.1.0

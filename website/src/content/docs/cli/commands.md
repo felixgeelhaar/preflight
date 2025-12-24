@@ -198,6 +198,51 @@ preflight doctor --update-config --dry-run
 
 ## Utility Commands
 
+### preflight rollback
+
+Restore files from automatic snapshots.
+
+```bash
+preflight rollback [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--to <id>` | Restore specific snapshot by ID |
+| `--latest` | Restore most recent snapshot |
+| `--dry-run` | Preview restoration without applying |
+
+**Examples:**
+
+```bash
+# List available snapshots
+preflight rollback
+
+# Restore specific snapshot
+preflight rollback --to abc123
+
+# Restore most recent snapshot
+preflight rollback --latest
+
+# Preview what would be restored
+preflight rollback --to abc123 --dry-run
+```
+
+**Output (listing):**
+
+```
+Available snapshots:
+
+ID         DATE                 AGE        FILES   REASON
+────────────────────────────────────────────────────────────
+a1b2c3d4   2024-12-24 14:30:00  2 hours    3       pre-apply
+e5f6g7h8   2024-12-24 10:15:00  6 hours    5       doctor-fix
+```
+
+---
+
 ### preflight tour
 
 Interactive learning walkthroughs.
@@ -337,7 +382,7 @@ preflight version
 **Output:**
 
 ```
-preflight version 1.3.0
+preflight version 1.4.0
 ```
 
 ---
