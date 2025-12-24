@@ -363,12 +363,29 @@ Completes PRD 7.3 requirements for conflict resolution:
 - ParseConflictRegions: Extract conflicts from marked content ✓
 - ResolveAllConflicts: Programmatic conflict resolution ✓
 
-### 10.4 v1.x Known Limitations
+### 10.4 UX Polish & Rollback (v1.4)
 
-The following have workarounds until future releases:
-- Preview layer structure before commit — review generated YAML
-- TUI conflict resolution — manual editing of conflict markers
-- Rollback command — restore from snapshot manually
+Completes PRD 9.1 TUI requirements and adds rollback capability:
+
+#### Layer Preview Before Commit
+- Preview generated YAML structure before writing to disk
+- TUI screen showing layer files with syntax highlighting
+- Edit/confirm/cancel options before finalizing
+- Applies to both `init` and `capture` workflows
+
+#### TUI Conflict Resolution
+- Interactive conflict resolution when three-way merge has conflicts
+- Side-by-side diff view of ours/theirs/base versions
+- Actions: pick ours, pick theirs, pick base, edit manually
+- Navigate between conflict regions with keyboard
+- Real-time preview of resolved content
+
+#### Rollback Command
+- `preflight rollback` — list available snapshots
+- `preflight rollback --to <snapshot-id>` — restore specific snapshot
+- `preflight rollback --latest` — restore most recent snapshot
+- TUI browser for snapshot selection with metadata (date, reason, files)
+- Dry-run mode to preview restoration before applying
 
 ---
 
