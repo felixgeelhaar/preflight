@@ -16,6 +16,7 @@ const (
 	stepSelectProvider
 	stepSelectPreset
 	stepConfirm
+	stepPreview
 	stepComplete
 )
 
@@ -42,6 +43,10 @@ type initWizardModel struct {
 
 	// AI recommendation results
 	aiRecommendation *advisor.AIRecommendation
+
+	// Preview state
+	previewFiles []PreviewFile
+	previewModel layerPreviewModel
 }
 
 func newInitWizardModel(opts InitWizardOptions) initWizardModel {
@@ -200,12 +205,31 @@ func (m initWizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.presetList, cmd = m.presetList.Update(msg)
 	case stepConfirm:
 		m.confirm, cmd = m.confirm.Update(msg)
+	case stepPreview:
+		var newPreview tea.Model
+		newPreview, cmd = m.previewModel.Update(msg)
+		m.previewModel = newPreview.(layerPreviewModel)
+
+		// Check if preview was confirmed or cancelled
+		if m.previewModel.confirmed {
+			return m.writeConfigFiles()
+		}
+		if m.previewModel.cancelled {
+			// Go back to confirm step
+			m.step = stepConfirm
+			return m, nil
+		}
 	}
 
 	return m, cmd
 }
 
 func (m initWizardModel) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// Let preview handle its own keys
+	if m.step == stepPreview {
+		return m, nil // Keys are handled in Update's stepPreview case
+	}
+
 	//nolint:exhaustive // We only handle specific key types
 	switch msg.Type {
 	case tea.KeyCtrlC, tea.KeyEsc:
@@ -233,6 +257,7 @@ func (m initWizardModel) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	// Let component handle the key
 	var cmd tea.Cmd
+	//nolint:exhaustive // stepPreview is handled separately above
 	switch m.step {
 	case stepWelcome, stepComplete:
 		// No component to update
@@ -275,7 +300,7 @@ func (m initWizardModel) handleSelection(msg components.ListSelectedMsg) (tea.Mo
 
 func (m initWizardModel) handleConfirm(msg components.ConfirmResultMsg) (tea.Model, tea.Cmd) {
 	if msg.Confirmed {
-		// Generate configuration files
+		// Generate preview files (without writing to disk)
 		targetDir := "."
 		if m.opts.TargetDir != "" {
 			targetDir = m.opts.TargetDir
@@ -293,19 +318,54 @@ func (m initWizardModel) handleConfirm(msg components.ConfirmResultMsg) (tea.Mod
 			}
 		}
 
-		if err := generator.GenerateFromPreset(preset); err != nil {
+		// Generate preview files
+		previewFiles, err := generator.GeneratePreviewFiles(preset)
+		if err != nil {
 			// TODO: Show error in TUI
 			m.step = stepComplete
 			return m, tea.Quit
 		}
 
-		m.configPath = "preflight.yaml"
-		m.step = stepComplete
-		return m, tea.Quit
+		m.previewFiles = previewFiles
+		m.previewModel = newLayerPreviewModel(previewFiles, LayerPreviewOptions{
+			Title:        "Preview Configuration",
+			ShowLineNums: true,
+		})
+		m.step = stepPreview
+		return m, nil
 	}
 	// Go back to preset selection
 	m.step = stepSelectPreset
 	return m, nil
+}
+
+// writeConfigFiles writes the preview files to disk.
+func (m initWizardModel) writeConfigFiles() (tea.Model, tea.Cmd) {
+	targetDir := "."
+	if m.opts.TargetDir != "" {
+		targetDir = m.opts.TargetDir
+	}
+
+	generator := NewConfigGenerator(targetDir)
+
+	// Get preset details from catalog
+	preset, found := m.catalogService.GetPreset(m.selectedPreset)
+	if !found {
+		preset = PresetItem{
+			ID:    m.selectedPreset,
+			Title: m.selectedPreset,
+		}
+	}
+
+	if err := generator.GenerateFromPreset(preset); err != nil {
+		// TODO: Show error in TUI
+		m.step = stepComplete
+		return m, tea.Quit
+	}
+
+	m.configPath = "preflight.yaml"
+	m.step = stepComplete
+	return m, tea.Quit
 }
 
 func (m initWizardModel) handleInterviewComplete(msg interviewCompleteMsg) (tea.Model, tea.Cmd) {
@@ -403,6 +463,8 @@ func (m initWizardModel) View() string {
 		return m.viewSelectPreset()
 	case stepConfirm:
 		return m.viewConfirm()
+	case stepPreview:
+		return m.previewModel.View()
 	case stepComplete:
 		return m.viewComplete()
 	default:

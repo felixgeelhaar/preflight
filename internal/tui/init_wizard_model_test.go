@@ -147,12 +147,12 @@ func TestInitWizardModel_HandleConfirm_Yes(t *testing.T) {
 
 	msg := components.ConfirmResultMsg{Confirmed: true}
 
-	updated, cmd := model.Update(msg)
+	updated, _ := model.Update(msg)
 	m := updated.(initWizardModel)
 
-	assert.Equal(t, stepComplete, m.step)
-	assert.Equal(t, "preflight.yaml", m.configPath)
-	assert.NotNil(t, cmd) // Should be tea.Quit
+	// Now goes to preview step instead of complete
+	assert.Equal(t, stepPreview, m.step)
+	assert.Len(t, m.previewFiles, 2) // preflight.yaml and layers/base.yaml
 }
 
 func TestInitWizardModel_HandleConfirm_No(t *testing.T) {

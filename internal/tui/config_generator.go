@@ -21,6 +21,64 @@ func NewConfigGenerator(targetDir string) *ConfigGenerator {
 	}
 }
 
+// GeneratePreviewFiles generates preview file content without writing to disk.
+func (g *ConfigGenerator) GeneratePreviewFiles(preset PresetItem) ([]PreviewFile, error) {
+	// Parse preset ID to get provider and preset name
+	parts := strings.SplitN(preset.ID, ":", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid preset ID format: %s", preset.ID)
+	}
+	provider := parts[0]
+	presetName := parts[1]
+
+	var files []PreviewFile
+
+	// Generate manifest content
+	manifest := manifestYAML{
+		Defaults: defaultsYAML{
+			Mode: "intent",
+		},
+		Targets: map[string][]string{
+			"default": {"base"},
+		},
+	}
+	manifestData, err := yaml.Marshal(manifest)
+	if err != nil {
+		return nil, err
+	}
+	files = append(files, PreviewFile{
+		Path:    filepath.Join(g.targetDir, "preflight.yaml"),
+		Content: string(manifestData),
+	})
+
+	// Generate base layer content
+	layer := layerYAML{
+		Name: "base",
+	}
+	switch provider {
+	case "nvim":
+		layer.Nvim = &nvimYAML{
+			Preset: presetName,
+		}
+	case "shell":
+		layer.Shell = g.generateShellConfig(presetName)
+	case "git":
+		layer.Git = g.generateGitConfig(presetName)
+	case "brew":
+		layer.Packages = g.generateBrewConfig(presetName)
+	}
+	layerData, err := yaml.Marshal(layer)
+	if err != nil {
+		return nil, err
+	}
+	files = append(files, PreviewFile{
+		Path:    filepath.Join(g.targetDir, "layers", "base.yaml"),
+		Content: string(layerData),
+	})
+
+	return files, nil
+}
+
 // GenerateFromPreset generates configuration files from a preset.
 func (g *ConfigGenerator) GenerateFromPreset(preset PresetItem) error {
 	// Parse preset ID to get provider and preset name

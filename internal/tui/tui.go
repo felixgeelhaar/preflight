@@ -435,6 +435,54 @@ func ToCaptureItemResults(items []CaptureItem) []CaptureItemResult {
 	return results
 }
 
+// NewLayerPreviewOptions creates default layer preview options.
+func NewLayerPreviewOptions() LayerPreviewOptions {
+	return LayerPreviewOptions{
+		Title:        "Layer Preview",
+		ShowLineNums: false,
+	}
+}
+
+// WithTitle sets a custom title for the preview.
+func (o LayerPreviewOptions) WithTitle(title string) LayerPreviewOptions {
+	o.Title = title
+	return o
+}
+
+// WithLineNumbers enables line number display.
+func (o LayerPreviewOptions) WithLineNumbers(show bool) LayerPreviewOptions {
+	o.ShowLineNums = show
+	return o
+}
+
+// RunLayerPreview runs the layer preview interface.
+func RunLayerPreview(ctx context.Context, files []PreviewFile, opts LayerPreviewOptions) (*LayerPreviewResult, error) {
+	if len(files) == 0 {
+		return &LayerPreviewResult{Confirmed: true}, nil
+	}
+
+	// Create the layer preview model
+	model := newLayerPreviewModel(files, opts)
+
+	// Run the program
+	p := tea.NewProgram(model, tea.WithContext(ctx))
+	finalModel, err := p.Run()
+	if err != nil {
+		return nil, fmt.Errorf("layer preview failed: %w", err)
+	}
+
+	// Extract result from final model
+	m, ok := finalModel.(layerPreviewModel)
+	if !ok {
+		return nil, fmt.Errorf("unexpected model type")
+	}
+
+	return &LayerPreviewResult{
+		Confirmed: m.confirmed,
+		Cancelled: m.cancelled,
+	}, nil
+}
+
 // RunCaptureReview runs the capture review interface.
 func RunCaptureReview(ctx context.Context, items []CaptureItem, opts CaptureReviewOptions) (*CaptureReviewResult, error) {
 	// Handle accept all case
