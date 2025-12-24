@@ -13,18 +13,20 @@ import (
 
 // FileSystem is a thread-safe test double for ports.FileSystem.
 type FileSystem struct {
-	mu       sync.RWMutex
-	files    map[string][]byte
-	symlinks map[string]string
-	dirs     map[string]bool
+	mu        sync.RWMutex
+	files     map[string][]byte
+	symlinks  map[string]string
+	junctions map[string]string
+	dirs      map[string]bool
 }
 
 // NewFileSystem creates a new FileSystem mock.
 func NewFileSystem() *FileSystem {
 	return &FileSystem{
-		files:    make(map[string][]byte),
-		symlinks: make(map[string]string),
-		dirs:     make(map[string]bool),
+		files:     make(map[string][]byte),
+		symlinks:  make(map[string]string),
+		junctions: make(map[string]string),
+		dirs:      make(map[string]bool),
 	}
 }
 
@@ -47,6 +49,13 @@ func (fs *FileSystem) AddSymlink(link, target string) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 	fs.symlinks[link] = target
+}
+
+// AddJunction adds a junction to the mock filesystem.
+func (fs *FileSystem) AddJunction(link, target string) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	fs.junctions[link] = target
 }
 
 // AddDir adds a directory to the mock filesystem.
@@ -80,8 +89,9 @@ func (fs *FileSystem) Exists(path string) bool {
 	defer fs.mu.RUnlock()
 	_, fileExists := fs.files[path]
 	_, linkExists := fs.symlinks[path]
+	_, junctionExists := fs.junctions[path]
 	_, dirExists := fs.dirs[path]
-	return fileExists || linkExists || dirExists
+	return fileExists || linkExists || junctionExists || dirExists
 }
 
 // IsSymlink checks if a path is a symlink in the mock filesystem.
@@ -108,6 +118,7 @@ func (fs *FileSystem) Remove(path string) error {
 	defer fs.mu.Unlock()
 	delete(fs.files, path)
 	delete(fs.symlinks, path)
+	delete(fs.junctions, path)
 	delete(fs.dirs, path)
 	return nil
 }
@@ -194,13 +205,46 @@ func (fs *FileSystem) GetFileInfo(path string) (ports.FileInfo, error) {
 	return ports.FileInfo{}, fmt.Errorf("file not found: %s", path)
 }
 
-// Reset clears all files, symlinks, and directories.
+// Reset clears all files, symlinks, junctions, and directories.
 func (fs *FileSystem) Reset() {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 	fs.files = make(map[string][]byte)
 	fs.symlinks = make(map[string]string)
+	fs.junctions = make(map[string]string)
 	fs.dirs = make(map[string]bool)
+}
+
+// IsJunction checks if a path is a junction in the mock filesystem.
+func (fs *FileSystem) IsJunction(path string) (bool, string) {
+	fs.mu.RLock()
+	defer fs.mu.RUnlock()
+	if target, ok := fs.junctions[path]; ok {
+		return true, target
+	}
+	return false, ""
+}
+
+// CreateJunction creates a junction in the mock filesystem.
+func (fs *FileSystem) CreateJunction(target, link string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	fs.junctions[link] = target
+	return nil
+}
+
+// CreateLink creates a link in the mock filesystem.
+// For testing, this always creates a symlink.
+func (fs *FileSystem) CreateLink(target, link string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	// In mock, we check if target is a directory
+	if fs.dirs[target] {
+		fs.junctions[link] = target
+	} else {
+		fs.symlinks[link] = target
+	}
+	return nil
 }
 
 // Ensure FileSystem implements ports.FileSystem.

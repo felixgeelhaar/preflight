@@ -29,6 +29,16 @@ type FileSystem interface {
 	IsDir(path string) bool
 	CopyFile(src, dest string) error
 	GetFileInfo(path string) (FileInfo, error)
+
+	// Junction support for Windows
+	// IsJunction checks if a path is a junction point (Windows) or symlink to directory (Unix).
+	IsJunction(path string) (isJunction bool, target string)
+	// CreateJunction creates a junction point on Windows, or a directory symlink on Unix.
+	CreateJunction(target, link string) error
+	// CreateLink creates the appropriate link type based on the target:
+	// - On Windows: junction for directories (no admin required), symlink for files
+	// - On Unix: symlink for both files and directories
+	CreateLink(target, link string) error
 }
 
 // ExpandPath expands ~ to the user's home directory.

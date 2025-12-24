@@ -24,6 +24,9 @@ var (
 	ErrInvalidGitConfig    = errors.New("invalid git config value")
 	ErrInvalidSSHParameter = errors.New("invalid SSH parameter")
 	ErrInvalidBrewArg      = errors.New("invalid brew argument")
+	ErrInvalidWingetID     = errors.New("invalid winget package ID")
+	ErrInvalidWingetSource = errors.New("invalid winget source")
+	ErrInvalidScoopBucket  = errors.New("invalid scoop bucket")
 )
 
 // Compiled regex patterns for validation (compiled once for performance).
@@ -50,6 +53,19 @@ var (
 
 	// gitConfigSafeRegex matches safe git config values (no newlines, no control chars)
 	gitConfigSafeRegex = regexp.MustCompile(`^[^\x00-\x1f\x7f]*$`)
+
+	// wingetIDRegex matches valid winget package IDs: Publisher.PackageName format
+	// Examples: "Microsoft.VisualStudioCode", "Git.Git", "7zip.7zip"
+	wingetIDRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]*\.[a-zA-Z0-9][a-zA-Z0-9._-]*$`)
+
+	// wingetSourceRegex matches valid winget source names
+	// Examples: "winget", "msstore"
+	wingetSourceRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*$`)
+
+	// scoopBucketRegex matches valid scoop bucket names
+	// Can be simple names ("extras", "versions") or GitHub repos ("user/repo")
+	// Examples: "extras", "versions", "ScoopInstaller/Main"
+	scoopBucketRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*(/[a-zA-Z][a-zA-Z0-9_-]*)?$`)
 
 	// shellMetaChars contains shell metacharacters that could enable injection
 	shellMetaChars = []string{";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r", "\\"}
@@ -141,6 +157,69 @@ func ValidatePPA(ppa string) error {
 
 	if containsShellMeta(ppa) {
 		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, ppa)
+	}
+
+	return nil
+}
+
+// ValidateWingetID validates a winget package ID (Publisher.PackageName format).
+func ValidateWingetID(id string) error {
+	if id == "" {
+		return ErrEmptyInput
+	}
+
+	if len(id) > 256 {
+		return fmt.Errorf("%w: package ID too long", ErrInvalidWingetID)
+	}
+
+	if !wingetIDRegex.MatchString(id) {
+		return fmt.Errorf("%w: %q must be in 'Publisher.PackageName' format", ErrInvalidWingetID, id)
+	}
+
+	if containsShellMeta(id) {
+		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, id)
+	}
+
+	return nil
+}
+
+// ValidateWingetSource validates a winget source name.
+func ValidateWingetSource(source string) error {
+	if source == "" {
+		return nil // Empty source is allowed (uses default)
+	}
+
+	if len(source) > 128 {
+		return fmt.Errorf("%w: source name too long", ErrInvalidWingetSource)
+	}
+
+	if !wingetSourceRegex.MatchString(source) {
+		return fmt.Errorf("%w: %q contains invalid characters", ErrInvalidWingetSource, source)
+	}
+
+	if containsShellMeta(source) {
+		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, source)
+	}
+
+	return nil
+}
+
+// ValidateScoopBucket validates a scoop bucket name.
+func ValidateScoopBucket(bucket string) error {
+	if bucket == "" {
+		return ErrEmptyInput
+	}
+
+	if len(bucket) > 256 {
+		return fmt.Errorf("%w: bucket name too long", ErrInvalidScoopBucket)
+	}
+
+	if !scoopBucketRegex.MatchString(bucket) {
+		return fmt.Errorf("%w: %q must be a valid bucket name or 'user/repo' format", ErrInvalidScoopBucket, bucket)
+	}
+
+	if containsShellMeta(bucket) {
+		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, bucket)
 	}
 
 	return nil

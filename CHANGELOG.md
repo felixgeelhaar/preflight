@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2024-12-25
+
+### Added
+- **WSL/Windows Support**: Cross-platform support for Windows and WSL environments
+  - New `platform` domain with OS, architecture, and environment detection
+  - WSL detection (WSL1/WSL2) with distro and mount path identification
+  - Path translation utilities between Windows and WSL formats
+
+- **Windows Package Managers**:
+  - **winget provider**: Windows Package Manager integration
+    - Package installation with `Publisher.PackageName` format
+    - Version pinning and source selection (winget, msstore)
+    - WSL support via `winget.exe` interop
+  - **scoop provider**: Scoop package manager integration
+    - Bucket management (add, custom URL)
+    - Package installation with bucket specification
+    - WSL support via `scoop.cmd` interop
+
+- **Windows Junction Support**: Enhanced dotfile linking for Windows
+  - Junctions for directories (no admin privileges required)
+  - Symlinks for files (may require admin)
+  - `CreateLink()` method auto-selects appropriate link type
+  - `IsJunction()` method for junction detection
+
+### Changed
+- Files provider now uses `CreateLink()` instead of `CreateSymlink()` for platform-aware linking
+- Step ID pattern updated to allow dots for winget package IDs
+- Updated PRD to mark v2.4 WSL/Windows Support as complete
+
+## [2.3.0] - 2024-12-24
+
+### Added
+- **Organization Policy Engine**: Enterprise-grade policy enforcement
+  - Policy rules with allow/deny/require actions
+  - Pattern matching for providers and packages
+  - Policy validation with detailed error messages
+  - Policy inheritance and override support
+
+## [2.2.0] - 2024-12-24
+
+### Added
+- **Docker Provider**: Container and compose management
+  - Container creation and lifecycle management
+  - Docker Compose file deployment
+  - Image pulling and versioning
+  - Volume and network configuration
+
+## [2.1.0] - 2024-12-24
+
+### Added
+- **Plugin System**: Extensible provider architecture
+  - Plugin discovery and loading
+  - Plugin lifecycle management (init, compile, cleanup)
+  - Plugin configuration schema validation
+  - Security sandboxing for untrusted plugins
+
+## [2.0.0] - 2024-12-24
+
+### Added
+- **Validate Command**: Configuration validation without applying
+  - Schema validation for all config sections
+  - Provider-specific validation rules
+  - Detailed error messages with suggestions
+
+- **Policy Constraints**: Declarative constraints for configuration
+  - Package version constraints
+  - Provider restrictions
+  - Target-specific rules
+
+### Changed
+- Major version bump for breaking API changes
+- Reorganized internal package structure
+
 ## [1.4.0] - 2024-12-24
 
 ### Added
@@ -198,7 +271,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Domain-Driven Design architecture
 - Test-Driven Development with >80% coverage requirement per domain
 
-[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/felixgeelhaar/preflight/compare/v2.3.0...v2.4.0
+[2.3.0]: https://github.com/felixgeelhaar/preflight/compare/v2.2.0...v2.3.0
+[2.2.0]: https://github.com/felixgeelhaar/preflight/compare/v2.1.0...v2.2.0
+[2.1.0]: https://github.com/felixgeelhaar/preflight/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/felixgeelhaar/preflight/compare/v1.4.0...v2.0.0
 [1.4.0]: https://github.com/felixgeelhaar/preflight/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/felixgeelhaar/preflight/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/felixgeelhaar/preflight/compare/v1.1.0...v1.2.0

@@ -44,12 +44,19 @@ func (s *LinkStep) DependsOn() []compiler.StepID {
 	return nil
 }
 
-// Check determines if the symlink is already correct.
+// Check determines if the symlink or junction is already correct.
 func (s *LinkStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
 	dest := ports.ExpandPath(s.link.Dest)
 
+	// Check for symlink
 	isLink, target := s.fs.IsSymlink(dest)
 	if isLink && target == s.link.Src {
+		return compiler.StatusSatisfied, nil
+	}
+
+	// Check for junction (Windows directories)
+	isJunction, junctionTarget := s.fs.IsJunction(dest)
+	if isJunction && junctionTarget == s.link.Src {
 		return compiler.StatusSatisfied, nil
 	}
 
@@ -95,9 +102,9 @@ func (s *LinkStep) Apply(_ compiler.RunContext) error {
 		}
 	}
 
-	// Create symlink
-	if err := s.fs.CreateSymlink(s.link.Src, dest); err != nil {
-		return fmt.Errorf("failed to create symlink: %w", err)
+	// Create link (uses junction for directories on Windows, symlink otherwise)
+	if err := s.fs.CreateLink(s.link.Src, dest); err != nil {
+		return fmt.Errorf("failed to create link: %w", err)
 	}
 
 	// Record for drift tracking
@@ -111,8 +118,8 @@ func (s *LinkStep) Apply(_ compiler.RunContext) error {
 // Explain provides a human-readable explanation.
 func (s *LinkStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 	return compiler.NewExplanation(
-		"Create Symlink",
-		fmt.Sprintf("Creates a symbolic link from %s to %s.", s.link.Dest, s.link.Src),
+		"Create Link",
+		fmt.Sprintf("Creates a link from %s to %s. On Windows, uses junctions for directories (no admin required) and symlinks for files.", s.link.Dest, s.link.Src),
 		nil,
 	)
 }

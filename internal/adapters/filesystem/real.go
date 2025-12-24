@@ -121,3 +121,6 @@ func (fs *RealFileSystem) GetFileInfo(path string) (ports.FileInfo, error) {
 
 // Ensure RealFileSystem implements ports.FileSystem.
 var _ ports.FileSystem = (*RealFileSystem)(nil)
+
+// Note: IsJunction, CreateJunction, and CreateLink are implemented in
+// real_unix.go and real_windows.go with build constraints.

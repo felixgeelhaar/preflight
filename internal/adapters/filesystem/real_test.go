@@ -275,3 +275,136 @@ func TestRealFileSystem_GetFileInfo_NotFound(t *testing.T) {
 		t.Error("GetFileInfo() should return error for non-existent file")
 	}
 }
+
+func TestRealFileSystem_IsJunction_NotJunction(t *testing.T) {
+	fs := NewRealFileSystem()
+
+	tmpDir, err := os.MkdirTemp("", "preflight-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	// Test regular directory is not a junction
+	isJunction, _ := fs.IsJunction(tmpDir)
+	if isJunction {
+		t.Error("IsJunction() should return false for regular directory")
+	}
+
+	// Test non-existent path
+	isJunction, _ = fs.IsJunction("/nonexistent/path")
+	if isJunction {
+		t.Error("IsJunction() should return false for non-existent path")
+	}
+}
+
+func TestRealFileSystem_CreateJunction_Directory(t *testing.T) {
+	fs := NewRealFileSystem()
+
+	tmpDir, err := os.MkdirTemp("", "preflight-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	// Create source directory
+	srcDir := filepath.Join(tmpDir, "source")
+	err = fs.MkdirAll(srcDir, 0o755)
+	if err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+
+	// Create junction
+	junctionPath := filepath.Join(tmpDir, "junction")
+	err = fs.CreateJunction(srcDir, junctionPath)
+	if err != nil {
+		t.Fatalf("CreateJunction() error = %v", err)
+	}
+
+	// Verify junction exists
+	if !fs.Exists(junctionPath) {
+		t.Error("CreateJunction() should create the junction")
+	}
+}
+
+func TestRealFileSystem_CreateLink_File(t *testing.T) {
+	fs := NewRealFileSystem()
+
+	tmpDir, err := os.MkdirTemp("", "preflight-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	// Create source file
+	srcFile := filepath.Join(tmpDir, "source.txt")
+	err = fs.WriteFile(srcFile, []byte("content"), 0o644)
+	if err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	// Create link to file
+	linkPath := filepath.Join(tmpDir, "link.txt")
+	err = fs.CreateLink(srcFile, linkPath)
+	if err != nil {
+		t.Fatalf("CreateLink() error = %v", err)
+	}
+
+	// Verify link exists
+	if !fs.Exists(linkPath) {
+		t.Error("CreateLink() should create the link")
+	}
+}
+
+func TestRealFileSystem_CreateLink_Directory(t *testing.T) {
+	fs := NewRealFileSystem()
+
+	tmpDir, err := os.MkdirTemp("", "preflight-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	// Create source directory
+	srcDir := filepath.Join(tmpDir, "source")
+	err = fs.MkdirAll(srcDir, 0o755)
+	if err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+
+	// Create link to directory
+	linkPath := filepath.Join(tmpDir, "link")
+	err = fs.CreateLink(srcDir, linkPath)
+	if err != nil {
+		t.Fatalf("CreateLink() error = %v", err)
+	}
+
+	// Verify link exists
+	if !fs.Exists(linkPath) {
+		t.Error("CreateLink() should create the link")
+	}
+}
+
+func TestRealFileSystem_CreateLink_NonExistent(t *testing.T) {
+	fs := NewRealFileSystem()
+
+	tmpDir, err := os.MkdirTemp("", "preflight-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	// Create link to non-existent target (should use symlink)
+	nonExistent := filepath.Join(tmpDir, "nonexistent")
+	linkPath := filepath.Join(tmpDir, "link")
+	err = fs.CreateLink(nonExistent, linkPath)
+	if err != nil {
+		t.Fatalf("CreateLink() error = %v", err)
+	}
+
+	// Verify link exists (even though target doesn't)
+	isLink, _ := fs.IsSymlink(linkPath)
+	if !isLink {
+		t.Error("CreateLink() should create a symlink for non-existent target")
+	}
+}

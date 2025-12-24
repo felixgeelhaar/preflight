@@ -460,6 +460,16 @@ Completes PRD 9.1 TUI requirements and adds rollback capability:
 - Dotfile symlink compatibility (Windows junctions)
 - VS Code Remote-WSL integration
 
+*Status: Complete (v2.4.0) — Implemented:*
+- *Platform detection domain in `internal/domain/platform/` with OS, architecture, and environment detection*
+- *WSL detection (WSL1/WSL2) with distro and mount path identification*
+- *Path translation utilities between Windows and WSL formats*
+- *winget provider in `internal/provider/winget/` with WSL interop via `winget.exe`*
+- *scoop provider in `internal/provider/scoop/` with bucket management and WSL interop via `scoop.cmd`*
+- *Windows junctions for directories (no admin required), symlinks for files*
+- *Files provider updated to use `CreateLink()` for platform-aware linking*
+- *Note: chocolatey and VS Code Remote-WSL integration deferred to v2.5*
+
 ### 14.4 Learning Tours
 - Interactive mode: `preflight tour <topic>`
 - Topics: nvim-basics, git-workflow, shell-customization
