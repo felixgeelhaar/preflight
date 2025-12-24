@@ -436,13 +436,22 @@ Completes PRD 9.1 TUI requirements and adds rollback capability:
 
 ## 14. v2 Feature Requirements
 
-### 14.1 Plugin Marketplace
+### 14.1 Plugin Marketplace ✓
 - Registry of community presets, capability packs, and layer templates
 - Versioned with integrity verification (SHA256)
 - `preflight marketplace search <query>`
 - `preflight marketplace install <pack>`
 - Local cache for offline use
 - Provenance tracking (author, source repo, license)
+
+*Status: Complete (v2.6.0) — Implemented:*
+- *Marketplace domain in `internal/domain/marketplace/` with Package, Index, Cache, Client, Service types*
+- *Package types: preset, capability-pack, layer-template with validation*
+- *SHA256 checksum verification for all downloaded packages*
+- *Local cache with configurable TTL for offline support*
+- *Provenance tracking (author, repository, license, verification status)*
+- *CLI commands: search, install, uninstall, update, list, info (aliases: mp, market)*
+- *HTTP client with error handling (rate limiting, auth, server errors)*
 
 ### 14.2 Org Policy Engine ✓
 - Define constraints in `org-policy.yaml`

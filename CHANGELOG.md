@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2024-12-25
+
+### Added
+- **Plugin Marketplace**: Community package registry for presets, capability packs, and layer templates
+  - `preflight marketplace search <query>`: Search for packages by name, keyword, or author
+  - `preflight marketplace install <package>[@version]`: Download and install packages with integrity verification
+  - `preflight marketplace uninstall <package>`: Remove installed packages
+  - `preflight marketplace update [package]`: Update one or all packages to latest versions
+  - `preflight marketplace list [--check-updates]`: List installed packages with update status
+  - `preflight marketplace info <package>`: View detailed package information
+  - SHA256 checksum verification for all downloaded packages
+  - Local cache with configurable TTL for offline support
+  - Provenance tracking (author, repository, license, verification status)
+  - Package types: preset, capability-pack, layer-template
+
+### New Domain
+- **marketplace domain**: Complete marketplace implementation
+  - `Package`, `PackageID`, `PackageVersion` types with validation
+  - `Index` for registry search, filtering, and statistics
+  - `Cache` for local caching with TTL and checksum verification
+  - `Client` for HTTP registry access with error handling
+  - `Service` for orchestrating install, update, and uninstall operations
+
 ## [2.5.0] - 2024-12-25
 
 ### Added
