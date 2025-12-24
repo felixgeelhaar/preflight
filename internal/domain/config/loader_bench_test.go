@@ -44,7 +44,7 @@ func createBenchmarkConfig(b *testing.B, numLayers int) (string, func()) {
 	}
 
 	cleanup := func() {
-		os.RemoveAll(tempDir)
+		_ = os.RemoveAll(tempDir)
 	}
 
 	return manifestPath, cleanup
