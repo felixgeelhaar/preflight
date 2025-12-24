@@ -400,6 +400,53 @@ presets:
     requires:
       - "docker:basic"
 
+  - id: "docker:buildkit"
+    metadata:
+      title: "Docker + BuildKit"
+      description: "Docker with BuildKit for optimized builds"
+      tradeoffs:
+        - "Faster, parallelized builds"
+        - "Advanced Dockerfile features"
+      doc_links:
+        docker: "https://docs.docker.com/"
+        buildkit: "https://docs.docker.com/build/buildkit/"
+      tags:
+        - "docker"
+        - "containers"
+        - "ci-cd"
+    difficulty: "intermediate"
+    config:
+      install: true
+      compose: true
+      buildkit: true
+
+  - id: "docker:full"
+    metadata:
+      title: "Full Docker Setup"
+      description: "Complete Docker Desktop with all features enabled"
+      tradeoffs:
+        - "All Docker Desktop features"
+        - "Maximum resource usage"
+      doc_links:
+        docker: "https://docs.docker.com/"
+        kubernetes: "https://kubernetes.io/docs/"
+        buildkit: "https://docs.docker.com/build/buildkit/"
+      tags:
+        - "docker"
+        - "kubernetes"
+        - "containers"
+    difficulty: "intermediate"
+    config:
+      install: true
+      compose: true
+      kubernetes: true
+      buildkit: true
+      resource_limits:
+        cpus: 4
+        memory: "8GB"
+    requires:
+      - "docker:basic"
+
   - id: "runtime:mise-node"
     metadata:
       title: "Node.js via mise"

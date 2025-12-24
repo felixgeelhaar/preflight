@@ -87,6 +87,63 @@ packages:
 - PPA management
 - Version locking (best-effort)
 
+### docker
+
+Docker Desktop and container configuration.
+
+```yaml
+docker:
+  install: true
+  compose: true
+  buildkit: true
+  kubernetes: false
+
+  # Resource limits (Docker Desktop)
+  resource_limits:
+    cpus: 4
+    memory: "8GB"
+    swap: "2GB"
+    disk: "100GB"
+
+  # Remote contexts
+  contexts:
+    - name: production
+      host: ssh://deploy@prod.example.com
+      description: "Production Docker host"
+      default: false
+
+    - name: staging
+      host: ssh://deploy@staging.example.com
+
+  # Registry configuration
+  registries:
+    - ghcr.io
+    - url: registry.example.com
+      username: admin
+      insecure: false
+```
+
+**Capabilities:**
+- Docker Desktop installation (via Homebrew on macOS)
+- Docker Compose support
+- BuildKit enablement for optimized builds
+- Kubernetes cluster enablement
+- Multi-host context management
+- Private registry configuration
+- Resource limit configuration
+
+**Steps produced:**
+- `docker:install` — Install Docker Desktop
+- `docker:buildkit` — Enable BuildKit builder
+- `docker:kubernetes` — Enable Kubernetes cluster
+- `docker:context:*` — Create named contexts
+
+**Presets:**
+- **basic** — Docker Desktop with Compose
+- **kubernetes** — Docker with local Kubernetes
+- **buildkit** — Docker with BuildKit optimizations
+- **full** — All features enabled
+
 ### files
 
 Dotfile and configuration file management.

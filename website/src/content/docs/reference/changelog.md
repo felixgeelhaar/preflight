@@ -7,6 +7,52 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2024-12-24
+
+### Added
+
+- **Docker Provider**: Comprehensive Docker Desktop configuration management
+  - `internal/provider/docker/` with config, provider, and steps
+  - Docker Desktop installation (via Homebrew on macOS, convenience script on Linux)
+  - BuildKit enablement for optimized container builds
+  - Kubernetes cluster management in Docker Desktop
+  - Multi-host Docker context configuration
+  - Private registry configuration
+  - Resource limits (CPUs, memory, swap, disk)
+
+- **Docker Steps**:
+  - `docker:install` — Install Docker Desktop
+  - `docker:buildkit` — Enable BuildKit as default builder
+  - `docker:kubernetes` — Enable Kubernetes cluster (GUI-assisted)
+  - `docker:context:*` — Create and manage remote Docker contexts
+
+- **New Docker Presets**:
+  - `docker:basic` — Docker Desktop with Compose
+  - `docker:kubernetes` — Docker with local Kubernetes enabled
+  - `docker:buildkit` — Docker with BuildKit optimizations
+  - `docker:full` — All Docker Desktop features enabled
+
+### Example Configuration
+
+```yaml
+docker:
+  install: true
+  compose: true
+  buildkit: true
+  kubernetes: false
+
+  resource_limits:
+    cpus: 4
+    memory: "8GB"
+
+  contexts:
+    - name: production
+      host: ssh://deploy@prod.example.com
+      default: false
+```
+
+---
+
 ## [2.1.0] - 2024-12-24
 
 ### Added
