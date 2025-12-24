@@ -16,27 +16,30 @@ var validateCmd = &cobra.Command{
 	Long: `Validate checks your configuration for errors without making changes.
 
 This command is designed for CI/CD pipelines to catch configuration
-issues before deployment.
+issues before deployment. It supports both allow/deny policies and
+org policies with required/forbidden patterns.
 
 Exit codes:
   0 - Valid configuration
-  1 - Validation errors found
+  1 - Validation errors or policy violations found
   2 - Could not read configuration
 
 Examples:
   preflight validate
   preflight validate --config custom.yaml
   preflight validate --json
-  preflight validate --target work`,
+  preflight validate --target work
+  preflight validate --org-policy org-policy.yaml`,
 	RunE: runValidate,
 }
 
 var (
-	validateConfigPath string
-	validateTarget     string
-	validateJSON       bool
-	validateStrict     bool
-	validatePolicyFile string
+	validateConfigPath    string
+	validateTarget        string
+	validateJSON          bool
+	validateStrict        bool
+	validatePolicyFile    string
+	validateOrgPolicyFile string
 )
 
 func init() {
@@ -46,7 +49,8 @@ func init() {
 	validateCmd.Flags().StringVarP(&validateTarget, "target", "t", "default", "Target to validate")
 	validateCmd.Flags().BoolVar(&validateJSON, "json", false, "Output results as JSON")
 	validateCmd.Flags().BoolVar(&validateStrict, "strict", false, "Treat warnings as errors")
-	validateCmd.Flags().StringVar(&validatePolicyFile, "policy", "", "Path to policy YAML file")
+	validateCmd.Flags().StringVar(&validatePolicyFile, "policy", "", "Path to policy YAML file (allow/deny rules)")
+	validateCmd.Flags().StringVar(&validateOrgPolicyFile, "org-policy", "", "Path to org policy YAML file (required/forbidden)")
 }
 
 func runValidate(_ *cobra.Command, _ []string) error {
@@ -57,7 +61,8 @@ func runValidate(_ *cobra.Command, _ []string) error {
 
 	// Configure validation options
 	opts := app.ValidateOptions{
-		PolicyFile: validatePolicyFile,
+		PolicyFile:    validatePolicyFile,
+		OrgPolicyFile: validateOrgPolicyFile,
 	}
 
 	// Validate the configuration

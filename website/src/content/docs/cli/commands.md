@@ -214,7 +214,8 @@ preflight validate [flags]
 | `--target <name>` | Target to validate (default: default) |
 | `--json` | Output results as JSON |
 | `--strict` | Treat warnings as errors |
-| `--policy <path>` | Path to policy YAML file |
+| `--policy <path>` | Path to policy YAML file (allow/deny rules) |
+| `--org-policy <path>` | Path to org policy YAML file (required/forbidden) |
 
 **Exit Codes:**
 
@@ -236,17 +237,20 @@ preflight validate --json
 # With strict mode (warnings = errors)
 preflight validate --strict
 
-# With external policy file
-preflight validate --policy org-policy.yaml
+# With allow/deny policy file
+preflight validate --policy policy.yaml
+
+# With org policy file (required/forbidden patterns)
+preflight validate --org-policy org-policy.yaml
 
 # Validate specific target
 preflight validate --target work
 ```
 
-**Policy File Example:**
+**Policy File Example (allow/deny rules):**
 
 ```yaml
-# org-policy.yaml
+# policy.yaml
 policies:
   - name: security-baseline
     description: Block insecure tools
@@ -259,6 +263,35 @@ policies:
         message: use sftp instead
       - pattern: "*"
         action: allow
+```
+
+**Org Policy File Example (required/forbidden patterns):**
+
+```yaml
+# org-policy.yaml
+version: "1"
+policy:
+  name: acme-corp
+  description: ACME Corporation workstation policy
+  enforcement: block  # or "warn"
+
+  required:
+    - pattern: "git:*"
+      message: "Git configuration is required"
+    - pattern: "ssh:*"
+      message: "SSH must be configured"
+
+  forbidden:
+    - pattern: "brew:*-nightly"
+      message: "Nightly packages not allowed"
+    - pattern: "vscode:extension:*-unofficial"
+      message: "Only official extensions allowed"
+
+  overrides:
+    - pattern: "brew:rust-nightly"
+      justification: "Needed for testing new Rust features"
+      approved_by: "security@acme.com"
+      expires_at: "2025-12-31T23:59:59Z"
 ```
 
 **Output (text):**

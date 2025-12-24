@@ -171,8 +171,10 @@ type ValidationResult struct {
 
 // ValidateOptions configures validation behavior.
 type ValidateOptions struct {
-	// PolicyFile is an optional path to a policy YAML file
+	// PolicyFile is an optional path to a policy YAML file (allow/deny rules)
 	PolicyFile string
+	// OrgPolicyFile is an optional path to an org policy YAML file
+	OrgPolicyFile string
 }
 
 // Validate checks the configuration for errors without making changes.
@@ -208,8 +210,11 @@ func (p *Preflight) ValidateWithOptions(ctx context.Context, configPath, targetN
 	// Check for potential issues
 	p.validateSteps(ctx, graph, result)
 
-	// Check policies
+	// Check policies (allow/deny rules)
 	p.validatePolicies(ctx, cfg, graph, opts, result)
+
+	// Check org policies (required/forbidden patterns)
+	p.validateOrgPolicies(ctx, cfg, graph, opts, result)
 
 	return result, nil
 }
@@ -318,5 +323,75 @@ func (p *Preflight) validatePolicies(_ context.Context, cfg map[string]interface
 			len(policyResult.Violations), len(policyResult.Allowed)))
 	} else {
 		result.Info = append(result.Info, fmt.Sprintf("Policy check: all %d steps allowed", len(policyResult.Allowed)))
+	}
+}
+
+// validateOrgPolicies checks compiled steps against org policy constraints.
+func (p *Preflight) validateOrgPolicies(_ context.Context, cfg map[string]interface{}, graph *compiler.StepGraph, opts ValidateOptions, result *ValidationResult) {
+	var orgPolicies []*policy.OrgPolicy
+
+	// Load org policy from config (inline)
+	inlineOrgPolicy, err := policy.ParseOrgPolicyFromConfig(cfg)
+	if err != nil {
+		result.Warnings = append(result.Warnings, fmt.Sprintf("Failed to parse inline org policy: %v", err))
+	} else if inlineOrgPolicy != nil {
+		orgPolicies = append(orgPolicies, inlineOrgPolicy)
+		result.Info = append(result.Info, fmt.Sprintf("Loaded inline org policy: %s", inlineOrgPolicy.Name))
+	}
+
+	// Load org policy from external file if specified
+	if opts.OrgPolicyFile != "" {
+		fileOrgPolicy, err := policy.LoadOrgPolicyFromFile(opts.OrgPolicyFile)
+		if err != nil {
+			result.Warnings = append(result.Warnings, fmt.Sprintf("Failed to load org policy file: %v", err))
+		} else if fileOrgPolicy != nil {
+			orgPolicies = append(orgPolicies, fileOrgPolicy)
+			result.Info = append(result.Info, fmt.Sprintf("Loaded org policy from %s: %s", opts.OrgPolicyFile, fileOrgPolicy.Name))
+		}
+	}
+
+	// If no org policies, skip evaluation
+	if len(orgPolicies) == 0 {
+		return
+	}
+
+	// Merge org policies
+	mergedOrgPolicy := policy.MergeOrgPolicies(orgPolicies...)
+	if mergedOrgPolicy == nil {
+		return
+	}
+
+	// Extract step IDs for org policy evaluation
+	steps := graph.Steps()
+	stepIDs := make([]string, len(steps))
+	for i, step := range steps {
+		stepIDs[i] = step.ID().String()
+	}
+
+	// Evaluate org policy
+	evaluator := policy.NewOrgEvaluator(mergedOrgPolicy)
+	orgResult := evaluator.Evaluate(stepIDs)
+
+	// Add violations based on enforcement mode
+	if orgResult.HasViolations() {
+		for _, violation := range orgResult.Violations {
+			result.PolicyViolations = append(result.PolicyViolations, violation.Error())
+		}
+		result.Info = append(result.Info, fmt.Sprintf("Org policy: %d violations (enforcement: %s)",
+			len(orgResult.Violations), orgResult.Enforcement))
+	}
+
+	// Add warnings
+	if orgResult.HasWarnings() {
+		for _, warning := range orgResult.Warnings {
+			result.Warnings = append(result.Warnings, fmt.Sprintf("Org policy warning: %s", warning.Error()))
+		}
+		result.Info = append(result.Info, fmt.Sprintf("Org policy: %d warnings (enforcement: %s)",
+			len(orgResult.Warnings), orgResult.Enforcement))
+	}
+
+	// Report overrides applied
+	if len(orgResult.OverridesApplied) > 0 {
+		result.Info = append(result.Info, fmt.Sprintf("Org policy: %d overrides applied", len(orgResult.OverridesApplied)))
 	}
 }

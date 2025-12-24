@@ -444,12 +444,14 @@ Completes PRD 9.1 TUI requirements and adds rollback capability:
 - Local cache for offline use
 - Provenance tracking (author, source repo, license)
 
-### 14.2 Org Policy Engine
+### 14.2 Org Policy Engine ✓
 - Define constraints in `org-policy.yaml`
 - Policies: required packages, forbidden packages, required layers
 - Enforcement: warn or block on plan
 - No central server — policies distributed via git
 - Override mechanism for exceptions with justification
+
+*Status: Complete (v2.3.0) — Implemented in `internal/domain/policy/org.go`, `org_loader.go` with full test coverage. Integrated with `preflight validate --org-policy` command.*
 
 ### 14.3 WSL/Windows Support
 - Detect WSL environment

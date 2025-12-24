@@ -7,6 +7,74 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2024-12-24
+
+### Added
+
+- **Org Policy Engine**: Enterprise-grade policy constraints for workstation configurations
+  - `internal/domain/policy/org.go` with OrgPolicy, Requirement, Forbidden, Override types
+  - `internal/domain/policy/org_loader.go` for YAML loading and policy merging
+  - Required pattern constraints (ensure packages/layers are present)
+  - Forbidden pattern constraints (block unwanted packages)
+  - Enforcement modes: `warn` (log warnings) or `block` (fail validation)
+  - Override mechanism with justification, approval, and expiration
+
+- **Validate Command Enhancement**: Org policy support in CI/CD validation
+  - `--org-policy <path>` flag for external org policy files
+  - Inline org policy support via `org_policy:` section in preflight.yaml
+  - Policy merging when multiple sources are provided
+  - Override expiration checking with RFC3339 dates
+
+- **Org Policy Features**:
+  - Pattern-based matching with glob support (`brew:*`, `git:user.*`)
+  - Scope filtering to target specific providers
+  - Policy merging (most restrictive enforcement wins)
+  - Override audit trail with approved_by and expires_at fields
+
+### Example Org Policy
+
+```yaml
+# org-policy.yaml
+version: "1"
+policy:
+  name: acme-corp
+  description: ACME Corporation workstation policy
+  enforcement: block
+
+  required:
+    - pattern: "git:*"
+      message: "Git configuration is required"
+    - pattern: "ssh:*"
+      message: "SSH must be configured"
+
+  forbidden:
+    - pattern: "brew:*-nightly"
+      message: "Nightly packages not allowed in production"
+
+  overrides:
+    - pattern: "brew:rust-nightly"
+      justification: "Required for testing new Rust features"
+      approved_by: "security@acme.com"
+      expires_at: "2025-12-31T23:59:59Z"
+```
+
+### Usage
+
+```bash
+# Validate with org policy
+preflight validate --org-policy org-policy.yaml
+
+# Inline in preflight.yaml
+org_policy:
+  name: my-policy
+  enforcement: warn
+  forbidden:
+    - pattern: "brew:*-beta"
+      message: "Beta packages not recommended"
+```
+
+---
+
 ## [2.2.0] - 2024-12-24
 
 ### Added
