@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2024-12-24
+
+### Added
+- **Rollback Command**: Restore files from automatically created snapshots
+  - `preflight rollback` lists available snapshots with ID, date, age, file count
+  - `preflight rollback --to <id>` restores specific snapshot (supports partial ID matching)
+  - `preflight rollback --latest` restores most recent snapshot
+  - `preflight rollback --dry-run` previews restoration without applying
+  - Human-readable age formatting (mins, hours, days, weeks)
+  - Confirmation prompt before restoration
+
+- **Layer Preview Before Commit**: Preview generated YAML before writing to disk
+  - New `stepPreview` step in init wizard between confirm and complete
+  - File tabs for navigating multiple layer files (h/l or ←/→)
+  - YAML syntax highlighting for keys, values, booleans, numbers, comments
+  - Scrollable content with j/k or ↑/↓
+  - Quick file selection with number keys 1-9
+  - Enter confirms, Esc cancels
+  - `RunLayerPreview()` public API for standalone usage
+
+- **TUI Conflict Resolution**: Interactive resolution for three-way merge conflicts
+  - Side-by-side diff view showing ours (config) vs theirs (file)
+  - Color-coded differences between versions
+  - Navigate conflicts with n/p (next/previous)
+  - Resolve with o/t/b (ours/theirs/base) for current conflict
+  - Bulk resolve with O/T/B (uppercase) for all conflicts
+  - Scroll content with j/k
+  - Optional base content display
+  - Progress indicator showing resolved count
+  - Auto-advance to next unresolved conflict after resolution
+  - `RunConflictResolution()` public API
+
+### Changed
+- Init wizard now shows layer preview before writing config files
+- Updated PRD to mark v1.4 UX Polish & Rollback as complete
+
 ## [1.3.0] - 2024-12-24
 
 ### Added
@@ -162,7 +198,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Domain-Driven Design architecture
 - Test-Driven Development with >80% coverage requirement per domain
 
-[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/felixgeelhaar/preflight/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/felixgeelhaar/preflight/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/felixgeelhaar/preflight/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/felixgeelhaar/preflight/compare/v1.0.0...v1.1.0
