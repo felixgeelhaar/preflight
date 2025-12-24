@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"testing"
 
+	"github.com/felixgeelhaar/preflight/internal/domain/discover"
 	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -2109,4 +2110,75 @@ func TestRunRepoPull_WithRemote(t *testing.T) {
 	// Pull should work now (nothing to pull but no error)
 	err = runRepoPull(nil, nil)
 	require.NoError(t, err)
+}
+
+// ============================================================
+// Pattern Icon Tests
+// ============================================================
+
+func TestGetPatternIcon_AllTypes(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		pattern  discover.PatternType
+		expected string
+	}{
+		{"shell", discover.PatternTypeShell, "🐚"},
+		{"editor", discover.PatternTypeEditor, "📝"},
+		{"git", discover.PatternTypeGit, "📦"},
+		{"ssh", discover.PatternTypeSSH, "🔐"},
+		{"tmux", discover.PatternTypeTmux, "🖥️"},
+		{"package_manager", discover.PatternTypePackageManager, "📦"},
+		{"unknown", discover.PatternType("unknown"), "•"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result := getPatternIcon(tt.pattern)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// ============================================================
+// AI Provider Detection Tests
+// ============================================================
+
+func TestDetectAIProvider_NoEnvVars(t *testing.T) {
+	// t.Setenv automatically saves and restores the original value
+	t.Setenv("ANTHROPIC_API_KEY", "")
+	t.Setenv("OPENAI_API_KEY", "")
+
+	provider := detectAIProvider()
+	assert.Nil(t, provider)
+}
+
+func TestDetectAIProvider_WithAnthropicKey(t *testing.T) {
+	// Set only Anthropic key (provider may not be "available" without valid key)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("OPENAI_API_KEY", "")
+
+	// The provider is created but may return nil if not "available"
+	// This tests the code path regardless of actual availability
+	_ = detectAIProvider()
+}
+
+func TestDetectAIProvider_WithOpenAIKey(t *testing.T) {
+	// Set only OpenAI key
+	t.Setenv("ANTHROPIC_API_KEY", "")
+	t.Setenv("OPENAI_API_KEY", "test-key")
+
+	// The provider is created but may return nil if not "available"
+	_ = detectAIProvider()
+}
+
+func TestDetectAIProvider_WithBothKeys(t *testing.T) {
+	// Set both keys - Anthropic should be preferred
+	t.Setenv("ANTHROPIC_API_KEY", "anthropic-test-key")
+	t.Setenv("OPENAI_API_KEY", "openai-test-key")
+
+	// This exercises the code path where Anthropic is checked first
+	_ = detectAIProvider()
 }

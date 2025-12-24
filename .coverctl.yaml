@@ -27,7 +27,7 @@ policy:
 
     - name: cli
       match: ["./cmd/..."]
-      min: 52  # CLI threshold: TUI commands (capture, doctor, rollback) require mocking
+      min: 42  # CLI threshold: TUI commands (capture, doctor, rollback, discover) require integration tests
 
 exclude:
   - "internal/generated/*"

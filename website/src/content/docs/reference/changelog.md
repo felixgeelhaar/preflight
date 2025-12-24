@@ -38,29 +38,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- **Tour Completion Tracking**: Persistent progress tracking for learning tours
-  - Progress saved to `~/.preflight/tour-progress.json`
-  - Per-topic and per-section completion tracking
-  - Progress indicators in topic list (✓ completed, % in progress)
-  - Overall progress display in tour menu
-  - Completion percentage shown per section
-  - Progress summary after exiting tour
-
----
-
-## [1.6.0] - 2024-12-24
-
-### Added
-
-- **Interactive Tour System**: Full TUI for guided learning
-  - `preflight tour` opens topic selection menu
-  - `preflight tour <topic>` starts specific topic
-  - `preflight tour --list` lists available topics
-  - 6 comprehensive topics: basics, config, layers, providers, presets, workflow
-  - Section-based navigation with keyboard controls (n/p, h/l, 1-9, g/G)
-  - Code examples with syntax highlighting
-  - Next topic suggestions for learning path
-
 - **New Presets**: 10 new presets across 5 categories
   - Fonts: `fonts:nerd-essential`, `fonts:nerd-complete`
   - SSH: `ssh:basic`, `ssh:github`, `ssh:multi-identity`
@@ -78,9 +55,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Catalog expanded from 12 to 22 presets, 8 to 14 capability packs
+
+---
+
+## [1.6.0] - 2024-12-24
+
+### Added
+
+- **Interactive Tour System**: Full TUI for guided learning
+  - `preflight tour` opens topic selection menu
+  - `preflight tour <topic>` starts specific topic
+  - `preflight tour --list` lists available topics
+  - 6 comprehensive topics: basics, config, layers, providers, presets, workflow
+  - Section-based navigation with keyboard controls (n/p, h/l, 1-9, g/G)
+  - Code examples with syntax highlighting
+  - Next topic suggestions for learning path
+
+- **Tour Completion Tracking**: Persistent progress tracking
+  - Progress saved to `~/.preflight/tour-progress.json`
+  - Per-topic and per-section completion tracking
+  - Progress indicators in topic list (✓ completed, % in progress)
+  - Overall progress display in tour menu
+
+### Changed
+
 - Tour command now launches interactive TUI instead of static output
 - Updated CLI commands documentation with tour navigation keys
-- Catalog expanded from 12 to 22 presets, 8 to 14 capability packs
 
 ---
 
