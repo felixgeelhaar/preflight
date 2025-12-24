@@ -1,0 +1,91 @@
+---
+title: Preflight
+description: Deterministic workstation compiler - compile declarative configuration into reproducible machine setups.
+template: splash
+hero:
+  tagline: Define your workstation configuration once, apply it anywhere.
+  actions:
+    - text: Get Started
+      link: /preflight/getting-started/introduction/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/felixgeelhaar/preflight
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why Preflight?
+
+<CardGrid stagger>
+  <Card title="Declarative Configuration" icon="document">
+    Define your setup in `preflight.yaml` with composable layer overlays. No more imperative scripts.
+  </Card>
+  <Card title="Plan Before Apply" icon="approve-check">
+    Always preview changes before executing. Every action is explained with context and documentation.
+  </Card>
+  <Card title="Deterministic Execution" icon="rocket">
+    Same config always produces the same result. Re-running apply is always safe.
+  </Card>
+  <Card title="Multi-Platform" icon="laptop">
+    macOS (Homebrew) and Linux (apt) package management with editor support for Neovim and VSCode.
+  </Card>
+</CardGrid>
+
+## The Compiler Model
+
+```
+Intent → Merge → Plan → Apply → Verify
+```
+
+Preflight treats workstation setup as a **compilation problem**, not a collection of scripts:
+
+1. **Load** - Parse manifest and layer overlays
+2. **Merge** - Deep merge with provenance tracking
+3. **Plan** - Diff current state vs desired
+4. **Apply** - Execute idempotently
+5. **Verify** - Doctor checks for drift
+
+## Quick Example
+
+```yaml
+# preflight.yaml
+name: my-workstation
+target: macos
+
+layers:
+  - base
+  - identity.work
+  - role.go
+
+packages:
+  brew:
+    formulae:
+      - git
+      - gh
+      - ripgrep
+
+shell:
+  default: zsh
+  starship:
+    enabled: true
+```
+
+```bash
+# Preview changes
+preflight plan
+
+# Apply configuration
+preflight apply
+```
+
+## Core Guarantees
+
+| Guarantee | Description |
+|-----------|-------------|
+| No execution without a plan | Always show what will change first |
+| Idempotent operations | Re-running apply is always safe |
+| Explainability | Every action has "why" and documentation |
+| Secrets never leave | Config uses references, not values |
+| User ownership | Portable, inspectable, git-native |

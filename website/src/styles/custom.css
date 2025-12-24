@@ -1,0 +1,88 @@
+/* Preflight Documentation Custom Styles */
+
+:root {
+	/* Primary brand colors - inspired by terminal/CLI aesthetic */
+	--sl-color-accent-low: #1a1f35;
+	--sl-color-accent: #4f6df5;
+	--sl-color-accent-high: #a8b9ff;
+
+	/* Text colors */
+	--sl-color-white: #ffffff;
+	--sl-color-gray-1: #eceef6;
+	--sl-color-gray-2: #c2c6d6;
+	--sl-color-gray-3: #8b90a0;
+	--sl-color-gray-4: #545968;
+	--sl-color-gray-5: #353945;
+	--sl-color-gray-6: #24272f;
+	--sl-color-black: #17181c;
+}
+
+:root[data-theme='light'] {
+	--sl-color-accent-low: #e8ecff;
+	--sl-color-accent: #3b5bdb;
+	--sl-color-accent-high: #1e3a8a;
+}
+
+/* Hero section customization */
+.hero {
+	background: linear-gradient(135deg, var(--sl-color-accent-low) 0%, var(--sl-color-bg) 100%);
+}
+
+/* Code block styling */
+.expressive-code {
+	--ec-brdRad: 8px;
+}
+
+/* Terminal-style feel for inline code */
+:not(pre) > code {
+	background: var(--sl-color-gray-6);
+	padding: 0.15em 0.35em;
+	border-radius: 4px;
+	font-size: 0.9em;
+}
+
+:root[data-theme='light'] :not(pre) > code {
+	background: var(--sl-color-gray-1);
+}
+
+/* Sidebar customization */
+nav.sidebar {
+	border-right: 1px solid var(--sl-color-gray-5);
+}
+
+/* Badge styling for version labels */
+.sl-badge {
+	font-family: var(--sl-font-mono);
+	font-size: 0.75em;
+}
+
+/* Custom callout/admonition styling */
+.starlight-aside--tip {
+	--sl-color-asides-text-accent: var(--sl-color-accent);
+	border-color: var(--sl-color-accent);
+}
+
+/* Table styling */
+table {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+th {
+	background: var(--sl-color-gray-6);
+	font-weight: 600;
+}
+
+:root[data-theme='light'] th {
+	background: var(--sl-color-gray-1);
+}
+
+td, th {
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--sl-color-gray-5);
+}
+
+:root[data-theme='light'] td,
+:root[data-theme='light'] th {
+	border-color: var(--sl-color-gray-2);
+}
