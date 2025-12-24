@@ -27,7 +27,7 @@ policy:
 
     - name: cli
       match: ["./cmd/..."]
-      min: 52  # Lowered from 58%: CI environment has lower coverage due to skipped tests
+      min: 52  # CLI threshold: TUI commands (capture, doctor, rollback) require mocking
 
 exclude:
   - "internal/generated/*"
