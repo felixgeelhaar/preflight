@@ -470,12 +470,19 @@ Completes PRD 9.1 TUI requirements and adds rollback capability:
 - *Files provider updated to use `CreateLink()` for platform-aware linking*
 - *Note: chocolatey and VS Code Remote-WSL integration deferred to v2.5*
 
-### 14.4 Learning Tours
+### 14.4 Learning Tours ✓ COMPLETE
 - Interactive mode: `preflight tour <topic>`
 - Topics: nvim-basics, git-workflow, shell-customization
 - AI-powered personalization (optional)
 - Step-by-step with checkpoints
 - Completion tracking
+
+**Implementation Notes:**
+- *Full TUI tour experience with topic menu and section navigation*
+- *Conceptual tours: basics, config, layers, providers, presets, workflow*
+- *Hands-on tutorials: nvim-basics, git-workflow, shell-customization*
+- *Progress tracking persisted to ~/.preflight/tour-progress.json*
+- *Keyboard navigation: Enter to advance, Esc to go back, q to quit*
 
 ---
 
