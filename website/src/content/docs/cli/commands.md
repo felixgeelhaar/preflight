@@ -206,6 +206,8 @@ Restore files from automatic snapshots.
 preflight rollback [flags]
 ```
 
+![Rollback Demo](/preflight/demos/gif/rollback.gif)
+
 **Flags:**
 
 | Flag | Description |

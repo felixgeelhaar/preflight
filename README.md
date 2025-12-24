@@ -16,6 +16,12 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
 </p>
 
+## Demo
+
+<p align="center">
+  <img src="website/public/demos/gif/plan-apply.gif" alt="Preflight Plan and Apply Demo" width="720">
+</p>
+
 ## Overview
 
 Preflight follows a compiler model to transform declarative YAML configuration into executable, idempotent machine setups:

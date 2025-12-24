@@ -13,6 +13,8 @@ Start the interactive wizard:
 preflight init
 ```
 
+![Init Wizard Demo](/preflight/demos/gif/init-wizard.gif)
+
 Or create a minimal configuration:
 
 ```bash
@@ -64,6 +66,8 @@ Always see what will change before applying:
 preflight plan
 ```
 
+![Plan and Apply Demo](/preflight/demos/gif/plan-apply.gif)
+
 Example output:
 
 ```
@@ -107,6 +111,8 @@ Check that everything is correctly configured:
 preflight doctor
 ```
 
+![Doctor Fix Demo](/preflight/demos/gif/doctor-fix.gif)
+
 Example output:
 
 ```
@@ -127,6 +133,8 @@ Already have a configured machine? Capture it:
 ```bash
 preflight capture
 ```
+
+![Capture Review Demo](/preflight/demos/gif/capture-review.gif)
 
 This reverse-engineers your current setup into Preflight configuration:
 
