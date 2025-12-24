@@ -38,5 +38,34 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&mode, "mode", "intent", "reproducibility mode (intent, locked, frozen)")
 	rootCmd.PersistentFlags().BoolVarP(&yesFlag, "yes", "y", false, "auto-confirm all prompts")
 
+	// Register flag completions
+	registerFlagCompletions()
+
 	rootCmd.AddCommand(versionCmd)
+}
+
+// registerFlagCompletions sets up custom completions for global flags.
+func registerFlagCompletions() {
+	// Complete --config with YAML files
+	_ = rootCmd.RegisterFlagCompletionFunc("config", func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"yaml", "yml"}, cobra.ShellCompDirectiveFilterFileExt
+	})
+
+	// Complete --ai-provider with known providers
+	_ = rootCmd.RegisterFlagCompletionFunc("ai-provider", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return []string{
+			"openai\tOpenAI GPT models",
+			"anthropic\tAnthropic Claude models",
+			"ollama\tLocal Ollama models",
+		}, cobra.ShellCompDirectiveNoFileComp
+	})
+
+	// Complete --mode with reproducibility modes
+	_ = rootCmd.RegisterFlagCompletionFunc("mode", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return []string{
+			"intent\tInstall latest compatible versions",
+			"locked\tPrefer lockfile, update intentionally",
+			"frozen\tFail if resolution differs from lock",
+		}, cobra.ShellCompDirectiveNoFileComp
+	})
 }
