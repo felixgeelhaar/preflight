@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="og-bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e1a"/>
+      <stop offset="50%" stop-color="#0f1729"/>
+      <stop offset="100%" stop-color="#1a2035"/>
+    </linearGradient>
+    <linearGradient id="og-cyan-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d4ff"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#og-bg-grad)"/>
+
+  <!-- Grid pattern overlay -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0, 212, 255, 0.05)" stroke-width="1"/>
+  </pattern>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Scan line effect -->
+  <line x1="0" y1="200" x2="1200" y2="200" stroke="url(#og-cyan-grad)" stroke-width="1" opacity="0.3"/>
+
+  <!-- Logo mark (scaled up) - P with verification badge -->
+  <g transform="translate(100, 175) scale(6)">
+    <!-- Main vertical stroke of P -->
+    <path d="M6 4 L6 28" stroke="url(#og-cyan-grad)" stroke-width="4" stroke-linecap="round" fill="none" filter="url(#glow)"/>
+    <!-- P bowl curve -->
+    <path d="M6 4 Q6 4 11 4 Q19 4 19 11 Q19 18 11 18 L6 18"
+          stroke="url(#og-cyan-grad)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#glow)"/>
+    <!-- Checkmark badge -->
+    <circle cx="24" cy="24" r="7" fill="#0891b2" filter="url(#glow)"/>
+    <path d="M20 24 L23 27 L28 20"
+          stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <!-- Title text -->
+  <text x="340" y="330" font-family="'JetBrains Mono', 'SF Mono', monospace" font-size="72" font-weight="700" fill="url(#og-cyan-grad)">
+    Preflight
+  </text>
+
+  <!-- Tagline -->
+  <text x="340" y="400" font-family="'Outfit', 'Inter', sans-serif" font-size="28" fill="#94a3b8">
+    Deterministic Workstation Compiler
+  </text>
+
+  <!-- Features -->
+  <text x="340" y="480" font-family="'JetBrains Mono', monospace" font-size="18" fill="#64748b">
+    Intent → Merge → Plan → Apply → Verify
+  </text>
+
+  <!-- Bottom accent line -->
+  <rect x="100" y="580" width="200" height="3" fill="url(#og-cyan-grad)" rx="1.5"/>
+
+  <!-- URL -->
+  <text x="100" y="610" font-family="'JetBrains Mono', monospace" font-size="14" fill="#475569">
+    github.com/felixgeelhaar/preflight
+  </text>
+</svg>

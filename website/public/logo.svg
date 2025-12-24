@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40">
+  <defs>
+    <linearGradient id="logo-cyan-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d4ff"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon mark -->
+  <g transform="translate(0, 4) scale(1)">
+    <!-- Stylized "P" -->
+    <path d="M4 3 L4 29" stroke="url(#logo-cyan-gradient)" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+    <path d="M4 3 Q4 3 9 3 Q20 3 20 11 Q20 19 9 19 L4 19"
+          stroke="url(#logo-cyan-gradient)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Checkmark -->
+    <path d="M12 22 L16 27 L26 14"
+          stroke="#00d4ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Status dot -->
+    <circle cx="12" cy="11" r="2.5" fill="#00d4ff"/>
+  </g>
+
+  <!-- Wordmark: "Preflight" -->
+  <text x="38" y="28" font-family="'JetBrains Mono', 'SF Mono', 'Fira Code', monospace" font-size="22" font-weight="600" fill="currentColor">
+    Preflight
+  </text>
+</svg>

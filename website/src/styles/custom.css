@@ -853,14 +853,31 @@ header.header {
 	border-bottom-color: #e2e8f0;
 }
 
-/* Site title */
+/* Site title and logo */
 .site-title {
 	font-family: var(--font-display);
 	font-weight: 700;
 	letter-spacing: -0.02em;
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
 }
 
-.site-title::before {
+/* Logo mark styling */
+.site-title img {
+	width: 28px;
+	height: 28px;
+	flex-shrink: 0;
+}
+
+/* Add glow effect on hover */
+.site-title:hover img {
+	filter: drop-shadow(0 0 6px var(--pf-cyan-glow));
+	transition: filter var(--duration-normal) var(--ease-out);
+}
+
+/* Title text accent (only when no logo) */
+.site-title:not(:has(img))::before {
 	content: '▸ ';
 	color: var(--pf-cyan);
 }

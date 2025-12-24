@@ -10,6 +10,11 @@ export default defineConfig({
 		starlight({
 			title: 'Preflight',
 			description: 'Deterministic workstation compiler - compile declarative configuration into reproducible machine setups.',
+			logo: {
+				src: './src/assets/logo-mark.svg',
+				replacesTitle: false,
+			},
+			favicon: '/favicon.svg',
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/felixgeelhaar/preflight' },
 			],
@@ -73,7 +78,21 @@ export default defineConfig({
 					tag: 'meta',
 					attrs: {
 						property: 'og:image',
-						content: 'https://felixgeelhaar.github.io/preflight/og-image.png',
+						content: 'https://felixgeelhaar.github.io/preflight/og-image.svg',
+					},
+				},
+				{
+					tag: 'meta',
+					attrs: {
+						property: 'og:image:width',
+						content: '1200',
+					},
+				},
+				{
+					tag: 'meta',
+					attrs: {
+						property: 'og:image:height',
+						content: '630',
 					},
 				},
 			],
