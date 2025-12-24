@@ -7,6 +7,33 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2024-12-24
+
+### Added
+
+- **Hands-On Tutorials**: Three interactive tutorials with practice commands
+  - `nvim-basics`: Learn Neovim fundamentals with hands-on exercises
+    - Modes (Normal, Insert, Visual, Command)
+    - Essential movements and editing commands
+    - Practice files and verify commands
+  - `git-workflow`: Practice Git commands and conventional commits
+    - Repository initialization and configuration
+    - Commit messages and branch workflow
+    - Preflight Git integration
+  - `shell-customization`: Configure your shell environment
+    - Aliases, functions, and environment variables
+    - Oh-My-Zsh and Starship prompt setup
+    - Preflight shell provider integration
+
+- **Enhanced Tour Display**: Visual distinction for hands-on content
+  - ⌨️ indicator for hands-on sections
+  - Styled command blocks with "Try this command" header
+  - 💡 Hint sections for guidance
+  - ✓ Verify commands to check completion
+  - 🛠️ indicator for hands-on topics in menu
+
+---
+
 ## [1.7.0] - 2024-12-24
 
 ### Added
@@ -317,6 +344,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+[1.8.0]: https://github.com/felixgeelhaar/preflight/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/felixgeelhaar/preflight/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/felixgeelhaar/preflight/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/felixgeelhaar/preflight/compare/v1.4.0...v1.5.0

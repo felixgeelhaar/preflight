@@ -56,11 +56,16 @@ func newTourModel(opts TourOptions) tourModel {
 		}
 	}
 
-	// Build topic list with progress indicators
+	// Build topic list with progress and hands-on indicators
 	topics := GetAllTopics()
 	items := make([]components.ListItem, len(topics))
 	for i, t := range topics {
 		description := t.Description
+		// Add hands-on indicator
+		if t.HandsOn {
+			description = "🛠️ " + description
+		}
+		// Add progress indicators
 		if progress != nil {
 			if progress.IsTopicCompleted(t.ID) {
 				description = "✓ " + description
@@ -277,6 +282,11 @@ func (m *tourModel) refreshTopicList() {
 	items := make([]components.ListItem, len(topics))
 	for i, t := range topics {
 		description := t.Description
+		// Add hands-on indicator
+		if t.HandsOn {
+			description = "🛠️ " + description
+		}
+		// Add progress indicators
 		if m.progress != nil {
 			if m.progress.IsTopicCompleted(t.ID) {
 				description = "✓ " + description
@@ -387,9 +397,12 @@ func (m tourModel) viewContent() string {
 	sectionIndicator := m.styles.Help.Render(sectionStatus)
 	b.WriteString(topicTitle + "  " + sectionIndicator + "\n")
 
-	// Section title
-	sectionTitle := m.styles.Subtitle.Render(section.Title)
-	b.WriteString(sectionTitle + "\n\n")
+	// Section title with hands-on indicator
+	sectionTitle := section.Title
+	if section.HandsOn {
+		sectionTitle = "⌨️  " + sectionTitle
+	}
+	b.WriteString(m.styles.Subtitle.Render(sectionTitle) + "\n\n")
 
 	// Content
 	contentStyle := lipgloss.NewStyle().
@@ -398,8 +411,63 @@ func (m tourModel) viewContent() string {
 	b.WriteString(contentStyle.Render(section.Content))
 	b.WriteString("\n")
 
-	// Code block if present
-	if section.Code != "" {
+	// Hands-on command block (distinct from regular code)
+	if section.HandsOn && section.Command != "" {
+		b.WriteString("\n")
+		// Command label
+		cmdLabel := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("212")). // Pink/magenta
+			Bold(true).
+			MarginLeft(2).
+			Render("▶ Try this command:")
+		b.WriteString(cmdLabel + "\n\n")
+
+		// Command box with prominent styling
+		cmdStyle := lipgloss.NewStyle().
+			Background(lipgloss.Color("17")).  // Dark blue background
+			Foreground(lipgloss.Color("159")). // Cyan text
+			Padding(1, 2).
+			Width(m.width - 8).
+			MarginLeft(2).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("63")) // Purple border
+		b.WriteString(cmdStyle.Render(section.Command))
+		b.WriteString("\n")
+
+		// Hint if present
+		if section.Hint != "" {
+			b.WriteString("\n")
+			hintLabel := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("220")). // Yellow
+				MarginLeft(2).
+				Render("💡 Hint:")
+			b.WriteString(hintLabel + "\n")
+			hintStyle := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("250")). // Light gray
+				Width(m.width - 8).
+				MarginLeft(4)
+			b.WriteString(hintStyle.Render(section.Hint))
+			b.WriteString("\n")
+		}
+
+		// Verify command if present
+		if section.VerifyCommand != "" {
+			b.WriteString("\n")
+			verifyLabel := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("78")). // Green
+				MarginLeft(2).
+				Render("✓ Verify with:")
+			b.WriteString(verifyLabel + " ")
+			verifyCmd := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("252")).
+				Background(lipgloss.Color("236")).
+				Padding(0, 1).
+				Render(section.VerifyCommand)
+			b.WriteString(verifyCmd)
+			b.WriteString("\n")
+		}
+	} else if section.Code != "" {
+		// Regular code block for non-hands-on sections
 		b.WriteString("\n")
 		codeStyle := lipgloss.NewStyle().
 			Background(lipgloss.Color("236")).

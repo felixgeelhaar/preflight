@@ -270,6 +270,14 @@ preflight tour [topic] [flags]
 | `presets` | Using presets and capability packs |
 | `workflow` | Daily workflow: plan, apply, doctor cycle |
 
+**Hands-On Tutorials:** (🛠️)
+
+| Topic | Description |
+|-------|-------------|
+| `nvim-basics` | Interactive Neovim tutorial with practice commands |
+| `git-workflow` | Git commands and conventional commits practice |
+| `shell-customization` | Shell aliases, functions, and prompt setup |
+
 **Examples:**
 
 ```bash
@@ -419,7 +427,7 @@ preflight version
 **Output:**
 
 ```
-preflight version 1.7.0
+preflight version 1.8.0
 ```
 
 ---

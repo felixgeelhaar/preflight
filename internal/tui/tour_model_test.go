@@ -533,3 +533,239 @@ func TestTourOptions_WithInitialTopic(t *testing.T) {
 	opts := NewTourOptions().WithInitialTopic("basics")
 	assert.Equal(t, "basics", opts.InitialTopic)
 }
+
+// =============================================================================
+// HANDS-ON TOPICS TESTS
+// =============================================================================
+
+func TestGetAllTopics_IncludesHandsOnTopics(t *testing.T) {
+	t.Parallel()
+
+	topics := GetAllTopics()
+	ids := make([]string, len(topics))
+	for i, topic := range topics {
+		ids[i] = topic.ID
+	}
+
+	// Should include hands-on topics
+	assert.Contains(t, ids, "nvim-basics")
+	assert.Contains(t, ids, "git-workflow")
+	assert.Contains(t, ids, "shell-customization")
+}
+
+func TestGetTopic_HandsOnNvimBasics(t *testing.T) {
+	t.Parallel()
+
+	topic, found := GetTopic("nvim-basics")
+	assert.True(t, found)
+	assert.Equal(t, "nvim-basics", topic.ID)
+	assert.True(t, topic.HandsOn)
+	assert.True(t, topic.IsHandsOnTopic())
+	assert.NotEmpty(t, topic.Sections)
+}
+
+func TestGetTopic_HandsOnGitWorkflow(t *testing.T) {
+	t.Parallel()
+
+	topic, found := GetTopic("git-workflow")
+	assert.True(t, found)
+	assert.Equal(t, "git-workflow", topic.ID)
+	assert.True(t, topic.HandsOn)
+	assert.True(t, topic.IsHandsOnTopic())
+	assert.NotEmpty(t, topic.Sections)
+}
+
+func TestGetTopic_HandsOnShellCustomization(t *testing.T) {
+	t.Parallel()
+
+	topic, found := GetTopic("shell-customization")
+	assert.True(t, found)
+	assert.Equal(t, "shell-customization", topic.ID)
+	assert.True(t, topic.HandsOn)
+	assert.True(t, topic.IsHandsOnTopic())
+	assert.NotEmpty(t, topic.Sections)
+}
+
+func TestTopicContent_IsHandsOnTopic(t *testing.T) {
+	t.Parallel()
+
+	// Non-hands-on topic
+	basics, _ := GetTopic("basics")
+	assert.False(t, basics.HandsOn)
+	assert.False(t, basics.IsHandsOnTopic())
+
+	// Hands-on topic
+	nvim, _ := GetTopic("nvim-basics")
+	assert.True(t, nvim.HandsOn)
+	assert.True(t, nvim.IsHandsOnTopic())
+}
+
+func TestSection_IsHandsOn(t *testing.T) {
+	t.Parallel()
+
+	// Regular section
+	regular := Section{Title: "Test", Content: "Content"}
+	assert.False(t, regular.IsHandsOn())
+
+	// Hands-on section
+	handson := Section{Title: "Test", Content: "Content", HandsOn: true, Command: "ls"}
+	assert.True(t, handson.IsHandsOn())
+}
+
+func TestHandsOnTopic_HasHandsOnSections(t *testing.T) {
+	t.Parallel()
+
+	handsOnTopics := []string{"nvim-basics", "git-workflow", "shell-customization"}
+
+	for _, topicID := range handsOnTopics {
+		t.Run(topicID, func(t *testing.T) {
+			t.Parallel()
+			topic, found := GetTopic(topicID)
+			assert.True(t, found)
+
+			// Count hands-on sections
+			handsOnCount := 0
+			for _, section := range topic.Sections {
+				if section.HandsOn {
+					handsOnCount++
+					// Hands-on sections should have a command
+					assert.NotEmpty(t, section.Command, "hands-on section '%s' should have a command", section.Title)
+				}
+			}
+
+			// Each hands-on topic should have at least one hands-on section
+			assert.Positive(t, handsOnCount, "topic %s should have at least one hands-on section", topicID)
+		})
+	}
+}
+
+func TestHandsOnSection_CommandAndHint(t *testing.T) {
+	t.Parallel()
+
+	topic, found := GetTopic("nvim-basics")
+	assert.True(t, found)
+
+	// Find a hands-on section with hint
+	var foundWithHint bool
+	for _, section := range topic.Sections {
+		if section.HandsOn && section.Hint != "" {
+			foundWithHint = true
+			assert.NotEmpty(t, section.Command)
+			assert.NotEmpty(t, section.Hint)
+			break
+		}
+	}
+	assert.True(t, foundWithHint, "should have at least one hands-on section with a hint")
+}
+
+func TestHandsOnSection_VerifyCommand(t *testing.T) {
+	t.Parallel()
+
+	topic, found := GetTopic("nvim-basics")
+	assert.True(t, found)
+
+	// Find a hands-on section with verify command
+	var foundWithVerify bool
+	for _, section := range topic.Sections {
+		if section.HandsOn && section.VerifyCommand != "" {
+			foundWithVerify = true
+			assert.NotEmpty(t, section.Command)
+			assert.NotEmpty(t, section.VerifyCommand)
+			break
+		}
+	}
+	assert.True(t, foundWithVerify, "should have at least one hands-on section with a verify command")
+}
+
+func TestTourModel_View_HandsOnSection(t *testing.T) {
+	t.Parallel()
+
+	model := newTourModel(TourOptions{InitialTopic: "nvim-basics"})
+
+	// Navigate to a hands-on section (skip the intro section)
+	model.currentSection = 1
+
+	view := model.View()
+
+	// Should show hands-on indicators
+	assert.Contains(t, view, "⌨️")
+	assert.Contains(t, view, "Try this command")
+}
+
+func TestTourModel_View_HandsOnSectionWithHint(t *testing.T) {
+	t.Parallel()
+
+	model := newTourModel(TourOptions{InitialTopic: "nvim-basics"})
+
+	// Find a section with a hint
+	for i, section := range model.currentTopic.Sections {
+		if section.HandsOn && section.Hint != "" {
+			model.currentSection = i
+			break
+		}
+	}
+
+	view := model.View()
+	assert.Contains(t, view, "Hint")
+}
+
+func TestTourModel_View_HandsOnSectionWithVerify(t *testing.T) {
+	t.Parallel()
+
+	model := newTourModel(TourOptions{InitialTopic: "nvim-basics"})
+
+	// Find a section with verify command
+	for i, section := range model.currentTopic.Sections {
+		if section.HandsOn && section.VerifyCommand != "" {
+			model.currentSection = i
+			break
+		}
+	}
+
+	view := model.View()
+	assert.Contains(t, view, "Verify with")
+}
+
+func TestTourModel_HandsOnTopicDescription(t *testing.T) {
+	t.Parallel()
+
+	// When creating the model, hands-on topics should have indicator in description
+	model := newTourModel(TourOptions{})
+
+	// Find nvim-basics in the topic list
+	topics := GetAllTopics()
+	var nvimBasicsIdx int
+	for i, topic := range topics {
+		if topic.ID == "nvim-basics" {
+			nvimBasicsIdx = i
+			break
+		}
+	}
+
+	view := model.topicList.View()
+	_ = nvimBasicsIdx // Index position may vary
+
+	// The view should contain the hands-on indicator for hands-on topics
+	assert.Contains(t, view, "🛠️")
+}
+
+func TestHandsOnTopics_NextTopicsAreValid(t *testing.T) {
+	t.Parallel()
+
+	handsOnTopics := []string{"nvim-basics", "git-workflow", "shell-customization"}
+
+	for _, topicID := range handsOnTopics {
+		t.Run(topicID, func(t *testing.T) {
+			t.Parallel()
+			topic, found := GetTopic(topicID)
+			assert.True(t, found)
+			assert.NotEmpty(t, topic.NextTopics, "hands-on topic %s should suggest next topics", topicID)
+
+			// Verify all next topics exist
+			for _, nextID := range topic.NextTopics {
+				_, nextFound := GetTopic(nextID)
+				assert.True(t, nextFound, "next topic %s should exist for %s", nextID, topicID)
+			}
+		})
+	}
+}
