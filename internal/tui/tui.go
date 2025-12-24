@@ -355,20 +355,40 @@ func RunDoctorReport(ctx context.Context, report *DoctorReport, opts DoctorRepor
 
 // CaptureReviewOptions configures the capture review TUI.
 type CaptureReviewOptions struct {
-	AcceptAll   bool
-	Interactive bool
+	AcceptAll       bool
+	Interactive     bool
+	AvailableLayers []string // Available layers for reassignment
+}
+
+// DefaultLayers returns the default available layers.
+func DefaultLayers() []string {
+	return []string{
+		"base",
+		"identity.work",
+		"identity.personal",
+		"role.dev",
+		"device.laptop",
+		"captured",
+	}
 }
 
 // NewCaptureReviewOptions creates default capture review options.
 func NewCaptureReviewOptions() CaptureReviewOptions {
 	return CaptureReviewOptions{
-		Interactive: true,
+		Interactive:     true,
+		AvailableLayers: DefaultLayers(),
 	}
 }
 
 // WithAcceptAll accepts all captured items.
 func (o CaptureReviewOptions) WithAcceptAll(all bool) CaptureReviewOptions {
 	o.AcceptAll = all
+	return o
+}
+
+// WithAvailableLayers sets the available layers for reassignment.
+func (o CaptureReviewOptions) WithAvailableLayers(layers []string) CaptureReviewOptions {
+	o.AvailableLayers = layers
 	return o
 }
 

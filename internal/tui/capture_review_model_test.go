@@ -719,3 +719,218 @@ func createTestCaptureItemsMultiple(t *testing.T) []CaptureItem {
 		},
 	}
 }
+
+func TestCaptureReviewModel_LayerSelection(t *testing.T) {
+	t.Parallel()
+
+	t.Run("enter layer selection mode", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		opts := CaptureReviewOptions{
+			Interactive:     true,
+			AvailableLayers: []string{"base", "identity.work", "captured"},
+		}
+		model := newCaptureReviewModel(items, opts)
+		model.width = 100
+		model.height = 24
+
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
+		m := newModel.(captureReviewModel)
+
+		assert.True(t, m.layerSelectActive, "layer selection should be active")
+	})
+
+	t.Run("navigate layers with j/k", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		opts := CaptureReviewOptions{
+			Interactive:     true,
+			AvailableLayers: []string{"base", "identity.work", "captured"},
+		}
+		model := newCaptureReviewModel(items, opts)
+		model.width = 100
+		model.height = 24
+		model.layerSelectActive = true
+		model.layerCursor = 0
+
+		// Move down
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+		m := newModel.(captureReviewModel)
+		assert.Equal(t, 1, m.layerCursor, "layer cursor should move down")
+
+		// Move up
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+		m = newModel.(captureReviewModel)
+		assert.Equal(t, 0, m.layerCursor, "layer cursor should move up")
+	})
+
+	t.Run("select layer with Enter", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		opts := CaptureReviewOptions{
+			Interactive:     true,
+			AvailableLayers: []string{"base", "identity.work", "captured"},
+		}
+		model := newCaptureReviewModel(items, opts)
+		model.width = 100
+		model.height = 24
+		model.layerSelectActive = true
+		model.layerCursor = 1 // identity.work
+
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		m := newModel.(captureReviewModel)
+
+		assert.False(t, m.layerSelectActive, "layer selection should be closed")
+		assert.Equal(t, "identity.work", m.items[0].Layer, "item should have new layer")
+	})
+
+	t.Run("quick select layer with number", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		opts := CaptureReviewOptions{
+			Interactive:     true,
+			AvailableLayers: []string{"base", "identity.work", "captured"},
+		}
+		model := newCaptureReviewModel(items, opts)
+		model.width = 100
+		model.height = 24
+		model.layerSelectActive = true
+
+		// Press '2' to select identity.work
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'2'}})
+		m := newModel.(captureReviewModel)
+
+		assert.False(t, m.layerSelectActive, "layer selection should be closed")
+		assert.Equal(t, "identity.work", m.items[0].Layer, "item should have new layer")
+	})
+
+	t.Run("cancel layer selection with Esc", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		opts := CaptureReviewOptions{
+			Interactive:     true,
+			AvailableLayers: []string{"base", "identity.work", "captured"},
+		}
+		model := newCaptureReviewModel(items, opts)
+		model.width = 100
+		model.height = 24
+		model.layerSelectActive = true
+
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
+		m := newModel.(captureReviewModel)
+
+		assert.False(t, m.layerSelectActive, "layer selection should be closed")
+	})
+
+	t.Run("undo layer change", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		items[0].Layer = "captured" // Set initial layer
+		opts := CaptureReviewOptions{
+			Interactive:     true,
+			AvailableLayers: []string{"base", "identity.work", "captured"},
+		}
+		model := newCaptureReviewModel(items, opts)
+		model.width = 100
+		model.height = 24
+
+		// Enter layer select and change to base
+		model.layerSelectActive = true
+		model.layerCursor = 0 // base
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		m := newModel.(captureReviewModel)
+		assert.Equal(t, "base", m.items[0].Layer, "item should have new layer")
+
+		// Undo
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+		m = newModel.(captureReviewModel)
+		assert.Equal(t, "captured", m.items[0].Layer, "item layer should be restored")
+	})
+
+	t.Run("redo layer change", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		items[0].Layer = "captured"
+		opts := CaptureReviewOptions{
+			Interactive:     true,
+			AvailableLayers: []string{"base", "identity.work", "captured"},
+		}
+		model := newCaptureReviewModel(items, opts)
+		model.width = 100
+		model.height = 24
+
+		// Change layer
+		model.layerSelectActive = true
+		model.layerCursor = 0 // base
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		m := newModel.(captureReviewModel)
+
+		// Undo
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+		m = newModel.(captureReviewModel)
+		assert.Equal(t, "captured", m.items[0].Layer)
+
+		// Redo
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlR})
+		m = newModel.(captureReviewModel)
+		assert.Equal(t, "base", m.items[0].Layer, "item layer should be re-applied")
+	})
+
+	t.Run("layer shown in item list", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		items[0].Layer = "identity.work"
+		opts := CaptureReviewOptions{
+			Interactive:     true,
+			AvailableLayers: DefaultLayers(),
+		}
+		model := newCaptureReviewModel(items, opts)
+		model.width = 100
+		model.height = 24
+
+		view := model.View()
+		assert.Contains(t, view, "identity.work", "view should show layer")
+		assert.Contains(t, view, "→", "view should show layer arrow")
+	})
+
+	t.Run("render layer select view", func(t *testing.T) {
+		t.Parallel()
+		items := createTestCaptureItemsMultiple(t)
+		opts := CaptureReviewOptions{
+			Interactive:     true,
+			AvailableLayers: []string{"base", "identity.work", "captured"},
+		}
+		model := newCaptureReviewModel(items, opts)
+		model.width = 100
+		model.height = 24
+		model.layerSelectActive = true
+
+		view := model.View()
+		assert.Contains(t, view, "Select layer for:", "view should show layer select header")
+		assert.Contains(t, view, "1. base", "view should show layer options")
+		assert.Contains(t, view, "2. identity.work", "view should show layer options")
+		assert.Contains(t, view, "3. captured", "view should show layer options")
+	})
+}
+
+func TestDefaultLayers(t *testing.T) {
+	t.Parallel()
+
+	layers := DefaultLayers()
+
+	assert.Contains(t, layers, "base")
+	assert.Contains(t, layers, "identity.work")
+	assert.Contains(t, layers, "identity.personal")
+	assert.Contains(t, layers, "captured")
+	assert.GreaterOrEqual(t, len(layers), 4)
+}
+
+func TestCaptureReviewOptions_WithAvailableLayers(t *testing.T) {
+	t.Parallel()
+
+	customLayers := []string{"custom1", "custom2"}
+	opts := NewCaptureReviewOptions().
+		WithAvailableLayers(customLayers)
+
+	assert.Equal(t, customLayers, opts.AvailableLayers)
+}

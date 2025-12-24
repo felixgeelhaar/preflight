@@ -37,20 +37,22 @@ type CaptureItem struct {
 
 // captureReviewModel is the Bubble Tea model for capture review.
 type captureReviewModel struct {
-	items        []CaptureItem
-	options      CaptureReviewOptions
-	styles       ui.Styles
-	width        int
-	height       int
-	cursor       int
-	accepted     []CaptureItem
-	rejected     []CaptureItem
-	done         bool
-	cancelled    bool
-	history      *ReviewHistory
-	searchActive bool
-	searchQuery  string
-	filteredIdx  []int
+	items             []CaptureItem
+	options           CaptureReviewOptions
+	styles            ui.Styles
+	width             int
+	height            int
+	cursor            int
+	accepted          []CaptureItem
+	rejected          []CaptureItem
+	done              bool
+	cancelled         bool
+	history           *ReviewHistory
+	searchActive      bool
+	searchQuery       string
+	filteredIdx       []int
+	layerSelectActive bool
+	layerCursor       int
 }
 
 // newCaptureReviewModel creates a new capture review model.
@@ -88,6 +90,11 @@ func (m captureReviewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// When search is active, handle it specially
 		if m.searchActive {
 			return m.handleSearchKey(msg)
+		}
+
+		// When layer selection is active, handle it specially
+		if m.layerSelectActive {
+			return m.handleLayerSelectKey(msg)
 		}
 
 		// Handle quit keys
@@ -136,6 +143,8 @@ func (m captureReviewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "/":
 			m.searchActive = true
 			return m, nil
+		case "l":
+			return m.enterLayerSelect()
 		case "g":
 			return m.goToTop()
 		case "G":
@@ -331,7 +340,10 @@ func (m captureReviewModel) undo() (tea.Model, tea.Cmd) {
 		// Remove from rejected
 		m.rejected = removeItem(m.rejected, action.Item)
 	case ActionLayerChange:
-		// Layer changes not yet implemented, handled in future v1.1.x
+		// Restore the previous layer
+		if action.ItemIndex < len(m.items) {
+			m.items[action.ItemIndex].Layer = action.PrevLayer
+		}
 	}
 
 	// Restore cursor position
@@ -353,11 +365,112 @@ func (m captureReviewModel) redo() (tea.Model, tea.Cmd) {
 	case ActionReject:
 		m.rejected = append(m.rejected, action.Item)
 	case ActionLayerChange:
-		// Layer changes not yet implemented, handled in future v1.1.x
+		// Apply the new layer from the action item
+		if action.ItemIndex < len(m.items) {
+			m.items[action.ItemIndex].Layer = action.Item.Layer
+		}
 	}
 
 	// Move cursor to next unreviewed item
 	return m.advanceCursorFrom(action.ItemIndex)
+}
+
+// enterLayerSelect enters layer selection mode for the current item.
+func (m captureReviewModel) enterLayerSelect() (tea.Model, tea.Cmd) {
+	if len(m.options.AvailableLayers) == 0 || m.cursor >= len(m.items) {
+		return m, nil
+	}
+
+	m.layerSelectActive = true
+	m.layerCursor = 0
+
+	// Position cursor at current layer if exists
+	currentLayer := m.items[m.cursor].Layer
+	if currentLayer == "" {
+		currentLayer = "captured"
+	}
+	for i, layer := range m.options.AvailableLayers {
+		if layer == currentLayer {
+			m.layerCursor = i
+			break
+		}
+	}
+
+	return m, nil
+}
+
+// handleLayerSelectKey handles key input when layer selection is active.
+func (m captureReviewModel) handleLayerSelectKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.Type {
+	case tea.KeyEsc:
+		m.layerSelectActive = false
+		return m, nil
+	case tea.KeyEnter:
+		return m.applyLayerChange()
+	case tea.KeyUp:
+		if m.layerCursor > 0 {
+			m.layerCursor--
+		}
+		return m, nil
+	case tea.KeyDown:
+		if m.layerCursor < len(m.options.AvailableLayers)-1 {
+			m.layerCursor++
+		}
+		return m, nil
+	default:
+		switch msg.String() {
+		case "k":
+			if m.layerCursor > 0 {
+				m.layerCursor--
+			}
+			return m, nil
+		case "j":
+			if m.layerCursor < len(m.options.AvailableLayers)-1 {
+				m.layerCursor++
+			}
+			return m, nil
+		case "1", "2", "3", "4", "5", "6", "7", "8", "9":
+			// Quick select by number
+			idx := int(msg.String()[0] - '1')
+			if idx >= 0 && idx < len(m.options.AvailableLayers) {
+				m.layerCursor = idx
+				return m.applyLayerChange()
+			}
+			return m, nil
+		}
+	}
+	return m, nil
+}
+
+// applyLayerChange applies the selected layer to the current item.
+func (m captureReviewModel) applyLayerChange() (tea.Model, tea.Cmd) {
+	if m.cursor >= len(m.items) || m.layerCursor >= len(m.options.AvailableLayers) {
+		m.layerSelectActive = false
+		return m, nil
+	}
+
+	item := m.items[m.cursor]
+	prevLayer := item.Layer
+	if prevLayer == "" {
+		prevLayer = "captured"
+	}
+	newLayer := m.options.AvailableLayers[m.layerCursor]
+
+	// Only record if layer actually changed
+	if prevLayer != newLayer {
+		m.items[m.cursor].Layer = newLayer
+
+		// Record in history for undo
+		m.history.Push(ReviewAction{
+			Type:      ActionLayerChange,
+			ItemIndex: m.cursor,
+			Item:      m.items[m.cursor],
+			PrevLayer: prevLayer,
+		})
+	}
+
+	m.layerSelectActive = false
+	return m, nil
 }
 
 // advanceCursorFrom advances cursor from a specific position.
@@ -457,6 +570,11 @@ func (m captureReviewModel) View() string {
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
+	// Show layer selection when active
+	if m.layerSelectActive {
+		return m.renderLayerSelect()
+	}
+
 	// Show search input when active
 	if m.searchActive {
 		searchPrompt := fmt.Sprintf("Filter: %s_", m.searchQuery)
@@ -507,7 +625,11 @@ func (m captureReviewModel) View() string {
 		}
 
 		status := m.formatItemStatus(i)
-		line := fmt.Sprintf("%s%s [%s] %s", prefix, status, item.Category, item.Name)
+		layer := item.Layer
+		if layer == "" {
+			layer = "captured"
+		}
+		line := fmt.Sprintf("%s%s [%s] %s → %s", prefix, status, item.Category, item.Name, layer)
 
 		// Highlight selected line
 		if i == m.cursor {
@@ -527,7 +649,52 @@ func (m captureReviewModel) View() string {
 	b.WriteString("\n")
 
 	// Footer with keybindings
-	helpItems := []string{"y accept", "n reject", "a all", "d reject all", "u undo", "ctrl+r redo", "/ filter", "g/G top/bottom", "j/k up/down", "q quit"}
+	helpItems := []string{"y accept", "n reject", "l layer", "a all", "d reject all", "u undo", "ctrl+r redo", "/ filter", "g/G top/bottom", "q quit"}
+	help := m.styles.Help.Render(strings.Join(helpItems, " • "))
+	b.WriteString(help)
+
+	return b.String()
+}
+
+// renderLayerSelect renders the layer selection UI.
+func (m captureReviewModel) renderLayerSelect() string {
+	var b strings.Builder
+
+	// Header
+	header := m.styles.Title.Render("Capture Review")
+	b.WriteString(header)
+	b.WriteString("\n\n")
+
+	// Show current item being modified
+	if m.cursor < len(m.items) {
+		item := m.items[m.cursor]
+		itemInfo := fmt.Sprintf("Select layer for: [%s] %s", item.Category, item.Name)
+		b.WriteString(m.styles.Help.Render(itemInfo))
+		b.WriteString("\n\n")
+	}
+
+	// Layer selection list
+	for i, layer := range m.options.AvailableLayers {
+		prefix := "  "
+		if i == m.layerCursor {
+			prefix = "> "
+		}
+
+		// Show number shortcut
+		line := fmt.Sprintf("%s%d. %s", prefix, i+1, layer)
+
+		// Highlight selected line
+		if i == m.layerCursor {
+			line = m.styles.ListItemActive.Render(line)
+		}
+		b.WriteString(line)
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+
+	// Footer with keybindings
+	helpItems := []string{"Enter select", "1-9 quick select", "j/k up/down", "Esc cancel"}
 	help := m.styles.Help.Render(strings.Join(helpItems, " • "))
 	b.WriteString(help)
 
