@@ -1,11 +1,20 @@
-# Preflight
+<p align="center">
+  <img src="website/public/logo.svg" alt="Preflight Logo" width="280">
+</p>
 
-**Deterministic workstation compiler** - A Go CLI/TUI tool that compiles declarative configuration into reproducible machine setups.
+<h1 align="center">Preflight</h1>
 
-[![CI](https://github.com/felixgeelhaar/preflight/actions/workflows/ci.yml/badge.svg)](https://github.com/felixgeelhaar/preflight/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/felixgeelhaar/preflight)](https://goreportcard.com/report/github.com/felixgeelhaar/preflight)
-[![Coverage](https://img.shields.io/badge/coverage-80%25%2B-brightgreen)](https://github.com/felixgeelhaar/preflight)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+<p align="center">
+  <strong>Deterministic workstation compiler</strong><br>
+  A Go CLI/TUI tool that compiles declarative configuration into reproducible machine setups.
+</p>
+
+<p align="center">
+  <a href="https://github.com/felixgeelhaar/preflight/actions/workflows/ci.yml"><img src="https://github.com/felixgeelhaar/preflight/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://goreportcard.com/report/github.com/felixgeelhaar/preflight"><img src="https://goreportcard.com/badge/github.com/felixgeelhaar/preflight" alt="Go Report Card"></a>
+  <img src="https://img.shields.io/badge/coverage-80%25%2B-brightgreen" alt="Coverage">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+</p>
 
 ## Overview
 
