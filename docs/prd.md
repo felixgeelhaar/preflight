@@ -570,9 +570,18 @@ security:
     - "Preflight Official <team@preflight.dev>"
 ```
 
-### 15.3 Capability-Based Permissions (v3.2)
+### 15.3 Capability-Based Permissions (v3.2) ✓
 
 **Goal:** Limit what plugins can do through declared capabilities.
+
+*Status: Complete — Implemented capability domain in `internal/domain/capability/` with:*
+- *Capability types with category:action format (`files:read`, `shell:execute`, etc.)*
+- *Capability Set with wildcard matching and set operations*
+- *Policy enforcement with grant, block, approve, and pending approval*
+- *Plugin Requirements for declaring required/optional capabilities*
+- *Content Security Policy (CSP) with deny/warn rules*
+- *SecurityConfig for YAML-based security settings*
+- *97.5% test coverage*
 
 #### Capability Declaration
 Plugins declare required capabilities upfront:

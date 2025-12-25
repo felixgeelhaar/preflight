@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2024-12-25
+
+### Added
+- **Capability-Based Permissions**: Fine-grained permission system for plugins
+  - Capability types: `files:read`, `files:write`, `packages:brew`, `packages:apt`, `shell:execute`, `network:fetch`, `secrets:read`, `secrets:write`, `system:modify`
+  - Dangerous capability detection requiring explicit approval
+  - Wildcard matching (`files:*` matches all file operations)
+
+- **Policy Enforcement**: Control which capabilities are allowed
+  - Grant, block, and approve capabilities
+  - Default, full-access, and restricted policy presets
+  - Policy validation with violation reporting
+  - Pending approval tracking for dangerous capabilities
+
+- **Plugin Requirements**: Capability declarations for plugins
+  - Required and optional capability support
+  - Justification for capability requests
+  - Validation against policy with detailed results
+  - Summary reporting for requirement validation
+
+- **Content Security Policy (CSP)**: Pattern-based command validation
+  - Deny rules for dangerous patterns (curl|sh, sudo, rm -rf /)
+  - Warning rules for potentially problematic patterns (eval, command substitution)
+  - Default CSP with common security rules
+  - Strict CSP mode for untrusted content
+
+- **Security Configuration**: YAML-based security settings
+  - `blocked_capabilities`: List of denied capabilities
+  - `csp_deny`: Custom deny patterns with reasons
+  - `csp_warn`: Custom warning patterns
+  - `require_approval`: Toggle for dangerous capability approval
+
+### New Domain
+- **capability domain**: Complete capability-based permission system
+  - `Capability`, `Category`, `Action` types with parsing
+  - `Set` for capability collections with set operations
+  - `Policy` for enforcement with grant/block/approve
+  - `Requirements` for plugin capability declarations
+  - `CSP` for content security policy rules
+  - `SecurityConfig` for YAML configuration
+  - 97.5% test coverage
+
 ## [3.1.0] - 2024-12-25
 
 ### Added
