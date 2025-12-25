@@ -1,0 +1,5 @@
+{"version":3,"term":{"cols":80,"rows":24,"type":"xterm-256color"},"timestamp":1766683234,"command":"bash -c \"\necho \\\"# List available tour topics\\\"\nsleep 0.5\npreflight tour --list\nsleep 2\n\"","env":{"SHELL":"/bin/zsh"}}
+[0.010, "o", "# List available tour topics\r\n"]
+[0.516, "o", "\u001b]11;?\u001b\\\u001b[6n"]
+[5.006, "o", "Available tour topics:\r\n\r\n  basics       Learn the core concepts behind Preflight\r\n  config       Understand Preflight configuration structure\r\n  layers       Master the layer system for flexible configs\r\n  providers    Learn about available configuration providers\r\n  presets      Leverage pre-built configurations\r\n  workflow     Learn the plan-apply-doctor cycle\r\n  nvim-basics  Hands-on Neovim tutorial\r\n  git-workflow Hands-on Git commands tutorial\r\n  shell-customization Hands-on shell setup tutorial\r\n\r\nRun 'preflight tour <topic>' to start a tour.\r\n"]
+[2.010, "x", "0"]
