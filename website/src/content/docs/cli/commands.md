@@ -225,6 +225,8 @@ preflight validate [flags]
 | `1` | Validation errors or policy violations |
 | `2` | Could not read configuration |
 
+![Validate Demo](/preflight/demos/gif/validate.gif)
+
 **Examples:**
 
 ```bash
@@ -435,6 +437,8 @@ Your progress is automatically saved to `~/.preflight/tour-progress.json`:
 - ✓ indicates completed topics
 - (%) shows partial completion
 - Progress persists between sessions
+
+![Tour Demo](/preflight/demos/gif/tour.gif)
 
 ---
 
@@ -654,6 +658,57 @@ Presets:
 Dependencies:
   • docker >=1.0.0
 ```
+
+![Plugin Demo](/preflight/demos/gif/plugin.gif)
+
+---
+
+### preflight marketplace
+
+Browse, search, and install community presets, capability packs, and layer templates.
+
+```bash
+preflight marketplace <command> [flags]
+```
+
+**Subcommands:**
+
+| Command | Description |
+|---------|-------------|
+| `search [query]` | Search for packages |
+| `install <name>` | Install a package |
+| `list` | List installed packages |
+| `info <name>` | Show package details |
+| `uninstall <name>` | Uninstall a package |
+| `update` | Update all packages |
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--offline` | Use cached data only |
+| `--refresh` | Force refresh of package index |
+
+**Examples:**
+
+```bash
+# Search for packages
+preflight marketplace search nvim
+
+# Install a package
+preflight marketplace install nvim-pro
+
+# List installed packages
+preflight marketplace list
+
+# Show package details
+preflight marketplace info nvim-pro
+
+# Update all packages
+preflight marketplace update
+```
+
+![Marketplace Demo](/preflight/demos/gif/marketplace.gif)
 
 ---
 
