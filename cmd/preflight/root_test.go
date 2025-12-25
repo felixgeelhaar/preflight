@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"testing"
@@ -628,71 +629,90 @@ func TestCompletionCommand_PowershellViaRoot(t *testing.T) {
 // Test completion RunE directly to ensure coverage
 func TestCompletionRunE_Bash(t *testing.T) {
 	// Call RunE directly to ensure coverage is tracked
-	// Note: This writes to os.Stdout which we can't capture easily,
-	// but it ensures the code path is exercised for coverage
+	// Use a bytes.Buffer instead of pipe to avoid deadlock with large outputs
+	var buf bytes.Buffer
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
+
+	// Read concurrently to avoid pipe buffer deadlock
+	done := make(chan struct{})
+	go func() {
+		_, _ = io.Copy(&buf, r)
+		close(done)
+	}()
 
 	err := completionCmd.RunE(completionCmd, []string{"bash"})
 
 	_ = w.Close()
 	os.Stdout = oldStdout
-
-	// Read the output
-	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
+	<-done // Wait for read to complete
 
 	require.NoError(t, err)
 	assert.Contains(t, buf.String(), "bash")
 }
 
 func TestCompletionRunE_Zsh(t *testing.T) {
+	var buf bytes.Buffer
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
+
+	done := make(chan struct{})
+	go func() {
+		_, _ = io.Copy(&buf, r)
+		close(done)
+	}()
 
 	err := completionCmd.RunE(completionCmd, []string{"zsh"})
 
 	_ = w.Close()
 	os.Stdout = oldStdout
-
-	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
+	<-done
 
 	require.NoError(t, err)
 	assert.Contains(t, buf.String(), "zsh")
 }
 
 func TestCompletionRunE_Fish(t *testing.T) {
+	var buf bytes.Buffer
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
+
+	done := make(chan struct{})
+	go func() {
+		_, _ = io.Copy(&buf, r)
+		close(done)
+	}()
 
 	err := completionCmd.RunE(completionCmd, []string{"fish"})
 
 	_ = w.Close()
 	os.Stdout = oldStdout
-
-	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
+	<-done
 
 	require.NoError(t, err)
 	assert.Contains(t, buf.String(), "fish")
 }
 
 func TestCompletionRunE_Powershell(t *testing.T) {
+	var buf bytes.Buffer
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
+
+	done := make(chan struct{})
+	go func() {
+		_, _ = io.Copy(&buf, r)
+		close(done)
+	}()
 
 	err := completionCmd.RunE(completionCmd, []string{"powershell"})
 
 	_ = w.Close()
 	os.Stdout = oldStdout
-
-	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
+	<-done
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, buf.String())

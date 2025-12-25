@@ -351,7 +351,8 @@ func detectKeyType(data []byte) catalog.SignatureType {
 	}
 
 	// GPG key detection (armored)
-	if len(content) > 30 && content[:27] == "-----BEGIN PGP PUBLIC KEY" {
+	gpgPrefix := "-----BEGIN PGP PUBLIC KEY"
+	if len(content) >= len(gpgPrefix) && content[:len(gpgPrefix)] == gpgPrefix {
 		return catalog.SignatureTypeGPG
 	}
 
