@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2024-12-25
+
+### Added
+- **Signature Verification**: Cryptographic verification of catalog publishers
+  - GPG signature support for catalog manifests
+  - SSH key signature verification (ED25519)
+  - Sigstore integration placeholder for keyless signing
+
+- **Trust Management CLI**: Commands for managing trusted publishers
+  - `preflight trust list`: List all trusted keys with stats
+  - `preflight trust add <keyfile>`: Add SSH or GPG public key
+  - `preflight trust remove <keyid>`: Remove key from trust store
+  - `preflight trust show <keyid>`: Display detailed key information
+
+- **Trust Levels**: Hierarchical trust system for catalogs
+  - `builtin`: Embedded in binary (highest trust)
+  - `verified`: Signed by known publisher (GPG/SSH/Sigstore)
+  - `community`: Hash-verified with user approval
+  - `untrusted`: No verification (requires explicit flag)
+
+- **TrustStore**: Persistent storage for trusted keys
+  - JSON-based storage in `~/.preflight/trust.json`
+  - Key expiration support
+  - Publisher metadata (name, email, key type)
+  - Trust level per key
+
+### New Domain Components
+- **Signature**: Cryptographic signature with type, key ID, and publisher info
+- **Publisher**: Publisher identity with name, email, and key reference
+- **TrustedKey**: Public key with trust level, fingerprint, and expiration
+- **TrustStore**: Trusted key storage with persistence
+- **ED25519Verifier**: SSH key signature verification
+- **VerificationResult**: Structured verification outcome
+
 ## [3.0.0] - 2024-12-25
 
 ### Added
@@ -348,7 +382,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Domain-Driven Design architecture
 - Test-Driven Development with >80% coverage requirement per domain
 
-[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/felixgeelhaar/preflight/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/felixgeelhaar/preflight/compare/v2.6.0...v3.0.0
 [2.6.0]: https://github.com/felixgeelhaar/preflight/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/felixgeelhaar/preflight/compare/v2.4.0...v2.5.0
