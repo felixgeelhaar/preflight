@@ -44,6 +44,7 @@ Preflight fills the gap between raw scripts and heavy infrastructure tools:
 - **Safe** — Plan before apply, always
 - **Portable** — Git-native configuration
 - **Accessible** — TUI for non-engineers too
+- **Secure** — Defense-in-depth plugin security
 
 ## Core Concepts
 

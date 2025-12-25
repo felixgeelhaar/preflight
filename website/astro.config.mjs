@@ -39,6 +39,8 @@ export default defineConfig({
 						{ label: 'Configuration', slug: 'guides/configuration' },
 						{ label: 'Layers & Targets', slug: 'guides/layers' },
 						{ label: 'Providers', slug: 'guides/providers' },
+						{ label: 'Plugins', slug: 'guides/plugins' },
+						{ label: 'Plugin Security', slug: 'guides/security' },
 						{ label: 'Dotfile Management', slug: 'guides/dotfiles' },
 						{ label: 'Migration', slug: 'guides/migration' },
 						{ label: 'Troubleshooting', slug: 'guides/troubleshooting' },

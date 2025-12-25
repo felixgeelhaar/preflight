@@ -7,6 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2024-12-25
+
+### Added
+- **WASM Plugin Sandbox**: Complete isolation for untrusted plugins using WebAssembly
+  - Wazero runtime (pure Go, no CGO) for deterministic plugin execution
+  - Plugin runs in isolated VM with no direct system access
+  - SHA256 checksum verification of plugin modules
+
+- **Sandbox Modes**: Three isolation levels for different trust scenarios
+  - `ModeFull`: Complete isolation, no side effects (preview/audit unknown plugins)
+  - `ModeRestricted`: Limited to declared capabilities (normal operation)
+  - `ModeTrusted`: Full access like builtin (verified publishers only)
+
+- **Resource Limits**: Prevent plugin resource abuse
+  - `MaxMemoryBytes`: Memory allocation cap for plugins
+  - `MaxCPUTime`: CPU time limit for execution
+  - `MaxFileDescriptors`: File descriptor limit
+  - `MaxOutputBytes`: Output size limit
+
+- **Host Function Bindings**: Controlled access to host services
+  - Logging functions: `log_info`, `log_warn`, `log_error`
+  - File operations (requires `files:read`/`files:write` capabilities)
+  - Shell execution (requires `shell:execute` capability)
+  - Network access (requires `network:fetch` capability)
+  - Host services interface for extensible bindings
+
+- **Plugin Manifest**: YAML-based plugin declarations
+  - Plugin metadata: ID, name, version, description, author
+  - Module path with SHA256 checksum verification
+  - Capability declarations with justifications
+  - Optional capability support
+
+- **Plugin Loader & Executor**: Load and run plugins safely
+  - `Loader`: Load plugin manifests and verify checksums
+  - `Executor`: Create sandbox, validate plugin, and execute
+  - `ValidatePlugin`: Validate without execution
+  - List available plugins in a directory
+
+### New Domain
+- **sandbox domain**: Complete WASM isolation infrastructure
+  - `Plugin`, `PluginManifest`, `ManifestCapability` types
+  - `Sandbox`, `Runtime` interfaces for runtime abstraction
+  - `WazeroRuntime`, `WazeroSandbox` implementations
+  - `HostServices`, `HostFunction`, `HostFS`, `HostShell`, `HostHTTP`, `HostLogger` interfaces
+  - `Config`, `ResourceLimits`, `Mode` for sandbox configuration
+  - `Loader`, `Executor` for plugin lifecycle management
+  - `NullFileSystem`, `NullShell`, `NullHTTP` for full isolation
+  - 80%+ test coverage
+
+### Example Plugin Manifest
+```yaml
+# plugin.yaml
+id: my-plugin
+name: My Plugin
+version: 1.0.0
+description: A custom plugin for Preflight
+author: Developer Name
+module: plugin.wasm
+checksum: sha256:abc123...
+
+capabilities:
+  - name: files:read
+    justification: Read configuration files
+  - name: shell:execute
+    justification: Run validation commands
+    optional: true
+```
+
 ## [3.2.0] - 2024-12-25
 
 ### Added
@@ -424,7 +492,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Domain-Driven Design architecture
 - Test-Driven Development with >80% coverage requirement per domain
 
-[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v3.3.0...HEAD
+[3.3.0]: https://github.com/felixgeelhaar/preflight/compare/v3.2.0...v3.3.0
+[3.2.0]: https://github.com/felixgeelhaar/preflight/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/felixgeelhaar/preflight/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/felixgeelhaar/preflight/compare/v2.6.0...v3.0.0
 [2.6.0]: https://github.com/felixgeelhaar/preflight/compare/v2.5.0...v2.6.0

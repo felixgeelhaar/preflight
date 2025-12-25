@@ -553,15 +553,31 @@ preflight plugin <command> [flags]
 | Command | Description |
 |---------|-------------|
 | `list` | List all installed plugins |
+| `search [query]` | Search for plugins on GitHub |
 | `install <source>` | Install a plugin from path or Git URL |
 | `remove <name>` | Remove an installed plugin |
 | `info <name>` | Show detailed plugin information |
+
+**Search Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--type <type>` | Filter by plugin type: `config`, `provider` |
+| `--min-stars <n>` | Minimum number of GitHub stars |
+| `--limit <n>` | Maximum results (default: 20) |
+| `--sort <field>` | Sort by: `stars`, `updated`, `best-match` |
 
 **Examples:**
 
 ```bash
 # List installed plugins
 preflight plugin list
+
+# Search for plugins
+preflight plugin search docker
+preflight plugin search --type provider kubernetes
+preflight plugin search --min-stars 10 terminal
+preflight plugin search --sort updated
 
 # Install from local path
 preflight plugin install /path/to/plugin
@@ -583,6 +599,21 @@ NAME          VERSION   STATUS    DESCRIPTION
 ────          ───────   ──────    ───────────
 docker        1.0.0     enabled   Docker provider for Preflight
 kubernetes    2.0.0     enabled   Kubernetes tooling
+```
+
+**Output (search):**
+
+```
+Found 3 plugin(s) matching "docker":
+
+REPOSITORY                        TYPE      STARS  DESCRIPTION
+──────────                        ────      ─────  ───────────
+example/preflight-docker          provider  42     Docker provider for Preflight
+user/docker-presets               config    15     Docker configuration presets
+team/container-tools              config    8      Container development tools
+
+Install a plugin with:
+  preflight plugin install https://github.com/<repository>
 ```
 
 **Output (info):**

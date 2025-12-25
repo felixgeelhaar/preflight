@@ -632,28 +632,38 @@ warn:
     reason: "Eval can execute arbitrary code"
 ```
 
-### 15.4 Plugin Sandbox (v3.3)
+### 15.4 Plugin Sandbox (v3.3) ✅ COMPLETE
 
 **Goal:** Complete isolation for untrusted plugins.
 
-#### WASM Plugin Runtime
+#### WASM Plugin Runtime ✓
 - Plugins compile to WebAssembly
 - Run in isolated VM with no direct system access
 - Deterministic execution
 
-#### Resource Limits
+#### Resource Limits ✓
 - CPU throttling
 - Memory caps
 - File descriptor limits
 - Network policy enforcement
 
-#### Sandbox Modes
+#### Sandbox Modes ✓
 
 | Mode | Description | Use Case |
 |------|-------------|----------|
 | `full` | Complete isolation, no side effects | Preview/audit unknown plugins |
 | `restricted` | Limited to declared capabilities | Normal operation |
 | `trusted` | Full access (like builtin) | Verified publishers only |
+
+*Status: Complete (v3.3.0) — Implemented:*
+- *Wazero WASM runtime (pure Go, no CGO) in `internal/domain/sandbox/wazero.go`*
+- *Three sandbox modes: Full, Restricted, Trusted*
+- *Resource limits: MaxMemoryBytes, MaxCPUTime, MaxFileDescriptors, MaxOutputBytes*
+- *Host function bindings for logging, files, shell, network*
+- *Plugin manifest format with SHA256 checksum verification*
+- *Plugin loader and executor with capability validation*
+- *Null implementations (NullFileSystem, NullShell, NullHTTP) for full isolation*
+- *80%+ test coverage with race detection*
 
 ### 15.5 Audit Logging
 

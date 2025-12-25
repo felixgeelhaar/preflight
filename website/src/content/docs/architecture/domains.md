@@ -18,11 +18,17 @@ Preflight is organized around bounded contexts following Domain-Driven Design pr
 │    Lock     │  │   Advisor   │  │   Catalog   │
 │   Domain    │  │   Domain    │  │   Domain    │
 └─────────────┘  └─────────────┘  └─────────────┘
+       │                │                │
+       ▼                ▼                ▼
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│    Drift    │  │  Snapshot   │  │    Merge    │
+│   Domain    │  │   Domain    │  │   Domain    │
+└─────────────┘  └─────────────┘  └─────────────┘
                         │
        ┌────────────────┼────────────────┐
        ▼                ▼                ▼
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-│    Drift    │  │  Snapshot   │  │    Merge    │
+│ Capability  │  │   Sandbox   │  │   Trust     │
 │   Domain    │  │   Domain    │  │   Domain    │
 └─────────────┘  └─────────────┘  └─────────────┘
 ```
@@ -350,6 +356,185 @@ func ResolveAllConflicts(content string, resolution Resolution) string
 | Theirs | File changed |
 | Both | Conflict |
 | Same | Identical changes |
+
+---
+
+## Capability Domain
+
+**Responsibility:** Fine-grained permission system for plugins.
+
+### Types
+
+**Capability** — Named permission
+
+```go
+type Capability struct {
+    Category Category // files, packages, shell, network, secrets, system
+    Action   Action   // read, write, execute, fetch, modify
+}
+```
+
+**Set** — Collection of capabilities
+
+```go
+type Set struct {
+    caps map[string]bool
+}
+
+func (s *Set) Has(cap Capability) bool
+func (s *Set) Union(other *Set) *Set
+```
+
+**Policy** — Permission enforcement
+
+```go
+type Policy struct {
+    granted  *Set
+    blocked  *Set
+    approved *Set
+}
+
+func (p *Policy) Validate(caps *Set) ValidationResult
+```
+
+### Capability Types
+
+| Category | Actions | Example |
+|----------|---------|---------|
+| `files` | read, write | `files:read`, `files:write` |
+| `packages` | brew, apt | `packages:brew` |
+| `shell` | execute | `shell:execute` |
+| `network` | fetch | `network:fetch` |
+| `secrets` | read, write | `secrets:read` |
+| `system` | modify | `system:modify` |
+
+---
+
+## Sandbox Domain
+
+**Responsibility:** WASM isolation for untrusted plugins.
+
+### Entities
+
+**Plugin** — Executable plugin with capabilities
+
+```go
+type Plugin struct {
+    ID           string
+    Name         string
+    Version      string
+    Module       []byte              // WASM bytecode
+    Capabilities *capability.Requirements
+    Checksum     string
+}
+```
+
+**Config** — Sandbox configuration
+
+```go
+type Config struct {
+    Mode    Mode
+    Timeout time.Duration
+    Limits  ResourceLimits
+    Policy  *capability.Policy
+}
+```
+
+### Interfaces
+
+**Runtime** — WASM runtime abstraction
+
+```go
+type Runtime interface {
+    NewSandbox(config Config) (Sandbox, error)
+    IsAvailable() bool
+    Version() string
+    Close() error
+}
+```
+
+**Sandbox** — Isolated execution environment
+
+```go
+type Sandbox interface {
+    Execute(ctx context.Context, plugin *Plugin, input []byte) (*ExecutionResult, error)
+    Validate(ctx context.Context, plugin *Plugin) error
+    Close() error
+}
+```
+
+### Sandbox Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `Full` | Complete isolation | Audit unknown plugins |
+| `Restricted` | Declared capabilities only | Normal operation |
+| `Trusted` | Full access | Verified publishers |
+
+### Resource Limits
+
+```go
+type ResourceLimits struct {
+    MaxMemoryBytes    uint64
+    MaxCPUTime        time.Duration
+    MaxFileDescriptors int
+    MaxOutputBytes    int64
+}
+```
+
+### Host Services
+
+Plugins access host through controlled bindings:
+
+```go
+type HostServices struct {
+    FileSystem HostFS       // files:read/write
+    Shell      HostShell    // shell:execute
+    HTTP       HostHTTP     // network:fetch
+    Logger     HostLogger   // Always available
+}
+```
+
+---
+
+## Trust Domain
+
+**Responsibility:** Cryptographic verification of publishers.
+
+### Entities
+
+**TrustedKey** — Public key with trust level
+
+```go
+type TrustedKey struct {
+    ID          string
+    Type        KeyType   // gpg, ssh, sigstore
+    Fingerprint string
+    TrustLevel  TrustLevel
+    Publisher   *Publisher
+    ExpiresAt   *time.Time
+}
+```
+
+**Signature** — Cryptographic signature
+
+```go
+type Signature struct {
+    Type      SignatureType
+    Data      []byte
+    KeyID     string
+    Publisher *Publisher
+}
+```
+
+### Trust Levels
+
+| Level | Description |
+|-------|-------------|
+| `builtin` | Embedded in binary |
+| `verified` | Signed by known key |
+| `community` | Hash-verified only |
+| `untrusted` | No verification |
 
 ---
 

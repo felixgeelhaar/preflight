@@ -7,6 +7,128 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2024-12-25
+
+### Added
+
+- **WASM Plugin Sandbox**: Complete isolation for untrusted plugins using WebAssembly
+  - Wazero runtime (pure Go, no CGO) for deterministic plugin execution
+  - Plugin runs in isolated VM with no direct system access
+  - SHA256 checksum verification of plugin modules
+
+- **Sandbox Modes**: Three isolation levels for different trust scenarios
+  - `ModeFull`: Complete isolation, no side effects (preview/audit unknown plugins)
+  - `ModeRestricted`: Limited to declared capabilities (normal operation)
+  - `ModeTrusted`: Full access like builtin (verified publishers only)
+
+- **Resource Limits**: Prevent plugin resource abuse
+  - `MaxMemoryBytes`: Memory allocation cap for plugins
+  - `MaxCPUTime`: CPU time limit for execution
+  - `MaxFileDescriptors`: File descriptor limit
+  - `MaxOutputBytes`: Output size limit
+
+- **Host Function Bindings**: Controlled access to host services
+  - Logging functions: `log_info`, `log_warn`, `log_error`
+  - File operations (requires `files:read`/`files:write` capabilities)
+  - Shell execution (requires `shell:execute` capability)
+  - Network access (requires `network:fetch` capability)
+
+- **Plugin Loader & Executor**: Load and run plugins safely
+  - `Loader`: Load plugin manifests and verify checksums
+  - `Executor`: Create sandbox, validate plugin, and execute
+  - Plugin manifest with metadata, checksums, and capability declarations
+
+### Example Plugin Manifest
+
+```yaml
+# plugin.yaml
+id: my-plugin
+name: My Plugin
+version: 1.0.0
+description: A custom plugin for Preflight
+author: Developer Name
+module: plugin.wasm
+checksum: sha256:abc123...
+
+capabilities:
+  - name: files:read
+    justification: Read configuration files
+  - name: shell:execute
+    justification: Run validation commands
+    optional: true
+```
+
+---
+
+## [3.2.0] - 2024-12-25
+
+### Added
+
+- **Capability-Based Permissions**: Fine-grained permission system for plugins
+  - Capability types: `files:read`, `files:write`, `packages:brew`, `packages:apt`, `shell:execute`, `network:fetch`, `secrets:read`, `secrets:write`, `system:modify`
+  - Dangerous capability detection requiring explicit approval
+  - Wildcard matching (`files:*` matches all file operations)
+
+- **Policy Enforcement**: Control which capabilities are allowed
+  - Grant, block, and approve capabilities
+  - Default, full-access, and restricted policy presets
+  - Policy validation with violation reporting
+
+- **Content Security Policy (CSP)**: Pattern-based command validation
+  - Deny rules for dangerous patterns (curl|sh, sudo, rm -rf /)
+  - Warning rules for potentially problematic patterns
+  - Default CSP with common security rules
+
+---
+
+## [3.1.0] - 2024-12-25
+
+### Added
+
+- **Signature Verification**: Cryptographic verification of catalog publishers
+  - GPG signature support for catalog manifests
+  - SSH key signature verification (ED25519)
+  - Sigstore integration placeholder for keyless signing
+
+- **Trust Management CLI**: Commands for managing trusted publishers
+  - `preflight trust list`, `trust add`, `trust remove`, `trust show`
+  - Trust levels: builtin, verified, community, untrusted
+
+- **TrustStore**: Persistent storage for trusted keys
+  - JSON-based storage in `~/.preflight/trust.json`
+  - Key expiration support and publisher metadata
+
+---
+
+## [3.0.0] - 2024-12-25
+
+### Added
+
+- **External Catalog Support**: Load catalogs from URLs or local paths
+  - `preflight catalog add <url-or-path>`: Add external catalog source
+  - `preflight catalog list`: List all registered catalogs
+  - `preflight catalog verify`: Verify catalog integrity
+  - `preflight catalog audit`: Security audit for catalogs
+
+- **Security Auditor**: Pattern-based security scanning for catalogs
+  - Detects remote code execution, privilege escalation, destructive operations
+  - Scans for hardcoded secrets and unsafe shell patterns
+  - Severity levels: critical, high, medium, low, info
+
+---
+
+## [2.6.0] - 2024-12-25
+
+### Added
+
+- **Plugin Marketplace**: Community package registry for presets and capability packs
+  - `preflight marketplace search/install/uninstall/update/list/info`
+  - SHA256 checksum verification for all packages
+  - Local cache with configurable TTL for offline support
+  - Provenance tracking (author, repository, license)
+
+---
+
 ## [2.5.0] - 2024-12-25
 
 ### Added

@@ -83,6 +83,9 @@ internal/
     drift/               # Drift detection
     snapshot/            # File snapshots
     merge/               # Three-way merge
+    capability/          # Permission system
+    sandbox/             # WASM isolation
+    trust/               # Signature verification
   provider/              # System adapters
     brew/
     apt/
@@ -97,6 +100,32 @@ internal/
   ports/                 # Interface definitions
   adapters/              # Port implementations
 ```
+
+## Security Architecture
+
+Preflight uses a defense-in-depth security model for plugins:
+
+```
+┌─────────────────────────────────────┐
+│  Layer 4: Sandbox (WASM isolation)  │
+├─────────────────────────────────────┤
+│  Layer 3: Capabilities (permissions)│
+├─────────────────────────────────────┤
+│  Layer 2: Signatures (identity)     │
+├─────────────────────────────────────┤
+│  Layer 1: Integrity (hashes)        │
+└─────────────────────────────────────┘
+```
+
+### Security Domains
+
+| Domain | Responsibility |
+|--------|----------------|
+| **capability** | Fine-grained permission system |
+| **sandbox** | WASM isolation with Wazero |
+| **trust** | Cryptographic signature verification |
+
+See [Plugin Security](/preflight/guides/security/) for details.
 
 ## Key Abstractions
 
