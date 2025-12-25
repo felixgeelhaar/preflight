@@ -911,3 +911,420 @@ capability_packs:
       - "pandoc"
       - "mermaid-cli"
       - "asciidoctor"
+
+  - id: "site-reliability-engineer"
+    metadata:
+      title: "Site Reliability Engineer"
+      description: "Observability, monitoring, and incident response toolkit"
+      tradeoffs:
+        - "Production-focused monitoring"
+        - "Complex alerting configurations"
+      doc_links:
+        prometheus: "https://prometheus.io/docs/"
+        grafana: "https://grafana.com/docs/"
+        datadog: "https://docs.datadoghq.com/"
+      tags:
+        - "sre"
+        - "monitoring"
+        - "observability"
+    presets:
+      - "nvim:pro"
+      - "shell:starship"
+      - "git:secure"
+      - "terminal:tmux"
+    tools:
+      - "prometheus"
+      - "grafana"
+      - "pagerduty-cli"
+      - "stern"
+      - "kubetail"
+      - "promtool"
+      - "alertmanager"
+
+  - id: "gitops-engineer"
+    metadata:
+      title: "GitOps Engineer"
+      description: "GitOps workflow and CD pipeline tools"
+      tradeoffs:
+        - "Declarative infrastructure management"
+        - "Steep learning curve for Kubernetes"
+      doc_links:
+        argocd: "https://argo-cd.readthedocs.io/"
+        flux: "https://fluxcd.io/docs/"
+        kustomize: "https://kubectl.docs.kubernetes.io/references/kustomize/"
+      tags:
+        - "gitops"
+        - "kubernetes"
+        - "cd"
+    presets:
+      - "nvim:pro"
+      - "shell:starship"
+      - "git:secure"
+      - "docker:kubernetes"
+    tools:
+      - "argocd"
+      - "flux"
+      - "kustomize"
+      - "sealed-secrets"
+      - "sops"
+      - "kubeseal"
+
+  - id: "ios-developer"
+    metadata:
+      title: "iOS Developer"
+      description: "Native iOS and Swift development environment"
+      tradeoffs:
+        - "Native iOS development"
+        - "Requires macOS and Xcode"
+      doc_links:
+        swift: "https://swift.org/documentation/"
+        xcode: "https://developer.apple.com/documentation/xcode"
+        cocoapods: "https://guides.cocoapods.org/"
+      tags:
+        - "ios"
+        - "swift"
+        - "mobile"
+        - "developer"
+    presets:
+      - "nvim:pro"
+      - "shell:starship"
+      - "git:secure"
+    tools:
+      - "swiftlint"
+      - "swiftformat"
+      - "cocoapods"
+      - "carthage"
+      - "fastlane"
+      - "xcpretty"
+      - "periphery"
+
+  - id: "android-developer"
+    metadata:
+      title: "Android Developer"
+      description: "Native Android and Kotlin development environment"
+      tradeoffs:
+        - "Native Android development"
+        - "Requires Android Studio"
+      doc_links:
+        kotlin: "https://kotlinlang.org/docs/"
+        android: "https://developer.android.com/docs"
+        gradle: "https://docs.gradle.org/"
+      tags:
+        - "android"
+        - "kotlin"
+        - "mobile"
+        - "developer"
+    presets:
+      - "vscode:full"
+      - "shell:starship"
+      - "git:standard"
+    tools:
+      - "kotlin"
+      - "gradle"
+      - "adb"
+      - "ktlint"
+      - "scrcpy"
+      - "bundletool"
+
+  - id: "penetration-tester"
+    metadata:
+      title: "Penetration Tester"
+      description: "Security testing and vulnerability assessment tools"
+      tradeoffs:
+        - "Comprehensive security testing"
+        - "Requires security knowledge"
+        - "Some tools may trigger security alerts"
+      doc_links:
+        nmap: "https://nmap.org/docs.html"
+        burpsuite: "https://portswigger.net/burp/documentation"
+        owasp: "https://owasp.org/"
+      tags:
+        - "pentest"
+        - "security"
+        - "vulnerability"
+    presets:
+      - "nvim:pro"
+      - "shell:starship"
+      - "git:secure"
+      - "ssh:multi-identity"
+    tools:
+      - "nmap"
+      - "nikto"
+      - "sqlmap"
+      - "gobuster"
+      - "ffuf"
+      - "nuclei"
+      - "httpx"
+
+  - id: "compliance-auditor"
+    metadata:
+      title: "Compliance Auditor"
+      description: "Infrastructure compliance and policy enforcement"
+      tradeoffs:
+        - "Automated compliance checking"
+        - "Policy configuration overhead"
+      doc_links:
+        opa: "https://www.openpolicyagent.org/docs/latest/"
+        conftest: "https://www.conftest.dev/"
+        checkov: "https://www.checkov.io/1.Welcome/Quick%20Start.html"
+      tags:
+        - "compliance"
+        - "policy"
+        - "security"
+    presets:
+      - "nvim:balanced"
+      - "shell:starship"
+      - "git:secure"
+    tools:
+      - "opa"
+      - "conftest"
+      - "checkov"
+      - "tfsec"
+      - "terrascan"
+      - "kube-bench"
+
+  - id: "content-creator"
+    metadata:
+      title: "Content Creator"
+      description: "Video, streaming, and multimedia production tools"
+      tradeoffs:
+        - "Professional content creation"
+        - "Large application sizes"
+      doc_links:
+        ffmpeg: "https://ffmpeg.org/documentation.html"
+        obs: "https://obsproject.com/wiki/"
+      tags:
+        - "content"
+        - "video"
+        - "streaming"
+        - "creative"
+    presets:
+      - "shell:zsh"
+      - "git:standard"
+    tools:
+      - "ffmpeg"
+      - "yt-dlp"
+      - "imagemagick"
+      - "gifsicle"
+      - "asciinema"
+      - "vhs"
+
+  - id: "podcast-producer"
+    metadata:
+      title: "Podcast Producer"
+      description: "Audio production and podcast publishing tools"
+      tradeoffs:
+        - "Audio-focused workflow"
+        - "Requires audio editing knowledge"
+      doc_links:
+        audacity: "https://manual.audacityteam.org/"
+        ffmpeg: "https://ffmpeg.org/documentation.html"
+      tags:
+        - "podcast"
+        - "audio"
+        - "content"
+        - "creative"
+    presets:
+      - "shell:zsh"
+      - "git:standard"
+    tools:
+      - "ffmpeg"
+      - "sox"
+      - "lame"
+      - "flac"
+      - "id3v2"
+      - "beets"
+
+  - id: "ml-engineer"
+    metadata:
+      title: "Machine Learning Engineer"
+      description: "ML infrastructure and model deployment tools"
+      tradeoffs:
+        - "End-to-end ML pipeline"
+        - "GPU and compute requirements"
+      doc_links:
+        pytorch: "https://pytorch.org/docs/"
+        tensorflow: "https://www.tensorflow.org/api_docs"
+        mlflow: "https://mlflow.org/docs/latest/"
+      tags:
+        - "ml"
+        - "ai"
+        - "deep-learning"
+    presets:
+      - "vscode:full"
+      - "shell:starship"
+      - "git:secure"
+      - "docker:buildkit"
+    tools:
+      - "python"
+      - "poetry"
+      - "pytorch"
+      - "tensorflow"
+      - "mlflow"
+      - "dvc"
+      - "wandb"
+
+  - id: "ai-developer"
+    metadata:
+      title: "AI Application Developer"
+      description: "LLM and generative AI development tools"
+      tradeoffs:
+        - "Focus on AI/LLM applications"
+        - "API costs for LLM usage"
+      doc_links:
+        openai: "https://platform.openai.com/docs/"
+        langchain: "https://python.langchain.com/docs/"
+        ollama: "https://ollama.ai/"
+      tags:
+        - "ai"
+        - "llm"
+        - "generative-ai"
+    presets:
+      - "nvim:pro"
+      - "shell:starship"
+      - "git:secure"
+    tools:
+      - "python"
+      - "poetry"
+      - "ollama"
+      - "langchain"
+      - "chromadb"
+      - "llm"
+      - "ttok"
+
+  - id: "data-engineer"
+    metadata:
+      title: "Data Engineer"
+      description: "Data pipeline and ETL development tools"
+      tradeoffs:
+        - "Comprehensive data tooling"
+        - "Complex infrastructure requirements"
+      doc_links:
+        dbt: "https://docs.getdbt.com/"
+        airflow: "https://airflow.apache.org/docs/"
+        spark: "https://spark.apache.org/docs/latest/"
+      tags:
+        - "data"
+        - "etl"
+        - "pipeline"
+    presets:
+      - "nvim:balanced"
+      - "shell:starship"
+      - "git:secure"
+      - "docker:kubernetes"
+    tools:
+      - "python"
+      - "poetry"
+      - "dbt"
+      - "duckdb"
+      - "clickhouse"
+      - "trino"
+      - "delta"
+
+  - id: "game-developer"
+    metadata:
+      title: "Game Developer"
+      description: "Game development and 3D content creation tools"
+      tradeoffs:
+        - "Cross-platform game development"
+        - "Large engine downloads"
+      doc_links:
+        godot: "https://docs.godotengine.org/"
+        unity: "https://docs.unity.com/"
+      tags:
+        - "game"
+        - "graphics"
+        - "3d"
+        - "developer"
+    presets:
+      - "vscode:full"
+      - "shell:starship"
+      - "git:standard"
+    tools:
+      - "godot"
+      - "blender"
+      - "aseprite"
+      - "tiled"
+      - "ldtk"
+
+  - id: "embedded-developer"
+    metadata:
+      title: "Embedded Developer"
+      description: "Embedded systems and IoT development tools"
+      tradeoffs:
+        - "Low-level programming"
+        - "Hardware-specific tooling"
+      doc_links:
+        platformio: "https://docs.platformio.org/"
+        esp-idf: "https://docs.espressif.com/projects/esp-idf/"
+      tags:
+        - "embedded"
+        - "iot"
+        - "hardware"
+        - "developer"
+    presets:
+      - "nvim:pro"
+      - "shell:starship"
+      - "git:secure"
+    tools:
+      - "platformio"
+      - "arduino-cli"
+      - "esptool"
+      - "openocd"
+      - "minicom"
+      - "picocom"
+
+  - id: "blockchain-developer"
+    metadata:
+      title: "Blockchain Developer"
+      description: "Smart contract and Web3 development tools"
+      tradeoffs:
+        - "Web3 and DeFi development"
+        - "Evolving ecosystem"
+      doc_links:
+        foundry: "https://book.getfoundry.sh/"
+        hardhat: "https://hardhat.org/docs"
+        solidity: "https://docs.soliditylang.org/"
+      tags:
+        - "blockchain"
+        - "web3"
+        - "smart-contracts"
+        - "developer"
+    presets:
+      - "nvim:balanced"
+      - "shell:starship"
+      - "git:secure"
+    tools:
+      - "foundry"
+      - "hardhat"
+      - "slither"
+      - "mythril"
+      - "ganache"
+
+  - id: "api-developer"
+    metadata:
+      title: "API Developer"
+      description: "API design, testing, and documentation tools"
+      tradeoffs:
+        - "API-first development"
+        - "Multiple tooling options"
+      doc_links:
+        openapi: "https://swagger.io/docs/"
+        postman: "https://learning.postman.com/docs/"
+        insomnia: "https://docs.insomnia.rest/"
+      tags:
+        - "api"
+        - "rest"
+        - "graphql"
+        - "developer"
+    presets:
+      - "nvim:balanced"
+      - "shell:starship"
+      - "git:standard"
+    tools:
+      - "httpie"
+      - "curlie"
+      - "hurl"
+      - "prism"
+      - "spectral"
+      - "openapi-generator"
