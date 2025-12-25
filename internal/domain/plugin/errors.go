@@ -14,8 +14,6 @@ var (
 	ErrEmptyPluginName = errors.New("plugin name cannot be empty")
 	// ErrManifestNotFound indicates plugin.yaml was not found.
 	ErrManifestNotFound = errors.New("plugin.yaml not found")
-	// ErrGitCloneNotImplemented indicates git clone is not yet implemented.
-	ErrGitCloneNotImplemented = errors.New("git clone not implemented")
 )
 
 // PluginExistsError indicates a plugin is already registered.

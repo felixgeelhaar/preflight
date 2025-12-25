@@ -63,21 +63,35 @@ func newInitWizardModel(opts InitWizardOptions) initWizardModel {
 	providerNames := catalogService.GetProviders()
 	providers := make([]components.ListItem, 0, len(providerNames))
 	for _, name := range providerNames {
+		// Add installation status indicator to title for editors
+		title := providerDisplayName(name) + providerInstalledStatus(name)
 		providers = append(providers, components.ListItem{
 			ID:          name,
-			Title:       providerDisplayName(name),
+			Title:       title,
 			Description: providerDescription(name),
 		})
 	}
 
-	// If no providers from catalog, use fallback defaults
+	// If no providers from catalog, use fallback defaults with all editors
 	if len(providers) == 0 {
-		providers = []components.ListItem{
-			{ID: "nvim", Title: "Neovim", Description: "Terminal-based code editor"},
-			{ID: "shell", Title: "Shell", Description: "Zsh/Bash configuration"},
-			{ID: "git", Title: "Git", Description: "Version control configuration"},
-			{ID: "brew", Title: "Homebrew", Description: "Package manager (macOS)"},
+		// Get all editors with installation status
+		for _, editor := range AvailableEditors() {
+			title := editor.Name
+			if editor.IsInstalled {
+				title += " ✓"
+			}
+			providers = append(providers, components.ListItem{
+				ID:          editor.ID,
+				Title:       title,
+				Description: editor.Description,
+			})
 		}
+		// Add other core providers
+		providers = append(providers,
+			components.ListItem{ID: "shell", Title: "Shell", Description: "Zsh/Bash configuration"},
+			components.ListItem{ID: "git", Title: "Git", Description: "Version control configuration"},
+			components.ListItem{ID: "brew", Title: "Homebrew", Description: "Package manager (macOS)"},
+		)
 	}
 
 	providerList := components.NewList(providers).
@@ -129,8 +143,12 @@ func newInitWizardModel(opts InitWizardOptions) initWizardModel {
 
 // providerDisplayName returns a human-readable name for a provider.
 func providerDisplayName(id string) string {
+	// Check if it's an editor first
+	if editor, ok := GetEditorByID(id); ok {
+		return editor.Name
+	}
+
 	names := map[string]string{
-		"nvim":    "Neovim",
 		"shell":   "Shell",
 		"git":     "Git",
 		"brew":    "Homebrew",
@@ -138,7 +156,8 @@ func providerDisplayName(id string) string {
 		"files":   "Files",
 		"ssh":     "SSH",
 		"runtime": "Runtime",
-		"vscode":  "VS Code",
+		"docker":  "Docker",
+		"fonts":   "Fonts",
 	}
 	if name, ok := names[id]; ok {
 		return name
@@ -148,8 +167,12 @@ func providerDisplayName(id string) string {
 
 // providerDescription returns a description for a provider.
 func providerDescription(id string) string {
+	// Check if it's an editor first
+	if editor, ok := GetEditorByID(id); ok {
+		return editor.Description
+	}
+
 	descriptions := map[string]string{
-		"nvim":    "Terminal-based code editor",
 		"shell":   "Zsh/Bash configuration",
 		"git":     "Version control configuration",
 		"brew":    "Package manager (macOS)",
@@ -157,12 +180,24 @@ func providerDescription(id string) string {
 		"files":   "Dotfile management",
 		"ssh":     "SSH configuration",
 		"runtime": "Runtime version management",
-		"vscode":  "Visual Studio Code",
+		"docker":  "Container platform",
+		"fonts":   "Nerd Font installation",
 	}
 	if desc, ok := descriptions[id]; ok {
 		return desc
 	}
 	return "Configuration for " + id
+}
+
+// providerInstalledStatus returns an installation status indicator.
+func providerInstalledStatus(id string) string {
+	if editor, ok := GetEditorByID(id); ok {
+		if editor.IsInstalled {
+			return " ✓"
+		}
+		return ""
+	}
+	return ""
 }
 
 func (m initWizardModel) Init() tea.Cmd {
@@ -404,12 +439,64 @@ func (m initWizardModel) getPresetsForProvider(provider string) []components.Lis
 
 	// Fallback to hardcoded presets if catalog returns nothing
 	switch provider {
-	case "nvim":
+	// Editors with full provider support
+	case "neovim", "nvim":
 		return []components.ListItem{
 			{ID: "nvim:minimal", Title: "Minimal", Description: "Essential plugins only"},
-			{ID: "nvim:balanced", Title: "Balanced", Description: "Recommended for most users"},
+			{ID: "nvim:balanced", Title: "Balanced", Description: "Good balance of features"},
 			{ID: "nvim:pro", Title: "Pro", Description: "Full IDE experience"},
 		}
+	case "vscode":
+		return []components.ListItem{
+			{ID: "vscode:minimal", Title: "Minimal", Description: "Essential extensions only"},
+			{ID: "vscode:full", Title: "Full", Description: "Feature-rich configuration"},
+		}
+	case "cursor":
+		return []components.ListItem{
+			{ID: "vscode:minimal", Title: "Minimal", Description: "Essential extensions only"},
+			{ID: "vscode:full", Title: "Full", Description: "Feature-rich configuration"},
+		}
+	case "vscodium":
+		return []components.ListItem{
+			{ID: "vscode:minimal", Title: "Minimal", Description: "Essential extensions only"},
+			{ID: "vscode:full", Title: "Full", Description: "Feature-rich configuration"},
+		}
+
+	// Editors without full provider support (basic presets)
+	case "vim":
+		return []components.ListItem{
+			{ID: "vim:basic", Title: "Basic", Description: "Sensible defaults"},
+		}
+	case "emacs":
+		return []components.ListItem{
+			{ID: "emacs:basic", Title: "Basic", Description: "Sensible defaults"},
+		}
+	case "helix":
+		return []components.ListItem{
+			{ID: "helix:basic", Title: "Basic", Description: "Default configuration"},
+		}
+	case "zed":
+		return []components.ListItem{
+			{ID: "zed:basic", Title: "Basic", Description: "Default configuration"},
+		}
+	case "sublime":
+		return []components.ListItem{
+			{ID: "sublime:basic", Title: "Basic", Description: "Default configuration"},
+		}
+	case "nano":
+		return []components.ListItem{
+			{ID: "nano:basic", Title: "Basic", Description: "Improved defaults"},
+		}
+	case "intellij":
+		return []components.ListItem{
+			{ID: "intellij:basic", Title: "Basic", Description: "Default configuration"},
+		}
+	case "webstorm":
+		return []components.ListItem{
+			{ID: "webstorm:basic", Title: "Basic", Description: "Default configuration"},
+		}
+
+	// Other providers
 	case "shell":
 		return []components.ListItem{
 			{ID: "shell:zsh", Title: "Zsh", Description: "Basic Zsh configuration"},
@@ -423,8 +510,29 @@ func (m initWizardModel) getPresetsForProvider(provider string) []components.Lis
 		}
 	case "brew":
 		return []components.ListItem{
-			{ID: "brew:minimal", Title: "Minimal", Description: "Essential formulae"},
-			{ID: "brew:developer", Title: "Developer", Description: "Full developer setup"},
+			{ID: "brew:cli-essentials", Title: "CLI Essentials", Description: "Must-have CLI tools"},
+			{ID: "brew:dev-tools", Title: "Developer Tools", Description: "Common dev utilities"},
+		}
+	case "docker":
+		return []components.ListItem{
+			{ID: "docker:basic", Title: "Basic", Description: "Docker Desktop setup"},
+			{ID: "docker:kubernetes", Title: "Kubernetes", Description: "With local Kubernetes"},
+		}
+	case "fonts":
+		return []components.ListItem{
+			{ID: "fonts:nerd-essential", Title: "Essential", Description: "Core Nerd Fonts"},
+			{ID: "fonts:nerd-complete", Title: "Complete", Description: "All Nerd Fonts"},
+		}
+	case "runtime":
+		return []components.ListItem{
+			{ID: "runtime:mise-node", Title: "Node.js", Description: "Node.js via mise"},
+			{ID: "runtime:mise-polyglot", Title: "Polyglot", Description: "Multiple languages"},
+		}
+	case "ssh":
+		return []components.ListItem{
+			{ID: "ssh:basic", Title: "Basic", Description: "Essential SSH settings"},
+			{ID: "ssh:github", Title: "GitHub", Description: "Optimized for GitHub"},
+			{ID: "ssh:multi-identity", Title: "Multi-Identity", Description: "Work/personal separation"},
 		}
 	default:
 		return []components.ListItem{}
@@ -435,7 +543,26 @@ func (m initWizardModel) getPresetsForProvider(provider string) []components.Lis
 type fallbackCatalogService struct{}
 
 func (f *fallbackCatalogService) GetProviders() []string {
-	return []string{"brew", "git", "nvim", "shell"}
+	// Build provider list with editors first (alphabetically), then other tools
+	providers := make([]string, 0, 20)
+
+	// Add all available editors (already sorted alphabetically)
+	for _, editor := range AvailableEditors() {
+		providers = append(providers, editor.ID)
+	}
+
+	// Add other core providers (alphabetically)
+	providers = append(providers,
+		"brew",
+		"docker",
+		"fonts",
+		"git",
+		"runtime",
+		"shell",
+		"ssh",
+	)
+
+	return providers
 }
 
 func (f *fallbackCatalogService) GetPresetsForProvider(_ string) []PresetItem {

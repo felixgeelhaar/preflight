@@ -407,31 +407,40 @@ func runPluginSearch(query string) error {
 	fmt.Println(":")
 	fmt.Println("")
 
-	// Print results in a table format
+	// Print results in a table format with trust signals
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintln(w, "REPOSITORY\tTYPE\tSTARS\tDESCRIPTION")
-	_, _ = fmt.Fprintln(w, "──────────\t────\t─────\t───────────")
+	_, _ = fmt.Fprintln(w, "REPOSITORY\tTYPE\tSTARS\tTRUST\tDESCRIPTION")
+	_, _ = fmt.Fprintln(w, "──────────\t────\t─────\t─────\t───────────")
 
-	for _, r := range results {
+	for i := range results {
+		r := &results[i]
 		typeLabel := "config"
 		if r.PluginType == plugin.TypeProvider {
 			typeLabel = "provider"
 		}
 
+		// Compute trust score and get indicator
+		r.ComputeTrustScore()
+		trustIndicator := r.GetTrustIndicator()
+
 		desc := r.Description
-		if len(desc) > 50 {
-			desc = desc[:47] + "..."
+		if len(desc) > 45 {
+			desc = desc[:42] + "..."
 		}
 
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%d\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%d\t%s %s\t%s\n",
 			r.FullName,
 			typeLabel,
 			r.Stars,
+			trustIndicator.Symbol(),
+			trustIndicator,
 			desc,
 		)
 	}
 	_ = w.Flush()
 
+	fmt.Println("")
+	fmt.Println("Trust: ✓=verified ●=high ◐=medium ○=low ?=unknown")
 	fmt.Println("")
 	fmt.Println("Install a plugin with:")
 	fmt.Println("  preflight plugin install https://github.com/<repository>")
