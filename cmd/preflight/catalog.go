@@ -132,6 +132,9 @@ func init() {
 	rootCmd.AddCommand(catalogCmd)
 }
 
+// registryStore is the persistent store for external catalog sources.
+var registryStore = catalog.NewRegistryStore(catalog.DefaultRegistryStoreConfig())
+
 // getRegistry returns the catalog registry with builtin catalog loaded
 func getRegistry() (*catalog.Registry, error) {
 	registry := catalog.NewRegistry()
@@ -153,7 +156,38 @@ func getRegistry() (*catalog.Registry, error) {
 		return nil, err
 	}
 
-	// TODO: Load external catalogs from config/state file
+	// Load external catalogs from persistent store
+	storedSources, err := registryStore.Load()
+	if err != nil {
+		// Log warning but continue with builtin only
+		fmt.Fprintf(os.Stderr, "Warning: failed to load external catalogs: %v\n", err)
+		return registry, nil
+	}
+
+	ctx := context.Background()
+	loader := catalog.NewExternalLoader(catalog.DefaultExternalLoaderConfig())
+
+	for _, stored := range storedSources {
+		if !stored.Enabled {
+			continue
+		}
+
+		src, err := stored.ToSource()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: invalid source '%s': %v\n", stored.Name, err)
+			continue
+		}
+
+		rc, err := loader.Load(ctx, src)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to load catalog '%s': %v\n", stored.Name, err)
+			continue
+		}
+
+		if err := registry.Add(rc); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to register catalog '%s': %v\n", stored.Name, err)
+		}
+	}
 
 	return registry, nil
 }
@@ -222,7 +256,11 @@ func runCatalogAdd(_ *cobra.Command, args []string) error {
 		fmt.Println("\nSecurity audit passed")
 	}
 
-	// TODO: Save to registry config file
+	// Save to persistent registry
+	if err := registryStore.Add(source); err != nil {
+		return fmt.Errorf("failed to save catalog: %w", err)
+	}
+
 	fmt.Printf("\nCatalog '%s' added successfully.\n", name)
 	return nil
 }
@@ -304,7 +342,10 @@ func runCatalogRemove(_ *cobra.Command, args []string) error {
 	loader := catalog.NewExternalLoader(catalog.DefaultExternalLoaderConfig())
 	_ = loader.ClearCache(rc.Source())
 
-	// TODO: Update registry config file
+	// Remove from persistent registry
+	if err := registryStore.Remove(name); err != nil {
+		return fmt.Errorf("failed to update registry: %w", err)
+	}
 
 	fmt.Printf("Catalog '%s' removed.\n", name)
 	return nil
@@ -353,6 +394,8 @@ func runCatalogVerify(_ *cobra.Command, args []string) error {
 			failed++
 		} else {
 			fmt.Println("OK")
+			// Update last verify timestamp
+			_ = registryStore.UpdateVerifyTime(rc.Name())
 		}
 	}
 

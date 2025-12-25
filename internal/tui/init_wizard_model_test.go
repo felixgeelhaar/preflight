@@ -253,6 +253,60 @@ func TestInitWizardModel_View_Complete(t *testing.T) {
 	assert.Contains(t, view, "Created")
 }
 
+func TestInitWizardModel_View_Error(t *testing.T) {
+	t.Parallel()
+
+	model := newInitWizardModel(InitWizardOptions{})
+	model.step = stepError
+	model.lastError = assert.AnError
+
+	view := model.View()
+
+	assert.Contains(t, view, "Error")
+	assert.Contains(t, view, "assert.AnError")
+}
+
+func TestInitWizardModel_View_Error_Nil(t *testing.T) {
+	t.Parallel()
+
+	model := newInitWizardModel(InitWizardOptions{})
+	model.step = stepError
+	model.lastError = nil
+
+	view := model.View()
+
+	assert.Contains(t, view, "Error")
+	assert.Contains(t, view, "unknown error")
+}
+
+func TestInitWizardModel_HandleKeyMsg_EscFromError(t *testing.T) {
+	t.Parallel()
+
+	model := newInitWizardModel(InitWizardOptions{})
+	model.step = stepError
+	model.lastError = assert.AnError
+
+	newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m := newModel.(initWizardModel)
+
+	assert.Equal(t, stepConfirm, m.step)
+	assert.Nil(t, m.lastError)
+}
+
+func TestInitWizardModel_HandleKeyMsg_QuitFromError(t *testing.T) {
+	t.Parallel()
+
+	model := newInitWizardModel(InitWizardOptions{})
+	model.step = stepError
+	model.lastError = assert.AnError
+
+	newModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	m := newModel.(initWizardModel)
+
+	assert.True(t, m.cancelled)
+	assert.NotNil(t, cmd) // tea.Quit
+}
+
 func TestInitWizardModel_Update_ComponentForwarding(t *testing.T) {
 	t.Parallel()
 

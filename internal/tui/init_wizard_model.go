@@ -18,6 +18,7 @@ const (
 	stepConfirm
 	stepPreview
 	stepComplete
+	stepError
 )
 
 // initWizardModel implements the init wizard TUI.
@@ -34,6 +35,7 @@ type initWizardModel struct {
 	cancelled        bool
 	catalogService   CatalogServiceInterface
 	aiProvider       advisor.AIProvider
+	lastError        error
 
 	// Components
 	providerList components.List
@@ -228,7 +230,7 @@ func (m initWizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Update active component
 	var cmd tea.Cmd
 	switch m.step {
-	case stepWelcome, stepComplete:
+	case stepWelcome, stepComplete, stepError:
 		// No component to update
 	case stepInterview:
 		var newInterview tea.Model
@@ -272,11 +274,24 @@ func (m initWizardModel) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.cancelled = true
 			return m, tea.Quit
 		}
+		// From error step, go back to confirm
+		if m.step == stepError {
+			m.lastError = nil
+			m.step = stepConfirm
+			return m, nil
+		}
 		// Go back
 		if m.step > stepWelcome {
 			m.step--
 		}
 		return m, nil
+
+	case tea.KeyRunes:
+		// Handle 'q' to quit from error step
+		if m.step == stepError && len(msg.Runes) > 0 && msg.Runes[0] == 'q' {
+			m.cancelled = true
+			return m, tea.Quit
+		}
 
 	case tea.KeyEnter:
 		if m.step == stepWelcome {
@@ -294,7 +309,7 @@ func (m initWizardModel) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	//nolint:exhaustive // stepPreview is handled separately above
 	switch m.step {
-	case stepWelcome, stepComplete:
+	case stepWelcome, stepComplete, stepError:
 		// No component to update
 	case stepInterview:
 		var newInterview tea.Model
@@ -356,9 +371,9 @@ func (m initWizardModel) handleConfirm(msg components.ConfirmResultMsg) (tea.Mod
 		// Generate preview files
 		previewFiles, err := generator.GeneratePreviewFiles(preset)
 		if err != nil {
-			// TODO: Show error in TUI
-			m.step = stepComplete
-			return m, tea.Quit
+			m.lastError = err
+			m.step = stepError
+			return m, nil
 		}
 
 		m.previewFiles = previewFiles
@@ -393,9 +408,9 @@ func (m initWizardModel) writeConfigFiles() (tea.Model, tea.Cmd) {
 	}
 
 	if err := generator.GenerateFromPreset(preset); err != nil {
-		// TODO: Show error in TUI
-		m.step = stepComplete
-		return m, tea.Quit
+		m.lastError = err
+		m.step = stepError
+		return m, nil
 	}
 
 	m.configPath = "preflight.yaml"
@@ -594,6 +609,8 @@ func (m initWizardModel) View() string {
 		return m.previewModel.View()
 	case stepComplete:
 		return m.viewComplete()
+	case stepError:
+		return m.viewError()
 	default:
 		return ""
 	}
@@ -657,5 +674,20 @@ func (m initWizardModel) viewComplete() string {
 		m.styles.Paragraph.Render("Next steps:\n") +
 		m.styles.Help.Render("  preflight plan    - Review the execution plan\n") +
 		m.styles.Help.Render("  preflight apply   - Apply the configuration\n")
+	return m.styles.App.Render(title + "\n\n" + body)
+}
+
+func (m initWizardModel) viewError() string {
+	title := m.styles.Error.Render("Error")
+	var errMsg string
+	if m.lastError != nil {
+		errMsg = m.lastError.Error()
+	} else {
+		errMsg = "An unknown error occurred"
+	}
+
+	body := m.styles.Error.Render("Failed to create configuration:\n\n") +
+		m.styles.Paragraph.Render("  "+errMsg+"\n\n") +
+		m.styles.Help.Render("Press Esc to go back or q to quit.\n")
 	return m.styles.App.Render(title + "\n\n" + body)
 }
