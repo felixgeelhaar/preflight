@@ -29,6 +29,14 @@ policy:
       match: ["./cmd/..."]
       min: 42  # CLI threshold: TUI commands (capture, doctor, rollback, discover) require integration tests
 
+    - name: platform
+      match: ["./internal/domain/platform/..."]
+      min: 45  # Platform-specific: WSL/Docker detection functions require actual WSL/Docker environment
+
+    - name: marketplace
+      match: ["./internal/domain/marketplace/..."]
+      min: 76  # Community features: some HTTP-dependent code paths
+
 exclude:
   - "internal/generated/*"
   - "**/*_test.go"

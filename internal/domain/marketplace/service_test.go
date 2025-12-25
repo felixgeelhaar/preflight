@@ -495,3 +495,325 @@ func TestService_Uninstall(t *testing.T) {
 	err = service.Uninstall(MustNewPackageID("uninstall-test"))
 	assert.ErrorIs(t, err, ErrNotInstalled)
 }
+
+func TestService_Update(t *testing.T) {
+	t.Parallel()
+
+	// Create tar.gz packages for v1.0.0 and v2.0.0
+	createPackage := func(version string) ([]byte, string) {
+		var buf bytes.Buffer
+		gw := gzip.NewWriter(&buf)
+		tw := tar.NewWriter(gw)
+
+		content := []byte("version: " + version)
+		hdr := &tar.Header{
+			Name: "config.yaml",
+			Mode: 0o644,
+			Size: int64(len(content)),
+		}
+		_ = tw.WriteHeader(hdr)
+		_, _ = tw.Write(content)
+		_ = tw.Close()
+		_ = gw.Close()
+
+		data := buf.Bytes()
+		return data, ComputeChecksum(data)
+	}
+
+	pkg1, checksum1 := createPackage("1.0.0")
+	pkg2, checksum2 := createPackage("2.0.0")
+
+	indexData := `{
+		"version": "1",
+		"packages": [
+			{
+				"id": "update-test",
+				"type": "preset",
+				"title": "Update Test",
+				"versions": [
+					{"version": "2.0.0", "checksum": "` + checksum2 + `"},
+					{"version": "1.0.0", "checksum": "` + checksum1 + `"}
+				]
+			}
+		]
+	}`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/index.json":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(indexData))
+		case "/v1/packages/update-test/1.0.0.tar.gz":
+			w.Header().Set("Content-Type", "application/gzip")
+			_, _ = w.Write(pkg1)
+		case "/v1/packages/update-test/2.0.0.tar.gz":
+			w.Header().Set("Content-Type", "application/gzip")
+			_, _ = w.Write(pkg2)
+		}
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	config := ServiceConfig{
+		InstallPath: tmpDir + "/installed",
+		CacheConfig: CacheConfig{
+			BasePath: tmpDir + "/cache",
+			IndexTTL: 1 * time.Hour,
+		},
+		ClientConfig: ClientConfig{
+			RegistryURL: server.URL,
+			Timeout:     10 * time.Second,
+		},
+	}
+
+	service := NewService(config)
+
+	// Install v1.0.0
+	_, err := service.Install(context.Background(), MustNewPackageID("update-test"), "1.0.0")
+	require.NoError(t, err)
+
+	// Update to latest (v2.0.0)
+	updated, err := service.Update(context.Background(), MustNewPackageID("update-test"))
+	require.NoError(t, err)
+	assert.Equal(t, "2.0.0", updated.Version)
+
+	// Update again should return current version (already up to date)
+	result, err := service.Update(context.Background(), MustNewPackageID("update-test"))
+	require.NoError(t, err)
+	assert.Equal(t, "2.0.0", result.Version)
+}
+
+func TestService_Update_NotInstalled(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	config := ServiceConfig{
+		InstallPath: tmpDir + "/installed",
+		CacheConfig: CacheConfig{
+			BasePath: tmpDir + "/cache",
+			IndexTTL: 1 * time.Hour,
+		},
+		ClientConfig: DefaultClientConfig(),
+	}
+
+	service := NewService(config)
+
+	// Update non-installed package should fail
+	_, err := service.Update(context.Background(), MustNewPackageID("not-installed"))
+	assert.ErrorIs(t, err, ErrNotInstalled)
+}
+
+func TestService_UpdateAll(t *testing.T) {
+	t.Parallel()
+
+	// Create packages
+	createPackage := func(name, version string) ([]byte, string) {
+		var buf bytes.Buffer
+		gw := gzip.NewWriter(&buf)
+		tw := tar.NewWriter(gw)
+
+		content := []byte(name + ": " + version)
+		hdr := &tar.Header{
+			Name: "config.yaml",
+			Mode: 0o644,
+			Size: int64(len(content)),
+		}
+		_ = tw.WriteHeader(hdr)
+		_, _ = tw.Write(content)
+		_ = tw.Close()
+		_ = gw.Close()
+
+		data := buf.Bytes()
+		return data, ComputeChecksum(data)
+	}
+
+	pkg1v1, checksum1v1 := createPackage("pkg1", "1.0.0")
+	pkg1v2, checksum1v2 := createPackage("pkg1", "2.0.0")
+	pkg2v1, checksum2v1 := createPackage("pkg2", "1.0.0")
+
+	indexData := `{
+		"version": "1",
+		"packages": [
+			{
+				"id": "pkg1",
+				"type": "preset",
+				"title": "Package 1",
+				"versions": [
+					{"version": "2.0.0", "checksum": "` + checksum1v2 + `"},
+					{"version": "1.0.0", "checksum": "` + checksum1v1 + `"}
+				]
+			},
+			{
+				"id": "pkg2",
+				"type": "preset",
+				"title": "Package 2",
+				"versions": [
+					{"version": "1.0.0", "checksum": "` + checksum2v1 + `"}
+				]
+			}
+		]
+	}`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/index.json":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(indexData))
+		case "/v1/packages/pkg1/1.0.0.tar.gz":
+			w.Header().Set("Content-Type", "application/gzip")
+			_, _ = w.Write(pkg1v1)
+		case "/v1/packages/pkg1/2.0.0.tar.gz":
+			w.Header().Set("Content-Type", "application/gzip")
+			_, _ = w.Write(pkg1v2)
+		case "/v1/packages/pkg2/1.0.0.tar.gz":
+			w.Header().Set("Content-Type", "application/gzip")
+			_, _ = w.Write(pkg2v1)
+		}
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	config := ServiceConfig{
+		InstallPath: tmpDir + "/installed",
+		CacheConfig: CacheConfig{
+			BasePath: tmpDir + "/cache",
+			IndexTTL: 1 * time.Hour,
+		},
+		ClientConfig: ClientConfig{
+			RegistryURL: server.URL,
+			Timeout:     10 * time.Second,
+		},
+	}
+
+	service := NewService(config)
+
+	// Install pkg1 v1.0.0 and pkg2 v1.0.0
+	_, err := service.Install(context.Background(), MustNewPackageID("pkg1"), "1.0.0")
+	require.NoError(t, err)
+	_, err = service.Install(context.Background(), MustNewPackageID("pkg2"), "1.0.0")
+	require.NoError(t, err)
+
+	// Update all - should update pkg1 to 2.0.0
+	updated, err := service.UpdateAll(context.Background())
+	require.NoError(t, err)
+	assert.Len(t, updated, 1)
+	assert.Equal(t, "pkg1", updated[0].Package.ID.String())
+	assert.Equal(t, "2.0.0", updated[0].Version)
+}
+
+func TestService_CheckUpdates(t *testing.T) {
+	t.Parallel()
+
+	createPackage := func(version string) ([]byte, string) {
+		var buf bytes.Buffer
+		gw := gzip.NewWriter(&buf)
+		tw := tar.NewWriter(gw)
+
+		content := []byte("v" + version)
+		hdr := &tar.Header{
+			Name: "config.yaml",
+			Mode: 0o644,
+			Size: int64(len(content)),
+		}
+		_ = tw.WriteHeader(hdr)
+		_, _ = tw.Write(content)
+		_ = tw.Close()
+		_ = gw.Close()
+
+		data := buf.Bytes()
+		return data, ComputeChecksum(data)
+	}
+
+	pkg1, checksum1 := createPackage("1.0.0")
+	_, checksum2 := createPackage("2.0.0")
+
+	indexData := `{
+		"version": "1",
+		"packages": [
+			{
+				"id": "check-update-test",
+				"type": "preset",
+				"title": "Check Update Test",
+				"versions": [
+					{"version": "2.0.0", "checksum": "` + checksum2 + `", "changelog": "New features!"},
+					{"version": "1.0.0", "checksum": "` + checksum1 + `"}
+				]
+			}
+		]
+	}`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/index.json":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(indexData))
+		case "/v1/packages/check-update-test/1.0.0.tar.gz":
+			w.Header().Set("Content-Type", "application/gzip")
+			_, _ = w.Write(pkg1)
+		}
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	config := ServiceConfig{
+		InstallPath: tmpDir + "/installed",
+		CacheConfig: CacheConfig{
+			BasePath: tmpDir + "/cache",
+			IndexTTL: 1 * time.Hour,
+		},
+		ClientConfig: ClientConfig{
+			RegistryURL: server.URL,
+			Timeout:     10 * time.Second,
+		},
+	}
+
+	service := NewService(config)
+
+	// Install v1.0.0
+	_, err := service.Install(context.Background(), MustNewPackageID("check-update-test"), "1.0.0")
+	require.NoError(t, err)
+
+	// Check for updates
+	updates, err := service.CheckUpdates(context.Background())
+	require.NoError(t, err)
+	assert.Len(t, updates, 1)
+	assert.Equal(t, "check-update-test", updates[0].Package.ID.String())
+	assert.Equal(t, "1.0.0", updates[0].CurrentVersion)
+	assert.Equal(t, "2.0.0", updates[0].LatestVersion)
+	assert.Equal(t, "New features!", updates[0].Changelog)
+}
+
+func TestService_CheckUpdates_Empty(t *testing.T) {
+	t.Parallel()
+
+	// Mock server with empty index
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v1/index.json" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"packages":[]}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	config := ServiceConfig{
+		InstallPath: tmpDir + "/installed",
+		CacheConfig: CacheConfig{
+			BasePath: tmpDir + "/cache",
+			IndexTTL: 1 * time.Hour,
+		},
+		ClientConfig: ClientConfig{
+			RegistryURL: server.URL,
+			Timeout:     5 * time.Second,
+		},
+	}
+
+	service := NewService(config)
+
+	// No installed packages - should return empty
+	updates, err := service.CheckUpdates(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, updates)
+}

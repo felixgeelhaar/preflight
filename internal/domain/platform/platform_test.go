@@ -226,3 +226,194 @@ func TestSetTestPlatform(t *testing.T) {
 	// Reset
 	SetTestPlatform(nil)
 }
+
+func TestPlatform_HasCommand(t *testing.T) {
+	t.Parallel()
+
+	p := New(OSDarwin, "arm64", EnvNative)
+
+	t.Run("finds existing command", func(t *testing.T) {
+		t.Parallel()
+		// 'ls' exists on all Unix-like systems
+		assert.True(t, p.HasCommand("ls"))
+	})
+
+	t.Run("returns false for non-existent command", func(t *testing.T) {
+		t.Parallel()
+		assert.False(t, p.HasCommand("nonexistent-command-xyz-12345"))
+	})
+}
+
+func TestNew(t *testing.T) {
+	t.Parallel()
+
+	p := New(OSDarwin, "arm64", EnvNative)
+	assert.Equal(t, OSDarwin, p.OS())
+	assert.Equal(t, "arm64", p.Arch())
+	assert.Equal(t, EnvNative, p.Environment())
+	assert.Empty(t, p.WSLDistro())
+	assert.Empty(t, p.WindowsPath())
+}
+
+func TestNewWSL(t *testing.T) {
+	t.Parallel()
+
+	p := NewWSL(EnvWSL2, "Ubuntu-22.04", "/mnt/c")
+	assert.Equal(t, OSLinux, p.OS())
+	assert.Equal(t, "amd64", p.Arch())
+	assert.Equal(t, EnvWSL2, p.Environment())
+	assert.Equal(t, "Ubuntu-22.04", p.WSLDistro())
+	assert.Equal(t, "/mnt/c", p.WindowsPath())
+}
+
+func TestDetect(t *testing.T) {
+	// Don't run in parallel - modifies global state
+
+	// Reset test platform to ensure real detection
+	SetTestPlatform(nil)
+
+	p, err := Detect()
+	assert.NoError(t, err)
+	assert.NotNil(t, p)
+
+	// Basic sanity checks
+	assert.NotEmpty(t, p.Arch())
+	assert.NotEqual(t, OSUnknown, p.OS())
+}
+
+func TestPlatform_CanAccessWindows_NonWSL(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		platform *Platform
+		want     bool
+	}{
+		{
+			name:     "macOS cannot access Windows",
+			platform: New(OSDarwin, "arm64", EnvNative),
+			want:     false,
+		},
+		{
+			name:     "native Linux cannot access Windows",
+			platform: New(OSLinux, "amd64", EnvNative),
+			want:     false,
+		},
+		{
+			name:     "Docker cannot access Windows",
+			platform: New(OSLinux, "amd64", EnvDocker),
+			want:     false,
+		},
+		{
+			name:     "Windows native cannot access Windows via WSL path",
+			platform: New(OSWindows, "amd64", EnvNative),
+			want:     false,
+		},
+		{
+			name:     "WSL with empty path cannot access Windows",
+			platform: &Platform{os: OSLinux, arch: "amd64", environment: EnvWSL2, windowsPath: ""},
+			want:     false,
+		},
+		{
+			name:     "WSL1 with path can access Windows",
+			platform: NewWSL(EnvWSL1, "Ubuntu", "/mnt/c"),
+			want:     true,
+		},
+		{
+			name:     "WSL2 with path can access Windows",
+			platform: NewWSL(EnvWSL2, "Ubuntu", "/mnt/c"),
+			want:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, tt.platform.CanAccessWindows())
+		})
+	}
+}
+
+func TestOSConstants(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, OSDarwin, OS("darwin"))
+	assert.Equal(t, OSLinux, OS("linux"))
+	assert.Equal(t, OSWindows, OS("windows"))
+	assert.Equal(t, OSUnknown, OS("unknown"))
+}
+
+func TestEnvironmentConstants(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, EnvNative, Environment("native"))
+	assert.Equal(t, EnvWSL1, Environment("wsl1"))
+	assert.Equal(t, EnvWSL2, Environment("wsl2"))
+	assert.Equal(t, EnvDocker, Environment("docker"))
+	assert.Equal(t, EnvUnknown, Environment("unknown"))
+}
+
+func TestPlatform_String_EdgeCases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("unknown OS", func(t *testing.T) {
+		t.Parallel()
+		p := New(OSUnknown, "amd64", EnvNative)
+		assert.Equal(t, "unknown/amd64", p.String())
+	})
+
+	t.Run("unknown environment", func(t *testing.T) {
+		t.Parallel()
+		p := &Platform{os: OSLinux, arch: "amd64", environment: EnvUnknown}
+		assert.Equal(t, "linux/amd64/unknown", p.String())
+	})
+
+	t.Run("WSL without distro", func(t *testing.T) {
+		t.Parallel()
+		p := &Platform{os: OSLinux, arch: "amd64", environment: EnvWSL2}
+		assert.Equal(t, "linux/amd64/wsl2", p.String())
+	})
+}
+
+func TestPlatform_IsChecks_Additional(t *testing.T) {
+	t.Parallel()
+
+	t.Run("unknown OS is not Windows", func(t *testing.T) {
+		t.Parallel()
+		assert.False(t, New(OSUnknown, "amd64", EnvNative).IsWindows())
+	})
+
+	t.Run("unknown OS is not macOS", func(t *testing.T) {
+		t.Parallel()
+		assert.False(t, New(OSUnknown, "amd64", EnvNative).IsMacOS())
+	})
+
+	t.Run("unknown OS is not Linux", func(t *testing.T) {
+		t.Parallel()
+		assert.False(t, New(OSUnknown, "amd64", EnvNative).IsLinux())
+	})
+
+	t.Run("unknown environment is not WSL", func(t *testing.T) {
+		t.Parallel()
+		p := &Platform{os: OSLinux, arch: "amd64", environment: EnvUnknown}
+		assert.False(t, p.IsWSL())
+	})
+
+	t.Run("unknown environment is not WSL2", func(t *testing.T) {
+		t.Parallel()
+		p := &Platform{os: OSLinux, arch: "amd64", environment: EnvUnknown}
+		assert.False(t, p.IsWSL2())
+	})
+
+	t.Run("unknown environment is not Docker", func(t *testing.T) {
+		t.Parallel()
+		p := &Platform{os: OSLinux, arch: "amd64", environment: EnvUnknown}
+		assert.False(t, p.IsDocker())
+	})
+
+	t.Run("unknown environment is not Native", func(t *testing.T) {
+		t.Parallel()
+		p := &Platform{os: OSLinux, arch: "amd64", environment: EnvUnknown}
+		assert.False(t, p.IsNative())
+	})
+}
