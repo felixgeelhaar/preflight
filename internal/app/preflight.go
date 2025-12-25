@@ -100,6 +100,50 @@ func (p *Preflight) Apply(ctx context.Context, plan *execution.Plan, dryRun bool
 	return executor.Execute(ctx, plan)
 }
 
+// LoadMergedConfig loads and merges configuration, returning the raw map.
+func (p *Preflight) LoadMergedConfig(_ context.Context, configPath, targetName string) (map[string]interface{}, error) {
+	return p.loadConfig(configPath, targetName)
+}
+
+// LoadManifest loads the manifest file without merging layers.
+func (p *Preflight) LoadManifest(_ context.Context, configPath string) (*config.Manifest, error) {
+	loader := config.NewLoader()
+	return loader.LoadManifest(configPath)
+}
+
+// CaptureSystemState captures the current system state for comparison.
+func (p *Preflight) CaptureSystemState(ctx context.Context) (map[string]interface{}, error) {
+	findings, err := p.Capture(ctx, CaptureOptions{
+		IncludeSecrets: false,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert findings to a map structure
+	result := make(map[string]interface{})
+
+	// Group items by provider
+	byProvider := make(map[string][]interface{})
+	for _, item := range findings.Items {
+		byProvider[item.Provider] = append(byProvider[item.Provider], item.Name)
+	}
+
+	// Build provider-specific structures
+	if formulae, ok := byProvider["brew"]; ok {
+		result["brew"] = map[string]interface{}{
+			"formulae": formulae,
+		}
+	}
+	if extensions, ok := byProvider["vscode"]; ok {
+		result["vscode"] = map[string]interface{}{
+			"extensions": extensions,
+		}
+	}
+
+	return result, nil
+}
+
 // PrintPlan outputs a human-readable plan summary.
 func (p *Preflight) PrintPlan(plan *execution.Plan) {
 	summary := plan.Summary()
