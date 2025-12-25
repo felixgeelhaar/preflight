@@ -292,9 +292,9 @@ func TestSortResults(t *testing.T) {
 		t.Parallel()
 		now := time.Now()
 		r := []SearchResult{
-			{Name: "low-trust", Stars: 5, UpdatedAt: now.AddDate(-1, 0, 0)},     // Low stars, old
-			{Name: "high-trust", Stars: 150, UpdatedAt: now, HasSignature: true}, // High stars, recent, signed
-			{Name: "med-trust", Stars: 50, UpdatedAt: now.AddDate(0, -2, 0)},     // Medium
+			{Name: "low-trust", Stars: 5, UpdatedAt: now.AddDate(-1, 0, 0)},
+			{Name: "high-trust", Stars: 150, UpdatedAt: now, HasSignature: true},
+			{Name: "med-trust", Stars: 50, UpdatedAt: now.AddDate(0, -2, 0)},
 		}
 		SortResults(r, "trust")
 		assert.Equal(t, "high-trust", r[0].Name)
@@ -367,10 +367,10 @@ func TestComputeTrustScore(t *testing.T) {
 			stars    int
 			minScore int
 		}{
-			{100, 20}, // 100+ stars = +20
-			{50, 15},  // 50+ stars = +15
-			{10, 10},  // 10+ stars = +10
-			{5, 0},    // <10 stars = +0
+			{100, 20}, // 100+ stars
+			{50, 15},  // 50+ stars
+			{10, 10},  // 10+ stars
+			{5, 0},    // <10 stars
 		}
 
 		for _, tt := range tests {

@@ -332,9 +332,7 @@ provides:
 		require.NoError(t, os.WriteFile(filepath.Join(pluginDir, "plugin.yaml"), []byte(manifest), 0644))
 
 		// Override HOME for this test
-		origHome := os.Getenv("HOME")
-		os.Setenv("HOME", tmpDir)
-		defer os.Setenv("HOME", origHome)
+		t.Setenv("HOME", tmpDir)
 
 		loader := NewLoader()
 		plugin, err := loader.LoadFromGitWithContext(context.Background(), "https://example.com/test-plugin.git", "")

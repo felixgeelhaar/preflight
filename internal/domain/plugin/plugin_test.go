@@ -1212,8 +1212,8 @@ func TestDefaultVerificationConfig(t *testing.T) {
 	config := DefaultVerificationConfig()
 	require.NotNil(t, config)
 	assert.Contains(t, config.SSHAllowedSignersFile, "allowed_signers")
-	assert.Empty(t, config.GPGKeyring)       // Uses system default
-	assert.Empty(t, config.SigstoreTrustedRoots) // Uses public Sigstore
+	assert.Empty(t, config.GPGKeyring)
+	assert.Empty(t, config.SigstoreTrustedRoots)
 }
 
 func TestDetermineTrustLevelWithVerification(t *testing.T) {

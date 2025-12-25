@@ -290,7 +290,7 @@ func TestInitWizardModel_HandleKeyMsg_EscFromError(t *testing.T) {
 	m := newModel.(initWizardModel)
 
 	assert.Equal(t, stepConfirm, m.step)
-	assert.Nil(t, m.lastError)
+	assert.NoError(t, m.lastError)
 }
 
 func TestInitWizardModel_HandleKeyMsg_QuitFromError(t *testing.T) {

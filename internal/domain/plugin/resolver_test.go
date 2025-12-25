@@ -138,7 +138,7 @@ func TestDependencyResolver_Resolve(t *testing.T) {
 				aIndex = i
 			}
 		}
-		assert.True(t, bIndex < aIndex, "plugin-b should be installed before plugin-a")
+		assert.Less(t, bIndex, aIndex, "plugin-b should be installed before plugin-a")
 	})
 
 	t.Run("version conflict strict mode", func(t *testing.T) {
@@ -246,10 +246,10 @@ func TestTopologicalSort(t *testing.T) {
 			return -1
 		}
 
-		assert.True(t, indexOf("d") < indexOf("b"))
-		assert.True(t, indexOf("d") < indexOf("c"))
-		assert.True(t, indexOf("b") < indexOf("a"))
-		assert.True(t, indexOf("c") < indexOf("a"))
+		assert.Less(t, indexOf("d"), indexOf("b"))
+		assert.Less(t, indexOf("d"), indexOf("c"))
+		assert.Less(t, indexOf("b"), indexOf("a"))
+		assert.Less(t, indexOf("c"), indexOf("a"))
 	})
 
 	t.Run("simple cycle", func(t *testing.T) {
@@ -341,11 +341,12 @@ func TestCompareVersionConstraints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.c1+" vs "+tt.c2, func(t *testing.T) {
 			result := compareVersionConstraints(tt.c1, tt.c2)
-			if tt.expected > 0 {
-				assert.Greater(t, result, 0)
-			} else if tt.expected < 0 {
-				assert.Less(t, result, 0)
-			} else {
+			switch {
+			case tt.expected > 0:
+				assert.Positive(t, result)
+			case tt.expected < 0:
+				assert.Negative(t, result)
+			default:
 				assert.Equal(t, 0, result)
 			}
 		})
