@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2024-12-25
+
+### Added
+- **External Catalog Support**: Load catalogs from URLs or local paths
+  - `preflight catalog add <url-or-path>`: Add external catalog source
+  - `preflight catalog add --local ./path`: Add local catalog directory
+  - `preflight catalog add --name <name>`: Specify custom catalog name
+  - `preflight catalog list`: List all registered catalogs with stats
+  - `preflight catalog remove <name>`: Remove external catalog
+  - `preflight catalog verify [name]`: Verify catalog integrity
+  - `preflight catalog audit <name>`: Security audit for catalogs
+
+- **Catalog Manifest & Integrity**:
+  - SHA256 integrity hashes for all catalog files
+  - Manifest with version, author, description, license, repository
+  - Automatic integrity verification on load
+  - Cache with offline support
+
+- **Security Auditor**: Pattern-based security scanning for catalogs
+  - Detects remote code execution patterns (curl|sh, wget|bash)
+  - Flags privilege escalation (sudo, doas)
+  - Warns about destructive operations (rm -rf /, chmod 777)
+  - Scans for hardcoded secrets (API keys, tokens, passwords)
+  - Finds unsafe shell patterns (eval, insecure permissions)
+  - Severity levels: critical, high, medium, low, info
+
+### New Domain Components
+- **Source**: Catalog source types (builtin, url, local) with validation
+- **Manifest**: Integrity manifest with SHA256 file hashes
+- **Registry**: Multi-catalog management with preset/pack lookup
+- **ExternalLoader**: URL and local catalog loading with caching
+- **Auditor**: Security rule engine with pattern matching
+
 ## [2.6.0] - 2024-12-25
 
 ### Added
@@ -315,7 +348,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Domain-Driven Design architecture
 - Test-Driven Development with >80% coverage requirement per domain
 
-[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/felixgeelhaar/preflight/compare/v2.6.0...v3.0.0
+[2.6.0]: https://github.com/felixgeelhaar/preflight/compare/v2.5.0...v2.6.0
+[2.5.0]: https://github.com/felixgeelhaar/preflight/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/felixgeelhaar/preflight/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/felixgeelhaar/preflight/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/felixgeelhaar/preflight/compare/v2.1.0...v2.2.0

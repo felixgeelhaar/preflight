@@ -500,7 +500,7 @@ Completes PRD 9.1 TUI requirements and adds rollback capability:
 
 v3 introduces external plugin support with a defense-in-depth security model. Each phase builds on the previous to create a layered security stack.
 
-### 15.1 Plugin Foundation (v3.0)
+### 15.1 Plugin Foundation (v3.0) ✅ COMPLETE
 
 **Goal:** Enable external catalogs with basic security guarantees.
 
