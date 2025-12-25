@@ -557,6 +557,8 @@ preflight plugin <command> [flags]
 | `install <source>` | Install a plugin from path or Git URL |
 | `remove <name>` | Remove an installed plugin |
 | `info <name>` | Show detailed plugin information |
+| `validate [path]` | Validate plugin manifest |
+| `upgrade [name]` | Upgrade plugins to latest version |
 
 **Search Flags:**
 
@@ -590,6 +592,19 @@ preflight plugin info docker
 
 # Remove a plugin
 preflight plugin remove docker
+
+# Validate a plugin
+preflight plugin validate /path/to/plugin
+preflight plugin validate --strict --json
+
+# Check for updates
+preflight plugin upgrade --check
+
+# Upgrade all plugins
+preflight plugin upgrade
+
+# Upgrade specific plugin
+preflight plugin upgrade kubernetes --dry-run
 ```
 
 **Output (list):**
@@ -653,7 +668,7 @@ preflight version
 **Output:**
 
 ```
-preflight version 2.1.0
+preflight version 3.3.1
 ```
 
 ---

@@ -38,11 +38,16 @@ Define your workstation configuration once, apply it anywhere.
 - **Deterministic Execution**: Same config always produces the same result
 - **Plan Before Apply**: Always preview changes before executing
 - **Provenance Tracking**: Know exactly which layer defined each setting
-- **Multi-Platform**: macOS (Homebrew) and Linux (apt) package management
+- **Multi-Platform**: macOS (Homebrew), Linux (apt), Windows (winget, scoop, chocolatey)
+- **WSL Support**: Full WSL1/WSL2 integration with path translation and cross-platform tools
 - **Editor Support**: Neovim presets (LazyVim, NvChad, AstroNvim) and VSCode configuration
 - **Shell Configuration**: zsh/bash/fish with oh-my-zsh, starship, and custom plugins
 - **Dotfile Management**: Template, generate, or link your dotfiles with drift detection
 - **Git & SSH**: Managed .gitconfig and ~/.ssh/config with identity separation
+- **Plugin Ecosystem**: Extend with community plugins (config or WASM provider)
+- **Marketplace**: Browse and install community presets and capability packs
+- **Signature Verification**: GPG/SSH/Sigstore verification for trusted publishers
+- **WASM Sandbox**: Secure plugin execution with capability-based permissions
 - **Capture Review TUI**: Interactive review with search/filter, layer reassignment, and undo/redo
 - **Three-Way Merge**: Automatic conflict detection with git-style conflict markers
 
@@ -135,7 +140,14 @@ shell:
 | `preflight plan` | Preview changes without applying |
 | `preflight apply` | Apply the configuration |
 | `preflight doctor` | Check system health and detect drift |
-| `preflight doctor --update-config` | Merge drift back into config |
+| `preflight rollback` | Restore files from automatic snapshots |
+| `preflight validate` | Validate config for CI/CD pipelines |
+| `preflight plugin list` | List installed plugins |
+| `preflight plugin search` | Search for community plugins |
+| `preflight plugin install` | Install a plugin from path or Git URL |
+| `preflight marketplace search` | Search community package registry |
+| `preflight trust list` | List trusted publishers |
+| `preflight tour` | Interactive guided walkthroughs |
 | `preflight version` | Show version information |
 
 ## Architecture
@@ -152,9 +164,17 @@ internal/
     drift/               # File change detection
     snapshot/            # Automatic backups before changes
     merge/               # Three-way merge with conflict markers
+    plugin/              # Plugin loading and management
+    marketplace/         # Community package registry
+    catalog/             # Presets and capability packs
+    policy/              # Security policies and constraints
+    platform/            # OS/WSL/Docker detection
   provider/              # System integration adapters
     brew/                # Homebrew packages
     apt/                 # Apt packages
+    winget/              # Windows Package Manager
+    scoop/               # Scoop package manager
+    chocolatey/          # Chocolatey packages
     files/               # Dotfile management
     git/                 # Git configuration
     ssh/                 # SSH configuration
@@ -162,6 +182,7 @@ internal/
     shell/               # Shell configuration
     nvim/                # Neovim configuration
     vscode/              # VSCode configuration
+    docker/              # Docker Desktop configuration
   tui/                   # Bubble Tea interactive interfaces
 ```
 

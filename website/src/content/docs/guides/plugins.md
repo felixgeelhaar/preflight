@@ -93,6 +93,49 @@ preflight plugin info kubernetes
 preflight plugin remove kubernetes
 ```
 
+### Validate a Plugin
+
+Validate a plugin manifest before publishing:
+
+```bash
+# Validate current directory
+preflight plugin validate
+
+# Validate specific path
+preflight plugin validate /path/to/plugin
+
+# Strict mode (treat warnings as errors)
+preflight plugin validate --strict
+
+# JSON output for CI
+preflight plugin validate --json
+```
+
+Validation checks:
+- Required fields (apiVersion, name, version)
+- Semantic versioning format
+- WASM configuration for provider plugins
+- Capability justifications
+- Dependency syntax
+
+### Upgrade Plugins
+
+Check for and install plugin updates:
+
+```bash
+# Check all plugins for updates
+preflight plugin upgrade --check
+
+# Upgrade all plugins
+preflight plugin upgrade
+
+# Upgrade specific plugin
+preflight plugin upgrade kubernetes
+
+# Dry run (preview without installing)
+preflight plugin upgrade --dry-run
+```
+
 ---
 
 ## Developing Plugins
@@ -515,7 +558,7 @@ Preflight's two-tier architecture is designed with security in mind:
 ├─────────────────────────────────────┤
 │  Checksums (integrity)              │  ← Know it wasn't tampered with
 ├─────────────────────────────────────┤
-│  Signatures (identity) [future]     │  ← Know who published it
+│  Signatures (identity)              │  ← Know who published it
 └─────────────────────────────────────┘
 ```
 
@@ -535,7 +578,7 @@ WASM provider plugins run with these constraints:
 | Level | Description | Source |
 |-------|-------------|--------|
 | `builtin` | Core Preflight providers | Shipped with Preflight |
-| `verified` | Reviewed by Preflight team | Future: signed plugins |
+| `verified` | Signed by trusted publisher | GPG/SSH/Sigstore signature |
 | `community` | Community contributions | GitHub with topic |
 | `untrusted` | Unknown source | Local/unverified |
 

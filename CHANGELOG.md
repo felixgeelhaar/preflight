@@ -7,19 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.3.1] - 2025-12-25
 
+### Changed
+- **Test Coverage Improvements**: Improved platform and marketplace domain coverage
+  - Platform domain: 39% → 47.6% with WSL path translation tests
+  - Marketplace domain: 76% → 83.9% with Update/UpdateAll/CheckUpdates tests
 
 ## [3.3.0] - 2025-12-25
 
-### Features
-
-- **plugin:** complete plugin ecosystem with A+ product grade (e272795)
-
-
-## [Unreleased]
-
-## [3.3.0] - 2024-12-25
-
 ### Added
+- **Complete Plugin Ecosystem**: A+ product grade with full feature set
+  - Git clone installer for remote plugin installation
+  - Dependency resolution with topological sorting
+  - Plugin validation CLI (`preflight plugin validate`)
+  - Trust signals in search results (stars, activity, signature status)
+  - Upgrade mechanism (`preflight plugin upgrade`)
+
 - **WASM Plugin Sandbox**: Complete isolation for untrusted plugins using WebAssembly
   - Wazero runtime (pure Go, no CGO) for deterministic plugin execution
   - Plugin runs in isolated VM with no direct system access
