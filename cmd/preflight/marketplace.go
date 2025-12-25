@@ -121,14 +121,69 @@ Examples:
 	RunE: runMarketplaceInfo,
 }
 
+// Recommend subcommand
+var marketplaceRecommendCmd = &cobra.Command{
+	Use:     "recommend",
+	Aliases: []string{"rec", "suggestions"},
+	Short:   "Get personalized package recommendations",
+	Long: `Get package recommendations based on your installed packages and preferences.
+
+The recommendation engine considers:
+  - Your installed packages and their keywords
+  - Active providers in your configuration
+  - Package popularity and recency
+  - Complementary packages that work well together
+
+Examples:
+  preflight marketplace recommend
+  preflight marketplace recommend --type preset
+  preflight marketplace recommend --keywords vim,neovim
+  preflight marketplace recommend --similar nvim-pro
+  preflight marketplace recommend --featured`,
+	RunE: runMarketplaceRecommend,
+}
+
+// Featured subcommand
+var marketplaceFeaturedCmd = &cobra.Command{
+	Use:   "featured",
+	Short: "Show featured packages",
+	Long: `Display editorially curated featured packages.
+
+Featured packages are verified, highly-rated packages that represent
+the best of the marketplace.
+
+Examples:
+  preflight marketplace featured
+  preflight marketplace featured --type preset`,
+	RunE: runMarketplaceFeatured,
+}
+
+// Popular subcommand
+var marketplacePopularCmd = &cobra.Command{
+	Use:   "popular",
+	Short: "Show most popular packages",
+	Long: `Display the most downloaded and starred packages.
+
+Examples:
+  preflight marketplace popular
+  preflight marketplace popular --type capability-pack`,
+	RunE: runMarketplacePopular,
+}
+
 // Flags
 var (
-	mpSearchType   string
-	mpSearchLimit  int
-	mpInstallVer   string
-	mpOfflineMode  bool
-	mpRefreshIndex bool
-	mpCheckUpdates bool
+	mpSearchType    string
+	mpSearchLimit   int
+	mpInstallVer    string
+	mpOfflineMode   bool
+	mpRefreshIndex  bool
+	mpCheckUpdates  bool
+	mpRecommendType string
+	mpKeywords      string
+	mpSimilarTo     string
+	mpRecommendMax  int
+	mpPopularType   string
+	mpFeaturedType  string
 )
 
 func init() {
@@ -146,6 +201,18 @@ func init() {
 	// List flags
 	marketplaceListCmd.Flags().BoolVar(&mpCheckUpdates, "check-updates", false, "Check for available updates")
 
+	// Recommend flags
+	marketplaceRecommendCmd.Flags().StringVar(&mpRecommendType, "type", "", "Filter by type (preset, capability-pack, layer-template)")
+	marketplaceRecommendCmd.Flags().StringVar(&mpKeywords, "keywords", "", "Comma-separated keywords for recommendations")
+	marketplaceRecommendCmd.Flags().StringVar(&mpSimilarTo, "similar", "", "Get recommendations similar to this package")
+	marketplaceRecommendCmd.Flags().IntVar(&mpRecommendMax, "max", 10, "Maximum recommendations to show")
+
+	// Featured flags
+	marketplaceFeaturedCmd.Flags().StringVar(&mpFeaturedType, "type", "", "Filter by type")
+
+	// Popular flags
+	marketplacePopularCmd.Flags().StringVar(&mpPopularType, "type", "", "Filter by type")
+
 	// Add subcommands
 	marketplaceCmd.AddCommand(marketplaceSearchCmd)
 	marketplaceCmd.AddCommand(marketplaceInstallCmd)
@@ -153,6 +220,9 @@ func init() {
 	marketplaceCmd.AddCommand(marketplaceUpdateCmd)
 	marketplaceCmd.AddCommand(marketplaceListCmd)
 	marketplaceCmd.AddCommand(marketplaceInfoCmd)
+	marketplaceCmd.AddCommand(marketplaceRecommendCmd)
+	marketplaceCmd.AddCommand(marketplaceFeaturedCmd)
+	marketplaceCmd.AddCommand(marketplacePopularCmd)
 
 	rootCmd.AddCommand(marketplaceCmd)
 }
@@ -492,4 +562,255 @@ func formatInstallAge(t time.Time) string {
 	default:
 		return t.Format("2006-01-02")
 	}
+}
+
+func runMarketplaceRecommend(_ *cobra.Command, _ []string) error {
+	ctx := context.Background()
+	svc := newMarketplaceService()
+
+	if mpRefreshIndex {
+		if err := svc.RefreshIndex(ctx); err != nil {
+			return fmt.Errorf("failed to refresh index: %w", err)
+		}
+	}
+
+	// Handle similar package mode
+	if mpSimilarTo != "" {
+		return runSimilarRecommendations(ctx, svc)
+	}
+
+	// Build user context from installed packages and flags
+	userCtx := buildUserContext(svc)
+
+	// Create recommender
+	config := marketplace.DefaultRecommenderConfig()
+	config.MaxRecommendations = mpRecommendMax
+	recommender := marketplace.NewRecommender(svc, config)
+
+	// Get recommendations
+	recommendations, err := recommender.RecommendForUser(ctx, userCtx)
+	if err != nil {
+		return fmt.Errorf("recommendation failed: %w", err)
+	}
+
+	if len(recommendations) == 0 {
+		fmt.Println("No recommendations found.")
+		fmt.Println("Try installing some packages first, or use --keywords to specify interests.")
+		return nil
+	}
+
+	outputRecommendations(recommendations)
+	return nil
+}
+
+func runSimilarRecommendations(ctx context.Context, svc *marketplace.Service) error {
+	id, err := marketplace.NewPackageID(mpSimilarTo)
+	if err != nil {
+		return fmt.Errorf("invalid package name: %w", err)
+	}
+
+	config := marketplace.DefaultRecommenderConfig()
+	config.MaxRecommendations = mpRecommendMax
+	recommender := marketplace.NewRecommender(svc, config)
+
+	recommendations, err := recommender.RecommendSimilar(ctx, id)
+	if err != nil {
+		return fmt.Errorf("recommendation failed: %w", err)
+	}
+
+	if len(recommendations) == 0 {
+		fmt.Printf("No packages similar to '%s' found.\n", mpSimilarTo)
+		return nil
+	}
+
+	fmt.Printf("Packages similar to '%s':\n\n", mpSimilarTo)
+	outputRecommendations(recommendations)
+	return nil
+}
+
+func buildUserContext(svc *marketplace.Service) marketplace.UserContext {
+	var userCtx marketplace.UserContext
+
+	// Get installed packages
+	installed, err := svc.List()
+	if err == nil {
+		for _, pkg := range installed {
+			userCtx.InstalledPackages = append(userCtx.InstalledPackages, pkg.Package.ID)
+		}
+	}
+
+	// Parse keywords from flag
+	if mpKeywords != "" {
+		for _, kw := range strings.Split(mpKeywords, ",") {
+			kw = strings.TrimSpace(kw)
+			if kw != "" {
+				userCtx.Keywords = append(userCtx.Keywords, kw)
+			}
+		}
+	}
+
+	// Filter by type if specified
+	if mpRecommendType != "" {
+		userCtx.PreferredTypes = []string{mpRecommendType}
+	}
+
+	return userCtx
+}
+
+func outputRecommendations(recommendations []marketplace.Recommendation) {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	_, _ = fmt.Fprintln(w, "NAME\tTYPE\tSCORE\tREASONS")
+
+	for _, rec := range recommendations {
+		pkgType := rec.Package.Type
+		if len(pkgType) > 12 {
+			pkgType = pkgType[:12]
+		}
+
+		// Format reasons
+		var reasons []string
+		for _, r := range rec.Reasons {
+			reasons = append(reasons, formatReason(r))
+		}
+		reasonStr := strings.Join(reasons, ", ")
+		if len(reasonStr) > 40 {
+			reasonStr = reasonStr[:37] + "..."
+		}
+
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%.1f%%\t%s\n",
+			rec.Package.ID.String(), pkgType, rec.Score*100, reasonStr)
+	}
+
+	_ = w.Flush()
+}
+
+func formatReason(r marketplace.RecommendationReason) string {
+	switch r {
+	case marketplace.ReasonPopular:
+		return "popular"
+	case marketplace.ReasonTrending:
+		return "trending"
+	case marketplace.ReasonSimilarKeywords:
+		return "similar"
+	case marketplace.ReasonSameType:
+		return "same type"
+	case marketplace.ReasonSameAuthor:
+		return "same author"
+	case marketplace.ReasonComplementary:
+		return "complements"
+	case marketplace.ReasonRecentlyUpdated:
+		return "recent"
+	case marketplace.ReasonHighlyRated:
+		return "rated"
+	case marketplace.ReasonProviderMatch:
+		return "provider"
+	case marketplace.ReasonFeatured:
+		return "featured"
+	default:
+		return string(r)
+	}
+}
+
+func runMarketplaceFeatured(_ *cobra.Command, _ []string) error {
+	ctx := context.Background()
+	svc := newMarketplaceService()
+
+	if mpRefreshIndex {
+		if err := svc.RefreshIndex(ctx); err != nil {
+			return fmt.Errorf("failed to refresh index: %w", err)
+		}
+	}
+
+	config := marketplace.DefaultRecommenderConfig()
+	config.MaxRecommendations = 10
+	recommender := marketplace.NewRecommender(svc, config)
+
+	recommendations, err := recommender.FeaturedPackages(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get featured packages: %w", err)
+	}
+
+	if len(recommendations) == 0 {
+		fmt.Println("No featured packages available.")
+		return nil
+	}
+
+	// Filter by type if specified
+	if mpFeaturedType != "" {
+		var filtered []marketplace.Recommendation
+		for _, rec := range recommendations {
+			if rec.Package.Type == mpFeaturedType {
+				filtered = append(filtered, rec)
+			}
+		}
+		recommendations = filtered
+	}
+
+	fmt.Println("Featured Packages:")
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	_, _ = fmt.Fprintln(w, "NAME\tTYPE\tTITLE\tAUTHOR\tSTARS")
+
+	for _, rec := range recommendations {
+		pkgType := rec.Package.Type
+		if len(pkgType) > 12 {
+			pkgType = pkgType[:12]
+		}
+
+		title := rec.Package.Title
+		if len(title) > 25 {
+			title = title[:22] + "..."
+		}
+
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\n",
+			rec.Package.ID.String(), pkgType, title,
+			rec.Package.Provenance.Author, rec.Package.Stars)
+	}
+
+	_ = w.Flush()
+	return nil
+}
+
+func runMarketplacePopular(_ *cobra.Command, _ []string) error {
+	ctx := context.Background()
+	svc := newMarketplaceService()
+
+	if mpRefreshIndex {
+		if err := svc.RefreshIndex(ctx); err != nil {
+			return fmt.Errorf("failed to refresh index: %w", err)
+		}
+	}
+
+	config := marketplace.DefaultRecommenderConfig()
+	config.MaxRecommendations = 20
+	recommender := marketplace.NewRecommender(svc, config)
+
+	recommendations, err := recommender.PopularPackages(ctx, mpPopularType)
+	if err != nil {
+		return fmt.Errorf("failed to get popular packages: %w", err)
+	}
+
+	if len(recommendations) == 0 {
+		fmt.Println("No packages found.")
+		return nil
+	}
+
+	fmt.Println("Most Popular Packages:")
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	_, _ = fmt.Fprintln(w, "RANK\tNAME\tTYPE\tDOWNLOADS\tSTARS")
+
+	for i, rec := range recommendations {
+		pkgType := rec.Package.Type
+		if len(pkgType) > 12 {
+			pkgType = pkgType[:12]
+		}
+
+		_, _ = fmt.Fprintf(w, "#%d\t%s\t%s\t%d\t%d\n",
+			i+1, rec.Package.ID.String(), pkgType,
+			rec.Package.Downloads, rec.Package.Stars)
+	}
+
+	_ = w.Flush()
+	return nil
 }

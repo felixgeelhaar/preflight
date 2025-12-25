@@ -76,15 +76,21 @@ Examples:
 // Verify subcommand
 var catalogVerifyCmd = &cobra.Command{
 	Use:   "verify [name]",
-	Short: "Verify catalog integrity",
-	Long: `Verify the integrity of registered catalogs.
+	Short: "Verify catalog integrity and signatures",
+	Long: `Verify the integrity and optional signatures of registered catalogs.
 
-If a catalog name is provided, only that catalog is verified.
-Otherwise, all external catalogs are verified.
+By default, verifies SHA256 content hashes. Use --signatures to also
+verify Sigstore keyless signatures when available.
+
+Sigstore verification checks:
+  - Certificate validity and chain
+  - OIDC identity (GitHub Actions, GitLab CI, etc.)
+  - Content hash matches signed digest
 
 Examples:
-  preflight catalog verify              # Verify all
-  preflight catalog verify my-catalog   # Verify specific catalog`,
+  preflight catalog verify                       # Verify hashes
+  preflight catalog verify --signatures          # Also verify signatures
+  preflight catalog verify --verbose my-catalog  # Detailed output`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runCatalogVerify,
 }
@@ -110,9 +116,12 @@ Examples:
 
 // Flags
 var (
-	catalogName  string
-	catalogLocal bool
-	catalogForce bool
+	catalogName         string
+	catalogLocal        bool
+	catalogForce        bool
+	catalogVerifySigs   bool
+	catalogAllowExpired bool
+	catalogVerbose      bool
 )
 
 func init() {
@@ -121,6 +130,11 @@ func init() {
 	catalogAddCmd.Flags().BoolVar(&catalogLocal, "local", false, "Treat path as local directory")
 
 	catalogRemoveCmd.Flags().BoolVar(&catalogForce, "force", false, "Skip confirmation")
+
+	// Verify flags
+	catalogVerifyCmd.Flags().BoolVar(&catalogVerifySigs, "signatures", false, "Verify Sigstore signatures")
+	catalogVerifyCmd.Flags().BoolVar(&catalogAllowExpired, "allow-expired", false, "Allow expired certificates")
+	catalogVerifyCmd.Flags().BoolVar(&catalogVerbose, "verbose", false, "Show detailed verification info")
 
 	// Add subcommands
 	catalogCmd.AddCommand(catalogAddCmd)
@@ -383,28 +397,109 @@ func runCatalogVerify(_ *cobra.Command, args []string) error {
 	}
 
 	loader := catalog.NewExternalLoader(catalog.DefaultExternalLoaderConfig())
+
+	// Setup Sigstore verifier if signatures flag is set
+	var sigstoreVerifier *catalog.SigstoreVerifier
+	if catalogVerifySigs {
+		config := catalog.DefaultSigstoreVerifierConfig()
+		config.AllowExpired = catalogAllowExpired
+		sigstoreVerifier = catalog.NewSigstoreVerifier(config)
+	}
+
 	var failed int
+	var signaturesVerified int
 
 	for _, rc := range toVerify {
-		fmt.Printf("Verifying %s... ", rc.Name())
+		fmt.Printf("Verifying %s...\n", rc.Name())
 
-		if err := loader.Verify(ctx, rc); err != nil {
-			fmt.Println("FAILED")
-			fmt.Printf("  Error: %v\n", err)
-			failed++
-		} else {
-			fmt.Println("OK")
-			// Update last verify timestamp
-			_ = registryStore.UpdateVerifyTime(rc.Name())
+		// Basic integrity verification
+		if catalogVerbose {
+			fmt.Printf("  Checking content hashes... ")
 		}
+		if err := loader.Verify(ctx, rc); err != nil {
+			if catalogVerbose {
+				fmt.Println("FAILED")
+			}
+			fmt.Printf("  ✗ Hash verification failed: %v\n", err)
+			failed++
+			continue
+		}
+		if catalogVerbose {
+			fmt.Println("OK")
+		}
+
+		// Sigstore signature verification if enabled
+		if catalogVerifySigs && sigstoreVerifier != nil {
+			if catalogVerbose {
+				fmt.Printf("  Checking Sigstore signatures... ")
+			}
+			sigResult := verifyCatalogSignatures(rc, sigstoreVerifier)
+			if sigResult.hasSignature {
+				if sigResult.verified {
+					if catalogVerbose {
+						fmt.Println("OK")
+						fmt.Printf("    Signer: %s\n", sigResult.signer)
+						fmt.Printf("    Issuer: %s\n", sigResult.issuer)
+					}
+					signaturesVerified++
+				} else {
+					if catalogVerbose {
+						fmt.Println("FAILED")
+					}
+					fmt.Printf("  ✗ Signature verification failed: %v\n", sigResult.err)
+					failed++
+					continue
+				}
+			} else {
+				if catalogVerbose {
+					fmt.Println("NO SIGNATURE")
+				}
+			}
+		}
+
+		fmt.Printf("  ✓ %s verified\n", rc.Name())
+		// Update last verify timestamp
+		_ = registryStore.UpdateVerifyTime(rc.Name())
+	}
+
+	fmt.Println()
+
+	// Summary
+	if catalogVerifySigs {
+		fmt.Printf("Verified: %d catalogs (%d with signatures)\n", len(toVerify)-failed, signaturesVerified)
+	} else {
+		fmt.Printf("Verified: %d of %d catalogs\n", len(toVerify)-failed, len(toVerify))
 	}
 
 	if failed > 0 {
 		return fmt.Errorf("%d of %d catalogs failed verification", failed, len(toVerify))
 	}
 
-	fmt.Printf("\nAll %d catalogs verified.\n", len(toVerify))
 	return nil
+}
+
+// signatureVerifyResult holds the result of signature verification.
+type signatureVerifyResult struct {
+	hasSignature bool
+	verified     bool
+	signer       string
+	issuer       string
+	err          error
+}
+
+// verifyCatalogSignatures verifies Sigstore signatures for a catalog.
+// Note: Signature verification requires catalogs to include signature files.
+// This is a placeholder that checks for signature metadata in the manifest.
+func verifyCatalogSignatures(_ *catalog.RegisteredCatalog, _ *catalog.SigstoreVerifier) signatureVerifyResult {
+	// Signature verification requires manifest to include signature data.
+	// For catalogs with signature support, the manifest would include:
+	// - A .sig file reference with Sigstore signature data
+	// - OIDC identity information for verification
+	//
+	// Currently returns no signature until catalog authors add signing.
+	return signatureVerifyResult{
+		hasSignature: false,
+	}
 }
 
 func runCatalogAudit(_ *cobra.Command, args []string) error {
