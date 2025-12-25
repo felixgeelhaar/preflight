@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -340,26 +342,79 @@ func runTrustShow(_ *cobra.Command, args []string) error {
 
 // detectKeyType attempts to detect the key type from the data.
 func detectKeyType(data []byte) catalog.SignatureType {
+	if len(data) == 0 {
+		return ""
+	}
+
 	content := string(data)
 
-	// SSH key detection
-	if len(data) > 4 {
-		prefix := content[:4]
-		if prefix == "ssh-" || prefix == "ecds" || prefix == "sk-s" {
+	// SSH key detection - check for known SSH key prefixes
+	sshPrefixes := []string{
+		"ssh-ed25519",
+		"ssh-rsa",
+		"ssh-dss",
+		"ecdsa-sha2-nistp256",
+		"ecdsa-sha2-nistp384",
+		"ecdsa-sha2-nistp521",
+		"sk-ssh-ed25519",
+		"sk-ecdsa-sha2-nistp256",
+	}
+	for _, prefix := range sshPrefixes {
+		if strings.HasPrefix(content, prefix) {
 			return catalog.SignatureTypeSSH
 		}
 	}
 
-	// GPG key detection (armored)
-	gpgPrefix := "-----BEGIN PGP PUBLIC KEY"
-	if len(content) >= len(gpgPrefix) && content[:len(gpgPrefix)] == gpgPrefix {
-		return catalog.SignatureTypeGPG
+	// GPG key detection (armored) - check for PGP armor headers
+	gpgArmorPrefixes := []string{
+		"-----BEGIN PGP PUBLIC KEY",
+		"-----BEGIN PGP PRIVATE KEY",
+		"-----BEGIN PGP MESSAGE",
+		"-----BEGIN PGP SIGNATURE",
+	}
+	for _, prefix := range gpgArmorPrefixes {
+		if strings.HasPrefix(content, prefix) {
+			return catalog.SignatureTypeGPG
+		}
 	}
 
-	// GPG binary detection (starts with packet header)
-	if len(data) > 0 && (data[0]&0x80) != 0 {
+	// GPG binary detection - validate OpenPGP packet structure
+	// OpenPGP packets have bit 7 set (0x80) and specific tag formats
+	if isValidOpenPGPPacket(data) {
 		return catalog.SignatureTypeGPG
 	}
 
 	return ""
+}
+
+// isValidOpenPGPPacket checks if data starts with a valid OpenPGP packet header.
+// OpenPGP packets must have bit 7 set. Old format packets use bits 2-5 for tag,
+// new format packets (bit 6 set) use bits 0-5 for tag.
+func isValidOpenPGPPacket(data []byte) bool {
+	if len(data) < 2 {
+		return false
+	}
+
+	// Bit 7 must be set for any OpenPGP packet
+	if (data[0] & 0x80) == 0 {
+		return false
+	}
+
+	// Check if it's new format (bit 6 set) or old format (bit 6 clear)
+	isNewFormat := (data[0] & 0x40) != 0
+
+	if isNewFormat {
+		// New format: bits 0-5 are the packet tag (0-63)
+		tag := data[0] & 0x3f
+		// Valid public key packet tags: 6 (public key), 14 (public subkey)
+		// Also allow: 2 (signature), 5 (secret key), 7 (secret subkey)
+		validTags := []byte{2, 5, 6, 7, 14}
+		return bytes.Contains(validTags, []byte{tag})
+	}
+
+	// Old format: bits 2-5 are the packet tag (0-15)
+	tag := (data[0] & 0x3c) >> 2
+	// Valid public key packet tags in old format
+	validTags := []byte{2, 5, 6, 7, 14}
+	return bytes.Contains(validTags, []byte{tag})
 }

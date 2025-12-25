@@ -57,13 +57,9 @@ func capturePluginStdout(t *testing.T, f func()) string {
 }
 
 func TestRunPluginList_Empty(t *testing.T) {
-	// Save original HOME and set temp dir
-	origHome := os.Getenv("HOME")
+	// t.Setenv automatically restores the original value after the test
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
-	defer func() {
-		_ = os.Setenv("HOME", origHome)
-	}()
 
 	output := capturePluginStdout(t, func() {
 		err := runPluginList()
@@ -76,10 +72,13 @@ func TestRunPluginList_Empty(t *testing.T) {
 
 func TestRunPluginList_WithPlugins(t *testing.T) {
 	// This test verifies the plugin list output format when plugins exist.
-	// Due to complexity of mocking the loader's HOME directory lookup,
-	// we test the domain layer directly in loader_test.go.
-	// Here we just verify the command exists and works with no plugins.
-	t.Skip("Plugin discovery uses os.UserHomeDir() which is hard to mock; covered by domain tests")
+	// Plugin discovery uses os.UserHomeDir() which doesn't reliably respect
+	// the HOME environment variable in all test scenarios.
+	//
+	// Domain layer coverage is provided by:
+	//   - internal/domain/plugin/loader_test.go: TestLoader_Discover*
+	//   - internal/domain/plugin/registry_test.go: TestRegistry_List*
+	t.Skip("Plugin discovery uses os.UserHomeDir(); covered by loader_test.go and registry_test.go")
 }
 
 func TestRunPluginInstall_LocalPath(t *testing.T) {
@@ -111,13 +110,9 @@ func TestRunPluginInstall_InvalidPath(t *testing.T) {
 }
 
 func TestRunPluginRemove_NotFound(t *testing.T) {
-	// Save original HOME
-	origHome := os.Getenv("HOME")
+	// t.Setenv automatically restores the original value after the test
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
-	defer func() {
-		_ = os.Setenv("HOME", origHome)
-	}()
 
 	err := runPluginRemove("nonexistent-plugin")
 	assert.Error(t, err)
@@ -126,19 +121,19 @@ func TestRunPluginRemove_NotFound(t *testing.T) {
 
 func TestRunPluginRemove_Found(t *testing.T) {
 	// This test verifies plugin removal functionality.
-	// Due to complexity of mocking the loader's HOME directory lookup,
-	// we test the domain layer directly in loader_test.go.
-	t.Skip("Plugin discovery uses os.UserHomeDir() which is hard to mock; covered by domain tests")
+	// Plugin discovery uses os.UserHomeDir() which doesn't reliably respect
+	// the HOME environment variable in all test scenarios.
+	//
+	// Domain layer coverage is provided by:
+	//   - internal/domain/plugin/loader_test.go: TestLoader_Remove*
+	//   - internal/domain/plugin/registry_test.go: TestRegistry_Remove*
+	t.Skip("Plugin removal uses os.UserHomeDir(); covered by loader_test.go and registry_test.go")
 }
 
 func TestRunPluginInfo_NotFound(t *testing.T) {
-	// Save original HOME
-	origHome := os.Getenv("HOME")
+	// t.Setenv automatically restores the original value after the test
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
-	defer func() {
-		_ = os.Setenv("HOME", origHome)
-	}()
 
 	err := runPluginInfo("nonexistent-plugin")
 	assert.Error(t, err)
@@ -146,13 +141,9 @@ func TestRunPluginInfo_NotFound(t *testing.T) {
 }
 
 func TestRunPluginInfo_Found(t *testing.T) {
-	// Save original HOME
-	origHome := os.Getenv("HOME")
+	// t.Setenv automatically restores the original value after the test
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
-	defer func() {
-		_ = os.Setenv("HOME", origHome)
-	}()
 
 	// Create plugin with full details
 	pluginDir := filepath.Join(tmpDir, ".preflight", "plugins", "info-test")
