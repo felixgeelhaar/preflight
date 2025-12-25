@@ -1,6 +1,12 @@
 package main
 
 import (
+	"errors"
+	"fmt"
+	"io"
+	"os"
+
+	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +28,8 @@ var rootCmd = &cobra.Command{
 It turns intent (targets, layers, capabilities) into a reproducible,
 explainable local setup using the compiler model:
   Intent → Merge → Plan → Apply → Verify`,
+	SilenceErrors: true, // We handle error formatting ourselves
+	SilenceUsage:  true, // Don't show usage on error
 }
 
 // Execute runs the root command.
@@ -42,6 +50,37 @@ func init() {
 	registerFlagCompletions()
 
 	rootCmd.AddCommand(versionCmd)
+}
+
+// formatError returns a user-friendly error message.
+// With verbose=false: shows only the user message and suggestion.
+// With verbose=true: also shows the underlying technical error.
+func formatError(err error) string {
+	var userErr *config.UserError
+	if errors.As(err, &userErr) {
+		msg := userErr.Message
+		if userErr.Context != "" {
+			msg += fmt.Sprintf(" (at %s)", userErr.Context)
+		}
+		if userErr.Suggestion != "" {
+			msg += fmt.Sprintf("\n\nSuggestion: %s", userErr.Suggestion)
+		}
+		if verbose && userErr.Underlying != nil {
+			msg += fmt.Sprintf("\n\nTechnical details: %v", userErr.Underlying)
+		}
+		return msg
+	}
+	return err.Error()
+}
+
+// printError prints an error message to stderr with proper formatting.
+func printError(err error) {
+	printErrorTo(os.Stderr, err)
+}
+
+// printErrorTo prints an error message to the given writer.
+func printErrorTo(w io.Writer, err error) {
+	_, _ = fmt.Fprintf(w, "Error: %s\n", formatError(err))
 }
 
 // registerFlagCompletions sets up custom completions for global flags.

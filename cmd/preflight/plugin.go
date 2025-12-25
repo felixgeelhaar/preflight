@@ -477,11 +477,12 @@ func runPluginValidate(path string) error {
 	if err != nil {
 		result.Valid = false
 		// Parse the error to provide better feedback
-		if plugin.IsManifestSizeError(err) {
+		switch {
+		case plugin.IsManifestSizeError(err):
 			result.Errors = append(result.Errors, "manifest file exceeds size limit (256KB)")
-		} else if plugin.IsValidationError(err) {
+		case plugin.IsValidationError(err):
 			result.Errors = append(result.Errors, err.Error())
-		} else {
+		default:
 			result.Errors = append(result.Errors, fmt.Sprintf("loading plugin: %v", err))
 		}
 		return outputValidationResult(result)

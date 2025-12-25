@@ -1,0 +1,12 @@
+{"version":3,"term":{"cols":80,"rows":24,"type":"xterm-256color"},"timestamp":1766681126,"command":"bash -c 'echo \"# Validate configuration for CI/CD\" && sleep 0.5 && preflight validate && echo && sleep 0.5 && echo \"# Validate with JSON output\" && sleep 0.5 && preflight validate --json | jq . && echo && sleep 0.5 && echo \"# Validate different target\" && preflight validate --target work'","env":{"SHELL":"/bin/zsh"}}
+[0.009, "o", "# Validate configuration for CI/CD\r\n"]
+[1.157, "o", "\u001b]11;?\u001b\\\u001b[6n"]
+[5.005, "o", "✓ Configuration is valid\r\n  • Loaded config from preflight.yaml\r\n  • Target: default\r\n  • Compiled 3 steps\r\n"]
+[0.001, "o", "\r\n"]
+[0.504, "o", "# Validate with JSON output\r\n"]
+[0.526, "o", "\u001b[1;39m{\u001b[0m\r\n  \u001b[1;34m\"valid\"\u001b[0m\u001b[1;39m:\u001b[0m \u001b[0;39mtrue\u001b[0m\u001b[1;39m,\u001b[0m\r\n  \u001b[1;34m\"info\"\u001b[0m\u001b[1;39m:\u001b[0m \u001b[1;39m[\u001b[0m\r\n    \u001b[0;32m\"Loaded config from preflight.yaml\"\u001b[0m\u001b[1;39m,\u001b[0m\r\n    \u001b[0;32m\"Target: default\"\u001b[0m\u001b[1;39m,\u001b[0m\r\n    \u001b[0;32m\"Compiled 3 steps\"\u001b[0m\r\n  \u001b[1;39m]\u001b[0m\r\n\u001b[1;39m}\u001b[0m\r\n"]
+[0.000, "o", "\r\n"]
+[0.508, "o", "# Validate different target\r\n"]
+[0.008, "o", "\u001b]11;?\u001b\\\u001b[6n"]
+[5.006, "o", "✓ Configuration is valid\r\n  • Loaded config from preflight.yaml\r\n  • Target: work\r\n  • Compiled 3 steps\r\n"]
+[0.001, "x", "0"]

@@ -71,7 +71,7 @@ func runValidate(_ *cobra.Command, _ []string) error {
 		if validateJSON {
 			outputValidationJSON(nil, err)
 		} else {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			printError(err)
 		}
 		os.Exit(2)
 	}

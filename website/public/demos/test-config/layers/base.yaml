@@ -1,0 +1,8 @@
+name: base
+
+packages:
+  brew:
+    formulae:
+      - coreutils
+      - curl
+      - wget

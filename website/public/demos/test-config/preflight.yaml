@@ -1,0 +1,26 @@
+name: demo-workstation
+
+targets:
+  default:
+    - base
+  work:
+    - base
+
+packages:
+  brew:
+    formulae:
+      - git
+      - gh
+      - ripgrep
+      - fzf
+      - jq
+
+git:
+  user:
+    name: Demo User
+    email: demo@example.com
+
+shell:
+  default: zsh
+  starship:
+    enabled: true

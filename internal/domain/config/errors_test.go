@@ -430,3 +430,87 @@ func TestGetUserError(t *testing.T) {
 		assert.Nil(t, ue)
 	})
 }
+
+func TestNewYAMLParseError(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name            string
+		path            string
+		err             error
+		expectedMessage string
+		expectedContext string
+		suggestionHas   string
+	}{
+		{
+			name:            "map into slice error",
+			path:            "preflight.yaml",
+			err:             errors.New("yaml: unmarshal errors:\n  line 5: cannot unmarshal !!map into []string"),
+			expectedMessage: "invalid targets format",
+			expectedContext: "preflight.yaml (line 5)",
+			suggestionHas:   "Targets should be a list",
+		},
+		{
+			name:            "seq into map error",
+			path:            "layer.yaml",
+			err:             errors.New("yaml: unmarshal errors:\n  line 3: cannot unmarshal !!seq into map"),
+			expectedMessage: "expected an object but found a list",
+			expectedContext: "layer.yaml (line 3)",
+			suggestionHas:   "key: value",
+		},
+		{
+			name:            "str into type error",
+			path:            "config.yaml",
+			err:             errors.New("yaml: cannot unmarshal !!str into int"),
+			expectedMessage: "unexpected string value",
+			expectedContext: "config.yaml",
+			suggestionHas:   "indentation",
+		},
+		{
+			name:            "missing key error",
+			path:            "config.yaml",
+			err:             errors.New("yaml: did not find expected key"),
+			expectedMessage: "missing required field or incorrect indentation",
+			expectedContext: "config.yaml",
+			suggestionHas:   "2 spaces",
+		},
+		{
+			name:            "mapping values error",
+			path:            "config.yaml",
+			err:             errors.New("yaml: mapping values are not allowed here"),
+			expectedMessage: "invalid YAML structure",
+			expectedContext: "config.yaml",
+			suggestionHas:   "colons",
+		},
+		{
+			name:            "invalid character error",
+			path:            "config.yaml",
+			err:             errors.New("yaml: found character that cannot start any token"),
+			expectedMessage: "invalid character in YAML",
+			expectedContext: "config.yaml",
+			suggestionHas:   "special characters",
+		},
+		{
+			name:            "generic yaml error",
+			path:            "config.yaml",
+			err:             errors.New("yaml: some other error"),
+			expectedMessage: "invalid YAML syntax",
+			expectedContext: "config.yaml",
+			suggestionHas:   "YAML syntax",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			userErr := NewYAMLParseError(tt.path, tt.err)
+
+			assert.Equal(t, ErrCodeConfigParse, userErr.Code)
+			assert.Equal(t, tt.expectedMessage, userErr.Message)
+			assert.Equal(t, tt.expectedContext, userErr.Context)
+			assert.Contains(t, userErr.Suggestion, tt.suggestionHas)
+			assert.ErrorIs(t, userErr, tt.err)
+		})
+	}
+}

@@ -301,3 +301,70 @@ func GetUserError(err error) *UserError {
 	}
 	return nil
 }
+
+// NewYAMLParseError translates technical YAML errors into user-friendly messages.
+func NewYAMLParseError(path string, err error) *UserError {
+	errStr := err.Error()
+	var message, suggestion string
+
+	switch {
+	case strings.Contains(errStr, "cannot unmarshal !!map into []string"):
+		message = "invalid targets format"
+		suggestion = `Targets should be a list of layer names, not a nested object.
+
+Correct format:
+  targets:
+    default:
+      - base
+      - identity.work
+
+Incorrect format:
+  targets:
+    default:
+      layers:
+        - base`
+
+	case strings.Contains(errStr, "cannot unmarshal !!seq into map"):
+		message = "expected an object but found a list"
+		suggestion = "Check that you're using 'key: value' format instead of '- item' list format."
+
+	case strings.Contains(errStr, "cannot unmarshal !!str into"):
+		message = "unexpected string value"
+		suggestion = "Check that nested values are properly structured with correct indentation."
+
+	case strings.Contains(errStr, "did not find expected key"):
+		message = "missing required field or incorrect indentation"
+		suggestion = "YAML is sensitive to indentation. Use 2 spaces (not tabs) for each level."
+
+	case strings.Contains(errStr, "mapping values are not allowed"):
+		message = "invalid YAML structure"
+		suggestion = "Check for missing colons after keys, or incorrect indentation."
+
+	case strings.Contains(errStr, "found character that cannot start"):
+		message = "invalid character in YAML"
+		suggestion = "Quote string values that contain special characters like ':', '#', or '{'."
+
+	default:
+		message = "invalid YAML syntax"
+		suggestion = "Check your YAML syntax. Common issues: incorrect indentation, missing colons, or unquoted special characters."
+	}
+
+	// Extract line number if present
+	context := path
+	if strings.Contains(errStr, "line ") {
+		// Try to extract line number from error
+		parts := strings.Split(errStr, "line ")
+		if len(parts) > 1 {
+			lineInfo := strings.Split(parts[1], ":")[0]
+			context = fmt.Sprintf("%s (line %s)", path, lineInfo)
+		}
+	}
+
+	return &UserError{
+		Code:       ErrCodeConfigParse,
+		Message:    message,
+		Context:    context,
+		Suggestion: suggestion,
+		Underlying: err,
+	}
+}

@@ -38,7 +38,7 @@ func TestLoader_LoadManifest_FileNotFound_ReturnsError(t *testing.T) {
 	_, err := loader.LoadManifest("/nonexistent/path/preflight.yaml")
 
 	require.Error(t, err)
-	require.True(t, os.IsNotExist(err))
+	require.True(t, config.IsUserError(err, config.ErrCodeConfigNotFound))
 }
 
 func TestLoader_LoadLayer_LoadsFromFile(t *testing.T) {
@@ -71,7 +71,7 @@ func TestLoader_LoadLayer_FileNotFound_ReturnsError(t *testing.T) {
 	_, err := loader.LoadLayer("/nonexistent/path/base.yaml")
 
 	require.Error(t, err)
-	require.True(t, os.IsNotExist(err))
+	require.True(t, config.IsUserError(err, config.ErrCodeLayerNotFound))
 }
 
 func TestLoader_LoadTarget_ResolvesLayers(t *testing.T) {

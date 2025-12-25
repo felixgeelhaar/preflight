@@ -5,6 +5,7 @@ import "os"
 
 func main() {
 	if err := Execute(); err != nil {
+		printError(err)
 		os.Exit(1)
 	}
 }

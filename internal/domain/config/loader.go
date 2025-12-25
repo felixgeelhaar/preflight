@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Loader loads configuration from the filesystem.
@@ -17,20 +18,41 @@ func NewLoader() *Loader {
 func (l *Loader) LoadManifest(path string) (*Manifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, NewConfigNotFoundError(path)
+		}
 		return nil, err
 	}
-	return ParseManifest(data)
+
+	manifest, err := ParseManifest(data)
+	if err != nil {
+		// Check if it's a YAML parsing error and translate to user-friendly message
+		if strings.Contains(err.Error(), "yaml:") || strings.Contains(err.Error(), "unmarshal") {
+			return nil, NewYAMLParseError(path, err)
+		}
+		return nil, err
+	}
+	return manifest, nil
 }
 
 // LoadLayer loads a layer from the given path.
 func (l *Loader) LoadLayer(path string) (*Layer, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			// Extract layer name from path for better error message
+			name := strings.TrimSuffix(filepath.Base(path), ".yaml")
+			return nil, NewLayerNotFoundError(name, path)
+		}
 		return nil, err
 	}
 
 	layer, err := ParseLayer(data)
 	if err != nil {
+		// Check if it's a YAML parsing error and translate to user-friendly message
+		if strings.Contains(err.Error(), "yaml:") || strings.Contains(err.Error(), "unmarshal") {
+			return nil, NewYAMLParseError(path, err)
+		}
 		return nil, err
 	}
 

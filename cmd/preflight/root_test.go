@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"testing"
 
+	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/discover"
 	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/spf13/cobra"
@@ -2181,4 +2184,95 @@ func TestDetectAIProvider_WithBothKeys(t *testing.T) {
 
 	// This exercises the code path where Anthropic is checked first
 	_ = detectAIProvider()
+}
+
+// ============================================================
+// Error Formatting Tests
+// ============================================================
+
+func TestFormatError_RegularError(t *testing.T) {
+	t.Parallel()
+
+	err := errors.New("regular error message")
+	formatted := formatError(err)
+
+	assert.Equal(t, "regular error message", formatted)
+}
+
+func TestFormatError_UserError_Simple(t *testing.T) {
+	t.Parallel()
+
+	err := config.NewConfigNotFoundError("/path/to/config.yaml")
+	formatted := formatError(err)
+
+	assert.Contains(t, formatted, "/path/to/config.yaml")
+	assert.Contains(t, formatted, "Suggestion:")
+}
+
+func TestFormatError_UserError_WithContext(t *testing.T) {
+	t.Parallel()
+
+	err := config.NewYAMLParseError("/config.yaml", errors.New("yaml: unmarshal errors:\n  line 5: cannot unmarshal !!map into []string"))
+	formatted := formatError(err)
+
+	assert.Contains(t, formatted, "invalid targets format")
+	assert.Contains(t, formatted, "line 5")
+	assert.Contains(t, formatted, "Suggestion:")
+}
+
+func TestFormatError_VerboseMode(t *testing.T) {
+	// Save and restore verbose flag
+	originalVerbose := verbose
+	defer func() { verbose = originalVerbose }()
+
+	underlying := errors.New("yaml: unmarshal errors:\n  line 5: cannot unmarshal !!map into []string")
+	err := config.NewYAMLParseError("/config.yaml", underlying)
+
+	// Test without verbose
+	verbose = false
+	formatted := formatError(err)
+	assert.NotContains(t, formatted, "Technical details:")
+
+	// Test with verbose
+	verbose = true
+	formattedVerbose := formatError(err)
+	assert.Contains(t, formattedVerbose, "Technical details:")
+	assert.Contains(t, formattedVerbose, "yaml: unmarshal errors")
+}
+
+func TestPrintError_Output(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	err := errors.New("test error")
+	printErrorTo(&buf, err)
+
+	assert.Equal(t, "Error: test error\n", buf.String())
+}
+
+func TestPrintError_UserError(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	err := config.NewConfigNotFoundError("/test/path.yaml")
+	printErrorTo(&buf, err)
+
+	output := buf.String()
+	assert.Contains(t, output, "Error:")
+	assert.Contains(t, output, "/test/path.yaml")
+	assert.Contains(t, output, "Suggestion:")
+}
+
+func TestFormatError_WrappedUserError(t *testing.T) {
+	t.Parallel()
+
+	// Test that wrapped UserError is still formatted correctly
+	underlying := config.NewConfigNotFoundError("/path/config.yaml")
+	wrapped := fmt.Errorf("plan failed: %w", underlying)
+
+	formatted := formatError(wrapped)
+
+	// Should still extract the UserError through the chain
+	assert.Contains(t, formatted, "/path/config.yaml")
+	assert.Contains(t, formatted, "Suggestion:")
 }
