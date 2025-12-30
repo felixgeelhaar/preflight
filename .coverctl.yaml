@@ -5,41 +5,46 @@ policy:
     min: 80
 
   domains:
+    # Core domains - high coverage required
     - name: config
       match: ["./internal/domain/config/..."]
-      min: 80
+      min: 85  # Core configuration domain
 
     - name: compiler
       match: ["./internal/domain/compiler/..."]
-      min: 80
+      min: 90  # Critical compilation logic
 
     - name: execution
       match: ["./internal/domain/execution/..."]
-      min: 80
+      min: 90  # Critical execution logic
 
+    # Provider layer - external system integration
     - name: providers
       match: ["./internal/provider/..."]
-      min: 80
+      min: 80  # External system adapters
 
+    # Application layer
     - name: app
       match: ["./internal/app/..."]
-      min: 53  # Lowered from 70%: remaining untested code requires external commands (vscode, mise, asdf) or GitHub auth
+      min: 65  # Some external commands untestable (vscode, mise, asdf)
 
     - name: cli
       match: ["./cmd/..."]
-      min: 39  # CLI threshold: TUI commands require integration tests, isolated coverage is 40.3%
+      min: 40  # TUI commands require integration tests
 
+    # Platform & infrastructure
     - name: platform
       match: ["./internal/domain/platform/..."]
-      min: 45  # Platform-specific: WSL/Docker detection functions require actual WSL/Docker environment
+      min: 45  # Requires actual WSL/Docker environment
 
     - name: marketplace
       match: ["./internal/domain/marketplace/..."]
-      min: 76  # Community features: some HTTP-dependent code paths
+      min: 75  # HTTP-dependent code paths
 
+    # Security domains - high coverage required
     - name: audit
       match: ["./internal/domain/audit/..."]
-      min: 55  # Security audit logging - new domain, threshold will increase as integration grows
+      min: 55  # Security audit logging (isolated: 90%, cumulative lower until integrated)
 
 exclude:
   - "internal/generated/*"

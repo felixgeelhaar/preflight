@@ -293,3 +293,105 @@ func TestSummarize_TimeRange(t *testing.T) {
 	assert.WithinDuration(t, now, summary.FirstEvent, time.Second)
 	assert.WithinDuration(t, now, summary.LastEvent, time.Second)
 }
+
+func TestSummarize_AllSecurityEventTypes(t *testing.T) {
+	t.Parallel()
+
+	events := []audit.Event{
+		audit.NewEvent(audit.EventCapabilityDenied).WithPlugin("plugin1").Build(),
+		audit.NewEvent(audit.EventSandboxViolation).WithPlugin("plugin2").Build(),
+		audit.NewEvent(audit.EventSignatureFailed).WithCatalog("cat1").Build(),
+		audit.NewEvent(audit.EventSecurityAudit).WithCatalog("cat2").Build(),
+		// Non-security events
+		audit.NewEvent(audit.EventCatalogInstalled).WithCatalog("cat3").Build(),
+		audit.NewEvent(audit.EventPluginInstalled).WithPlugin("plugin3").Build(),
+	}
+
+	summary := audit.Summarize(events)
+
+	assert.Equal(t, 6, summary.TotalEvents)
+	assert.Equal(t, 4, summary.SecurityEvents) // Only the 4 security event types
+}
+
+func TestSummarize_TimeRangeWithMultipleEvents(t *testing.T) {
+	t.Parallel()
+
+	// Create events with different timestamps
+	now := time.Now()
+	events := []audit.Event{
+		audit.NewEvent(audit.EventCatalogInstalled).Build(),
+		audit.NewEvent(audit.EventPluginInstalled).Build(),
+	}
+
+	// Manually set timestamps for testing
+	events[0].Timestamp = now.Add(-1 * time.Hour)
+	events[1].Timestamp = now
+
+	summary := audit.Summarize(events)
+
+	assert.WithinDuration(t, now.Add(-1*time.Hour), summary.FirstEvent, time.Second)
+	assert.WithinDuration(t, now, summary.LastEvent, time.Second)
+}
+
+func TestQueryBuilder_CombinedFilters(t *testing.T) {
+	t.Parallel()
+
+	since := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	until := time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)
+
+	filter := audit.NewQuery().
+		WithEventTypes(audit.EventCatalogInstalled).
+		WithSeverities(audit.SeverityInfo, audit.SeverityWarning).
+		WithCatalog("test").
+		WithPlugin("plugin").
+		WithUser("admin").
+		Since(since).
+		Until(until).
+		SuccessOnly().
+		Limit(50).
+		Build()
+
+	assert.Len(t, filter.EventTypes, 1)
+	assert.Len(t, filter.Severities, 2)
+	assert.Equal(t, "test", filter.Catalog)
+	assert.Equal(t, "plugin", filter.Plugin)
+	assert.Equal(t, "admin", filter.User)
+	assert.Equal(t, since, filter.Since)
+	assert.Equal(t, until, filter.Until)
+	assert.True(t, filter.SuccessOnly)
+	assert.False(t, filter.FailuresOnly)
+	assert.Equal(t, 50, filter.Limit)
+}
+
+func TestQueryFilter_CombinedMatching(t *testing.T) {
+	t.Parallel()
+
+	// Create filter with multiple conditions
+	filter := audit.QueryFilter{
+		EventTypes:  []audit.EventType{audit.EventCatalogInstalled},
+		Severities:  []audit.Severity{audit.SeverityInfo},
+		Catalog:     "company",
+		User:        "admin",
+		SuccessOnly: true,
+	}
+
+	// Create event that matches all conditions
+	event := audit.NewEvent(audit.EventCatalogInstalled).
+		WithCatalog("company-tools").
+		WithUser("admin").
+		WithSeverity(audit.SeverityInfo).
+		WithSuccess(true).
+		Build()
+
+	assert.True(t, filter.Matches(event))
+
+	// Create event that fails one condition (wrong type)
+	event2 := audit.NewEvent(audit.EventPluginInstalled).
+		WithCatalog("company-tools").
+		WithUser("admin").
+		WithSeverity(audit.SeverityInfo).
+		WithSuccess(true).
+		Build()
+
+	assert.False(t, filter.Matches(event2))
+}
