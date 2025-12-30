@@ -7,6 +7,21 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.1] - 2025-12-30
+
+### Added
+
+- **Fleet Management Guide**: Comprehensive documentation for SSH-based multi-machine operations
+- **Demo Recordings**: VHS tape files and GIF recordings for v4 commands (sync, agent, fleet)
+- **SSH Integration Tests**: Comprehensive test coverage for fleet transport and execution
+- **CLI Test Coverage**: Additional tests for v4 CLI commands
+
+### Changed
+
+- PRD updated to mark all v4.0 features (sync, agent, fleet) as complete
+
+---
+
 ## [4.0.0] - 2025-12-30
 
 ### Added
@@ -964,6 +979,7 @@ policies:
 
 ---
 
+[4.0.1]: https://github.com/felixgeelhaar/preflight/compare/v4.0.0...v4.0.1
 [4.0.0]: https://github.com/felixgeelhaar/preflight/compare/v3.4.0...v4.0.0
 [3.4.0]: https://github.com/felixgeelhaar/preflight/compare/v3.3.2...v3.4.0
 [3.3.2]: https://github.com/felixgeelhaar/preflight/compare/v3.3.1...v3.3.2
