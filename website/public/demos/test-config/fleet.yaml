@@ -1,0 +1,44 @@
+version: 1
+
+hosts:
+  workstation-01:
+    hostname: dev-ws-01.internal
+    user: admin
+    port: 22
+    tags: [workstation, darwin, engineering]
+    groups: [dev-team]
+
+  workstation-02:
+    hostname: dev-ws-02.internal
+    user: admin
+    tags: [workstation, darwin, engineering]
+    groups: [dev-team]
+
+  server-prod-01:
+    hostname: prod-01.example.com
+    user: deploy
+    tags: [server, linux, production]
+    groups: [production]
+
+  server-staging-01:
+    hostname: staging-01.example.com
+    user: deploy
+    tags: [server, linux, staging]
+    groups: [staging]
+
+groups:
+  production:
+    hosts: [server-prod-*]
+    policies: [require-approval, maintenance-window]
+
+  staging:
+    hosts: [server-staging-*]
+    policies: []
+
+  dev-team:
+    hosts: [workstation-*]
+    policies: []
+
+defaults:
+  ssh_timeout: 30s
+  max_parallel: 10
