@@ -2,13 +2,17 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/felixgeelhaar/preflight/internal/adapters/lockfile"
 	"github.com/felixgeelhaar/preflight/internal/app"
+	"github.com/felixgeelhaar/preflight/internal/domain/lock"
+	"github.com/felixgeelhaar/preflight/internal/domain/sync"
 	"github.com/spf13/cobra"
 )
 
@@ -101,6 +105,26 @@ func runSync(_ *cobra.Command, _ []string) error {
 			return fmt.Errorf("failed to get current branch: %w", err)
 		}
 	}
+
+	// Step 1.5: Check for lockfile conflicts
+	lockPath := filepath.Join(repoRoot, "preflight.lock")
+	conflicts, err := checkLockfileConflicts(ctx, repoRoot, lockPath, syncRemote, branch)
+	if err != nil {
+		// Non-fatal: lockfile may not exist yet
+		if !errors.Is(err, lock.ErrLockfileNotFound) {
+			fmt.Printf("   Warning: could not check lockfile conflicts: %v\n", err)
+		}
+	} else if conflicts != nil && conflicts.HasManualConflicts() {
+		fmt.Println()
+		fmt.Printf("⚠️  Lockfile conflict detected! %d package(s) have conflicting versions.\n", len(conflicts.ManualConflicts))
+		fmt.Println("   Run 'preflight sync conflicts' to see details.")
+		fmt.Println("   Run 'preflight sync resolve' to resolve conflicts before syncing.")
+		if !syncForce {
+			return fmt.Errorf("lockfile conflicts detected. Use --force to proceed anyway")
+		}
+		fmt.Println("   Proceeding with --force (local versions will be kept)...")
+	}
+	fmt.Println()
 
 	// Check if we're behind
 	behind, ahead, err := getCommitDiff(repoRoot, syncRemote, branch)
@@ -245,4 +269,55 @@ func gitPush(repoRoot, remote, branch string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+// checkLockfileConflicts compares local and remote lockfiles for conflicts.
+// Returns nil if no lockfile exists or if there are no conflicts.
+// The branch parameter is unused because getRemoteLockfilePath computes it internally.
+func checkLockfileConflicts(ctx context.Context, repoRoot, lockPath, remote, _ string) (*sync.SyncResult, error) {
+	repo := lockfile.NewYAMLRepository()
+
+	// Load local lockfile
+	localLock, err := repo.Load(ctx, lockPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get remote lockfile via git show
+	remoteLockPath, err := getRemoteLockfilePath(repoRoot, remote, filepath.Base(lockPath))
+	if err != nil {
+		return nil, err
+	}
+	if remoteLockPath == "" {
+		// No remote lockfile - no conflicts possible
+		return nil, nil
+	}
+	defer func() { _ = os.Remove(remoteLockPath) }()
+
+	remoteLock, err := repo.Load(ctx, remoteLockPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to sync domain types
+	adapter := lockfile.NewSyncAdapter()
+	localState := adapter.ToLockfileState(localLock)
+	remoteState := adapter.ToLockfileState(remoteLock)
+
+	// Check if merge is needed
+	if !adapter.NeedsMerge(localLock, remoteLock) {
+		return nil, nil
+	}
+
+	// Run sync engine to detect conflicts
+	engine := sync.NewSyncEngine()
+	result, err := engine.Sync(sync.SyncInput{
+		Local:  localState,
+		Remote: remoteState,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

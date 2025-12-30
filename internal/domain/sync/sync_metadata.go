@@ -126,6 +126,15 @@ func (s SyncMetadata) WithVector(vector VersionVector) SyncMetadata {
 	}
 }
 
+// WithLineage returns a new SyncMetadata with the specified lineage map.
+func (s SyncMetadata) WithLineage(lineage map[string]MachineLineage) SyncMetadata {
+	return SyncMetadata{
+		vector:      s.vector,
+		lineage:     maps.Clone(lineage),
+		initialized: true,
+	}
+}
+
 // AddLineage adds a machine lineage entry.
 // Returns a new SyncMetadata with the lineage added.
 func (s SyncMetadata) AddLineage(lineage MachineLineage) SyncMetadata {

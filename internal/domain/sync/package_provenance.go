@@ -35,6 +35,14 @@ func (p PackageProvenance) IsZero() bool {
 	return p.modifiedBy == "" && p.vectorAtChange.IsEmpty()
 }
 
+// Equals returns true if two PackageProvenance values are equal.
+func (p PackageProvenance) Equals(other PackageProvenance) bool {
+	if p.modifiedBy != other.modifiedBy {
+		return false
+	}
+	return p.vectorAtChange.Equals(other.vectorAtChange)
+}
+
 // WithModifiedBy returns a new PackageProvenance with an updated modifier.
 func (p PackageProvenance) WithModifiedBy(machineID MachineID) PackageProvenance {
 	return PackageProvenance{

@@ -81,6 +81,33 @@ func (p PackageLockInfo) IsZero() bool {
 	return p.version == "" && p.provenance.IsZero()
 }
 
+// Equals returns true if two PackageLockInfo values are equal.
+// Two values are equal if they have the same version and provenance.
+func (p PackageLockInfo) Equals(other PackageLockInfo) bool {
+	if p.version != other.version {
+		return false
+	}
+	return p.provenance.Equals(other.provenance)
+}
+
+// WithProvenance returns a copy with the specified provenance.
+func (p PackageLockInfo) WithProvenance(prov PackageProvenance) PackageLockInfo {
+	return PackageLockInfo{
+		version:    p.version,
+		provenance: prov,
+		modifiedAt: p.modifiedAt,
+	}
+}
+
+// WithModifiedAt returns a copy with the specified modification time.
+func (p PackageLockInfo) WithModifiedAt(t time.Time) PackageLockInfo {
+	return PackageLockInfo{
+		version:    p.version,
+		provenance: p.provenance,
+		modifiedAt: t.UTC(),
+	}
+}
+
 // LockConflict represents a conflict between local and remote lock states.
 // It contains all the information needed to resolve the conflict.
 type LockConflict struct {
