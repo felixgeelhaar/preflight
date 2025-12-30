@@ -3,8 +3,10 @@ package audit
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"time"
 )
 
@@ -113,6 +115,12 @@ type Event struct {
 
 	// Details contains additional event-specific data
 	Details map[string]interface{} `json:"details,omitempty"`
+
+	// PreviousHash is the hash of the previous event (for integrity chain)
+	PreviousHash string `json:"previous_hash,omitempty"`
+
+	// EventHash is the SHA256 hash of this event (computed before writing)
+	EventHash string `json:"event_hash,omitempty"`
 }
 
 // MarshalJSON implements json.Marshaler with duration as milliseconds.
@@ -125,6 +133,65 @@ func (e Event) MarshalJSON() ([]byte, error) {
 		Alias:      Alias(e),
 		DurationMs: e.Duration.Milliseconds(),
 	})
+}
+
+// UnmarshalJSON implements json.Unmarshaler with duration from milliseconds.
+func (e *Event) UnmarshalJSON(data []byte) error {
+	type Alias Event
+	aux := &struct {
+		*Alias
+		DurationMs int64 `json:"duration_ms,omitempty"`
+	}{
+		Alias: (*Alias)(e),
+	}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+	e.Duration = time.Duration(aux.DurationMs) * time.Millisecond
+	return nil
+}
+
+// Validate checks that the event has all required fields.
+func (e Event) Validate() error {
+	if e.ID == "" {
+		return errors.New("event ID is required")
+	}
+	if e.Type == "" {
+		return errors.New("event type is required")
+	}
+	if e.Timestamp.IsZero() {
+		return errors.New("event timestamp is required")
+	}
+	if e.Severity == "" {
+		return errors.New("event severity is required")
+	}
+	return nil
+}
+
+// ComputeHash calculates the SHA256 hash of the event content.
+// The hash is computed over all fields except EventHash itself.
+func (e *Event) ComputeHash() string {
+	// Create a copy without the EventHash to compute hash
+	eventCopy := *e
+	eventCopy.EventHash = ""
+
+	// Marshal to JSON for consistent hashing
+	data, err := json.Marshal(eventCopy)
+	if err != nil {
+		return ""
+	}
+
+	hash := sha256.Sum256(data)
+	return hex.EncodeToString(hash[:])
+}
+
+// VerifyHash checks if the event's hash matches its content.
+func (e Event) VerifyHash() bool {
+	if e.EventHash == "" {
+		return true // No hash to verify
+	}
+	computed := e.ComputeHash()
+	return computed == e.EventHash
 }
 
 // EventBuilder provides a fluent API for building events.
@@ -251,6 +318,14 @@ func (b *EventBuilder) AddDetail(key string, value interface{}) *EventBuilder {
 // Build creates the final Event.
 func (b *EventBuilder) Build() Event {
 	return b.event
+}
+
+// ValidatedBuild creates the final Event and validates it.
+func (b *EventBuilder) ValidatedBuild() (Event, error) {
+	if err := b.event.Validate(); err != nil {
+		return Event{}, err
+	}
+	return b.event, nil
 }
 
 // generateEventID creates a unique event identifier.

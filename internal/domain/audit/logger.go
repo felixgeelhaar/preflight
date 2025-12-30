@@ -3,6 +3,7 @@ package audit
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -25,13 +26,14 @@ type Logger interface {
 
 // FileLogger implements Logger with file-based storage.
 type FileLogger struct {
-	mu       sync.Mutex
+	mu       sync.RWMutex
 	dir      string
 	maxSize  int64
 	maxAge   time.Duration
 	file     *os.File
 	size     int64
 	rotation int
+	lastHash string // Last event hash for chain integrity
 }
 
 // FileLoggerConfig configures the file logger.
@@ -81,9 +83,23 @@ func NewFileLogger(config FileLoggerConfig) (*FileLogger, error) {
 }
 
 // Log records an audit event.
-func (l *FileLogger) Log(_ context.Context, event Event) error {
+func (l *FileLogger) Log(ctx context.Context, event Event) error {
+	// Check context before acquiring lock
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
+	// Check context again after acquiring lock
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
 
 	// Check if rotation is needed
 	if l.size >= l.maxSize {
@@ -91,6 +107,10 @@ func (l *FileLogger) Log(_ context.Context, event Event) error {
 			return fmt.Errorf("failed to rotate log: %w", err)
 		}
 	}
+
+	// Set hash chain for integrity verification
+	event.PreviousHash = l.lastHash
+	event.EventHash = event.ComputeHash()
 
 	// Encode event
 	data, err := json.Marshal(event)
@@ -106,13 +126,21 @@ func (l *FileLogger) Log(_ context.Context, event Event) error {
 	}
 
 	l.size += int64(n)
+	l.lastHash = event.EventHash
 	return nil
 }
 
 // Query retrieves events matching the filter.
-func (l *FileLogger) Query(_ context.Context, filter QueryFilter) ([]Event, error) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+func (l *FileLogger) Query(ctx context.Context, filter QueryFilter) ([]Event, error) {
+	// Check context before acquiring lock
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 
 	var events []Event
 
@@ -124,6 +152,13 @@ func (l *FileLogger) Query(_ context.Context, filter QueryFilter) ([]Event, erro
 
 	// Read from newest to oldest
 	for i := len(files) - 1; i >= 0; i-- {
+		// Check context between file reads
+		select {
+		case <-ctx.Done():
+			return events, ctx.Err()
+		default:
+		}
+
 		fileEvents, err := l.readLogFile(files[i])
 		if err != nil {
 			continue // Skip corrupt files
@@ -177,6 +212,65 @@ func (l *FileLogger) Cleanup() error {
 	return nil
 }
 
+// IntegrityError represents a log integrity violation.
+type IntegrityError struct {
+	EventID      string
+	ExpectedHash string
+	ActualHash   string
+	ChainBroken  bool
+}
+
+func (e IntegrityError) Error() string {
+	if e.ChainBroken {
+		return fmt.Sprintf("hash chain broken at event %s: expected previous hash %s", e.EventID, e.ExpectedHash)
+	}
+	return fmt.Sprintf("event %s: hash mismatch (expected %s, got %s)", e.EventID, e.ExpectedHash, e.ActualHash)
+}
+
+// VerifyIntegrity checks the hash chain integrity of all log files.
+// Returns nil if integrity is verified, or an IntegrityError if tampering is detected.
+func (l *FileLogger) VerifyIntegrity() error {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	files, err := l.listLogFiles()
+	if err != nil {
+		return err
+	}
+
+	var previousHash string
+	for _, file := range files {
+		events, err := l.readLogFile(file)
+		if err != nil {
+			continue
+		}
+
+		for _, event := range events {
+			// Verify event hash
+			if !event.VerifyHash() {
+				return IntegrityError{
+					EventID:      event.ID,
+					ExpectedHash: event.EventHash,
+					ActualHash:   event.ComputeHash(),
+				}
+			}
+
+			// Verify chain continuity (skip first event which has no previous)
+			if previousHash != "" && event.PreviousHash != previousHash {
+				return IntegrityError{
+					EventID:      event.ID,
+					ExpectedHash: previousHash,
+					ChainBroken:  true,
+				}
+			}
+
+			previousHash = event.EventHash
+		}
+	}
+
+	return nil
+}
+
 // openOrCreate opens the current log file or creates a new one.
 func (l *FileLogger) openOrCreate() error {
 	path := l.currentLogPath()
@@ -196,7 +290,19 @@ func (l *FileLogger) openOrCreate() error {
 	l.file = file
 	l.size = info.Size()
 
+	// Initialize hash chain from last event
+	l.lastHash = l.getLastEventHash(path)
+
 	return nil
+}
+
+// getLastEventHash reads the hash of the last event in the log file.
+func (l *FileLogger) getLastEventHash(path string) string {
+	events, err := l.readLogFile(path)
+	if err != nil || len(events) == 0 {
+		return ""
+	}
+	return events[len(events)-1].EventHash
 }
 
 // rotate rotates the current log file.
@@ -279,7 +385,7 @@ func (l *FileLogger) readLogFile(path string) ([]Event, error) {
 	for {
 		var event Event
 		if err := decoder.Decode(&event); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			continue // Skip malformed lines

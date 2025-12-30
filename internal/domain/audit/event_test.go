@@ -266,3 +266,134 @@ func TestSeverity_Constants(t *testing.T) {
 	assert.Equal(t, audit.SeverityError, audit.Severity("error"))
 	assert.Equal(t, audit.SeverityCritical, audit.Severity("critical"))
 }
+
+func TestEvent_Validate(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid event", func(t *testing.T) {
+		t.Parallel()
+		event := audit.NewEvent(audit.EventCatalogInstalled).Build()
+		assert.NoError(t, event.Validate())
+	})
+
+	t.Run("missing ID", func(t *testing.T) {
+		t.Parallel()
+		event := audit.Event{
+			Type:      audit.EventCatalogInstalled,
+			Timestamp: time.Now(),
+			Severity:  audit.SeverityInfo,
+		}
+		assert.Error(t, event.Validate())
+		assert.Contains(t, event.Validate().Error(), "ID")
+	})
+
+	t.Run("missing type", func(t *testing.T) {
+		t.Parallel()
+		event := audit.Event{
+			ID:        "test-id",
+			Timestamp: time.Now(),
+			Severity:  audit.SeverityInfo,
+		}
+		assert.Error(t, event.Validate())
+		assert.Contains(t, event.Validate().Error(), "type")
+	})
+
+	t.Run("missing timestamp", func(t *testing.T) {
+		t.Parallel()
+		event := audit.Event{
+			ID:       "test-id",
+			Type:     audit.EventCatalogInstalled,
+			Severity: audit.SeverityInfo,
+		}
+		assert.Error(t, event.Validate())
+		assert.Contains(t, event.Validate().Error(), "timestamp")
+	})
+
+	t.Run("missing severity", func(t *testing.T) {
+		t.Parallel()
+		event := audit.Event{
+			ID:        "test-id",
+			Type:      audit.EventCatalogInstalled,
+			Timestamp: time.Now(),
+		}
+		assert.Error(t, event.Validate())
+		assert.Contains(t, event.Validate().Error(), "severity")
+	})
+}
+
+func TestEventBuilder_ValidatedBuild(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid event", func(t *testing.T) {
+		t.Parallel()
+		event, err := audit.NewEvent(audit.EventCatalogInstalled).ValidatedBuild()
+		require.NoError(t, err)
+		assert.NotEmpty(t, event.ID)
+	})
+}
+
+func TestEvent_UnmarshalJSON(t *testing.T) {
+	t.Parallel()
+
+	original := audit.NewEvent(audit.EventPluginExecuted).
+		WithPlugin("test-plugin").
+		WithDuration(1500 * time.Millisecond).
+		Build()
+
+	// Marshal
+	data, err := json.Marshal(original)
+	require.NoError(t, err)
+
+	// Unmarshal
+	var restored audit.Event
+	err = json.Unmarshal(data, &restored)
+	require.NoError(t, err)
+
+	// Check duration was restored correctly
+	assert.Equal(t, 1500*time.Millisecond, restored.Duration)
+	assert.Equal(t, original.Plugin, restored.Plugin)
+	assert.Equal(t, original.Type, restored.Type)
+}
+
+func TestEvent_ComputeHash(t *testing.T) {
+	t.Parallel()
+
+	event := audit.NewEvent(audit.EventCatalogInstalled).
+		WithCatalog("test-catalog").
+		Build()
+
+	hash := event.ComputeHash()
+	assert.NotEmpty(t, hash)
+	assert.Len(t, hash, 64) // SHA256 hex is 64 chars
+
+	// Same event should produce same hash
+	hash2 := event.ComputeHash()
+	assert.Equal(t, hash, hash2)
+}
+
+func TestEvent_VerifyHash(t *testing.T) {
+	t.Parallel()
+
+	t.Run("no hash set", func(t *testing.T) {
+		t.Parallel()
+		event := audit.NewEvent(audit.EventCatalogInstalled).Build()
+		assert.True(t, event.VerifyHash())
+	})
+
+	t.Run("valid hash", func(t *testing.T) {
+		t.Parallel()
+		event := audit.NewEvent(audit.EventCatalogInstalled).Build()
+		event.EventHash = event.ComputeHash()
+		assert.True(t, event.VerifyHash())
+	})
+
+	t.Run("tampered event", func(t *testing.T) {
+		t.Parallel()
+		event := audit.NewEvent(audit.EventCatalogInstalled).Build()
+		event.EventHash = event.ComputeHash()
+
+		// Tamper with the event
+		event.Catalog = "tampered"
+		assert.False(t, event.VerifyHash())
+	})
+}

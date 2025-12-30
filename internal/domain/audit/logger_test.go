@@ -289,3 +289,136 @@ func TestDefaultFileLoggerConfig(t *testing.T) {
 	assert.Positive(t, config.MaxAge)
 	assert.Positive(t, config.MaxRotations)
 }
+
+func TestFileLogger_VerifyIntegrity(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid chain", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		config := audit.FileLoggerConfig{
+			Dir:          dir,
+			MaxSize:      1024 * 1024,
+			MaxAge:       24 * time.Hour,
+			MaxRotations: 3,
+		}
+
+		logger, err := audit.NewFileLogger(config)
+		require.NoError(t, err)
+		defer func() { _ = logger.Close() }()
+
+		ctx := context.Background()
+
+		// Log several events
+		_ = logger.Log(ctx, audit.NewEvent(audit.EventCatalogInstalled).WithCatalog("cat1").Build())
+		_ = logger.Log(ctx, audit.NewEvent(audit.EventPluginInstalled).WithPlugin("plugin1").Build())
+		_ = logger.Log(ctx, audit.NewEvent(audit.EventCatalogInstalled).WithCatalog("cat2").Build())
+
+		// Verify integrity should pass
+		err = logger.VerifyIntegrity()
+		assert.NoError(t, err)
+	})
+
+	t.Run("empty log", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		config := audit.FileLoggerConfig{
+			Dir:          dir,
+			MaxSize:      1024 * 1024,
+			MaxAge:       24 * time.Hour,
+			MaxRotations: 3,
+		}
+
+		logger, err := audit.NewFileLogger(config)
+		require.NoError(t, err)
+		defer func() { _ = logger.Close() }()
+
+		// Verify integrity on empty log should pass
+		err = logger.VerifyIntegrity()
+		assert.NoError(t, err)
+	})
+}
+
+func TestFileLogger_ContextCancellation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Log respects cancelled context", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		config := audit.FileLoggerConfig{
+			Dir:          dir,
+			MaxSize:      1024 * 1024,
+			MaxAge:       24 * time.Hour,
+			MaxRotations: 3,
+		}
+
+		logger, err := audit.NewFileLogger(config)
+		require.NoError(t, err)
+		defer func() { _ = logger.Close() }()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // Cancel immediately
+
+		event := audit.NewEvent(audit.EventCatalogInstalled).Build()
+		err = logger.Log(ctx, event)
+
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("Query respects cancelled context", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		config := audit.FileLoggerConfig{
+			Dir:          dir,
+			MaxSize:      1024 * 1024,
+			MaxAge:       24 * time.Hour,
+			MaxRotations: 3,
+		}
+
+		logger, err := audit.NewFileLogger(config)
+		require.NoError(t, err)
+		defer func() { _ = logger.Close() }()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // Cancel immediately
+
+		_, err = logger.Query(ctx, audit.QueryFilter{})
+
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+}
+
+func TestIntegrityError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("hash mismatch error", func(t *testing.T) {
+		t.Parallel()
+
+		err := audit.IntegrityError{
+			EventID:      "test-123",
+			ExpectedHash: "abc",
+			ActualHash:   "def",
+			ChainBroken:  false,
+		}
+
+		assert.Contains(t, err.Error(), "test-123")
+		assert.Contains(t, err.Error(), "hash mismatch")
+	})
+
+	t.Run("chain broken error", func(t *testing.T) {
+		t.Parallel()
+
+		err := audit.IntegrityError{
+			EventID:      "test-456",
+			ExpectedHash: "xyz",
+			ChainBroken:  true,
+		}
+
+		assert.Contains(t, err.Error(), "test-456")
+		assert.Contains(t, err.Error(), "chain broken")
+	})
+}
