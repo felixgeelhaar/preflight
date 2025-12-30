@@ -227,42 +227,42 @@ func TestEvent_MarshalJSON(t *testing.T) {
 	err = json.Unmarshal(data, &result)
 	require.NoError(t, err)
 
-	assert.Equal(t, float64(1500), result["duration_ms"])
+	assert.InDelta(t, float64(1500), result["duration_ms"], 0.001)
 }
 
 func TestEventType_Constants(t *testing.T) {
 	t.Parallel()
 
 	// Catalog events
-	assert.Equal(t, audit.EventType("catalog_installed"), audit.EventCatalogInstalled)
-	assert.Equal(t, audit.EventType("catalog_removed"), audit.EventCatalogRemoved)
-	assert.Equal(t, audit.EventType("catalog_verified"), audit.EventCatalogVerified)
-	assert.Equal(t, audit.EventType("catalog_updated"), audit.EventCatalogUpdated)
+	assert.Equal(t, audit.EventCatalogInstalled, audit.EventType("catalog_installed"))
+	assert.Equal(t, audit.EventCatalogRemoved, audit.EventType("catalog_removed"))
+	assert.Equal(t, audit.EventCatalogVerified, audit.EventType("catalog_verified"))
+	assert.Equal(t, audit.EventCatalogUpdated, audit.EventType("catalog_updated"))
 
 	// Plugin events
-	assert.Equal(t, audit.EventType("plugin_installed"), audit.EventPluginInstalled)
-	assert.Equal(t, audit.EventType("plugin_uninstalled"), audit.EventPluginUninstalled)
-	assert.Equal(t, audit.EventType("plugin_discovered"), audit.EventPluginDiscovered)
-	assert.Equal(t, audit.EventType("plugin_executed"), audit.EventPluginExecuted)
+	assert.Equal(t, audit.EventPluginInstalled, audit.EventType("plugin_installed"))
+	assert.Equal(t, audit.EventPluginUninstalled, audit.EventType("plugin_uninstalled"))
+	assert.Equal(t, audit.EventPluginDiscovered, audit.EventType("plugin_discovered"))
+	assert.Equal(t, audit.EventPluginExecuted, audit.EventType("plugin_executed"))
 
 	// Trust events
-	assert.Equal(t, audit.EventType("trust_added"), audit.EventTrustAdded)
-	assert.Equal(t, audit.EventType("trust_removed"), audit.EventTrustRemoved)
-	assert.Equal(t, audit.EventType("signature_verified"), audit.EventSignatureVerified)
-	assert.Equal(t, audit.EventType("signature_failed"), audit.EventSignatureFailed)
+	assert.Equal(t, audit.EventTrustAdded, audit.EventType("trust_added"))
+	assert.Equal(t, audit.EventTrustRemoved, audit.EventType("trust_removed"))
+	assert.Equal(t, audit.EventSignatureVerified, audit.EventType("signature_verified"))
+	assert.Equal(t, audit.EventSignatureFailed, audit.EventType("signature_failed"))
 
 	// Security events
-	assert.Equal(t, audit.EventType("capability_granted"), audit.EventCapabilityGranted)
-	assert.Equal(t, audit.EventType("capability_denied"), audit.EventCapabilityDenied)
-	assert.Equal(t, audit.EventType("sandbox_violation"), audit.EventSandboxViolation)
-	assert.Equal(t, audit.EventType("security_audit"), audit.EventSecurityAudit)
+	assert.Equal(t, audit.EventCapabilityGranted, audit.EventType("capability_granted"))
+	assert.Equal(t, audit.EventCapabilityDenied, audit.EventType("capability_denied"))
+	assert.Equal(t, audit.EventSandboxViolation, audit.EventType("sandbox_violation"))
+	assert.Equal(t, audit.EventSecurityAudit, audit.EventType("security_audit"))
 }
 
 func TestSeverity_Constants(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, audit.Severity("info"), audit.SeverityInfo)
-	assert.Equal(t, audit.Severity("warning"), audit.SeverityWarning)
-	assert.Equal(t, audit.Severity("error"), audit.SeverityError)
-	assert.Equal(t, audit.Severity("critical"), audit.SeverityCritical)
+	assert.Equal(t, audit.SeverityInfo, audit.Severity("info"))
+	assert.Equal(t, audit.SeverityWarning, audit.Severity("warning"))
+	assert.Equal(t, audit.SeverityError, audit.Severity("error"))
+	assert.Equal(t, audit.SeverityCritical, audit.Severity("critical"))
 }

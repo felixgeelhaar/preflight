@@ -285,7 +285,7 @@ func TestDefaultFileLoggerConfig(t *testing.T) {
 	config := audit.DefaultFileLoggerConfig()
 
 	assert.NotEmpty(t, config.Dir)
-	assert.Greater(t, config.MaxSize, int64(0))
-	assert.Greater(t, config.MaxAge, time.Duration(0))
-	assert.Greater(t, config.MaxRotations, 0)
+	assert.Positive(t, config.MaxSize)
+	assert.Positive(t, config.MaxAge)
+	assert.Positive(t, config.MaxRotations)
 }

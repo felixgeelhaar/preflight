@@ -341,6 +341,7 @@ func runAuditClean(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
+//nolint:unparam // error return reserved for future use
 func outputEventsTable(events []audit.Event) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	_, _ = fmt.Fprintln(w, "TIME\tEVENT\tSEVERITY\tSUBJECT\tSTATUS")
@@ -373,6 +374,7 @@ func outputEventsTable(events []audit.Event) error {
 	return nil
 }
 
+//nolint:unparam // error return reserved for future use
 func outputSecurityEventsTable(events []audit.Event) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	_, _ = fmt.Fprintln(w, "TIME\tEVENT\tSEVERITY\tSUBJECT\tDETAILS")
@@ -421,11 +423,11 @@ func outputJSON(v interface{}) error {
 	return enc.Encode(v)
 }
 
-func truncateStr(s string, max int) string {
-	if len(s) <= max {
+func truncateStr(s string, maxLen int) string {
+	if len(s) <= maxLen {
 		return s
 	}
-	return s[:max-3] + "..."
+	return s[:maxLen-3] + "..."
 }
 
 func severityIcon(s audit.Severity) string {

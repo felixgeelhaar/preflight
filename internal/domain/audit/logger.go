@@ -30,7 +30,6 @@ type FileLogger struct {
 	maxSize  int64
 	maxAge   time.Duration
 	file     *os.File
-	encoder  *json.Encoder
 	size     int64
 	rotation int
 }
@@ -195,7 +194,6 @@ func (l *FileLogger) openOrCreate() error {
 	}
 
 	l.file = file
-	l.encoder = json.NewEncoder(file)
 	l.size = info.Size()
 
 	return nil

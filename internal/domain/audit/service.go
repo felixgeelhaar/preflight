@@ -3,14 +3,12 @@ package audit
 import (
 	"context"
 	"os/user"
-	"sync"
 	"time"
 )
 
 // Service provides high-level audit logging operations.
 type Service struct {
 	logger Logger
-	mu     sync.RWMutex
 }
 
 // NewService creates a new audit service with the given logger.

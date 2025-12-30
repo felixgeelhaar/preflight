@@ -2,6 +2,8 @@
 package audit
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"time"
 )
@@ -258,14 +260,24 @@ func generateEventID() string {
 	return now.Format("20060102150405") + "-" + randomSuffix(8)
 }
 
-// randomSuffix generates a random alphanumeric suffix.
+// randomSuffix generates a cryptographically secure random suffix.
 func randomSuffix(length int) string {
+	// Use crypto/rand for secure random ID generation
+	bytes := make([]byte, (length+1)/2)
+	if _, err := rand.Read(bytes); err != nil {
+		// Fallback to timestamp-based if crypto/rand fails (should never happen)
+		return fallbackSuffix(length)
+	}
+	return hex.EncodeToString(bytes)[:length]
+}
+
+// fallbackSuffix provides a timestamp-based fallback (used only if crypto/rand fails).
+func fallbackSuffix(length int) string {
 	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 	result := make([]byte, length)
+	now := time.Now().UnixNano()
 	for i := range result {
-		// Use time-based pseudo-random for simplicity
-		// In production, use crypto/rand
-		result[i] = chars[(time.Now().UnixNano()+int64(i))%int64(len(chars))]
+		result[i] = chars[(now+int64(i))%int64(len(chars))]
 	}
 	return string(result)
 }

@@ -193,17 +193,17 @@ func (b *QueryBuilder) Build() QueryFilter {
 
 // Summary generates a summary of events.
 type Summary struct {
-	TotalEvents     int            `json:"total_events"`
-	SuccessCount    int            `json:"success_count"`
-	FailureCount    int            `json:"failure_count"`
-	BySeverity      map[string]int `json:"by_severity"`
-	ByType          map[string]int `json:"by_type"`
-	ByCatalog       map[string]int `json:"by_catalog"`
-	ByPlugin        map[string]int `json:"by_plugin"`
-	FirstEvent      time.Time      `json:"first_event,omitempty"`
-	LastEvent       time.Time      `json:"last_event,omitempty"`
-	CriticalCount   int            `json:"critical_count"`
-	SecurityEvents  int            `json:"security_events"`
+	TotalEvents    int            `json:"total_events"`
+	SuccessCount   int            `json:"success_count"`
+	FailureCount   int            `json:"failure_count"`
+	BySeverity     map[string]int `json:"by_severity"`
+	ByType         map[string]int `json:"by_type"`
+	ByCatalog      map[string]int `json:"by_catalog"`
+	ByPlugin       map[string]int `json:"by_plugin"`
+	FirstEvent     time.Time      `json:"first_event,omitempty"`
+	LastEvent      time.Time      `json:"last_event,omitempty"`
+	CriticalCount  int            `json:"critical_count"`
+	SecurityEvents int            `json:"security_events"`
 }
 
 // Summarize generates a summary from events.
