@@ -179,3 +179,36 @@ func TestOutputValidationText_WithErrorsAndWarnings(t *testing.T) {
 	assert.Contains(t, output, "ℹ Info")
 	assert.Contains(t, output, "Loaded config")
 }
+
+func TestOutputValidationText_WithPolicyViolations(t *testing.T) {
+	result := &app.ValidationResult{
+		PolicyViolations: []string{"Security policy violation: secrets exposed"},
+		Info:             []string{"Loaded config"},
+	}
+
+	output := captureStdout(t, func() {
+		outputValidationText(result)
+	})
+
+	assert.Contains(t, output, "⛔ Policy violations")
+	assert.Contains(t, output, "Security policy violation: secrets exposed")
+	assert.Contains(t, output, "ℹ Info")
+}
+
+func TestOutputValidationText_AllTypes(t *testing.T) {
+	result := &app.ValidationResult{
+		Errors:           []string{"Error 1"},
+		PolicyViolations: []string{"Policy violation 1"},
+		Warnings:         []string{"Warning 1"},
+		Info:             []string{"Info 1"},
+	}
+
+	output := captureStdout(t, func() {
+		outputValidationText(result)
+	})
+
+	assert.Contains(t, output, "✗ Validation errors")
+	assert.Contains(t, output, "⛔ Policy violations")
+	assert.Contains(t, output, "⚠ Warnings")
+	assert.Contains(t, output, "ℹ Info")
+}

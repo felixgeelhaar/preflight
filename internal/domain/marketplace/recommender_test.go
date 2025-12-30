@@ -311,6 +311,81 @@ func TestRecommender_ScorePackage(t *testing.T) {
 	assert.Equal(t, pkg.ID, rec.Package.ID)
 }
 
+func TestRecommender_ScorePackage_AuthorAffinity(t *testing.T) {
+	t.Parallel()
+
+	r := &Recommender{config: DefaultRecommenderConfig()}
+
+	// Create index with installed package from same author
+	installedPkg := Package{
+		ID:    MustNewPackageID("installed-pkg"),
+		Type:  PackageTypePreset,
+		Title: "Installed Package",
+		Provenance: Provenance{
+			Author: "same-author",
+		},
+		Versions: []PackageVersion{
+			{Version: "1.0.0", ReleasedAt: time.Now()},
+		},
+	}
+	newPkg := Package{
+		ID:       MustNewPackageID("new-pkg"),
+		Type:     PackageTypePreset,
+		Title:    "New Package",
+		Keywords: []string{"dotfiles"},
+		Stars:    3, // Below 5 to test that path
+		Provenance: Provenance{
+			Author:   "same-author",
+			Verified: false,
+		},
+		Versions: []PackageVersion{
+			{Version: "1.0.0", ReleasedAt: time.Now().Add(-365 * 24 * time.Hour)}, // Old
+		},
+	}
+
+	idx := NewIndex()
+	err := idx.Add(installedPkg)
+	assert.NoError(t, err)
+	err = idx.Add(newPkg)
+	assert.NoError(t, err)
+
+	installedSet := map[string]bool{"installed-pkg": true}
+	rec := r.scorePackage(newPkg, map[string]int{}, []string{}, installedSet, idx)
+
+	// Should have same author bonus
+	assert.Contains(t, rec.Reasons, ReasonSameAuthor)
+}
+
+func TestRecommender_ScorePackage_ProviderMatch(t *testing.T) {
+	t.Parallel()
+
+	r := &Recommender{config: DefaultRecommenderConfig()}
+
+	pkg := Package{
+		ID:        MustNewPackageID("brew-pkg"),
+		Type:      PackageTypePreset,
+		Title:     "Brew Package",
+		Keywords:  []string{"homebrew", "macos"},
+		Stars:     10,
+		Downloads: 100,
+		Provenance: Provenance{
+			Author: "test",
+		},
+		Versions: []PackageVersion{
+			{Version: "1.0.0", ReleasedAt: time.Now()},
+		},
+	}
+
+	idx := NewIndex()
+	_ = idx.Add(pkg)
+
+	// Provider "brew" should match keyword "homebrew"
+	activeProviders := []string{"brew"}
+	rec := r.scorePackage(pkg, map[string]int{}, activeProviders, map[string]bool{}, idx)
+
+	assert.Contains(t, rec.Reasons, ReasonProviderMatch)
+}
+
 func TestRecommender_ScoreSimilarity(t *testing.T) {
 	t.Parallel()
 
@@ -410,4 +485,80 @@ func TestRecommendationReason_String(t *testing.T) {
 			assert.Equal(t, tt.expected, string(tt.reason))
 		})
 	}
+}
+
+func TestNewRecommender(t *testing.T) {
+	t.Parallel()
+
+	// Create a minimal service (without network calls)
+	config := DefaultServiceConfig()
+	service := NewService(config)
+
+	recommender := NewRecommender(service, DefaultRecommenderConfig())
+
+	assert.NotNil(t, recommender)
+	assert.Equal(t, service, recommender.service)
+	assert.Equal(t, 10, recommender.config.MaxRecommendations)
+}
+
+func TestRecommender_WithCustomConfig(t *testing.T) {
+	t.Parallel()
+
+	config := RecommenderConfig{
+		MaxRecommendations: 5,
+		PopularityWeight:   0.5,
+		RecencyWeight:      0.3,
+		SimilarityWeight:   0.2,
+		IncludeInstalled:   true,
+	}
+
+	service := NewService(DefaultServiceConfig())
+
+	recommender := NewRecommender(service, config)
+
+	assert.NotNil(t, recommender)
+	assert.Equal(t, 5, recommender.config.MaxRecommendations)
+	assert.InDelta(t, 0.5, recommender.config.PopularityWeight, 0.001)
+	assert.InDelta(t, 0.3, recommender.config.RecencyWeight, 0.001)
+	assert.InDelta(t, 0.2, recommender.config.SimilarityWeight, 0.001)
+	assert.True(t, recommender.config.IncludeInstalled)
+}
+
+func TestRecommendation_Fields(t *testing.T) {
+	t.Parallel()
+
+	pkg := Package{
+		ID:    MustNewPackageID("test-pkg"),
+		Title: "Test Package",
+	}
+
+	rec := Recommendation{
+		Package: pkg,
+		Score:   0.85,
+		Reasons: []RecommendationReason{ReasonPopular, ReasonTrending},
+	}
+
+	assert.Equal(t, "test-pkg", rec.Package.ID.String())
+	assert.InDelta(t, 0.85, rec.Score, 0.001)
+	assert.Len(t, rec.Reasons, 2)
+	assert.Contains(t, rec.Reasons, ReasonPopular)
+	assert.Contains(t, rec.Reasons, ReasonTrending)
+}
+
+func TestRecommenderConfig_Fields(t *testing.T) {
+	t.Parallel()
+
+	config := RecommenderConfig{
+		MaxRecommendations: 20,
+		PopularityWeight:   0.4,
+		RecencyWeight:      0.3,
+		SimilarityWeight:   0.3,
+		IncludeInstalled:   true,
+	}
+
+	assert.Equal(t, 20, config.MaxRecommendations)
+	assert.InDelta(t, 0.4, config.PopularityWeight, 0.001)
+	assert.InDelta(t, 0.3, config.RecencyWeight, 0.001)
+	assert.InDelta(t, 0.3, config.SimilarityWeight, 0.001)
+	assert.True(t, config.IncludeInstalled)
 }
