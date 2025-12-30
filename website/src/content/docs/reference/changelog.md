@@ -7,6 +7,156 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2025-12-30
+
+### Added
+
+#### Phase 1: Multi-Machine Sync
+- **Version Vectors**: Causal ordering for distributed configuration changes
+  - Vector clocks track changes across machines
+  - Compare() returns Before, After, Concurrent, or Equal relations
+  - Merge() for combining vectors during sync
+
+- **Machine Identity**: Stable UUID per machine
+  - Auto-generated machine ID stored in `~/.preflight/machine-id`
+  - Hostname and metadata tracking
+  - Lineage tracking for machine history
+
+- **Conflict Detection**: Three-way merge for lockfile conflicts
+  - Detect concurrent changes to the same package
+  - Conflict types: VersionMismatch, LocalOnly, RemoteOnly, BothModified
+  - Base, local, and remote state comparison
+
+- **Conflict Resolution**: Multiple resolution strategies
+  - Manual: User selects resolution
+  - Newest: Use most recently modified version
+  - Local: Prefer local changes
+  - Remote: Prefer remote changes
+  - Auto: Automatic resolution for non-conflicting changes
+
+- **Lockfile v2 Format**: Extended lockfile with sync metadata
+  - Version vector embedded in lockfile
+  - Machine lineage tracking
+  - Per-package provenance (modified_by, vector_at_change)
+
+- **CLI Commands**:
+  - `preflight sync` - Synchronize configuration across machines
+  - `preflight conflicts` - View and resolve sync conflicts
+  - `preflight conflicts resolve` - Interactive conflict resolution
+
+#### Phase 2: Background Agent
+- **Agent Domain**: Scheduled reconciliation and drift monitoring
+  - Agent state machine (idle, running, paused, stopped)
+  - Health status tracking with last check timestamps
+  - Reconciliation result history
+
+- **Scheduling**: Flexible schedule configuration
+  - Interval-based: `30m`, `1h`, `6h`
+  - Cron expressions: `0 */30 * * *`
+  - On-demand trigger via IPC
+
+- **Remediation Policies**: Configurable remediation behavior
+  - `notify`: Alert user about drift (default)
+  - `auto`: Automatically remediate all drift
+  - `approved`: Require approval for remediation
+  - `safe`: Only remediate safe changes
+
+- **Service Integration**: Platform-specific daemon support
+  - macOS: launchd plist (`~/Library/LaunchAgents/com.preflight.agent.plist`)
+  - Linux: systemd user service (`~/.config/systemd/user/preflight-agent.service`)
+
+- **IPC Communication**: Unix socket for agent control
+  - Status queries
+  - Stop/pause/resume commands
+  - Approval requests
+
+- **CLI Commands**:
+  - `preflight agent start [--foreground] [--schedule 30m]`
+  - `preflight agent stop [--force]`
+  - `preflight agent status [--json] [--watch]`
+  - `preflight agent install` - Install system service
+  - `preflight agent uninstall` - Remove system service
+  - `preflight agent approve <request-id>` - Approve remediation
+
+#### Phase 3: Fleet Management
+- **Fleet Domain**: Multi-machine configuration management over SSH
+  - Host entity with SSH config, tags, groups, status
+  - Group value object with host patterns and policies
+  - Tag value object for categorization
+  - Inventory aggregate root
+
+- **Targeting System**: Flexible host selection
+  - `@all` or `*` - Select all hosts
+  - `@groupname` - Select by group
+  - `tag:tagname` - Select by tag
+  - `host-*` - Glob pattern matching
+  - `~regex~` - Regex pattern matching
+  - `!pattern` - Exclude matching hosts
+
+- **SSH Transport**: Secure remote execution
+  - Connection pooling for efficiency
+  - Configurable timeouts
+  - Proxy jump support
+  - Identity file selection
+
+- **Execution Strategies**: Multiple execution patterns
+  - `parallel` - Execute on all hosts concurrently (up to maxParallel)
+  - `rolling` - Execute in batches with health checks
+  - `canary` - Test on canary host before rolling out
+
+- **Remote Steps**: Idempotent remote execution
+  - Check/Apply pattern for all operations
+  - Package installation helpers (apt, brew, dnf, yum)
+  - File write and symlink steps
+  - Custom command execution
+
+- **Fleet Inventory** (`fleet.yaml`):
+  ```yaml
+  version: 1
+  hosts:
+    workstation-01:
+      hostname: dev-ws-01.internal
+      user: admin
+      port: 22
+      tags: [workstation, darwin]
+      groups: [dev-team]
+  groups:
+    production:
+      hosts: [server-prod-*]
+      policies: [require-approval]
+  defaults:
+    ssh_timeout: 30s
+    max_parallel: 10
+  ```
+
+- **CLI Commands**:
+  - `preflight fleet list [--target TARGET] [--json]`
+  - `preflight fleet ping [--target TARGET] [--timeout 30s]`
+  - `preflight fleet plan [--target TARGET]`
+  - `preflight fleet apply [--target TARGET] [--strategy rolling]`
+  - `preflight fleet status`
+
+### New Domains
+- **sync domain** (`internal/domain/sync/`): Version vectors, conflict detection, resolution
+- **agent domain** (`internal/domain/agent/`): Agent lifecycle, scheduling, remediation
+- **fleet domain** (`internal/domain/fleet/`): Host, group, tag, inventory management
+- **fleet/targeting** (`internal/domain/fleet/targeting/`): Pattern matching, selectors
+- **fleet/transport** (`internal/domain/fleet/transport/`): SSH and local transports
+- **fleet/execution** (`internal/domain/fleet/execution/`): Remote steps, fleet executor
+
+### Breaking Changes
+- Lockfile format upgraded to v2 (automatic migration on first sync)
+- New required configuration section for multi-machine sync
+
+### Test Coverage
+- sync domain: 95%+
+- agent domain: 90%+
+- fleet domain: 99%
+- fleet/targeting: 99.3%
+- fleet/execution: 91.2%
+
+---
+
 ## [3.4.0] - 2025-12-30
 
 ### Added
@@ -814,6 +964,9 @@ policies:
 
 ---
 
+[4.0.0]: https://github.com/felixgeelhaar/preflight/compare/v3.4.0...v4.0.0
+[3.4.0]: https://github.com/felixgeelhaar/preflight/compare/v3.3.2...v3.4.0
+[3.3.2]: https://github.com/felixgeelhaar/preflight/compare/v3.3.1...v3.3.2
 [3.3.1]: https://github.com/felixgeelhaar/preflight/compare/v3.3.0...v3.3.1
 [3.3.0]: https://github.com/felixgeelhaar/preflight/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/felixgeelhaar/preflight/compare/v3.1.0...v3.2.0

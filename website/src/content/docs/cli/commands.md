@@ -723,7 +723,237 @@ preflight version
 **Output:**
 
 ```
-preflight version 3.3.1
+preflight version 4.0.0
+```
+
+---
+
+## v4.0 Commands
+
+### preflight sync
+
+Synchronize configuration across multiple machines.
+
+```bash
+preflight sync [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--push` | Push local changes to remote |
+| `--pull` | Pull remote changes to local |
+| `--force` | Force sync even with conflicts |
+
+**Examples:**
+
+```bash
+# Sync with default remote
+preflight sync
+
+# Push local changes
+preflight sync --push
+
+# Pull remote changes
+preflight sync --pull
+```
+
+---
+
+### preflight conflicts
+
+View and resolve sync conflicts between machines.
+
+```bash
+preflight conflicts [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--resolve` | Enter interactive resolution mode |
+| `--strategy <name>` | Resolution strategy: manual, newest, local, remote |
+| `--json` | Output conflicts as JSON |
+
+**Examples:**
+
+```bash
+# List current conflicts
+preflight conflicts
+
+# Interactive resolution
+preflight conflicts --resolve
+
+# Auto-resolve using newest version
+preflight conflicts --resolve --strategy newest
+```
+
+---
+
+### preflight agent
+
+Manage the background reconciliation agent.
+
+```bash
+preflight agent <command> [flags]
+```
+
+**Subcommands:**
+
+| Command | Description |
+|---------|-------------|
+| `start` | Start the background agent |
+| `stop` | Stop the running agent |
+| `status` | Show agent status |
+| `install` | Install as system service |
+| `uninstall` | Remove system service |
+| `approve` | Approve a remediation request |
+
+**Flags (start):**
+
+| Flag | Description |
+|------|-------------|
+| `--foreground` | Run in foreground (no daemon) |
+| `--schedule <duration>` | Check interval (e.g., 30m, 1h) |
+| `--remediation <policy>` | Policy: notify, auto, approved, safe |
+
+**Flags (status):**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output status as JSON |
+| `--watch` | Continuously watch status |
+
+**Examples:**
+
+```bash
+# Start agent with 30-minute schedule
+preflight agent start --schedule 30m
+
+# Start with auto-remediation
+preflight agent start --remediation auto
+
+# Check status
+preflight agent status
+
+# Watch status continuously
+preflight agent status --watch
+
+# Install as system service
+preflight agent install
+
+# Stop the agent
+preflight agent stop
+
+# Approve a pending remediation
+preflight agent approve abc123
+```
+
+---
+
+### preflight fleet
+
+Manage configuration across multiple remote machines.
+
+```bash
+preflight fleet <command> [flags]
+```
+
+**Subcommands:**
+
+| Command | Description |
+|---------|-------------|
+| `list` | List hosts in inventory |
+| `ping` | Test connectivity to hosts |
+| `plan` | Show what would change on remote hosts |
+| `apply` | Apply configuration to remote hosts |
+| `status` | Show fleet status summary |
+
+**Global Fleet Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--inventory <path>` | Path to fleet.yaml (default: fleet.yaml) |
+| `--target <pattern>` | Host selector: @group, tag:name, host-*, ~regex~ |
+| `--exclude <pattern>` | Exclude hosts matching pattern |
+| `--json` | Output as JSON |
+
+**Flags (apply):**
+
+| Flag | Description |
+|------|-------------|
+| `--strategy <name>` | Execution strategy: parallel, rolling, canary |
+| `--max-parallel <n>` | Maximum concurrent hosts |
+| `--yes` | Skip confirmation |
+
+**Targeting Syntax:**
+
+| Pattern | Description |
+|---------|-------------|
+| `@all` or `*` | All hosts |
+| `@groupname` | Hosts in group |
+| `tag:tagname` | Hosts with tag |
+| `host-*` | Glob pattern |
+| `~regex~` | Regex pattern |
+| `!pattern` | Exclude matches |
+
+**Examples:**
+
+```bash
+# List all hosts
+preflight fleet list
+
+# List hosts with specific tag
+preflight fleet list --target tag:darwin
+
+# Test connectivity
+preflight fleet ping --target @production
+
+# Plan changes for a group
+preflight fleet plan --target @dev-team
+
+# Apply to all hosts in parallel
+preflight fleet apply --target @all --strategy parallel
+
+# Rolling deployment to production
+preflight fleet apply --target @production --strategy rolling
+
+# Canary deployment
+preflight fleet apply --target @production --strategy canary
+
+# Show fleet status
+preflight fleet status
+```
+
+**Fleet Inventory Example (fleet.yaml):**
+
+```yaml
+version: 1
+hosts:
+  workstation-01:
+    hostname: dev-ws-01.internal
+    user: admin
+    port: 22
+    tags: [workstation, darwin]
+    groups: [dev-team]
+  server-prod-01:
+    hostname: prod-01.example.com
+    user: deploy
+    tags: [server, linux, production]
+    groups: [production]
+groups:
+  production:
+    hosts: [server-prod-*]
+    policies: [require-approval]
+  dev-team:
+    description: Development workstations
+defaults:
+  user: admin
+  port: 22
+  ssh_timeout: 30s
+  max_parallel: 10
 ```
 
 ---
