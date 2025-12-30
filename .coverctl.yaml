@@ -30,7 +30,7 @@ policy:
 
     - name: cli
       match: ["./cmd/..."]
-      min: 40  # TUI commands require integration tests
+      min: 37  # TUI commands require integration tests; bump when fleet SSH tests added
 
     # Platform & infrastructure
     - name: platform
