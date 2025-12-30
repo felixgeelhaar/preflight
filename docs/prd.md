@@ -717,7 +717,7 @@ Each layer catches different attack vectors:
 
 v4 extends Preflight from single-machine management to coordinated multi-machine environments. The three phases build a foundation for enterprise-scale workstation management while maintaining the git-centric, local-first philosophy.
 
-### 16.1 Multi-Machine Sync (v4.0) — IN PROGRESS
+### 16.1 Multi-Machine Sync (v4.0) — COMPLETE
 
 **Goal:** Enable lockfile synchronization across multiple machines with conflict detection and resolution.
 
@@ -774,20 +774,20 @@ packages:
 | `remote-wins` | Always prefer remote changes |
 | `manual` | Require user intervention for all conflicts |
 
-#### Remaining Work (v4.0)
+#### Implementation Status (v4.0) — COMPLETE
 
-- [ ] SyncEngine for orchestrating pull/push operations
-- [ ] CLI commands: `preflight sync`, `preflight conflicts`
-- [ ] TUI conflict resolution screen
-- [ ] Git integration for lockfile sync
+- [x] SyncEngine for orchestrating pull/push operations (`internal/domain/sync/sync_engine.go`)
+- [x] CLI commands: `preflight sync`, `preflight conflicts` (`cmd/preflight/sync.go`, `sync_conflicts.go`)
+- [x] TUI conflict resolution screen (`internal/tui/conflict_resolution_model.go`)
+- [x] Git integration for lockfile sync (`internal/adapters/lockfile/sync_adapter.go`)
 
-### 16.2 Background Agent (v4.1)
+### 16.2 Background Agent (v4.0) — COMPLETE
 
 **Goal:** Continuous reconciliation and drift monitoring without user intervention.
 
-#### Agent Domain
+#### Agent Domain ✓ COMPLETE
 
-New domain in `internal/domain/agent/`:
+Implemented in `internal/domain/agent/`:
 
 | Component | Description |
 |-----------|-------------|
@@ -836,13 +836,13 @@ preflight agent approve [request-id]  # Approve pending changes
 - JSON protocol for status/stop/approve commands
 - Lock file at `~/.preflight/agent.lock`
 
-### 16.3 Fleet Management (v4.2)
+### 16.3 Fleet Management (v4.0) — COMPLETE
 
 **Goal:** Coordinate configuration across multiple machines via SSH.
 
-#### Fleet Domain
+#### Fleet Domain ✓ COMPLETE
 
-New domain in `internal/domain/fleet/`:
+Implemented in `internal/domain/fleet/`:
 
 ```
 fleet/
