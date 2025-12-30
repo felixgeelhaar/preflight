@@ -7,6 +7,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/felixgeelhaar/preflight/internal/domain/audit"
 	"github.com/felixgeelhaar/preflight/internal/domain/catalog"
 	"github.com/felixgeelhaar/preflight/internal/domain/catalog/embedded"
 	"github.com/spf13/cobra"
@@ -149,6 +150,18 @@ func init() {
 // registryStore is the persistent store for external catalog sources.
 var registryStore = catalog.NewRegistryStore(catalog.DefaultRegistryStoreConfig())
 
+// getCatalogAuditService returns the audit service for catalog operations.
+func getCatalogAuditService() *audit.Service {
+	config := audit.DefaultFileLoggerConfig()
+	logger, err := audit.NewFileLogger(config)
+	if err != nil {
+		// Log warning but continue without audit logging
+		fmt.Fprintf(os.Stderr, "Warning: failed to open audit log: %v\n", err)
+		return audit.NewService(audit.NewNullLogger())
+	}
+	return audit.NewService(logger)
+}
+
 // getRegistry returns the catalog registry with builtin catalog loaded
 func getRegistry() (*catalog.Registry, error) {
 	registry := catalog.NewRegistry()
@@ -275,6 +288,19 @@ func runCatalogAdd(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to save catalog: %w", err)
 	}
 
+	// Audit log the catalog installation
+	auditSvc := getCatalogAuditService()
+	defer func() { _ = auditSvc.Close() }()
+	_ = auditSvc.LogCatalogInstalled(
+		ctx,
+		name,
+		location,
+		"", // integrity hash populated during verification
+		false,
+		"",
+		"", // trust level determined later
+	)
+
 	fmt.Printf("\nCatalog '%s' added successfully.\n", name)
 	return nil
 }
@@ -361,12 +387,21 @@ func runCatalogRemove(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to update registry: %w", err)
 	}
 
+	// Audit log the catalog removal
+	auditSvc := getCatalogAuditService()
+	defer func() { _ = auditSvc.Close() }()
+	_ = auditSvc.LogCatalogRemoved(context.Background(), name)
+
 	fmt.Printf("Catalog '%s' removed.\n", name)
 	return nil
 }
 
 func runCatalogVerify(_ *cobra.Command, args []string) error {
 	ctx := context.Background()
+
+	// Setup audit service for logging verification results
+	auditSvc := getCatalogAuditService()
+	defer func() { _ = auditSvc.Close() }()
 
 	registry, err := getRegistry()
 	if err != nil {
@@ -421,6 +456,7 @@ func runCatalogVerify(_ *cobra.Command, args []string) error {
 				fmt.Println("FAILED")
 			}
 			fmt.Printf("  ✗ Hash verification failed: %v\n", err)
+			_ = auditSvc.LogCatalogVerified(ctx, rc.Name(), false, err)
 			failed++
 			continue
 		}
@@ -447,6 +483,7 @@ func runCatalogVerify(_ *cobra.Command, args []string) error {
 						fmt.Println("FAILED")
 					}
 					fmt.Printf("  ✗ Signature verification failed: %v\n", sigResult.err)
+					_ = auditSvc.LogSignatureFailed(ctx, rc.Name(), sigResult.err)
 					failed++
 					continue
 				}
@@ -460,6 +497,8 @@ func runCatalogVerify(_ *cobra.Command, args []string) error {
 		fmt.Printf("  ✓ %s verified\n", rc.Name())
 		// Update last verify timestamp
 		_ = registryStore.UpdateVerifyTime(rc.Name())
+		// Log successful verification
+		_ = auditSvc.LogCatalogVerified(ctx, rc.Name(), true, nil)
 	}
 
 	fmt.Println()
@@ -503,7 +542,12 @@ func verifyCatalogSignatures(_ *catalog.RegisteredCatalog, _ *catalog.SigstoreVe
 }
 
 func runCatalogAudit(_ *cobra.Command, args []string) error {
+	ctx := context.Background()
 	name := args[0]
+
+	// Setup audit service for logging security audit results
+	auditSvc := getCatalogAuditService()
+	defer func() { _ = auditSvc.Close() }()
 
 	registry, err := getRegistry()
 	if err != nil {
@@ -519,6 +563,9 @@ func runCatalogAudit(_ *cobra.Command, args []string) error {
 
 	auditor := catalog.NewAuditor()
 	result := auditor.Audit(rc)
+
+	// Log the security audit event
+	_ = auditSvc.LogSecurityAudit(ctx, name, result.Passed, result.CriticalCount(), result.HighCount())
 
 	// Display findings by severity
 	severities := []catalog.AuditSeverity{

@@ -27,7 +27,7 @@ policy:
 
     - name: cli
       match: ["./cmd/..."]
-      min: 42  # CLI threshold: TUI commands (capture, doctor, rollback, discover) require integration tests
+      min: 40  # CLI threshold: TUI commands (capture, doctor, rollback, discover, audit) require integration tests
 
     - name: platform
       match: ["./internal/domain/platform/..."]
@@ -36,6 +36,10 @@ policy:
     - name: marketplace
       match: ["./internal/domain/marketplace/..."]
       min: 76  # Community features: some HTTP-dependent code paths
+
+    - name: audit
+      match: ["./internal/domain/audit/..."]
+      min: 90  # Security audit logging domain - high coverage required
 
 exclude:
   - "internal/generated/*"

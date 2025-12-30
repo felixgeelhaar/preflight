@@ -8,10 +8,23 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/felixgeelhaar/preflight/internal/domain/audit"
 	"github.com/felixgeelhaar/preflight/internal/domain/plugin"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
 )
+
+// getPluginAuditService returns the audit service for plugin operations.
+func getPluginAuditService() *audit.Service {
+	config := audit.DefaultFileLoggerConfig()
+	logger, err := audit.NewFileLogger(config)
+	if err != nil {
+		// Log warning but continue without audit logging
+		fmt.Fprintf(os.Stderr, "Warning: failed to open audit log: %v\n", err)
+		return audit.NewService(audit.NewNullLogger())
+	}
+	return audit.NewService(logger)
+}
 
 var pluginCmd = &cobra.Command{
 	Use:   "plugin",
@@ -218,7 +231,12 @@ func runPluginList() error {
 }
 
 func runPluginInstall(source string) error {
+	ctx := context.Background()
 	loader := plugin.NewLoader()
+
+	// Setup audit service
+	auditSvc := getPluginAuditService()
+	defer func() { _ = auditSvc.Close() }()
 
 	// Determine if source is a local path or Git URL
 	info, err := os.Stat(source)
@@ -229,6 +247,15 @@ func runPluginInstall(source string) error {
 			return fmt.Errorf("loading plugin: %w", err)
 		}
 
+		// Log plugin installation
+		var caps []string
+		if p.Manifest.WASM != nil {
+			for _, c := range p.Manifest.WASM.Capabilities {
+				caps = append(caps, c.Name)
+			}
+		}
+		_ = auditSvc.LogPluginInstalled(ctx, p.Manifest.Name, source, p.Manifest.Version, caps)
+
 		// For now, just validate - actual installation would copy to install path
 		fmt.Printf("✓ Plugin validated: %s@%s\n", p.Manifest.Name, p.Manifest.Version)
 		fmt.Println("")
@@ -238,17 +265,27 @@ func runPluginInstall(source string) error {
 	}
 
 	// Git URL
-	_, err = loader.LoadFromGit(source, "latest")
+	p, err := loader.LoadFromGit(source, "latest")
 	if err != nil {
 		return fmt.Errorf("installing from git: %w", err)
 	}
+
+	// Log plugin installation from Git
+	var caps []string
+	if p.Manifest.WASM != nil {
+		for _, c := range p.Manifest.WASM.Capabilities {
+			caps = append(caps, c.Name)
+		}
+	}
+	_ = auditSvc.LogPluginInstalled(ctx, p.Manifest.Name, source, p.Manifest.Version, caps)
 
 	return nil
 }
 
 func runPluginRemove(name string) error {
+	ctx := context.Background()
 	loader := plugin.NewLoader()
-	result, err := loader.Discover(context.Background())
+	result, err := loader.Discover(ctx)
 	if err != nil {
 		return fmt.Errorf("discovering plugins: %w", err)
 	}
@@ -264,6 +301,11 @@ func runPluginRemove(name string) error {
 	if found == nil {
 		return fmt.Errorf("plugin %q not found", name)
 	}
+
+	// Log plugin uninstall (even though removal is not fully implemented)
+	auditSvc := getPluginAuditService()
+	defer func() { _ = auditSvc.Close() }()
+	_ = auditSvc.LogPluginUninstalled(ctx, name)
 
 	fmt.Printf("Found plugin: %s@%s at %s\n", found.Manifest.Name, found.Manifest.Version, found.Path)
 	fmt.Println("")

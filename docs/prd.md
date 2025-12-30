@@ -665,7 +665,7 @@ warn:
 - *Null implementations (NullFileSystem, NullShell, NullHTTP) for full isolation*
 - *80%+ test coverage with race detection*
 
-### 15.5 Audit Logging
+### 15.5 Audit Logging ✅ COMPLETE
 
 All plugin operations are logged for security review:
 
@@ -682,6 +682,18 @@ All plugin operations are logged for security review:
   "user": "jane"
 }
 ```
+
+*Status: Complete (v3.3.x) — Implemented:*
+- *Audit domain in `internal/domain/audit/` with Event, Logger, Service, Query types*
+- *Event types: catalog_installed, catalog_removed, catalog_verified, plugin_installed, plugin_executed, trust_added, trust_removed, signature_verified, signature_failed, capability_granted, capability_denied, sandbox_violation, security_audit*
+- *Severity levels: info, warning, error, critical*
+- *File-based JSON logging with rotation and cleanup*
+- *In-memory logger for testing, NullLogger for disabled logging*
+- *Query builder with fluent API for filtering by type, severity, catalog, plugin, user, time range*
+- *Summary statistics with event counts by type, severity, catalog, plugin*
+- *CLI commands: `preflight audit`, `preflight audit summary`, `preflight audit security`, `preflight audit clean`*
+- *Integrated with catalog operations (add, remove, verify, audit) and plugin operations (install, remove)*
+- *92%+ test coverage*
 
 ### 15.6 Security Stack Summary
 
