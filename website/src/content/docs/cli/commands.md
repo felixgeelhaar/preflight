@@ -977,3 +977,4 @@ Available on all commands:
 
 - [Flags & Options](/preflight/cli/flags/) — Detailed flag reference
 - [Configuration](/preflight/guides/configuration/) — Configuration guide
+- [Fleet Management](/preflight/guides/fleet/) — Multi-machine fleet operations
