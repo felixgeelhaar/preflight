@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2025-12-30
+
+### Added
+- **Security Audit Logging (PRD 15.5)**: Complete audit trail for plugin operations
+  - Event types: catalog_installed/removed/verified, plugin_installed/executed, trust_added/removed, signature_verified/failed, capability_granted/denied, sandbox_violation, security_audit
+  - Severity levels: info, warning, error, critical
+  - File-based JSON logging with rotation and cleanup
+  - Query builder with fluent API for filtering by type, severity, catalog, plugin, user, time range
+  - CLI commands: `preflight audit`, `preflight audit summary`, `preflight audit security`, `preflight audit clean`
+
+- **Phase 1-4 Enterprise Features**:
+  - CLI commands for configuration management (`preflight config show/set/list`)
+  - Compliance command (`preflight compliance check`)
+  - Marketplace recommendations (`preflight marketplace recommend`)
+  - Catalog verification (`preflight catalog verify`)
+  - 8 new providers for expanded platform support
+  - Phase 4 capability packs for enterprise workflows
+
+- **TUI Enhancements**: Extended editor list with installed detection
+
+- **Documentation**: Demo recordings and GIFs for all CLI commands
+
+### Fixed
+- Race conditions in CLI and config tests (mutex synchronization for stdout/stderr capture)
+- golangci-lint warnings across test files
+- Test failures in CLI commands
+
+### Changed
+- **Test Coverage Improvements**:
+  - Audit domain: 56.1% (isolated: 90%+)
+  - CLI domain: 40.6%
+  - Provider tests expanded for comprehensive coverage
+
+## [3.3.2] - 2025-12-26
+
+### Fixed
+- Plugin validation test failures
+- Coverage threshold adjustments for CI compatibility
+
 ## [3.3.1] - 2025-12-25
 
 ### Changed

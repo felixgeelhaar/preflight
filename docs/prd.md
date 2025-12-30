@@ -683,7 +683,7 @@ All plugin operations are logged for security review:
 }
 ```
 
-*Status: Complete (v3.3.x) — Implemented:*
+*Status: Complete (v3.4.0) — Implemented:*
 - *Audit domain in `internal/domain/audit/` with Event, Logger, Service, Query types*
 - *Event types: catalog_installed, catalog_removed, catalog_verified, plugin_installed, plugin_executed, trust_added, trust_removed, signature_verified, signature_failed, capability_granted, capability_denied, sandbox_violation, security_audit*
 - *Severity levels: info, warning, error, critical*
@@ -693,7 +693,7 @@ All plugin operations are logged for security review:
 - *Summary statistics with event counts by type, severity, catalog, plugin*
 - *CLI commands: `preflight audit`, `preflight audit summary`, `preflight audit security`, `preflight audit clean`*
 - *Integrated with catalog operations (add, remove, verify, audit) and plugin operations (install, remove)*
-- *92%+ test coverage*
+- *90%+ isolated test coverage, 56% cumulative (pending app layer integration)*
 
 ### 15.6 Security Stack Summary
 
