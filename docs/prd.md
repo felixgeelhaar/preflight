@@ -713,17 +713,230 @@ Each layer catches different attack vectors:
 
 ---
 
-## 16. Future Considerations (v4+)
+## 16. v4 Feature Requirements — Multi-Machine & Fleet Operations
 
-- Remote execution and fleet management
-- Background agent with scheduled reconciliation
-- Integration with enterprise identity providers
-- Multi-machine sync and conflict resolution
-- Plugin marketplace with automated security scanning
-- Reproducible builds verification for catalogs
+v4 extends Preflight from single-machine management to coordinated multi-machine environments. The three phases build a foundation for enterprise-scale workstation management while maintaining the git-centric, local-first philosophy.
+
+### 16.1 Multi-Machine Sync (v4.0) — IN PROGRESS
+
+**Goal:** Enable lockfile synchronization across multiple machines with conflict detection and resolution.
+
+#### Sync Domain ✓ COMPLETE
+
+New domain in `internal/domain/sync/` provides the foundation:
+
+| Component | Status | Description |
+|-----------|--------|-------------|
+| `MachineID` | ✓ | Stable UUID per machine stored at `~/.preflight/machine-id` |
+| `VersionVector` | ✓ | Vector clocks for causal ordering of changes |
+| `PackageProvenance` | ✓ | Tracks who modified packages and when (in vector time) |
+| `SyncMetadata` | ✓ | Machine lineage and version vectors for lockfiles |
+| `ConflictDetector` | ✓ | Three-way conflict detection with base comparison |
+| `ConflictResolver` | ✓ | Resolution strategies: auto, newest, local-wins, remote-wins, manual |
+
+#### Lockfile v2 Format ✓ COMPLETE
+
+Extended lockfile with sync metadata:
+
+```yaml
+version: 2
+sync:
+  vector:
+    550e8400-e29b-41d4-a716-446655440000: 5
+    660e8400-e29b-41d4-a716-446655440000: 3
+  lineage:
+    550e8400-e29b-41d4-a716-446655440000:
+      hostname: work-macbook
+      last_seen: "2025-01-15T10:30:00Z"
+packages:
+  "brew:ripgrep":
+    version: "14.1.0"
+    integrity: "sha256:abc123..."
+    installed_at: "2025-01-15T10:30:00Z"
+```
+
+#### Conflict Types
+
+| Type | Description | Auto-Resolvable |
+|------|-------------|-----------------|
+| `LocalOnly` | Package added locally | Yes (keep) |
+| `RemoteOnly` | Package added remotely | Yes (take) |
+| `VersionMismatch` | Different versions, sequential changes | Yes (take newer) |
+| `BothModified` | Concurrent modifications | No (manual required) |
+
+#### Resolution Strategies
+
+| Strategy | Behavior |
+|----------|----------|
+| `auto` | Intelligent resolution based on conflict type and causality |
+| `newest` | Take version with later timestamp or higher vector |
+| `local-wins` | Always prefer local changes |
+| `remote-wins` | Always prefer remote changes |
+| `manual` | Require user intervention for all conflicts |
+
+#### Remaining Work (v4.0)
+
+- [ ] SyncEngine for orchestrating pull/push operations
+- [ ] CLI commands: `preflight sync`, `preflight conflicts`
+- [ ] TUI conflict resolution screen
+- [ ] Git integration for lockfile sync
+
+### 16.2 Background Agent (v4.1)
+
+**Goal:** Continuous reconciliation and drift monitoring without user intervention.
+
+#### Agent Domain
+
+New domain in `internal/domain/agent/`:
+
+| Component | Description |
+|-----------|-------------|
+| `Agent` | Agent aggregate with state machine (idle, running, reconciling) |
+| `AgentConfig` | Schedule, remediation policy, target configuration |
+| `Schedule` | Interval-based or cron scheduling |
+| `RemediationPolicy` | notify, auto, approved, safe |
+| `ReconciliationResult` | Results of reconciliation runs |
+| `HealthStatus` | Agent health and status information |
+
+#### Configuration
+
+```yaml
+# preflight.yaml
+agent:
+  enabled: true
+  schedule: "30m"  # or cron: "0 */30 * * *"
+  remediation: notify  # notify | auto | approved | safe
+  target: default
+  notifications:
+    on_drift: true
+    on_remediation: true
+```
+
+#### CLI Commands
+
+```bash
+preflight agent start [--foreground] [--schedule 30m]
+preflight agent stop [--force]
+preflight agent status [--json] [--watch]
+preflight agent install   # Install as system service
+preflight agent uninstall
+preflight agent approve [request-id]  # Approve pending changes
+```
+
+#### Service Integration
+
+| Platform | Implementation |
+|----------|----------------|
+| macOS | `~/Library/LaunchAgents/com.preflight.agent.plist` |
+| Linux | `~/.config/systemd/user/preflight-agent.service` |
+
+#### IPC Communication
+
+- Unix socket at `~/.preflight/agent.sock`
+- JSON protocol for status/stop/approve commands
+- Lock file at `~/.preflight/agent.lock`
+
+### 16.3 Fleet Management (v4.2)
+
+**Goal:** Coordinate configuration across multiple machines via SSH.
+
+#### Fleet Domain
+
+New domain in `internal/domain/fleet/`:
+
+```
+fleet/
+├── host.go              # Host entity
+├── group.go             # Group value object
+├── inventory.go         # Inventory aggregate root
+├── target.go            # Target resolution
+├── targeting/
+│   ├── pattern.go       # Glob/regex patterns
+│   └── selector.go      # Selector composition
+├── transport/
+│   ├── transport.go     # Transport interface
+│   └── ssh.go           # SSH implementation
+├── execution/
+│   ├── remote_step.go   # RemoteStep wrapper
+│   └── fleet_executor.go
+└── policy/
+    ├── fleet_policy.go
+    └── maintenance.go   # Maintenance windows
+```
+
+#### Fleet Inventory (`fleet.yaml`)
+
+```yaml
+version: 1
+hosts:
+  workstation-01:
+    hostname: dev-ws-01.internal
+    user: admin
+    port: 22
+    ssh_key: ~/.ssh/fleet_ed25519
+    tags: [workstation, darwin, engineering]
+    groups: [dev-team]
+
+groups:
+  production:
+    hosts: [server-prod-*]
+    policies: [require-approval, maintenance-window]
+
+defaults:
+  ssh_timeout: 30s
+  max_parallel: 10
+```
+
+#### Targeting Syntax
+
+```bash
+preflight fleet apply --target @production          # By group
+preflight fleet apply --target tag:darwin           # By tag
+preflight fleet apply --target "server-*"           # By glob
+preflight fleet apply --target @all --exclude tag:prod
+```
+
+#### CLI Commands
+
+```bash
+preflight fleet list [--target TARGET] [--tags] [--groups]
+preflight fleet ping [--target TARGET] [--timeout 30s]
+preflight fleet plan [--target TARGET] [--output json|table]
+preflight fleet apply [--target TARGET] [--strategy rolling|parallel|canary]
+preflight fleet diff [--target TARGET]
+preflight fleet sync [--target TARGET] [--push] [--pull]
+preflight fleet status [--target TARGET]
+```
+
+#### Execution Strategies
+
+| Strategy | Behavior |
+|----------|----------|
+| `parallel` | All hosts at once (up to maxParallel) |
+| `rolling` | One batch at a time |
+| `canary` | Canary host first, then rolling |
+
+### 16.4 Success Criteria
+
+| Feature | Criteria |
+|---------|----------|
+| **Sync** | Version vectors detect concurrent changes; conflicts auto-resolve where possible |
+| **Agent** | Daemon survives system restart; drift detected within schedule |
+| **Fleet** | 10+ hosts execute in parallel; SSH failures don't block other hosts |
 
 ---
 
-## 17. Final Positioning Statement
+## 17. Future Considerations (v5+)
+
+- Integration with enterprise identity providers (OIDC, SAML)
+- Plugin marketplace with automated security scanning
+- Reproducible builds verification for catalogs
+- Cloud-native inventory sources (AWS EC2, Azure VMs)
+- Terraform/Ansible integration for infrastructure provisioning
+- Compliance reporting and attestation
+
+---
+
+## 18. Final Positioning Statement
 
 > **Preflight is a deterministic workstation compiler that helps anyone design, reproduce, and understand their setup — safely, locally, and without lock-in.**

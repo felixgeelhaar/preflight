@@ -5,10 +5,14 @@ import (
 	"fmt"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
+	"github.com/felixgeelhaar/preflight/internal/domain/sync"
 )
 
 // LockfileVersion is the current lockfile format version.
 const LockfileVersion = 1
+
+// LockfileVersionV2 is the v2 format with multi-machine sync support.
+const LockfileVersionV2 = 2
 
 // Lockfile errors.
 var (
@@ -19,20 +23,35 @@ var (
 
 // Lockfile is the aggregate root for lockfile management.
 // It tracks locked versions and integrity for reproducible builds.
+// V2 lockfiles include sync metadata for multi-machine support.
 type Lockfile struct {
-	version     int
-	mode        config.ReproducibilityMode
-	machineInfo MachineInfo
-	packages    map[string]PackageLock
+	version      int
+	mode         config.ReproducibilityMode
+	machineInfo  MachineInfo
+	packages     map[string]PackageLock
+	syncMetadata sync.SyncMetadata // V2: Multi-machine sync metadata
 }
 
-// NewLockfile creates a new Lockfile with the given mode and machine info.
+// NewLockfile creates a new v1 Lockfile with the given mode and machine info.
+// For new lockfiles, prefer NewLockfileV2 for multi-machine sync support.
 func NewLockfile(mode config.ReproducibilityMode, machineInfo MachineInfo) *Lockfile {
 	return &Lockfile{
 		version:     LockfileVersion,
 		mode:        mode,
 		machineInfo: machineInfo,
 		packages:    make(map[string]PackageLock),
+	}
+}
+
+// NewLockfileV2 creates a new v2 Lockfile with multi-machine sync support.
+// This is the recommended constructor for new lockfiles.
+func NewLockfileV2(mode config.ReproducibilityMode, machineInfo MachineInfo) *Lockfile {
+	return &Lockfile{
+		version:      LockfileVersionV2,
+		mode:         mode,
+		machineInfo:  machineInfo,
+		packages:     make(map[string]PackageLock),
+		syncMetadata: sync.NewSyncMetadata(sync.NewVersionVector()),
 	}
 }
 
@@ -49,6 +68,35 @@ func (l *Lockfile) Mode() config.ReproducibilityMode {
 // MachineInfo returns the machine info snapshot.
 func (l *Lockfile) MachineInfo() MachineInfo {
 	return l.machineInfo
+}
+
+// SyncMetadata returns the multi-machine sync metadata (v2 only).
+// For v1 lockfiles, returns a zero-value SyncMetadata.
+func (l *Lockfile) SyncMetadata() sync.SyncMetadata {
+	return l.syncMetadata
+}
+
+// WithSyncMetadata returns a new Lockfile with updated sync metadata.
+// The packages are copied, not shared.
+func (l *Lockfile) WithSyncMetadata(meta sync.SyncMetadata) *Lockfile {
+	newLock := &Lockfile{
+		version:      l.version,
+		mode:         l.mode,
+		machineInfo:  l.machineInfo,
+		packages:     make(map[string]PackageLock, len(l.packages)),
+		syncMetadata: meta,
+	}
+	for k, v := range l.packages {
+		newLock.packages[k] = v
+	}
+	return newLock
+}
+
+// RecordChange records a change made by the given machine.
+// This increments the version vector and updates the machine's lineage.
+// This method mutates the lockfile in place.
+func (l *Lockfile) RecordChange(machineID sync.MachineID, hostname string) {
+	l.syncMetadata = l.syncMetadata.RecordActivity(machineID, hostname)
 }
 
 // Packages returns a copy of all locked packages.

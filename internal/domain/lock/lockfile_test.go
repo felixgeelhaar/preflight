@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
+	"github.com/felixgeelhaar/preflight/internal/domain/sync"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,6 +30,13 @@ func createTestPackageLock(t *testing.T, provider, name, version string) Package
 	lock, err := NewPackageLock(provider, name, version, createTestIntegrity(t), time.Now())
 	require.NoError(t, err)
 	return lock
+}
+
+func createTestMachineID(t *testing.T) sync.MachineID {
+	t.Helper()
+	id, err := sync.ParseMachineID("550e8400-e29b-41d4-a716-446655440000")
+	require.NoError(t, err)
+	return id
 }
 
 func TestNewLockfile(t *testing.T) {
@@ -270,4 +278,77 @@ func TestLockfile_Clear(t *testing.T) {
 
 	assert.True(t, lockfile.IsEmpty())
 	assert.Equal(t, 0, lockfile.PackageCount())
+}
+
+// V2 Lockfile tests for multi-machine sync
+
+func TestNewLockfileV2(t *testing.T) {
+	t.Parallel()
+
+	machineInfo := createTestMachineInfo(t)
+	lockfile := NewLockfileV2(config.ModeLocked, machineInfo)
+
+	assert.Equal(t, 2, lockfile.Version())
+	assert.Equal(t, config.ModeLocked, lockfile.Mode())
+	assert.False(t, lockfile.SyncMetadata().IsZero())
+}
+
+func TestLockfile_SyncMetadata(t *testing.T) {
+	t.Parallel()
+
+	lockfile := NewLockfileV2(config.ModeLocked, createTestMachineInfo(t))
+
+	// Default sync metadata exists
+	meta := lockfile.SyncMetadata()
+	assert.False(t, meta.IsZero())
+}
+
+func TestLockfile_WithSyncMetadata(t *testing.T) {
+	t.Parallel()
+
+	original := NewLockfileV2(config.ModeLocked, createTestMachineInfo(t))
+	_ = original.AddPackage(createTestPackageLock(t, "brew", "ripgrep", "14.1.0"))
+
+	// Create new sync metadata
+	newMeta := original.SyncMetadata()
+	// Note: We'd normally increment vector here
+
+	updated := original.WithSyncMetadata(newMeta)
+
+	// Original unchanged
+	assert.Equal(t, original.PackageCount(), updated.PackageCount())
+	// Both have same version
+	assert.Equal(t, 2, updated.Version())
+}
+
+func TestLockfile_RecordChange(t *testing.T) {
+	t.Parallel()
+
+	machineInfo := createTestMachineInfo(t)
+	lockfile := NewLockfileV2(config.ModeLocked, machineInfo)
+
+	machineID := createTestMachineID(t)
+	lockfile.RecordChange(machineID, "test-host")
+
+	// Version vector should be incremented
+	assert.Equal(t, uint64(1), lockfile.SyncMetadata().Vector().Get(machineID.String()))
+
+	// Lineage should be updated
+	lineage, ok := lockfile.SyncMetadata().GetLineage(machineID.String())
+	assert.True(t, ok)
+	assert.Equal(t, "test-host", lineage.Hostname())
+}
+
+func TestLockfile_V1CompatibleWithV2(t *testing.T) {
+	t.Parallel()
+
+	// V1 lockfile has no sync metadata
+	v1 := NewLockfile(config.ModeLocked, createTestMachineInfo(t))
+	assert.Equal(t, 1, v1.Version())
+	assert.True(t, v1.SyncMetadata().IsZero())
+
+	// V2 lockfile has sync metadata
+	v2 := NewLockfileV2(config.ModeLocked, createTestMachineInfo(t))
+	assert.Equal(t, 2, v2.Version())
+	assert.False(t, v2.SyncMetadata().IsZero())
 }

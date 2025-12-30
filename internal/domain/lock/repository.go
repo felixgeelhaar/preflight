@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
+	"github.com/felixgeelhaar/preflight/internal/domain/sync"
 )
 
 // Repository errors.
@@ -38,7 +39,20 @@ type LockfileDTO struct {
 	Version     int                   `yaml:"version"`
 	Mode        string                `yaml:"mode"`
 	MachineInfo MachineInfoDTO        `yaml:"machine_info"`
+	Sync        *SyncMetadataDTO      `yaml:"sync,omitempty"` // V2: Multi-machine sync
 	Packages    map[string]PackageDTO `yaml:"packages,omitempty"`
+}
+
+// SyncMetadataDTO is the serializable representation of SyncMetadata.
+type SyncMetadataDTO struct {
+	Vector  map[string]uint64     `yaml:"vector"`
+	Lineage map[string]LineageDTO `yaml:"lineage,omitempty"`
+}
+
+// LineageDTO is the serializable representation of MachineLineage.
+type LineageDTO struct {
+	Hostname string `yaml:"hostname"`
+	LastSeen string `yaml:"last_seen"` // RFC3339 format
 }
 
 // MachineInfoDTO is the serializable representation of MachineInfo.
@@ -68,6 +82,21 @@ func LockfileToDTO(l *Lockfile) LockfileDTO {
 			Snapshot: l.MachineInfo().Snapshot().Format(time.RFC3339),
 		},
 		Packages: make(map[string]PackageDTO),
+	}
+
+	// V2: Include sync metadata if present
+	if !l.SyncMetadata().IsZero() {
+		syncDTO := &SyncMetadataDTO{
+			Vector:  l.SyncMetadata().Vector().ToMap(),
+			Lineage: make(map[string]LineageDTO),
+		}
+		for machineID, lineage := range l.SyncMetadata().Lineage() {
+			syncDTO.Lineage[machineID] = LineageDTO{
+				Hostname: lineage.Hostname(),
+				LastSeen: lineage.LastSeen().Format(time.RFC3339),
+			}
+		}
+		dto.Sync = syncDTO
 	}
 
 	for key, pkg := range l.Packages() {
@@ -100,9 +129,31 @@ func LockfileFromDTO(dto LockfileDTO) (*Lockfile, error) {
 		return nil, err
 	}
 
-	// Create lockfile with mode
+	// Create lockfile based on version
 	mode := config.ReproducibilityMode(dto.Mode)
-	lockfile := NewLockfile(mode, machineInfo)
+	var lockfile *Lockfile
+	if dto.Version >= LockfileVersionV2 {
+		lockfile = NewLockfileV2(mode, machineInfo)
+	} else {
+		lockfile = NewLockfile(mode, machineInfo)
+	}
+
+	// V2: Parse sync metadata if present
+	if dto.Sync != nil {
+		vector := sync.FromMap(dto.Sync.Vector)
+		syncMeta := sync.NewSyncMetadata(vector)
+
+		for machineID, lineageDTO := range dto.Sync.Lineage {
+			lastSeen, err := time.Parse(time.RFC3339, lineageDTO.LastSeen)
+			if err != nil {
+				return nil, fmt.Errorf("invalid last_seen for machine %s: %w", machineID, err)
+			}
+			lineage := sync.NewMachineLineage(machineID, lineageDTO.Hostname, lastSeen)
+			syncMeta = syncMeta.AddLineage(lineage)
+		}
+
+		lockfile = lockfile.WithSyncMetadata(syncMeta)
+	}
 
 	// Add packages
 	for key, pkgDTO := range dto.Packages {

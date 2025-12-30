@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
+	"github.com/felixgeelhaar/preflight/internal/domain/sync"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -197,4 +198,101 @@ func TestRoundTrip(t *testing.T) {
 	restPkg, _ := restored.GetPackage("brew", "ripgrep")
 	assert.Equal(t, origPkg.Version(), restPkg.Version())
 	assert.Equal(t, origPkg.Integrity().String(), restPkg.Integrity().String())
+}
+
+// V2 DTO tests
+
+func TestLockfileV2ToDTO(t *testing.T) {
+	t.Parallel()
+
+	machineInfo, _ := NewMachineInfo("darwin", "arm64", "macbook.local",
+		time.Date(2025, 1, 15, 10, 30, 0, 0, time.UTC))
+	lockfile := NewLockfileV2(config.ModeLocked, machineInfo)
+
+	// Record activity from a machine
+	machineID, _ := sync.ParseMachineID("550e8400-e29b-41d4-a716-446655440000")
+	lockfile.RecordChange(machineID, "work-laptop")
+
+	dto := LockfileToDTO(lockfile)
+
+	assert.Equal(t, LockfileVersionV2, dto.Version)
+	assert.NotNil(t, dto.Sync)
+	assert.Equal(t, uint64(1), dto.Sync.Vector[machineID.String()])
+	assert.Equal(t, "work-laptop", dto.Sync.Lineage[machineID.String()].Hostname)
+}
+
+func TestLockfileV2FromDTO(t *testing.T) {
+	t.Parallel()
+
+	machineID := "550e8400-e29b-41d4-a716-446655440000"
+	dto := LockfileDTO{
+		Version: 2,
+		Mode:    "locked",
+		MachineInfo: MachineInfoDTO{
+			OS:       "darwin",
+			Arch:     "arm64",
+			Hostname: "macbook.local",
+			Snapshot: "2025-01-15T10:30:00Z",
+		},
+		Sync: &SyncMetadataDTO{
+			Vector: map[string]uint64{
+				machineID: 5,
+			},
+			Lineage: map[string]LineageDTO{
+				machineID: {
+					Hostname: "work-laptop",
+					LastSeen: "2025-01-15T12:00:00Z",
+				},
+			},
+		},
+	}
+
+	lockfile, err := LockfileFromDTO(dto)
+
+	require.NoError(t, err)
+	assert.Equal(t, LockfileVersionV2, lockfile.Version())
+	assert.False(t, lockfile.SyncMetadata().IsZero())
+	assert.Equal(t, uint64(5), lockfile.SyncMetadata().Vector().Get(machineID))
+
+	lineage, ok := lockfile.SyncMetadata().GetLineage(machineID)
+	assert.True(t, ok)
+	assert.Equal(t, "work-laptop", lineage.Hostname())
+}
+
+func TestRoundTripV2(t *testing.T) {
+	t.Parallel()
+
+	// Create original V2 lockfile
+	machineInfo, _ := NewMachineInfo("darwin", "arm64", "macbook.local",
+		time.Date(2025, 1, 15, 10, 30, 0, 0, time.UTC))
+	original := NewLockfileV2(config.ModeLocked, machineInfo)
+
+	// Add package
+	hash := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	integrity, _ := NewIntegrity("sha256", hash)
+	pkg, _ := NewPackageLock("brew", "ripgrep", "14.1.0", integrity,
+		time.Date(2025, 1, 15, 11, 0, 0, 0, time.UTC))
+	_ = original.AddPackage(pkg)
+
+	// Record activity
+	machineID, _ := sync.ParseMachineID("550e8400-e29b-41d4-a716-446655440000")
+	original.RecordChange(machineID, "work-laptop")
+
+	// Convert to DTO and back
+	dto := LockfileToDTO(original)
+	restored, err := LockfileFromDTO(dto)
+
+	require.NoError(t, err)
+	assert.Equal(t, original.Version(), restored.Version())
+	assert.Equal(t, original.Mode(), restored.Mode())
+	assert.Equal(t, original.PackageCount(), restored.PackageCount())
+
+	// Verify sync metadata preserved
+	assert.Equal(t,
+		original.SyncMetadata().Vector().Get(machineID.String()),
+		restored.SyncMetadata().Vector().Get(machineID.String()))
+
+	origLineage, _ := original.SyncMetadata().GetLineage(machineID.String())
+	restLineage, _ := restored.SyncMetadata().GetLineage(machineID.String())
+	assert.Equal(t, origLineage.Hostname(), restLineage.Hostname())
 }
