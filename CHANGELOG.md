@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.1] - 2025-12-30
+
+### Added
+
+- **Fleet Management Guide**: Comprehensive documentation for SSH-based fleet operations
+  - Quick start, inventory configuration, targeting syntax
+  - Commands reference (list, ping, plan, apply, status, diff)
+  - Execution strategies, policies, and maintenance windows
+  - SSH configuration and troubleshooting
+
+- **Demo Recordings**: VHS tape files and GIF recordings for v4 commands
+  - `sync.gif`: Multi-machine synchronization workflow
+  - `agent.gif`: Background agent management
+  - `fleet.gif`: Fleet management over SSH
+
+- **SSH Integration Tests**: Comprehensive test coverage for fleet operations
+  - Transport tests: ping, connect, command execution, file transfer
+  - Executor tests: parallel/rolling strategies, step dependencies
+  - Run with: `PREFLIGHT_SSH_TEST=1 go test -tags=integration ./internal/domain/fleet/...`
+
+- **CLI Test Coverage**: Additional tests for v4 commands
+  - sync, agent, fleet, conflicts command tests
+  - Flag defaults, subcommands, and shorthand validation
+
 ## [4.0.0] - 2025-12-30
 
 ### Added
