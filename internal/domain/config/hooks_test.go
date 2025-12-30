@@ -4,12 +4,17 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// stderrMu protects os.Stderr during capture operations to prevent race conditions
+// when multiple parallel tests try to capture stderr simultaneously.
+var stderrMu sync.Mutex
 
 func TestNewHookRunner(t *testing.T) {
 	t.Parallel()
@@ -126,11 +131,6 @@ func TestHookRunner_RunHooks_Timeout(t *testing.T) {
 func TestHookRunner_RunHooks_OnErrorContinue(t *testing.T) {
 	t.Parallel()
 
-	// Capture stderr
-	oldStderr := os.Stderr
-	r, w, _ := os.Pipe()
-	os.Stderr = w
-
 	runner := NewHookRunner(t.TempDir())
 	ctx := context.Background()
 
@@ -139,12 +139,19 @@ func TestHookRunner_RunHooks_OnErrorContinue(t *testing.T) {
 		{Name: "succeed", Phase: HookPhasePre, Type: HookTypeApply, Command: "true"},
 	}
 
+	// Capture stderr with mutex to prevent race conditions
+	stderrMu.Lock()
+	oldStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+
 	err := runner.RunHooks(ctx, hooks, HookPhasePre, HookTypeApply, HookContext{})
 
 	_ = w.Close()
 	var buf bytes.Buffer
 	_, _ = buf.ReadFrom(r)
 	os.Stderr = oldStderr
+	stderrMu.Unlock()
 
 	assert.NoError(t, err)
 	assert.Contains(t, buf.String(), "fail")

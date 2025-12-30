@@ -5,12 +5,17 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// stdoutMu protects os.Stdout during capture operations to prevent race conditions
+// when multiple parallel tests try to capture stdout simultaneously.
+var stdoutMu sync.Mutex
 
 func TestValidateCommand_UseAndShort(t *testing.T) {
 	assert.Equal(t, "validate", validateCmd.Use)
@@ -49,9 +54,15 @@ func TestValidateCommand_IsRegistered(t *testing.T) {
 	assert.True(t, found, "validate command should be registered")
 }
 
-// captureStdout captures stdout during the execution of f
+// captureStdout captures stdout during the execution of f.
+// It uses a mutex to prevent race conditions when multiple parallel tests
+// try to capture stdout simultaneously.
 func captureStdout(t *testing.T, f func()) string {
 	t.Helper()
+
+	stdoutMu.Lock()
+	defer stdoutMu.Unlock()
+
 	old := os.Stdout
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
