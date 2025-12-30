@@ -330,6 +330,19 @@ func TestEventBuilder_ValidatedBuild(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotEmpty(t, event.ID)
 	})
+
+	t.Run("invalid event returns error", func(t *testing.T) {
+		t.Parallel()
+		// Create an event with empty type by building without proper initialization
+		// The EventBuilder always sets defaults, so we test validation directly
+		event := audit.Event{
+			ID:        "test-id",
+			Timestamp: time.Now(),
+			// Missing Type and Severity
+		}
+		err := event.Validate()
+		assert.Error(t, err)
+	})
 }
 
 func TestEvent_UnmarshalJSON(t *testing.T) {

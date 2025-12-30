@@ -422,3 +422,65 @@ func TestIntegrityError(t *testing.T) {
 		assert.Contains(t, err.Error(), "chain broken")
 	})
 }
+
+func TestFileLogger_HashChainContinuity(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	config := audit.FileLoggerConfig{
+		Dir:          dir,
+		MaxSize:      1024 * 1024,
+		MaxAge:       24 * time.Hour,
+		MaxRotations: 3,
+	}
+
+	// First logger session
+	logger1, err := audit.NewFileLogger(config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	_ = logger1.Log(ctx, audit.NewEvent(audit.EventCatalogInstalled).WithCatalog("cat1").Build())
+	_ = logger1.Log(ctx, audit.NewEvent(audit.EventCatalogInstalled).WithCatalog("cat2").Build())
+	_ = logger1.Close()
+
+	// Second logger session - should continue hash chain
+	logger2, err := audit.NewFileLogger(config)
+	require.NoError(t, err)
+	defer func() { _ = logger2.Close() }()
+
+	_ = logger2.Log(ctx, audit.NewEvent(audit.EventCatalogInstalled).WithCatalog("cat3").Build())
+
+	// Verify integrity across sessions
+	err = logger2.VerifyIntegrity()
+	assert.NoError(t, err)
+}
+
+func TestFileLogger_QueryWithLimit(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	config := audit.FileLoggerConfig{
+		Dir:          dir,
+		MaxSize:      1024 * 1024,
+		MaxAge:       24 * time.Hour,
+		MaxRotations: 3,
+	}
+
+	logger, err := audit.NewFileLogger(config)
+	require.NoError(t, err)
+	defer func() { _ = logger.Close() }()
+
+	ctx := context.Background()
+
+	// Log 10 events
+	for i := 0; i < 10; i++ {
+		_ = logger.Log(ctx, audit.NewEvent(audit.EventCatalogInstalled).Build())
+	}
+
+	// Query with limit
+	filter := audit.NewQuery().Limit(3).Build()
+	events, err := logger.Query(ctx, filter)
+
+	require.NoError(t, err)
+	assert.Len(t, events, 3)
+}

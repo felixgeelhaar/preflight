@@ -441,3 +441,29 @@ func TestService_Close(t *testing.T) {
 	err := service.Close()
 	assert.NoError(t, err)
 }
+
+// errorLogger is a mock logger that returns errors for testing.
+type errorLogger struct{}
+
+func (l *errorLogger) Log(_ context.Context, _ audit.Event) error {
+	return errors.New("log error")
+}
+
+func (l *errorLogger) Query(_ context.Context, _ audit.QueryFilter) ([]audit.Event, error) {
+	return nil, errors.New("query error")
+}
+
+func (l *errorLogger) Close() error {
+	return errors.New("close error")
+}
+
+func TestService_Summary_QueryError(t *testing.T) {
+	t.Parallel()
+
+	service := audit.NewService(&errorLogger{})
+	ctx := context.Background()
+
+	_, err := service.Summary(ctx, audit.QueryFilter{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "query error")
+}
