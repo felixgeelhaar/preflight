@@ -734,6 +734,8 @@ preflight version 4.0.0
 
 Synchronize configuration across multiple machines.
 
+![Sync Demo](/preflight/demos/gif/sync.gif)
+
 ```bash
 preflight sync [flags]
 ```
@@ -796,6 +798,8 @@ preflight conflicts --resolve --strategy newest
 
 Manage the background reconciliation agent.
 
+![Agent Demo](/preflight/demos/gif/agent.gif)
+
 ```bash
 preflight agent <command> [flags]
 ```
@@ -856,6 +860,8 @@ preflight agent approve abc123
 ### preflight fleet
 
 Manage configuration across multiple remote machines.
+
+![Fleet Demo](/preflight/demos/gif/fleet.gif)
 
 ```bash
 preflight fleet <command> [flags]
