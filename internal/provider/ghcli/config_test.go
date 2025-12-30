@@ -57,7 +57,7 @@ func TestParseConfig_WithConfig(t *testing.T) {
 
 	raw := map[string]interface{}{
 		"config": map[string]interface{}{
-			"editor":      "nvim",
+			"editor":       "nvim",
 			"git_protocol": "ssh",
 		},
 	}

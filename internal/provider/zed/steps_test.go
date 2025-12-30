@@ -239,7 +239,7 @@ func TestSettingsStep_Apply(t *testing.T) {
 	var written map[string]interface{}
 	err = json.Unmarshal(data, &written)
 	require.NoError(t, err)
-	assert.Equal(t, float64(4), written["tab_size"])
+	assert.InDelta(t, float64(4), written["tab_size"], 0.001)
 	assert.Equal(t, true, written["vim_mode"])
 }
 

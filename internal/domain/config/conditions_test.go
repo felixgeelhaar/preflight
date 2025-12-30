@@ -35,9 +35,9 @@ func TestConditionEvaluator_Evaluate_OS(t *testing.T) {
 	e := &ConditionEvaluator{osName: "darwin", arch: "arm64", hostname: "testhost"}
 
 	tests := []struct {
-		name    string
-		os      string
-		expect  bool
+		name   string
+		os     string
+		expect bool
 	}{
 		{"exact match", "darwin", true},
 		{"alias mac", "mac", true},
@@ -136,9 +136,9 @@ func TestConditionEvaluator_Evaluate_Hostname(t *testing.T) {
 	e := &ConditionEvaluator{osName: "linux", arch: "amd64", hostname: "myworkstation"}
 
 	tests := []struct {
-		name     string
-		pattern  string
-		expect   bool
+		name    string
+		pattern string
+		expect  bool
 	}{
 		{"exact match", "myworkstation", true},
 		{"case insensitive", "MyWorkstation", true},
@@ -311,7 +311,7 @@ func TestConditionEvaluator_Evaluate_Combined(t *testing.T) {
 
 	// darwin AND (amd64 only) - fails
 	assert.False(t, e.Evaluate(Condition{
-		OS: "darwin",
+		OS:   "darwin",
 		Arch: "amd64",
 	}))
 }

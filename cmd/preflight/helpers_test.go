@@ -2058,10 +2058,10 @@ func TestListSnapshots_WithSets(t *testing.T) {
 	output := buf.String()
 
 	assert.NoError(t, err)
-	assert.Contains(t, output, "abc12345")   // short ID
-	assert.Contains(t, output, "def98765")   // short ID
-	assert.Contains(t, output, "2 files")    // first set
-	assert.Contains(t, output, "1 files")    // second set
+	assert.Contains(t, output, "abc12345") // short ID
+	assert.Contains(t, output, "def98765") // short ID
+	assert.Contains(t, output, "2 files")  // first set
+	assert.Contains(t, output, "1 files")  // second set
 	assert.Contains(t, output, "before apply")
 }
 
@@ -3917,7 +3917,7 @@ func TestResolveSecret_MoreBackends(t *testing.T) {
 	}
 }
 
-func TestResolveKeychain_NonexistentKey(t *testing.T) {
+func TestResolveKeychain_NonexistentKey(_ *testing.T) {
 	// On macOS, keychain commands exist but the key won't be found
 	// The function may return an error or empty string depending on keychain state
 	_, err := resolveKeychain("nonexistent-preflight-test-key-12345")
@@ -5607,7 +5607,7 @@ func TestResolveAge_SecretNotFound(t *testing.T) {
 	assert.Empty(t, value)
 }
 
-func TestRunPluginSearch_ValidConfigType(t *testing.T) {
+func TestRunPluginSearch_ValidConfigType(_ *testing.T) {
 	// Save and restore package-level variable
 	oldType := searchType
 	searchType = "config"
@@ -5618,7 +5618,7 @@ func TestRunPluginSearch_ValidConfigType(t *testing.T) {
 	_ = runPluginSearch("zzz-no-match-xyz") // Use unlikely query to minimize network impact
 }
 
-func TestRunPluginSearch_ValidProviderType(t *testing.T) {
+func TestRunPluginSearch_ValidProviderType(_ *testing.T) {
 	// Save and restore package-level variable
 	oldType := searchType
 	searchType = "provider"
@@ -5628,4 +5628,3 @@ func TestRunPluginSearch_ValidProviderType(t *testing.T) {
 	// We don't care about the result, just that the type parsing code runs
 	_ = runPluginSearch("zzz-no-match-xyz") // Use unlikely query to minimize network impact
 }
-

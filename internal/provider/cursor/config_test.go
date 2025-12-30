@@ -39,9 +39,9 @@ func TestParseConfig_WithSettings(t *testing.T) {
 
 	raw := map[string]interface{}{
 		"settings": map[string]interface{}{
-			"editor.fontSize":   14,
-			"editor.tabSize":    4,
-			"files.autoSave":    "afterDelay",
+			"editor.fontSize": 14,
+			"editor.tabSize":  4,
+			"files.autoSave":  "afterDelay",
 		},
 	}
 

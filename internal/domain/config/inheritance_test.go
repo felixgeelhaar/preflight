@@ -526,6 +526,6 @@ func TestInheritableLayer_Struct(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "test", il.Layer.Name.String())
+	assert.Equal(t, "test", il.Name.String())
 	assert.Equal(t, "base", il.Extends.Parent)
 }

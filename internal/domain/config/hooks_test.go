@@ -141,7 +141,7 @@ func TestHookRunner_RunHooks_OnErrorContinue(t *testing.T) {
 
 	err := runner.RunHooks(ctx, hooks, HookPhasePre, HookTypeApply, HookContext{})
 
-	w.Close()
+	_ = w.Close()
 	var buf bytes.Buffer
 	_, _ = buf.ReadFrom(r)
 	os.Stderr = oldStderr
@@ -324,15 +324,15 @@ func TestHookContext_Fields(t *testing.T) {
 func TestHookPhase_Constants(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, HookPhase("pre"), HookPhasePre)
-	assert.Equal(t, HookPhase("post"), HookPhasePost)
+	assert.Equal(t, HookPhasePre, HookPhase("pre"))
+	assert.Equal(t, HookPhasePost, HookPhase("post"))
 }
 
 func TestHookType_Constants(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, HookType("apply"), HookTypeApply)
-	assert.Equal(t, HookType("plan"), HookTypePlan)
-	assert.Equal(t, HookType("doctor"), HookTypeDoctor)
-	assert.Equal(t, HookType("capture"), HookTypeCapture)
+	assert.Equal(t, HookTypeApply, HookType("apply"))
+	assert.Equal(t, HookTypePlan, HookType("plan"))
+	assert.Equal(t, HookTypeDoctor, HookType("doctor"))
+	assert.Equal(t, HookTypeCapture, HookType("capture"))
 }

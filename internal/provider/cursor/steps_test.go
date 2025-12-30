@@ -294,7 +294,7 @@ func TestSettingsStep_Apply(t *testing.T) {
 	var written map[string]interface{}
 	err = json.Unmarshal(data, &written)
 	require.NoError(t, err)
-	assert.Equal(t, float64(14), written["editor.fontSize"])
+	assert.InDelta(t, float64(14), written["editor.fontSize"], 0.001)
 }
 
 func TestSettingsStep_Explain(t *testing.T) {

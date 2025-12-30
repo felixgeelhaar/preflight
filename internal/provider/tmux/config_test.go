@@ -39,9 +39,9 @@ func TestParseConfig_WithSettings(t *testing.T) {
 
 	raw := map[string]interface{}{
 		"settings": map[string]interface{}{
-			"prefix":      "C-a",
-			"mouse":       "on",
-			"base-index":  "1",
+			"prefix":     "C-a",
+			"mouse":      "on",
+			"base-index": "1",
 		},
 	}
 
