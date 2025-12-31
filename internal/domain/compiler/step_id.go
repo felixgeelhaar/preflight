@@ -15,14 +15,15 @@ type StepID struct {
 // Errors for StepID validation.
 var (
 	ErrEmptyStepID   = errors.New("step ID cannot be empty")
-	ErrInvalidStepID = errors.New("step ID format invalid: must be alphanumeric with colons, hyphens, underscores, dots, or slashes")
+	ErrInvalidStepID = errors.New("step ID format invalid: must be alphanumeric with colons, hyphens, underscores, dots, slashes, or @ symbols")
 )
 
 // stepIDPattern validates step ID format.
-// Allows: alphanumeric, hyphens, underscores, dots, slashes, separated by colons.
+// Allows: alphanumeric, hyphens, underscores, dots, slashes, @ symbols, separated by colons.
 // Must not start or end with colon, no spaces.
 // Dots are needed for winget package IDs (e.g., Microsoft.VisualStudioCode).
-var stepIDPattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_./-]*(?::[a-zA-Z0-9][a-zA-Z0-9_./-]*)*$`)
+// @ symbols are needed for Homebrew versioned packages (e.g., go@1.24, python@3.12).
+var stepIDPattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_./@-]*(?::[a-zA-Z0-9][a-zA-Z0-9_./@-]*)*$`)
 
 // NewStepID creates a new StepID from a string.
 func NewStepID(value string) (StepID, error) {

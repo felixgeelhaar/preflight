@@ -27,6 +27,26 @@ func TestNewStepID(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			name:    "valid versioned package with @",
+			input:   "brew:formula:go@1.24",
+			wantErr: nil,
+		},
+		{
+			name:    "valid versioned package python@3.12",
+			input:   "brew:formula:python@3.12",
+			wantErr: nil,
+		},
+		{
+			name:    "valid versioned package openssl@3",
+			input:   "brew:formula:openssl@3",
+			wantErr: nil,
+		},
+		{
+			name:    "valid winget package with dots",
+			input:   "winget:install:Microsoft.VisualStudioCode",
+			wantErr: nil,
+		},
+		{
 			name:    "empty string",
 			input:   "",
 			wantErr: ErrEmptyStepID,
