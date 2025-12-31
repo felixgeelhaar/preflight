@@ -578,6 +578,7 @@ func TestPreflight_Capture_AllProviders(t *testing.T) {
 
 	if findings == nil {
 		t.Fatal("Capture() returned nil findings")
+		return
 	}
 
 	// Should have captured items from git, ssh, shell
@@ -953,6 +954,7 @@ func TestPreflight_Fix_NilReport(t *testing.T) {
 	}
 	if result == nil {
 		t.Fatal("Fix() should return empty FixResult, not nil")
+		return
 	}
 	if result.FixedCount() != 0 {
 		t.Errorf("FixedCount() should be 0, got %d", result.FixedCount())
@@ -977,6 +979,7 @@ func TestPreflight_Fix_EmptyReport(t *testing.T) {
 	}
 	if result == nil {
 		t.Fatal("Fix() should return empty FixResult, not nil")
+		return
 	}
 	if result.FixedCount() != 0 {
 		t.Errorf("FixedCount() should be 0, got %d", result.FixedCount())
