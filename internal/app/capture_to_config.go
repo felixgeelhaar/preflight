@@ -10,14 +10,22 @@ import (
 
 // CaptureConfigGenerator generates configuration files from captured items.
 type CaptureConfigGenerator struct {
-	targetDir string
+	targetDir  string
+	smartSplit bool
 }
 
 // NewCaptureConfigGenerator creates a new generator.
 func NewCaptureConfigGenerator(targetDir string) *CaptureConfigGenerator {
 	return &CaptureConfigGenerator{
-		targetDir: targetDir,
+		targetDir:  targetDir,
+		smartSplit: false,
 	}
+}
+
+// WithSmartSplit enables smart layer separation.
+func (g *CaptureConfigGenerator) WithSmartSplit(enabled bool) *CaptureConfigGenerator {
+	g.smartSplit = enabled
+	return g
 }
 
 // GenerateFromCapture creates preflight configuration from captured items.
@@ -37,8 +45,12 @@ func (g *CaptureConfigGenerator) GenerateFromCapture(findings *CaptureFindings, 
 		return fmt.Errorf("failed to create layers directory: %w", err)
 	}
 
+	if g.smartSplit {
+		return g.generateSmartSplitLayers(findings, target)
+	}
+
 	// Generate manifest
-	if err := g.generateManifest(target); err != nil {
+	if err := g.generateManifest(target, []string{"captured"}); err != nil {
 		return fmt.Errorf("failed to generate manifest: %w", err)
 	}
 
@@ -50,14 +62,126 @@ func (g *CaptureConfigGenerator) GenerateFromCapture(findings *CaptureFindings, 
 	return nil
 }
 
+// generateSmartSplitLayers creates multiple layer files organized by category.
+func (g *CaptureConfigGenerator) generateSmartSplitLayers(findings *CaptureFindings, target string) error {
+	categorizer := NewLayerCategorizer()
+
+	// Get brew items for categorization
+	byProvider := findings.ItemsByProvider()
+	brewItems := byProvider["brew"]
+
+	// Categorize brew items
+	categorized := categorizer.Categorize(brewItems)
+	categorized.SortItemsAlphabetically()
+
+	// Collect layer names for manifest
+	layerNames := make([]string, 0, len(categorized.LayerOrder))
+
+	// Generate a layer file for each category with brew items
+	for _, layerName := range categorized.LayerOrder {
+		items := categorized.Layers[layerName]
+		if len(items) == 0 {
+			continue
+		}
+
+		if err := g.generateCategoryLayer(layerName, items, categorizer.GetLayerDescription(layerName)); err != nil {
+			return fmt.Errorf("failed to generate layer %s: %w", layerName, err)
+		}
+		layerNames = append(layerNames, layerName)
+	}
+
+	// Handle non-brew providers (git, shell, vscode, runtime) in separate layers
+	for provider, items := range byProvider {
+		if provider == "brew" || len(items) == 0 {
+			continue
+		}
+
+		layerName := provider
+		if err := g.generateProviderLayer(layerName, provider, items); err != nil {
+			return fmt.Errorf("failed to generate layer %s: %w", layerName, err)
+		}
+		layerNames = append(layerNames, layerName)
+	}
+
+	// Generate manifest with all layers
+	if err := g.generateManifest(target, layerNames); err != nil {
+		return fmt.Errorf("failed to generate manifest: %w", err)
+	}
+
+	return nil
+}
+
+// generateCategoryLayer creates a layer file for a category of brew packages.
+func (g *CaptureConfigGenerator) generateCategoryLayer(name string, items []CapturedItem, description string) error {
+	layer := captureLayerYAML{
+		Name: name,
+	}
+
+	formulae := make([]string, 0, len(items))
+	for _, item := range items {
+		formulae = append(formulae, item.Name)
+	}
+
+	layer.Packages = &capturePackagesYAML{
+		Brew: &captureBrewYAML{
+			Formulae: formulae,
+		},
+	}
+
+	data, err := yaml.Marshal(layer)
+	if err != nil {
+		return err
+	}
+
+	// Add description as YAML comment
+	content := fmt.Sprintf("# %s\n%s", description, string(data))
+
+	layerPath := filepath.Join(g.targetDir, "layers", name+".yaml")
+	return os.WriteFile(layerPath, []byte(content), 0o644)
+}
+
+// generateProviderLayer creates a layer file for a non-brew provider.
+func (g *CaptureConfigGenerator) generateProviderLayer(name, provider string, items []CapturedItem) error {
+	layer := captureLayerYAML{
+		Name: name,
+	}
+
+	switch provider {
+	case "git":
+		layer.Git = g.generateGitFromCapture(items)
+	case "shell":
+		layer.Shell = g.generateShellFromCapture(items)
+	case "vscode":
+		extensions := make([]string, 0, len(items))
+		for _, item := range items {
+			extensions = append(extensions, item.Name)
+		}
+		layer.VSCode = &captureVSCodeYAML{
+			Extensions: extensions,
+		}
+	case "runtime":
+		layer.Runtime = g.generateRuntimeFromCapture(items)
+	default:
+		return nil // Skip unknown providers
+	}
+
+	data, err := yaml.Marshal(layer)
+	if err != nil {
+		return err
+	}
+
+	layerPath := filepath.Join(g.targetDir, "layers", name+".yaml")
+	return os.WriteFile(layerPath, data, 0o644)
+}
+
 // generateManifest creates the preflight.yaml manifest file.
-func (g *CaptureConfigGenerator) generateManifest(target string) error {
+func (g *CaptureConfigGenerator) generateManifest(target string, layers []string) error {
 	manifest := captureManifestYAML{
 		Defaults: captureDefaultsYAML{
 			Mode: "intent",
 		},
 		Targets: map[string][]string{
-			target: {"captured"},
+			target: layers,
 		},
 	}
 

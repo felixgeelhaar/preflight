@@ -19,17 +19,28 @@ It scans for installed packages, dotfiles, and settings, allowing you to
 selectively import them into your configuration.
 
 Examples:
-  preflight capture                # Interactive capture
-  preflight capture --all          # Accept all discovered items
-  preflight capture --provider brew # Only capture Homebrew packages`,
+  preflight capture                   # Interactive capture
+  preflight capture --all             # Accept all discovered items
+  preflight capture --provider brew   # Only capture Homebrew packages
+  preflight capture --all --smart-split  # Organize into logical layers
+
+The --smart-split flag automatically categorizes packages into logical layers:
+  base.yaml       - Core CLI utilities (git, curl, jq, ripgrep)
+  dev-go.yaml     - Go development tools (gopls, golangci-lint)
+  dev-node.yaml   - Node.js ecosystem (node, pnpm, typescript)
+  dev-python.yaml - Python tools (poetry, ruff, mypy)
+  security.yaml   - Security scanning tools (trivy, grype, nmap)
+  containers.yaml - Container/K8s tools (docker, kubectl, helm)
+  And more...`,
 	RunE: runCapture,
 }
 
 var (
-	captureAll      bool
-	captureProvider string
-	captureOutput   string
-	captureTarget   string
+	captureAll        bool
+	captureProvider   string
+	captureOutput     string
+	captureTarget     string
+	captureSmartSplit bool
 )
 
 func init() {
@@ -37,6 +48,7 @@ func init() {
 	captureCmd.Flags().StringVar(&captureProvider, "provider", "", "Only capture specific provider")
 	captureCmd.Flags().StringVarP(&captureOutput, "output", "o", ".", "Output directory for generated config")
 	captureCmd.Flags().StringVarP(&captureTarget, "target", "t", "default", "Target name for the configuration")
+	captureCmd.Flags().BoolVar(&captureSmartSplit, "smart-split", false, "Automatically organize packages into logical layer files")
 
 	rootCmd.AddCommand(captureCmd)
 }
@@ -114,12 +126,18 @@ func runCapture(_ *cobra.Command, _ []string) error {
 		}
 
 		// Generate configuration from accepted items
-		generator := app.NewCaptureConfigGenerator(captureOutput)
+		generator := app.NewCaptureConfigGenerator(captureOutput).
+			WithSmartSplit(captureSmartSplit)
 		if err := generator.GenerateFromCapture(filteredFindings, captureTarget); err != nil {
 			return fmt.Errorf("failed to generate config: %w", err)
 		}
 
-		fmt.Printf("\nGenerated configuration in %s/\n", captureOutput)
+		if captureSmartSplit {
+			fmt.Printf("\nGenerated smart-split configuration in %s/\n", captureOutput)
+			fmt.Println("Packages organized into logical layer files.")
+		} else {
+			fmt.Printf("\nGenerated configuration in %s/\n", captureOutput)
+		}
 		fmt.Println("Run 'preflight plan' to review the changes.")
 	}
 
