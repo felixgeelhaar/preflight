@@ -58,28 +58,61 @@ preflight capture [flags]
 
 | Flag | Description |
 |------|-------------|
-| `--include <modules>` | Include specific modules: brew,files,nvim,git,ssh |
-| `--exclude <modules>` | Exclude specific modules |
-| `--infer-profiles` | Infer work/personal/role layers (default: true) |
-| `--review` | Open TUI to accept/reject findings |
+| `--all` | Accept all discovered items without review |
+| `--provider <name>` | Only capture specific provider (brew, git, etc.) |
+| `--output <path>` | Output directory for generated config (default: .) |
+| `--target <name>` | Target name for the configuration (default: default) |
+| `--smart-split` | Automatically organize packages into logical layer files |
+| `--split-by <strategy>` | Split strategy: category, language, stack, provider |
+
+**Split Strategies:**
+
+| Strategy | Description |
+|----------|-------------|
+| `category` | Fine-grained categories: base, dev-go, security, containers, etc. |
+| `language` | By programming language: go, node, python, rust, java, etc. |
+| `stack` | By tech stack role: frontend, backend, devops, data, security |
+| `provider` | By provider name: brew, git, shell, vscode |
 
 **Examples:**
 
 ```bash
-# Capture everything
+# Interactive capture with review TUI
 preflight capture
 
-# Capture specific modules
-preflight capture --include nvim,git
+# Accept all discovered items
+preflight capture --all
 
-# Skip review TUI
-preflight capture --no-review
+# Capture only Homebrew packages
+preflight capture --provider brew
+
+# Organize into category-based layers
+preflight capture --all --smart-split
+
+# Organize by programming language
+preflight capture --all --split-by language
+
+# Organize by tech stack
+preflight capture --all --split-by stack
+
+# Organize by provider
+preflight capture --all --split-by provider
 ```
 
-**Outputs:**
-- `layers/base.yaml`
-- `layers/identity.*.yaml`
-- `layers/role.*.yaml`
+**Outputs (with --split-by language):**
+- `layers/go.yaml` — Go development tools
+- `layers/node.yaml` — Node.js/JavaScript tools
+- `layers/python.yaml` — Python ecosystem
+- `layers/rust.yaml` — Rust development tools
+- `layers/tools.yaml` — General development tools
+- `layers/misc.yaml` — Uncategorized items
+
+**Outputs (with --split-by stack):**
+- `layers/frontend.yaml` — Frontend/UI development
+- `layers/backend.yaml` — Backend/API development
+- `layers/devops.yaml` — DevOps/infrastructure tools
+- `layers/data.yaml` — Data engineering tools
+- `layers/security.yaml` — Security tools
 
 ---
 

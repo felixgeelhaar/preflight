@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/tui"
@@ -19,19 +20,21 @@ It scans for installed packages, dotfiles, and settings, allowing you to
 selectively import them into your configuration.
 
 Examples:
-  preflight capture                   # Interactive capture
-  preflight capture --all             # Accept all discovered items
-  preflight capture --provider brew   # Only capture Homebrew packages
-  preflight capture --all --smart-split  # Organize into logical layers
+  preflight capture                           # Interactive capture
+  preflight capture --all                     # Accept all discovered items
+  preflight capture --provider brew           # Only capture Homebrew packages
+  preflight capture --all --smart-split       # Organize into logical layers (category-based)
+  preflight capture --all --split-by language # Organize by programming language
+  preflight capture --all --split-by stack    # Organize by tech stack (frontend, backend, devops)
+  preflight capture --all --split-by provider # Organize by provider (brew, git, vscode)
 
-The --smart-split flag automatically categorizes packages into logical layers:
-  base.yaml       - Core CLI utilities (git, curl, jq, ripgrep)
-  dev-go.yaml     - Go development tools (gopls, golangci-lint)
-  dev-node.yaml   - Node.js ecosystem (node, pnpm, typescript)
-  dev-python.yaml - Python tools (poetry, ruff, mypy)
-  security.yaml   - Security scanning tools (trivy, grype, nmap)
-  containers.yaml - Container/K8s tools (docker, kubectl, helm)
-  And more...`,
+Split strategies:
+  category (default) - Fine-grained categories (base, dev-go, security, containers)
+  language           - By programming language (go, node, python, rust, java)
+  stack              - By tech stack role (frontend, backend, devops, data, security)
+  provider           - By provider name (brew, git, shell, vscode)
+
+The --smart-split flag is equivalent to --split-by category.`,
 	RunE: runCapture,
 }
 
@@ -41,6 +44,7 @@ var (
 	captureOutput     string
 	captureTarget     string
 	captureSmartSplit bool
+	captureSplitBy    string
 )
 
 func init() {
@@ -48,7 +52,8 @@ func init() {
 	captureCmd.Flags().StringVar(&captureProvider, "provider", "", "Only capture specific provider")
 	captureCmd.Flags().StringVarP(&captureOutput, "output", "o", ".", "Output directory for generated config")
 	captureCmd.Flags().StringVarP(&captureTarget, "target", "t", "default", "Target name for the configuration")
-	captureCmd.Flags().BoolVar(&captureSmartSplit, "smart-split", false, "Automatically organize packages into logical layer files")
+	captureCmd.Flags().BoolVar(&captureSmartSplit, "smart-split", false, "Automatically organize packages into logical layer files (equivalent to --split-by category)")
+	captureCmd.Flags().StringVar(&captureSplitBy, "split-by", "", fmt.Sprintf("Split strategy for layer organization (%s)", strings.Join(app.ValidSplitStrategies(), ", ")))
 
 	rootCmd.AddCommand(captureCmd)
 }
@@ -126,14 +131,32 @@ func runCapture(_ *cobra.Command, _ []string) error {
 		}
 
 		// Generate configuration from accepted items
-		generator := app.NewCaptureConfigGenerator(captureOutput).
-			WithSmartSplit(captureSmartSplit)
+		generator := app.NewCaptureConfigGenerator(captureOutput)
+
+		// Handle split strategy
+		var strategy app.SplitStrategy
+		var usingSplit bool
+
+		if captureSplitBy != "" {
+			var err error
+			strategy, err = app.ParseSplitStrategy(captureSplitBy)
+			if err != nil {
+				return err
+			}
+			generator.WithSplitStrategy(strategy)
+			usingSplit = true
+		} else if captureSmartSplit {
+			generator.WithSmartSplit(true)
+			strategy = app.SplitByCategory
+			usingSplit = true
+		}
+
 		if err := generator.GenerateFromCapture(filteredFindings, captureTarget); err != nil {
 			return fmt.Errorf("failed to generate config: %w", err)
 		}
 
-		if captureSmartSplit {
-			fmt.Printf("\nGenerated smart-split configuration in %s/\n", captureOutput)
+		if usingSplit {
+			fmt.Printf("\nGenerated configuration in %s/ using '%s' split strategy\n", captureOutput, strategy)
 			fmt.Println("Packages organized into logical layer files.")
 		} else {
 			fmt.Printf("\nGenerated configuration in %s/\n", captureOutput)

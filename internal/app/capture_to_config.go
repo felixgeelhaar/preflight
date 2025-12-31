@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,15 +11,18 @@ import (
 
 // CaptureConfigGenerator generates configuration files from captured items.
 type CaptureConfigGenerator struct {
-	targetDir  string
-	smartSplit bool
+	targetDir     string
+	smartSplit    bool
+	splitStrategy SplitStrategy
+	aiCategorizer AICategorizer
 }
 
 // NewCaptureConfigGenerator creates a new generator.
 func NewCaptureConfigGenerator(targetDir string) *CaptureConfigGenerator {
 	return &CaptureConfigGenerator{
-		targetDir:  targetDir,
-		smartSplit: false,
+		targetDir:     targetDir,
+		smartSplit:    false,
+		splitStrategy: SplitByCategory, // default
 	}
 }
 
@@ -28,8 +32,26 @@ func (g *CaptureConfigGenerator) WithSmartSplit(enabled bool) *CaptureConfigGene
 	return g
 }
 
+// WithSplitStrategy sets the split strategy for layer organization.
+func (g *CaptureConfigGenerator) WithSplitStrategy(strategy SplitStrategy) *CaptureConfigGenerator {
+	g.splitStrategy = strategy
+	g.smartSplit = true // enable smart split when a strategy is set
+	return g
+}
+
+// WithAICategorizer sets an AI categorizer for enhanced categorization.
+func (g *CaptureConfigGenerator) WithAICategorizer(ai AICategorizer) *CaptureConfigGenerator {
+	g.aiCategorizer = ai
+	return g
+}
+
 // GenerateFromCapture creates preflight configuration from captured items.
 func (g *CaptureConfigGenerator) GenerateFromCapture(findings *CaptureFindings, target string) error {
+	return g.GenerateFromCaptureWithContext(context.Background(), findings, target)
+}
+
+// GenerateFromCaptureWithContext creates preflight configuration from captured items with context.
+func (g *CaptureConfigGenerator) GenerateFromCaptureWithContext(ctx context.Context, findings *CaptureFindings, target string) error {
 	if target == "" {
 		target = "default"
 	}
@@ -46,7 +68,7 @@ func (g *CaptureConfigGenerator) GenerateFromCapture(findings *CaptureFindings, 
 	}
 
 	if g.smartSplit {
-		return g.generateSmartSplitLayers(findings, target)
+		return g.generateSmartSplitLayers(ctx, findings, target)
 	}
 
 	// Generate manifest
@@ -63,15 +85,30 @@ func (g *CaptureConfigGenerator) GenerateFromCapture(findings *CaptureFindings, 
 }
 
 // generateSmartSplitLayers creates multiple layer files organized by category.
-func (g *CaptureConfigGenerator) generateSmartSplitLayers(findings *CaptureFindings, target string) error {
-	categorizer := NewLayerCategorizer()
+func (g *CaptureConfigGenerator) generateSmartSplitLayers(ctx context.Context, findings *CaptureFindings, target string) error {
+	// Select categorizer based on strategy
+	categorizer := StrategyCategorizer(g.splitStrategy)
 
 	// Get brew items for categorization
 	byProvider := findings.ItemsByProvider()
 	brewItems := byProvider["brew"]
 
+	// Provider strategy groups by provider name directly
+	if g.splitStrategy == SplitByProvider {
+		return g.generateProviderSplitLayers(findings, target)
+	}
+
 	// Categorize brew items
 	categorized := categorizer.Categorize(brewItems)
+
+	// Use AI to categorize remaining items if available
+	if g.aiCategorizer != nil && len(categorized.Uncategorized) > 0 {
+		if err := CategorizeWithAI(ctx, categorized, g.aiCategorizer, g.splitStrategy); err != nil {
+			// Log warning but continue without AI enhancement
+			fmt.Printf("Warning: AI categorization failed: %v\n", err)
+		}
+	}
+
 	categorized.SortItemsAlphabetically()
 
 	// Collect layer names for manifest
@@ -93,6 +130,31 @@ func (g *CaptureConfigGenerator) generateSmartSplitLayers(findings *CaptureFindi
 	// Handle non-brew providers (git, shell, vscode, runtime) in separate layers
 	for provider, items := range byProvider {
 		if provider == "brew" || len(items) == 0 {
+			continue
+		}
+
+		layerName := provider
+		if err := g.generateProviderLayer(layerName, provider, items); err != nil {
+			return fmt.Errorf("failed to generate layer %s: %w", layerName, err)
+		}
+		layerNames = append(layerNames, layerName)
+	}
+
+	// Generate manifest with all layers
+	if err := g.generateManifest(target, layerNames); err != nil {
+		return fmt.Errorf("failed to generate manifest: %w", err)
+	}
+
+	return nil
+}
+
+// generateProviderSplitLayers creates layer files organized by provider.
+func (g *CaptureConfigGenerator) generateProviderSplitLayers(findings *CaptureFindings, target string) error {
+	byProvider := findings.ItemsByProvider()
+	layerNames := make([]string, 0, len(byProvider))
+
+	for provider, items := range byProvider {
+		if len(items) == 0 {
 			continue
 		}
 

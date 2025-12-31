@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Split Strategies for Capture**: New `--split-by` flag for flexible layer organization
+  - `category` (default): Fine-grained categories (base, dev-go, security, containers)
+  - `language`: By programming language (go, node, python, rust, java)
+  - `stack`: By tech stack role (frontend, backend, devops, data, security)
+  - `provider`: By provider name (brew, git, shell, vscode)
+  - Example: `preflight capture --all --split-by language`
+
+- **AI-Assisted Package Categorization**: Optional AI enhancement for uncategorized packages
+  - Uses configured AI provider (OpenAI, Anthropic, Ollama) when available
+  - Graceful degradation: falls back to "misc" layer if AI unavailable
+  - AI suggests layer assignments with reasoning for unknown packages
+
+### Fixed
+
+- **Step ID Validation**: Allow `@` symbol in step IDs for versioned packages
+  - Fixes panic when capturing packages like `go@1.24`, `python@3.12`, `openssl@3`
+  - Updated regex pattern to include `@` in valid characters
+
 ## [4.0.1] - 2025-12-30
 
 ### Added
