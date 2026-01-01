@@ -168,7 +168,7 @@ func TestAnalyzeBasic(t *testing.T) {
 	tests := []struct {
 		name           string
 		layer          advisor.LayerInfo
-		expectedStatus string
+		expectedStatus advisor.AnalysisStatus
 		hasRecs        bool
 	}{
 		{
@@ -178,7 +178,7 @@ func TestAnalyzeBasic(t *testing.T) {
 				Path:     "layers/empty.yaml",
 				Packages: []string{},
 			},
-			expectedStatus: "warning",
+			expectedStatus: advisor.StatusWarning,
 			hasRecs:        true,
 		},
 		{
@@ -188,7 +188,7 @@ func TestAnalyzeBasic(t *testing.T) {
 				Path:     "layers/base.yaml",
 				Packages: []string{"git", "curl", "wget"},
 			},
-			expectedStatus: "good",
+			expectedStatus: advisor.StatusGood,
 			hasRecs:        false,
 		},
 		{
@@ -196,9 +196,9 @@ func TestAnalyzeBasic(t *testing.T) {
 			layer: advisor.LayerInfo{
 				Name:     "misc",
 				Path:     "layers/misc.yaml",
-				Packages: make([]string, layerAnalyzer.LargeLayerThreshold+10), // Exceed threshold
+				Packages: make([]string, 60), // Exceed default threshold of 50
 			},
-			expectedStatus: "warning",
+			expectedStatus: advisor.StatusWarning,
 			hasRecs:        true,
 		},
 	}
@@ -270,17 +270,18 @@ func TestFindCrossLayerIssues(t *testing.T) {
 func TestFormatStatusIcon(t *testing.T) {
 	// Tests the TUI formatting function used for analyze output
 	tests := []struct {
-		status   string
+		name     string
+		status   advisor.AnalysisStatus
 		expected string
 	}{
-		{"good", "✓"},
-		{"warning", "⚠"},
-		{"needs_attention", "⛔"},
-		{"unknown", "○"},
+		{"good", advisor.StatusGood, "✓"},
+		{"warning", advisor.StatusWarning, "⚠"},
+		{"needs_attention", advisor.StatusNeedsAttention, "⛔"},
+		{"unknown", advisor.AnalysisStatus("unknown"), "○"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.status, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			result := tui.FormatStatusIcon(tt.status)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -290,15 +291,16 @@ func TestFormatStatusIcon(t *testing.T) {
 func TestFormatPriorityPrefix(t *testing.T) {
 	// Tests the TUI formatting function used for analyze output
 	tests := []struct {
-		priority string
+		name     string
+		priority advisor.RecommendationPriority
 	}{
-		{"high"},
-		{"medium"},
-		{"low"},
+		{"high", advisor.PriorityHigh},
+		{"medium", advisor.PriorityMedium},
+		{"low", advisor.PriorityLow},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.priority, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			result := tui.FormatPriorityPrefix(tt.priority)
 			assert.NotEmpty(t, result)
 		})

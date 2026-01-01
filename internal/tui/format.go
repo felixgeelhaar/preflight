@@ -5,8 +5,8 @@ import "github.com/felixgeelhaar/preflight/internal/domain/advisor"
 
 // FormatStatusIcon returns a display icon for the given analysis status.
 // This is a presentation concern that belongs in the TUI layer.
-func FormatStatusIcon(status string) string {
-	switch advisor.AnalysisStatus(status) {
+func FormatStatusIcon(status advisor.AnalysisStatus) string {
+	switch status {
 	case advisor.StatusGood:
 		return "✓"
 	case advisor.StatusWarning:
@@ -20,8 +20,8 @@ func FormatStatusIcon(status string) string {
 
 // FormatPriorityPrefix returns a colored prefix for the given priority.
 // Uses ANSI escape codes for terminal coloring.
-func FormatPriorityPrefix(priority string) string {
-	switch advisor.RecommendationPriority(priority) {
+func FormatPriorityPrefix(priority advisor.RecommendationPriority) string {
+	switch priority {
 	case advisor.PriorityHigh:
 		return "\033[91m•\033[0m" // Red
 	case advisor.PriorityMedium:

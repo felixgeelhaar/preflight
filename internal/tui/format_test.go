@@ -3,38 +3,39 @@ package tui
 import (
 	"testing"
 
+	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFormatStatusIcon(t *testing.T) {
 	tests := []struct {
 		name     string
-		status   string
+		status   advisor.AnalysisStatus
 		expected string
 	}{
 		{
 			name:     "good status",
-			status:   "good",
+			status:   advisor.StatusGood,
 			expected: "✓",
 		},
 		{
 			name:     "warning status",
-			status:   "warning",
+			status:   advisor.StatusWarning,
 			expected: "⚠",
 		},
 		{
 			name:     "needs attention status",
-			status:   "needs_attention",
+			status:   advisor.StatusNeedsAttention,
 			expected: "⛔",
 		},
 		{
 			name:     "unknown status",
-			status:   "unknown",
+			status:   advisor.AnalysisStatus("unknown"),
 			expected: "○",
 		},
 		{
 			name:     "empty status",
-			status:   "",
+			status:   advisor.AnalysisStatus(""),
 			expected: "○",
 		},
 	}
@@ -50,27 +51,27 @@ func TestFormatStatusIcon(t *testing.T) {
 func TestFormatPriorityPrefix(t *testing.T) {
 	tests := []struct {
 		name     string
-		priority string
+		priority advisor.RecommendationPriority
 		contains string
 	}{
 		{
 			name:     "high priority - red",
-			priority: "high",
+			priority: advisor.PriorityHigh,
 			contains: "\033[91m", // Red ANSI code
 		},
 		{
 			name:     "medium priority - yellow",
-			priority: "medium",
+			priority: advisor.PriorityMedium,
 			contains: "\033[93m", // Yellow ANSI code
 		},
 		{
 			name:     "low priority - green",
-			priority: "low",
+			priority: advisor.PriorityLow,
 			contains: "\033[32m", // Green ANSI code
 		},
 		{
 			name:     "unknown priority - plain bullet",
-			priority: "unknown",
+			priority: advisor.RecommendationPriority("unknown"),
 			contains: "•",
 		},
 	}
