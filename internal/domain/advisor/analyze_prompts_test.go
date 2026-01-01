@@ -100,7 +100,7 @@ func TestParseLayerAnalysisResult_NoJSON(t *testing.T) {
 	_, err := ParseLayerAnalysisResult(response)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no JSON found")
+	assert.Contains(t, err.Error(), "no valid JSON found")
 }
 
 func TestParseLayerAnalysisResult_InvalidJSON(t *testing.T) {
@@ -109,7 +109,8 @@ func TestParseLayerAnalysisResult_InvalidJSON(t *testing.T) {
 	_, err := ParseLayerAnalysisResult(response)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse")
+	// Invalid JSON is now detected by json.Valid() before parsing
+	assert.Contains(t, err.Error(), "no valid JSON found")
 }
 
 func TestLayerAnalysisSystemPrompt(t *testing.T) {
@@ -263,4 +264,106 @@ func TestLayerAnalysisPrompt_ContainsGuidance(t *testing.T) {
 	assert.True(t, strings.Contains(userPrompt, "naming conventions") ||
 		strings.Contains(userPrompt, "Package grouping") ||
 		strings.Contains(userPrompt, "duplicates"))
+}
+
+func TestParseLayerAnalysisResult_FromCodeBlock(t *testing.T) {
+	response := "Here's the analysis:\n```json\n" + `{
+  "layer_name": "base",
+  "summary": "Good configuration",
+  "status": "good",
+  "recommendations": [],
+  "package_count": 10,
+  "well_organized": true
+}` + "\n```\nThat's my analysis."
+
+	result, err := ParseLayerAnalysisResult(response)
+
+	require.NoError(t, err)
+	assert.Equal(t, "base", result.LayerName)
+	assert.Equal(t, "good", result.Status)
+	assert.True(t, result.WellOrganized)
+}
+
+func TestParseLayerAnalysisResult_FromGenericCodeBlock(t *testing.T) {
+	response := "Analysis result:\n```\n" + `{"layer_name": "dev", "summary": "OK", "status": "good", "recommendations": [], "package_count": 5, "well_organized": true}` + "\n```"
+
+	result, err := ParseLayerAnalysisResult(response)
+
+	require.NoError(t, err)
+	assert.Equal(t, "dev", result.LayerName)
+}
+
+func TestParseLayerAnalysisResult_WithPrecedingText(t *testing.T) {
+	response := `Here's what I found after analyzing the layer:
+
+The layer contains useful development tools. Here's the structured analysis:
+
+{
+  "layer_name": "dev-tools",
+  "summary": "Well organized development layer",
+  "status": "good",
+  "recommendations": [],
+  "package_count": 15,
+  "well_organized": true
+}
+
+I hope this helps!`
+
+	result, err := ParseLayerAnalysisResult(response)
+
+	require.NoError(t, err)
+	assert.Equal(t, "dev-tools", result.LayerName)
+	assert.Equal(t, "good", result.Status)
+}
+
+func TestParseLayerAnalysisResult_NestedBraces(t *testing.T) {
+	// JSON with nested objects should parse correctly
+	response := `{
+  "layer_name": "test",
+  "summary": "Test with nested",
+  "status": "good",
+  "recommendations": [
+    {
+      "type": "info",
+      "priority": "low",
+      "message": "Example with {braces} in text"
+    }
+  ],
+  "package_count": 1,
+  "well_organized": true
+}`
+
+	result, err := ParseLayerAnalysisResult(response)
+
+	require.NoError(t, err)
+	assert.Equal(t, "test", result.LayerName)
+	assert.Len(t, result.Recommendations, 1)
+}
+
+func TestParseLayerAnalysisResult_EscapedQuotes(t *testing.T) {
+	response := `{
+  "layer_name": "test",
+  "summary": "Has \"quoted\" text",
+  "status": "good",
+  "recommendations": [],
+  "package_count": 1,
+  "well_organized": true
+}`
+
+	result, err := ParseLayerAnalysisResult(response)
+
+	require.NoError(t, err)
+	assert.Equal(t, "test", result.LayerName)
+	assert.Contains(t, result.Summary, "quoted")
+}
+
+func TestLayerAnalysisResult_ErrorField(t *testing.T) {
+	result := LayerAnalysisResult{
+		LayerName: "test",
+		Status:    "error",
+		Error:     "AI analysis failed: connection timeout",
+	}
+
+	assert.Equal(t, "error", result.Status)
+	assert.Contains(t, result.Error, "connection timeout")
 }

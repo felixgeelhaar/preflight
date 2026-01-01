@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -322,4 +323,133 @@ func TestGetPriorityPrefix(t *testing.T) {
 			assert.NotEmpty(t, result)
 		})
 	}
+}
+
+func TestValidateLayerPath(t *testing.T) {
+	// Create a temporary layer file for testing
+	tmpDir := t.TempDir()
+	validFile := tmpDir + "/test.yaml"
+	if err := os.WriteFile(validFile, []byte("name: test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name    string
+		path    string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "valid yaml file",
+			path:    validFile,
+			wantErr: false,
+		},
+		{
+			name:    "invalid extension",
+			path:    tmpDir + "/test.txt",
+			wantErr: true,
+			errMsg:  "invalid layer file extension",
+		},
+		{
+			name:    "file not found",
+			path:    tmpDir + "/nonexistent.yaml",
+			wantErr: true,
+			errMsg:  "layer file not found",
+		},
+		{
+			name:    "directory instead of file",
+			path:    tmpDir,
+			wantErr: true,
+			errMsg:  "invalid layer file extension",
+		},
+		{
+			name:    "empty path",
+			path:    "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateLayerPath(tt.path)
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestLoadLayerInfos_Integration(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create test layer files
+	baseLayer := `
+name: base
+packages:
+  brew:
+    formulae:
+      - git
+      - curl
+git:
+  user:
+    name: test
+`
+	devLayer := `
+name: dev-go
+packages:
+  brew:
+    formulae:
+      - go
+      - gopls
+    casks:
+      - goland
+`
+	if err := os.WriteFile(tmpDir+"/base.yaml", []byte(baseLayer), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(tmpDir+"/dev-go.yaml", []byte(devLayer), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	paths := []string{tmpDir + "/base.yaml", tmpDir + "/dev-go.yaml"}
+	layers, err := loadLayerInfos(paths)
+
+	require.NoError(t, err)
+	assert.Len(t, layers, 2)
+
+	// Check base layer
+	assert.Equal(t, "base", layers[0].Name)
+	assert.Equal(t, []string{"git", "curl"}, layers[0].Packages)
+	assert.True(t, layers[0].HasGitConfig)
+
+	// Check dev layer
+	assert.Equal(t, "dev-go", layers[1].Name)
+	assert.Equal(t, []string{"go", "gopls", "goland (cask)"}, layers[1].Packages)
+}
+
+func TestLoadLayerInfos_InvalidPath(t *testing.T) {
+	paths := []string{"/nonexistent/layer.yaml"}
+	_, err := loadLayerInfos(paths)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "layer file not found")
+}
+
+func TestLoadLayerInfos_InvalidYAML(t *testing.T) {
+	tmpDir := t.TempDir()
+	invalidFile := tmpDir + "/invalid.yaml"
+	if err := os.WriteFile(invalidFile, []byte("{{invalid yaml}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	paths := []string{invalidFile}
+	_, err := loadLayerInfos(paths)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse")
 }

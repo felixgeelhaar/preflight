@@ -10,6 +10,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
+	"github.com/felixgeelhaar/preflight/internal/validation"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -137,11 +138,44 @@ func findLayerFiles() ([]string, error) {
 	return paths, nil
 }
 
+// validateLayerPath validates a layer file path.
+func validateLayerPath(path string) error {
+	// Basic path validation
+	if err := validation.ValidatePath(path); err != nil {
+		return err
+	}
+
+	// Check file extension
+	ext := strings.ToLower(filepath.Ext(path))
+	if ext != ".yaml" && ext != ".yml" {
+		return fmt.Errorf("invalid layer file extension: %s (expected .yaml or .yml)", ext)
+	}
+
+	// Check file exists and is a regular file
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("layer file not found: %s", path)
+		}
+		return fmt.Errorf("cannot access layer file: %w", err)
+	}
+	if info.IsDir() {
+		return fmt.Errorf("expected file but got directory: %s", path)
+	}
+
+	return nil
+}
+
 // loadLayerInfos loads layer information from YAML files.
 func loadLayerInfos(paths []string) ([]advisor.LayerInfo, error) {
 	layers := make([]advisor.LayerInfo, 0, len(paths))
 
 	for _, path := range paths {
+		// Validate path before reading
+		if err := validateLayerPath(path); err != nil {
+			return nil, err
+		}
+
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read %s: %w", path, err)
@@ -238,13 +272,24 @@ func analyzeLayersWithAI(ctx context.Context, layers []advisor.LayerInfo, aiProv
 			prompt := advisor.BuildLayerAnalysisPrompt(layer, layers)
 			response, err := aiProvider.Complete(ctx, prompt)
 			if err != nil {
-				// Log error but continue with basic analysis
-				result.Summary = "AI analysis unavailable"
-				result.Status = "unknown"
+				// Log error details and continue with basic analysis
+				if !analyzeQuiet && !analyzeJSON {
+					fmt.Fprintf(os.Stderr, "Warning: AI analysis failed for layer %s: %v\n", layer.Name, err)
+				}
+				result.Summary = fmt.Sprintf("AI analysis failed: %v", err)
+				result.Status = "error"
+				result.Error = err.Error()
 			} else {
 				// Parse AI response
-				aiResult, err := advisor.ParseLayerAnalysisResult(response.Content())
-				if err == nil {
+				aiResult, parseErr := advisor.ParseLayerAnalysisResult(response.Content())
+				if parseErr != nil {
+					// Log parse error and fall back to basic analysis
+					if !analyzeQuiet && !analyzeJSON {
+						fmt.Fprintf(os.Stderr, "Warning: Failed to parse AI response for layer %s: %v\n", layer.Name, parseErr)
+					}
+					result = performBasicAnalysis(layer)
+					result.Error = fmt.Sprintf("parse error: %v", parseErr)
+				} else {
 					result = *aiResult
 					result.LayerName = layer.Name
 					result.PackageCount = len(layer.Packages)

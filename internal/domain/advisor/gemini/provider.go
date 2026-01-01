@@ -1,4 +1,9 @@
 // Package gemini provides an AI provider implementation for Google Gemini.
+//
+// Security Note: The Gemini API requires the API key to be passed as a query
+// parameter in the URL. This is Google's documented authentication method.
+// While less secure than header-based authentication (keys may appear in logs),
+// this is the only supported method for the generativelanguage API.
 package gemini
 
 import (
@@ -14,11 +19,40 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 )
 
+// Default configuration values.
+const (
+	DefaultModel    = "gemini-2.5-flash"
+	DefaultEndpoint = "https://generativelanguage.googleapis.com/v1beta"
+	DefaultTimeout  = 60 * time.Second
+)
+
+// Known Gemini models for validation.
+// Updated: 2026-01 with latest available models from ai.google.dev/gemini-api/docs/models
+var knownModels = map[string]bool{
+	// Gemini 3 series (latest)
+	"gemini-3-pro-preview":       true,
+	"gemini-3-pro-image-preview": true,
+	"gemini-3-flash-preview":     true,
+	// Gemini 2.5 series
+	"gemini-2.5-pro":        true,
+	"gemini-2.5-flash":      true,
+	"gemini-2.5-flash-lite": true,
+	// Gemini 2.0 series
+	"gemini-2.0-flash":      true,
+	"gemini-2.0-flash-lite": true,
+	// Legacy models (for backwards compatibility)
+	"gemini-1.5-flash":    true,
+	"gemini-1.5-flash-8b": true,
+	"gemini-1.5-pro":      true,
+	"gemini-pro":          true,
+}
+
 // Provider errors.
 var (
 	ErrNotConfigured = errors.New("gemini provider is not configured")
 	ErrEmptyAPIKey   = errors.New("API key is required")
 	ErrEmptyModel    = errors.New("model is required")
+	ErrInvalidModel  = errors.New("unknown model name")
 	ErrAPIError      = errors.New("gemini API error")
 	ErrRateLimit     = errors.New("rate limit exceeded")
 	ErrUnauthorized  = errors.New("unauthorized - check API key")
@@ -76,7 +110,8 @@ type errorResponse struct {
 type Config struct {
 	APIKey   string
 	Model    string
-	Endpoint string // Optional custom endpoint
+	Endpoint string        // Optional custom endpoint
+	Timeout  time.Duration // Optional custom timeout
 }
 
 // Validate checks if the configuration is valid.
@@ -87,7 +122,15 @@ func (c Config) Validate() error {
 	if c.Model == "" {
 		return ErrEmptyModel
 	}
+	if !IsKnownModel(c.Model) {
+		return fmt.Errorf("%w: %s", ErrInvalidModel, c.Model)
+	}
 	return nil
+}
+
+// IsKnownModel checks if a model name is in the known models list.
+func IsKnownModel(model string) bool {
+	return knownModels[model]
 }
 
 // Provider implements the AIProvider interface for Google Gemini.
@@ -98,14 +141,14 @@ type Provider struct {
 	client   *http.Client
 }
 
-// NewProvider creates a new Gemini provider.
+// NewProvider creates a new Gemini provider with default settings.
 func NewProvider(apiKey string) *Provider {
 	return &Provider{
 		apiKey:   apiKey,
-		model:    "gemini-2.0-flash",
-		endpoint: "https://generativelanguage.googleapis.com/v1beta",
+		model:    DefaultModel,
+		endpoint: DefaultEndpoint,
 		client: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout: DefaultTimeout,
 		},
 	}
 }
@@ -118,7 +161,12 @@ func NewProviderWithConfig(config Config) (*Provider, error) {
 
 	endpoint := config.Endpoint
 	if endpoint == "" {
-		endpoint = "https://generativelanguage.googleapis.com/v1beta"
+		endpoint = DefaultEndpoint
+	}
+
+	timeout := config.Timeout
+	if timeout == 0 {
+		timeout = DefaultTimeout
 	}
 
 	return &Provider{
@@ -126,7 +174,7 @@ func NewProviderWithConfig(config Config) (*Provider, error) {
 		model:    config.Model,
 		endpoint: endpoint,
 		client: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout: timeout,
 		},
 	}, nil
 }

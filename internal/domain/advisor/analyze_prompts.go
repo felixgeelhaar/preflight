@@ -66,6 +66,7 @@ type LayerAnalysisResult struct {
 	Recommendations []AnalysisRecommendation `json:"recommendations"`
 	PackageCount    int                      `json:"package_count"`
 	WellOrganized   bool                     `json:"well_organized"`
+	Error           string                   `json:"error,omitempty"`
 }
 
 // AnalysisReport represents the complete analysis report.
@@ -160,15 +161,10 @@ func BuildMultiLayerAnalysisPrompt(layers []LayerInfo) Prompt {
 
 // ParseLayerAnalysisResult parses AI response into a layer analysis result.
 func ParseLayerAnalysisResult(response string) (*LayerAnalysisResult, error) {
-	// Try to extract JSON from the response
-	jsonStart := strings.Index(response, "{")
-	jsonEnd := strings.LastIndex(response, "}")
-
-	if jsonStart == -1 || jsonEnd == -1 || jsonEnd <= jsonStart {
-		return nil, fmt.Errorf("no JSON found in response")
+	jsonStr, err := extractJSON(response)
+	if err != nil {
+		return nil, err
 	}
-
-	jsonStr := response[jsonStart : jsonEnd+1]
 
 	var result LayerAnalysisResult
 	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
@@ -176,4 +172,108 @@ func ParseLayerAnalysisResult(response string) (*LayerAnalysisResult, error) {
 	}
 
 	return &result, nil
+}
+
+// extractJSON attempts to extract JSON from an AI response using multiple strategies.
+func extractJSON(response string) (string, error) {
+	// Strategy 1: Look for markdown code block with json/JSON
+	jsonStr := extractFromCodeBlock(response)
+	if jsonStr != "" && json.Valid([]byte(jsonStr)) {
+		return jsonStr, nil
+	}
+
+	// Strategy 2: Find balanced braces starting from the first {
+	jsonStr = extractBalancedJSON(response)
+	if jsonStr != "" && json.Valid([]byte(jsonStr)) {
+		return jsonStr, nil
+	}
+
+	// Strategy 3: Fallback to simple first-last brace extraction
+	jsonStart := strings.Index(response, "{")
+	jsonEnd := strings.LastIndex(response, "}")
+	if jsonStart != -1 && jsonEnd > jsonStart {
+		jsonStr = response[jsonStart : jsonEnd+1]
+		if json.Valid([]byte(jsonStr)) {
+			return jsonStr, nil
+		}
+	}
+
+	return "", fmt.Errorf("no valid JSON found in response (length: %d chars)", len(response))
+}
+
+// extractFromCodeBlock extracts JSON from markdown code blocks.
+func extractFromCodeBlock(response string) string {
+	// Try ```json first
+	markers := []string{"```json", "```JSON", "```"}
+	for _, marker := range markers {
+		start := strings.Index(response, marker)
+		if start == -1 {
+			continue
+		}
+		// Find content after the marker
+		contentStart := start + len(marker)
+		// Skip any newline after marker
+		if contentStart < len(response) && response[contentStart] == '\n' {
+			contentStart++
+		}
+
+		// Find closing ```
+		end := strings.Index(response[contentStart:], "```")
+		if end == -1 {
+			continue
+		}
+
+		content := strings.TrimSpace(response[contentStart : contentStart+end])
+		if strings.HasPrefix(content, "{") {
+			return content
+		}
+	}
+	return ""
+}
+
+// extractBalancedJSON finds JSON by matching balanced braces.
+func extractBalancedJSON(response string) string {
+	start := strings.Index(response, "{")
+	if start == -1 {
+		return ""
+	}
+
+	depth := 0
+	inString := false
+	escaped := false
+
+	for i := start; i < len(response); i++ {
+		c := response[i]
+
+		if escaped {
+			escaped = false
+			continue
+		}
+
+		if c == '\\' && inString {
+			escaped = true
+			continue
+		}
+
+		if c == '"' {
+			inString = !inString
+			continue
+		}
+
+		if inString {
+			continue
+		}
+
+		switch c {
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				return response[start : i+1]
+			}
+		}
+	}
+
+	return ""
 }

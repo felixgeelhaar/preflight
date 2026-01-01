@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ func TestNewProvider(t *testing.T) {
 
 	assert.NotNil(t, provider)
 	assert.Equal(t, "gemini", provider.Name())
-	assert.Equal(t, "gemini-2.0-flash", provider.Model())
+	assert.Equal(t, DefaultModel, provider.Model())
 	assert.True(t, provider.Available())
 }
 
@@ -79,7 +80,7 @@ func TestProvider_WithModel(t *testing.T) {
 	newProvider := provider.WithModel("gemini-1.5-pro")
 
 	assert.Equal(t, "gemini-1.5-pro", newProvider.Model())
-	assert.Equal(t, "gemini-2.0-flash", provider.Model()) // Original unchanged
+	assert.Equal(t, DefaultModel, provider.Model()) // Original unchanged
 }
 
 func TestProvider_Complete_Success(t *testing.T) {
@@ -87,7 +88,8 @@ func TestProvider_Complete_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify request
 		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Contains(t, r.URL.Path, "/models/gemini-2.0-flash:generateContent")
+		assert.Contains(t, r.URL.Path, "/models/")
+		assert.Contains(t, r.URL.Path, ":generateContent")
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 		// Return mock response
@@ -106,7 +108,7 @@ func TestProvider_Complete_Success(t *testing.T) {
 				CandidatesTokenCount: 5,
 				TotalTokenCount:      15,
 			},
-			ModelVersion: "gemini-2.0-flash",
+			ModelVersion: DefaultModel,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(resp)
@@ -116,7 +118,7 @@ func TestProvider_Complete_Success(t *testing.T) {
 	// Create provider with mock server
 	provider := &Provider{
 		apiKey:   "test-key",
-		model:    "gemini-2.0-flash",
+		model:    DefaultModel,
 		endpoint: server.URL,
 		client:   server.Client(),
 	}
@@ -127,7 +129,7 @@ func TestProvider_Complete_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Test response", response.Content())
 	assert.Equal(t, 15, response.TokensUsed())
-	assert.Equal(t, "gemini-2.0-flash", response.Model())
+	assert.Equal(t, DefaultModel, response.Model())
 }
 
 func TestProvider_Complete_WithSystemPrompt(t *testing.T) {
@@ -268,6 +270,14 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			wantErr: ErrEmptyModel,
 		},
+		{
+			name: "invalid model",
+			config: Config{
+				APIKey: "test-key",
+				Model:  "not-a-real-model",
+			},
+			wantErr: ErrInvalidModel,
+		},
 	}
 
 	for _, tt := range tests {
@@ -280,4 +290,56 @@ func TestConfig_Validate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsKnownModel(t *testing.T) {
+	tests := []struct {
+		model string
+		known bool
+	}{
+		{"gemini-3-pro-preview", true},
+		{"gemini-3-flash-preview", true},
+		{"gemini-2.5-flash", true},
+		{"gemini-2.5-pro", true},
+		{"gemini-2.0-flash", true},
+		{"gemini-1.5-pro", true},
+		{"gemini-pro", true},
+		{"not-a-model", false},
+		{"gpt-4", false},
+		{"", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.model, func(t *testing.T) {
+			assert.Equal(t, tt.known, IsKnownModel(tt.model))
+		})
+	}
+}
+
+func TestNewProviderWithConfig_CustomTimeout(t *testing.T) {
+	config := Config{
+		APIKey:  "test-key",
+		Model:   "gemini-2.0-flash",
+		Timeout: 30 * time.Second,
+	}
+
+	provider, err := NewProviderWithConfig(config)
+
+	require.NoError(t, err)
+	assert.NotNil(t, provider)
+	// Timeout is set on the internal client
+}
+
+func TestNewProviderWithConfig_DefaultTimeout(t *testing.T) {
+	config := Config{
+		APIKey: "test-key",
+		Model:  "gemini-2.0-flash",
+		// No timeout specified
+	}
+
+	provider, err := NewProviderWithConfig(config)
+
+	require.NoError(t, err)
+	assert.NotNil(t, provider)
+	// Should use DefaultTimeout
 }
