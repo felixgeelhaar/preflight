@@ -11,6 +11,7 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
+	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -326,7 +327,7 @@ func outputAnalyzeText(report *advisor.AnalysisReport, quiet bool, recommend boo
 
 	// Print each layer
 	for _, layer := range report.Layers {
-		statusIcon := advisor.GetStatusIcon(layer.Status)
+		statusIcon := tui.FormatStatusIcon(layer.Status)
 		fmt.Printf("\n📦 %s (%d packages)\n", layer.LayerName, layer.PackageCount)
 		fmt.Printf("  %s %s\n", statusIcon, layer.Summary)
 
@@ -334,7 +335,7 @@ func outputAnalyzeText(report *advisor.AnalysisReport, quiet bool, recommend boo
 		if recommend && len(layer.Recommendations) > 0 {
 			fmt.Println("  💡 Recommendations:")
 			for _, rec := range layer.Recommendations {
-				priority := advisor.GetPriorityPrefix(rec.Priority)
+				priority := tui.FormatPriorityPrefix(rec.Priority)
 				fmt.Printf("    %s %s\n", priority, rec.Message)
 				if len(rec.Packages) > 0 && !quiet {
 					fmt.Printf("       Packages: %s\n", strings.Join(rec.Packages, ", "))

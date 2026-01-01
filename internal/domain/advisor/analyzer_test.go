@@ -11,8 +11,19 @@ func TestNewLayerAnalyzer(t *testing.T) {
 	analyzer := NewLayerAnalyzer()
 
 	assert.NotNil(t, analyzer)
-	assert.Equal(t, 50, analyzer.LargeLayerThreshold)
-	assert.NotEmpty(t, analyzer.WellNamedPrefixes)
+	assert.Equal(t, 50, analyzer.LargeLayerThreshold())
+}
+
+func TestNewLayerAnalyzer_WithOptions(t *testing.T) {
+	analyzer := NewLayerAnalyzer(
+		WithLargeLayerThreshold(100),
+		WithWellNamedPrefixes([]string{"custom-"}),
+	)
+
+	assert.NotNil(t, analyzer)
+	assert.Equal(t, 100, analyzer.LargeLayerThreshold())
+	assert.True(t, analyzer.IsWellNamedLayer("custom-layer"))
+	assert.False(t, analyzer.IsWellNamedLayer("base"))
 }
 
 func TestLayerAnalyzer_AnalyzeBasic(t *testing.T) {
@@ -21,7 +32,7 @@ func TestLayerAnalyzer_AnalyzeBasic(t *testing.T) {
 	tests := []struct {
 		name           string
 		layer          LayerInfo
-		expectedStatus string
+		expectedStatus AnalysisStatus
 		hasRecs        bool
 	}{
 		{
@@ -31,7 +42,7 @@ func TestLayerAnalyzer_AnalyzeBasic(t *testing.T) {
 				Path:     "layers/empty.yaml",
 				Packages: []string{},
 			},
-			expectedStatus: "warning",
+			expectedStatus: StatusWarning,
 			hasRecs:        true,
 		},
 		{
@@ -41,7 +52,7 @@ func TestLayerAnalyzer_AnalyzeBasic(t *testing.T) {
 				Path:     "layers/base.yaml",
 				Packages: []string{"git", "curl", "wget"},
 			},
-			expectedStatus: "good",
+			expectedStatus: StatusGood,
 			hasRecs:        false,
 		},
 		{
@@ -51,7 +62,7 @@ func TestLayerAnalyzer_AnalyzeBasic(t *testing.T) {
 				Path:     "layers/misc.yaml",
 				Packages: make([]string, 60), // Exceed threshold
 			},
-			expectedStatus: "warning",
+			expectedStatus: StatusWarning,
 			hasRecs:        true,
 		},
 		{
@@ -61,7 +72,7 @@ func TestLayerAnalyzer_AnalyzeBasic(t *testing.T) {
 				Path:     "layers/my-stuff.yaml",
 				Packages: []string{"git"},
 			},
-			expectedStatus: "good",
+			expectedStatus: StatusGood,
 			hasRecs:        true, // Should have naming convention recommendation
 		},
 	}
@@ -169,10 +180,10 @@ func TestLayerAnalyzer_FindCrossLayerIssues(t *testing.T) {
 }
 
 func TestLayerAnalyzer_CustomThreshold(t *testing.T) {
-	analyzer := &LayerAnalyzer{
-		LargeLayerThreshold: 10,
-		WellNamedPrefixes:   []string{"base"},
-	}
+	analyzer := NewLayerAnalyzer(
+		WithLargeLayerThreshold(10),
+		WithWellNamedPrefixes([]string{"base"}),
+	)
 
 	layer := LayerInfo{
 		Name:     "base",
@@ -181,7 +192,7 @@ func TestLayerAnalyzer_CustomThreshold(t *testing.T) {
 	}
 
 	result := analyzer.AnalyzeBasic(layer)
-	assert.Equal(t, "warning", result.Status)
+	assert.Equal(t, StatusWarning, result.Status)
 	assert.False(t, result.WellOrganized)
 }
 

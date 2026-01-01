@@ -490,6 +490,41 @@ func TestValidateEndpoint(t *testing.T) {
 			wantErr:  true,
 			errMsg:   "invalid endpoint",
 		},
+		// IPv6 SSRF protection tests
+		{
+			name:     "HTTP IPv6 localhost allowed",
+			endpoint: "http://[::1]:8080",
+			wantErr:  false,
+		},
+		{
+			name:     "IPv6 ULA fc00:: blocked",
+			endpoint: "https://[fc00::1]",
+			wantErr:  true,
+			errMsg:   "private IP",
+		},
+		{
+			name:     "IPv6 ULA fd00:: blocked",
+			endpoint: "https://[fd12:3456:789a::1]",
+			wantErr:  true,
+			errMsg:   "private IP",
+		},
+		{
+			name:     "IPv6 link-local fe80:: blocked",
+			endpoint: "https://[fe80::1]",
+			wantErr:  true,
+			errMsg:   "private IP",
+		},
+		{
+			name:     "IPv6 uppercase FE80:: blocked",
+			endpoint: "https://[FE80::CAFE]",
+			wantErr:  true,
+			errMsg:   "private IP",
+		},
+		{
+			name:     "IPv6 public address allowed",
+			endpoint: "https://[2001:db8::1]",
+			wantErr:  false,
+		},
 	}
 
 	for _, tt := range tests {

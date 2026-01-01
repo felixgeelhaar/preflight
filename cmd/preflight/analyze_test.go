@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
+	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -266,9 +267,8 @@ func TestFindCrossLayerIssues(t *testing.T) {
 	}
 }
 
-func TestGetStatusIcon(t *testing.T) {
-	// Status icon tests are now primarily in analyzer_test.go
-	// This tests the integration with the domain service
+func TestFormatStatusIcon(t *testing.T) {
+	// Tests the TUI formatting function used for analyze output
 	tests := []struct {
 		status   string
 		expected string
@@ -281,15 +281,14 @@ func TestGetStatusIcon(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.status, func(t *testing.T) {
-			result := advisor.GetStatusIcon(tt.status)
+			result := tui.FormatStatusIcon(tt.status)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func TestGetPriorityPrefix(t *testing.T) {
-	// Priority prefix tests are now primarily in analyzer_test.go
-	// This tests the integration with the domain service
+func TestFormatPriorityPrefix(t *testing.T) {
+	// Tests the TUI formatting function used for analyze output
 	tests := []struct {
 		priority string
 	}{
@@ -300,7 +299,7 @@ func TestGetPriorityPrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.priority, func(t *testing.T) {
-			result := advisor.GetPriorityPrefix(tt.priority)
+			result := tui.FormatPriorityPrefix(tt.priority)
 			assert.NotEmpty(t, result)
 		})
 	}

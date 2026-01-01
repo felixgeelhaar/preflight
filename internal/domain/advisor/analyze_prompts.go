@@ -55,11 +55,11 @@ type LayerInfo struct {
 
 // AnalysisRecommendation represents a single recommendation from analysis.
 type AnalysisRecommendation struct {
-	Type           string   `json:"type"`
-	Priority       string   `json:"priority"`
-	Message        string   `json:"message"`
-	Packages       []string `json:"packages,omitempty"`
-	SuggestedLayer string   `json:"suggested_layer,omitempty"`
+	Type           RecommendationType     `json:"type"`
+	Priority       RecommendationPriority `json:"priority"`
+	Message        string                 `json:"message"`
+	Packages       []string               `json:"packages,omitempty"`
+	SuggestedLayer string                 `json:"suggested_layer,omitempty"`
 }
 
 // LayerAnalysisResult represents the analysis result for a single layer.
@@ -67,7 +67,7 @@ type AnalysisRecommendation struct {
 type LayerAnalysisResult struct {
 	LayerName       string                   `json:"layer_name"`
 	Summary         string                   `json:"summary"`
-	Status          string                   `json:"status"`
+	Status          AnalysisStatus           `json:"status"`
 	Recommendations []AnalysisRecommendation `json:"recommendations"`
 	PackageCount    int                      `json:"package_count"`
 	WellOrganized   bool                     `json:"well_organized"`

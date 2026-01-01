@@ -51,16 +51,20 @@ var knownModels = map[string]bool{
 	"gemini-pro":          true,
 }
 
-// Provider errors.
+// Re-export common errors for backwards compatibility.
 var (
-	ErrNotConfigured   = errors.New("gemini provider is not configured")
-	ErrEmptyAPIKey     = errors.New("API key is required")
-	ErrEmptyModel      = errors.New("model is required")
+	ErrNotConfigured = advisor.ErrNotConfigured
+	ErrEmptyAPIKey   = advisor.ErrEmptyAPIKey
+	ErrEmptyModel    = advisor.ErrEmptyModel
+	ErrAPIError      = advisor.ErrAPIError
+	ErrRateLimit     = advisor.ErrRateLimit
+	ErrUnauthorized  = advisor.ErrUnauthorized
+	ErrEmptyResponse = advisor.ErrEmptyResponse
+)
+
+// Gemini-specific errors.
+var (
 	ErrInvalidModel    = errors.New("unknown model name")
-	ErrAPIError        = errors.New("gemini API error")
-	ErrRateLimit       = errors.New("rate limit exceeded")
-	ErrUnauthorized    = errors.New("unauthorized - check API key")
-	ErrEmptyResponse   = errors.New("empty response from API")
 	ErrInvalidEndpoint = errors.New("invalid endpoint URL")
 )
 
@@ -185,8 +189,23 @@ func isLocalhost(host string) bool {
 		strings.HasPrefix(host, "127.")
 }
 
-// isPrivateIP checks if a host is a private IP address.
+// isPrivateIP checks if a host is a private IP address (IPv4 or IPv6).
 func isPrivateIP(host string) bool {
+	// Normalize host to lowercase for IPv6 comparison
+	lowerHost := strings.ToLower(host)
+
+	// IPv6 private ranges
+	// fc00::/7 - Unique Local Addresses (ULA), similar to IPv4 private ranges
+	// These addresses start with fc or fd
+	if strings.HasPrefix(lowerHost, "fc") || strings.HasPrefix(lowerHost, "fd") {
+		return true
+	}
+	// fe80::/10 - Link-local addresses
+	if strings.HasPrefix(lowerHost, "fe80:") {
+		return true
+	}
+
+	// IPv4 private ranges
 	// 10.0.0.0/8
 	if strings.HasPrefix(host, "10.") {
 		return true
@@ -223,6 +242,17 @@ type Provider struct {
 	client   *http.Client
 }
 
+// defaultTransport creates an HTTP transport optimized for connection reuse.
+// Connection pooling significantly reduces latency for repeated API calls.
+func defaultTransport() *http.Transport {
+	return &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     90 * time.Second,
+		DisableCompression:  false, // AI responses benefit from compression
+	}
+}
+
 // NewProvider creates a new Gemini provider with default settings.
 func NewProvider(apiKey string) *Provider {
 	return &Provider{
@@ -230,7 +260,8 @@ func NewProvider(apiKey string) *Provider {
 		model:    DefaultModel,
 		endpoint: DefaultEndpoint,
 		client: &http.Client{
-			Timeout: DefaultTimeout,
+			Timeout:   DefaultTimeout,
+			Transport: defaultTransport(),
 		},
 	}
 }
@@ -256,7 +287,8 @@ func NewProviderWithConfig(config Config) (*Provider, error) {
 		model:    config.Model,
 		endpoint: endpoint,
 		client: &http.Client{
-			Timeout: timeout,
+			Timeout:   timeout,
+			Transport: defaultTransport(),
 		},
 	}, nil
 }

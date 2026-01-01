@@ -87,10 +87,10 @@ Hope this helps!`
 	require.NoError(t, err)
 	assert.Equal(t, "dev-go", result.LayerName)
 	assert.Equal(t, "Well-organized Go development layer", result.Summary)
-	assert.Equal(t, "good", result.Status)
+	assert.Equal(t, StatusGood, result.Status)
 	assert.Len(t, result.Recommendations, 1)
-	assert.Equal(t, "missing", result.Recommendations[0].Type)
-	assert.Equal(t, "medium", result.Recommendations[0].Priority)
+	assert.Equal(t, TypeMissing, result.Recommendations[0].Type)
+	assert.Equal(t, PriorityMedium, result.Recommendations[0].Priority)
 	assert.True(t, result.WellOrganized)
 }
 
@@ -143,15 +143,15 @@ func TestLayerInfo_Fields(t *testing.T) {
 
 func TestAnalysisRecommendation_Fields(t *testing.T) {
 	rec := AnalysisRecommendation{
-		Type:           "misplacement",
-		Priority:       "high",
+		Type:           TypeMisplaced,
+		Priority:       PriorityHigh,
 		Message:        "Move ffmpeg to media layer",
 		Packages:       []string{"ffmpeg", "ffprobe"},
 		SuggestedLayer: "media",
 	}
 
-	assert.Equal(t, "misplacement", rec.Type)
-	assert.Equal(t, "high", rec.Priority)
+	assert.Equal(t, TypeMisplaced, rec.Type)
+	assert.Equal(t, PriorityHigh, rec.Priority)
 	assert.Equal(t, "Move ffmpeg to media layer", rec.Message)
 	assert.Len(t, rec.Packages, 2)
 	assert.Equal(t, "media", rec.SuggestedLayer)
@@ -161,17 +161,17 @@ func TestLayerAnalysisResult_Fields(t *testing.T) {
 	result := LayerAnalysisResult{
 		LayerName:     "misc",
 		Summary:       "Large uncategorized layer",
-		Status:        "warning",
+		Status:        StatusWarning,
 		PackageCount:  50,
 		WellOrganized: false,
 		Recommendations: []AnalysisRecommendation{
-			{Type: "best_practice", Priority: "medium", Message: "Consider splitting"},
+			{Type: TypeBestPractice, Priority: PriorityMedium, Message: "Consider splitting"},
 		},
 	}
 
 	assert.Equal(t, "misc", result.LayerName)
 	assert.Equal(t, "Large uncategorized layer", result.Summary)
-	assert.Equal(t, "warning", result.Status)
+	assert.Equal(t, StatusWarning, result.Status)
 	assert.Equal(t, 50, result.PackageCount)
 	assert.False(t, result.WellOrganized)
 	assert.Len(t, result.Recommendations, 1)
@@ -241,12 +241,12 @@ func TestParseLayerAnalysisResult_MultipleRecommendations(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "misc", result.LayerName)
-	assert.Equal(t, "needs_attention", result.Status)
+	assert.Equal(t, StatusNeedsAttention, result.Status)
 	assert.Len(t, result.Recommendations, 3)
-	assert.Equal(t, "misplacement", result.Recommendations[0].Type)
+	assert.Equal(t, RecommendationType("misplacement"), result.Recommendations[0].Type)
 	assert.Equal(t, "media", result.Recommendations[0].SuggestedLayer)
-	assert.Equal(t, "duplicate", result.Recommendations[1].Type)
-	assert.Equal(t, "deprecated", result.Recommendations[2].Type)
+	assert.Equal(t, RecommendationType("duplicate"), result.Recommendations[1].Type)
+	assert.Equal(t, TypeDeprecated, result.Recommendations[2].Type)
 	assert.False(t, result.WellOrganized)
 }
 
@@ -280,7 +280,7 @@ func TestParseLayerAnalysisResult_FromCodeBlock(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "base", result.LayerName)
-	assert.Equal(t, "good", result.Status)
+	assert.Equal(t, StatusGood, result.Status)
 	assert.True(t, result.WellOrganized)
 }
 
@@ -313,7 +313,7 @@ I hope this helps!`
 
 	require.NoError(t, err)
 	assert.Equal(t, "dev-tools", result.LayerName)
-	assert.Equal(t, "good", result.Status)
+	assert.Equal(t, StatusGood, result.Status)
 }
 
 func TestParseLayerAnalysisResult_NestedBraces(t *testing.T) {
@@ -362,11 +362,11 @@ func TestLayerAnalysisResult_StatusField(t *testing.T) {
 	// The Status field indicates analysis outcome, with fallback to basic analysis.
 	result := LayerAnalysisResult{
 		LayerName: "test",
-		Status:    "warning",
+		Status:    StatusWarning,
 		Summary:   "AI unavailable - 10 packages",
 	}
 
-	assert.Equal(t, "warning", result.Status)
+	assert.Equal(t, StatusWarning, result.Status)
 	assert.Contains(t, result.Summary, "AI unavailable")
 }
 

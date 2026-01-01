@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,14 +13,30 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 )
 
-// Provider errors.
+// Default configuration values.
+const (
+	DefaultTimeout  = 60 * time.Second
+	MaxResponseSize = 10 * 1024 * 1024 // 10MB max response to prevent DoS
+)
+
+// defaultTransport creates an HTTP transport optimized for connection reuse.
+func defaultTransport() *http.Transport {
+	return &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     90 * time.Second,
+		DisableCompression:  false,
+	}
+}
+
+// Re-export common errors for backwards compatibility.
 var (
-	ErrNotConfigured = errors.New("anthropic provider is not configured")
-	ErrEmptyAPIKey   = errors.New("API key is required")
-	ErrEmptyModel    = errors.New("model is required")
-	ErrAPIError      = errors.New("anthropic API error")
-	ErrRateLimit     = errors.New("rate limit exceeded")
-	ErrUnauthorized  = errors.New("unauthorized - check API key")
+	ErrNotConfigured = advisor.ErrNotConfigured
+	ErrEmptyAPIKey   = advisor.ErrEmptyAPIKey
+	ErrEmptyModel    = advisor.ErrEmptyModel
+	ErrAPIError      = advisor.ErrAPIError
+	ErrRateLimit     = advisor.ErrRateLimit
+	ErrUnauthorized  = advisor.ErrUnauthorized
 )
 
 // API request types.
@@ -100,7 +115,8 @@ func NewProvider(apiKey string) *Provider {
 		model:    "claude-3-5-sonnet-20241022",
 		endpoint: "https://api.anthropic.com",
 		client: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout:   DefaultTimeout,
+			Transport: defaultTransport(),
 		},
 	}
 }
@@ -121,7 +137,8 @@ func NewProviderWithConfig(config Config) (*Provider, error) {
 		model:    config.Model,
 		endpoint: endpoint,
 		client: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout:   DefaultTimeout,
+			Transport: defaultTransport(),
 		},
 	}, nil
 }
@@ -194,7 +211,8 @@ func (p *Provider) Complete(ctx context.Context, prompt advisor.Prompt) (advisor
 	}
 	defer resp.Body.Close() //nolint:errcheck // Best effort close after reading body
 
-	body, err := io.ReadAll(resp.Body)
+	// Limit response size to prevent memory exhaustion DoS
+	body, err := io.ReadAll(io.LimitReader(resp.Body, MaxResponseSize))
 	if err != nil {
 		return advisor.Response{}, fmt.Errorf("failed to read response: %w", err)
 	}

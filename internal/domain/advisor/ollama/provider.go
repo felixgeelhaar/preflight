@@ -3,15 +3,14 @@ package ollama
 
 import (
 	"context"
-	"errors"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 )
 
-// Provider errors.
+// Re-export common errors for backwards compatibility.
 var (
-	ErrNotConfigured = errors.New("ollama provider is not configured")
-	ErrEmptyModel    = errors.New("model is required")
+	ErrNotConfigured = advisor.ErrNotConfigured
+	ErrEmptyModel    = advisor.ErrEmptyModel
 )
 
 // Config holds the configuration for the Ollama provider.

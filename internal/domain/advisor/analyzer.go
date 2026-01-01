@@ -46,23 +46,53 @@ const (
 
 // LayerAnalyzer provides heuristic-based analysis of configuration layers.
 // This is a domain service that encapsulates business rules about layer quality.
+// Use NewLayerAnalyzer with options to configure.
 type LayerAnalyzer struct {
-	// LargeLayerThreshold is the number of packages above which a layer is considered large.
-	// Layers with more than this many packages should be considered for splitting.
-	LargeLayerThreshold int
+	largeLayerThreshold int
+	wellNamedPrefixes   []string
+}
 
-	// WellNamedPrefixes are the recognized naming convention prefixes for layers.
-	WellNamedPrefixes []string
+// LayerAnalyzerOption configures a LayerAnalyzer.
+type LayerAnalyzerOption func(*LayerAnalyzer)
+
+// WithLargeLayerThreshold sets the threshold above which a layer is considered large.
+// Layers with more packages than this should be considered for splitting.
+// Default is 50.
+func WithLargeLayerThreshold(threshold int) LayerAnalyzerOption {
+	return func(a *LayerAnalyzer) {
+		a.largeLayerThreshold = threshold
+	}
+}
+
+// WithWellNamedPrefixes sets the recognized naming convention prefixes for layers.
+// Default is: base, dev-, role., identity., device., misc, security, media.
+func WithWellNamedPrefixes(prefixes []string) LayerAnalyzerOption {
+	return func(a *LayerAnalyzer) {
+		a.wellNamedPrefixes = prefixes
+	}
 }
 
 // NewLayerAnalyzer creates a new LayerAnalyzer with default configuration.
-func NewLayerAnalyzer() *LayerAnalyzer {
-	return &LayerAnalyzer{
-		LargeLayerThreshold: 50,
-		WellNamedPrefixes: []string{
+// Use functional options to customize behavior.
+func NewLayerAnalyzer(opts ...LayerAnalyzerOption) *LayerAnalyzer {
+	a := &LayerAnalyzer{
+		largeLayerThreshold: 50,
+		wellNamedPrefixes: []string{
 			"base", "dev-", "role.", "identity.", "device.", "misc", "security", "media",
 		},
 	}
+	for _, opt := range opts {
+		opt(a)
+	}
+	return a
+}
+
+// LargeLayerThreshold returns the current large layer threshold.
+//
+// Deprecated: Access to this field is for backwards compatibility.
+// Use WithLargeLayerThreshold option when creating the analyzer.
+func (a *LayerAnalyzer) LargeLayerThreshold() int {
+	return a.largeLayerThreshold
 }
 
 // AnalyzeBasic performs heuristic-based analysis of a single layer without AI.
@@ -79,31 +109,31 @@ func (a *LayerAnalyzer) AnalyzeBasic(layer LayerInfo) LayerAnalysisResult {
 	switch {
 	case len(layer.Packages) == 0:
 		result.Summary = "Empty layer"
-		result.Status = string(StatusWarning)
+		result.Status = StatusWarning
 		result.Recommendations = append(result.Recommendations, AnalysisRecommendation{
-			Type:     string(TypeBestPractice),
-			Priority: string(PriorityLow),
+			Type:     TypeBestPractice,
+			Priority: PriorityLow,
 			Message:  "Layer has no packages defined",
 		})
-	case len(layer.Packages) > a.LargeLayerThreshold:
+	case len(layer.Packages) > a.largeLayerThreshold:
 		result.Summary = fmt.Sprintf("Large layer with %d packages", len(layer.Packages))
-		result.Status = string(StatusWarning)
+		result.Status = StatusWarning
 		result.WellOrganized = false
 		result.Recommendations = append(result.Recommendations, AnalysisRecommendation{
-			Type:     string(TypeBestPractice),
-			Priority: string(PriorityMedium),
-			Message:  fmt.Sprintf("Consider splitting into smaller, focused layers (threshold: %d packages)", a.LargeLayerThreshold),
+			Type:     TypeBestPractice,
+			Priority: PriorityMedium,
+			Message:  fmt.Sprintf("Consider splitting into smaller, focused layers (threshold: %d packages)", a.largeLayerThreshold),
 		})
 	default:
 		result.Summary = fmt.Sprintf("%d packages", len(layer.Packages))
-		result.Status = string(StatusGood)
+		result.Status = StatusGood
 	}
 
 	// Check layer naming conventions
 	if !a.IsWellNamedLayer(layer.Name) {
 		result.Recommendations = append(result.Recommendations, AnalysisRecommendation{
-			Type:     string(TypeBestPractice),
-			Priority: string(PriorityLow),
+			Type:     TypeBestPractice,
+			Priority: PriorityLow,
 			Message:  "Consider using naming convention: base, dev-*, role.*, identity.*, device.*",
 		})
 	}
@@ -113,7 +143,7 @@ func (a *LayerAnalyzer) AnalyzeBasic(layer LayerInfo) LayerAnalysisResult {
 
 // IsWellNamedLayer checks if a layer follows recognized naming conventions.
 func (a *LayerAnalyzer) IsWellNamedLayer(name string) bool {
-	for _, prefix := range a.WellNamedPrefixes {
+	for _, prefix := range a.wellNamedPrefixes {
 		if name == prefix || strings.HasPrefix(name, prefix) {
 			return true
 		}
@@ -126,8 +156,15 @@ func (a *LayerAnalyzer) IsWellNamedLayer(name string) bool {
 func (a *LayerAnalyzer) FindCrossLayerIssues(layers []LayerInfo) []string {
 	var issues []string
 
+	// Pre-calculate total packages for map pre-allocation
+	totalPackages := 0
+	for _, layer := range layers {
+		totalPackages += len(layer.Packages)
+	}
+
 	// Check for duplicate packages across layers
-	packageLayers := make(map[string][]string)
+	// Pre-allocate map to avoid rehashing during growth
+	packageLayers := make(map[string][]string, totalPackages)
 	for _, layer := range layers {
 		for _, pkg := range layer.Packages {
 			// Normalize package name (remove " (cask)" suffix for comparison)
@@ -147,6 +184,9 @@ func (a *LayerAnalyzer) FindCrossLayerIssues(layers []LayerInfo) []string {
 }
 
 // GetStatusIcon returns a display icon for the given status.
+//
+// Deprecated: Use tui.FormatStatusIcon instead. This function will be removed in a future version.
+// Presentation logic should live in the TUI layer, not the domain.
 func GetStatusIcon(status string) string {
 	switch AnalysisStatus(status) {
 	case StatusGood:
@@ -161,6 +201,9 @@ func GetStatusIcon(status string) string {
 }
 
 // GetPriorityPrefix returns a colored prefix for the given priority.
+//
+// Deprecated: Use tui.FormatPriorityPrefix instead. This function will be removed in a future version.
+// Presentation logic should live in the TUI layer, not the domain.
 func GetPriorityPrefix(priority string) string {
 	switch RecommendationPriority(priority) {
 	case PriorityHigh:
