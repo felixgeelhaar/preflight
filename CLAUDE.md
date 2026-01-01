@@ -157,17 +157,20 @@ type Advisor interface {
 
 ### Providers (v1)
 
-| Provider | Responsibility |
-|----------|----------------|
-| brew | Homebrew taps, formulae, casks (macOS) |
-| apt | Package installation (Linux) |
-| files | Dotfile rendering, linking, drift detection |
-| git | .gitconfig generation, identity separation |
-| ssh | ~/.ssh/config rendering, never exports keys |
-| shell | Shell framework, plugins, themes (oh-my-zsh, fisher, starship) |
-| runtime | rtx/asdf tool version management |
-| nvim | Neovim install, preset bootstrap, lazy-lock |
-| vscode | Extension install, settings management |
+| Provider | Responsibility | Platform |
+|----------|----------------|----------|
+| brew | Homebrew taps, formulae, casks | macOS, Linux |
+| apt | Package installation (dpkg-based) | Linux (Debian/Ubuntu) |
+| chocolatey | Package installation | Windows |
+| scoop | Package installation (user-space) | Windows |
+| winget | Windows Package Manager | Windows |
+| files | Dotfile rendering, linking, drift detection | All |
+| git | .gitconfig generation, identity separation | All |
+| ssh | ~/.ssh/config rendering, never exports keys | All |
+| shell | Shell framework, plugins, themes (oh-my-zsh, fisher, starship) | All |
+| runtime | rtx/asdf tool version management | All |
+| nvim | Neovim install, preset bootstrap, lazy-lock | All |
+| vscode | Extension install, settings management | All |
 
 ### TUI (Bubble Tea)
 
@@ -187,3 +190,4 @@ Key screens: Init wizard, Capture review (git-add -p style), Plan review with ex
 - **TDD** - All code written test-first using Red-Green-Refactor
 - **DDD** - Clear bounded contexts with ubiquitous language per domain
 - **Coverage** - All domains must maintain >80% test coverage (enforced by coverctl)
+- **Cross-Platform** - All features must be built with cross-platform support where possible (macOS, Linux, Windows/WSL). Consider platform-specific alternatives for each OS.

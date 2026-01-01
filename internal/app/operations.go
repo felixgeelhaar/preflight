@@ -77,6 +77,16 @@ func (p *Preflight) captureProvider(ctx context.Context, provider, homeDir strin
 		items = p.captureVSCodeExtensions(ctx, now)
 	case "runtime":
 		items = p.captureRuntimeVersions(ctx, now)
+	// Windows package managers
+	case "chocolatey":
+		items = p.captureChocolateyPackages(ctx, now)
+	case "scoop":
+		items = p.captureScoopPackages(ctx, now)
+	case "winget":
+		items = p.captureWingetPackages(ctx, now)
+	// Linux package managers
+	case "apt":
+		items = p.captureAPTPackages(ctx, now)
 	default:
 		return nil, fmt.Errorf("unknown provider: %s", provider)
 	}
@@ -345,6 +355,148 @@ func (p *Preflight) captureAsdfVersions(capturedAt time.Time) []CapturedItem {
 				CapturedAt: capturedAt,
 			})
 		}
+	}
+
+	return items
+}
+
+// captureChocolateyPackages captures installed Chocolatey packages (Windows).
+func (p *Preflight) captureChocolateyPackages(_ context.Context, capturedAt time.Time) []CapturedItem {
+	var items []CapturedItem
+
+	// Check if choco is available
+	cmd := exec.Command("choco", "list", "--local-only", "--limit-output")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		// Chocolatey output format: PackageName|Version
+		parts := strings.SplitN(line, "|", 2)
+		if len(parts) >= 1 {
+			name := strings.TrimSpace(parts[0])
+			if name == "" {
+				continue
+			}
+			items = append(items, CapturedItem{
+				Provider:   "chocolatey",
+				Name:       name,
+				Source:     "choco list",
+				CapturedAt: capturedAt,
+			})
+		}
+	}
+
+	return items
+}
+
+// captureScoopPackages captures installed Scoop packages (Windows).
+func (p *Preflight) captureScoopPackages(_ context.Context, capturedAt time.Time) []CapturedItem {
+	var items []CapturedItem
+
+	// Scoop list command
+	cmd := exec.Command("scoop", "list")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for i, line := range lines {
+		// Skip header line
+		if i == 0 || line == "" {
+			continue
+		}
+		// Scoop output format: Name  Version  Source  Updated
+		fields := strings.Fields(line)
+		if len(fields) >= 1 {
+			name := fields[0]
+			if name == "" || name == "Name" {
+				continue
+			}
+			items = append(items, CapturedItem{
+				Provider:   "scoop",
+				Name:       name,
+				Source:     "scoop list",
+				CapturedAt: capturedAt,
+			})
+		}
+	}
+
+	return items
+}
+
+// captureWingetPackages captures installed WinGet packages (Windows).
+func (p *Preflight) captureWingetPackages(_ context.Context, capturedAt time.Time) []CapturedItem {
+	var items []CapturedItem
+
+	// WinGet list command with machine-readable output
+	cmd := exec.Command("winget", "list", "--disable-interactivity")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	headerPassed := false
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		// Skip until we pass the header separator
+		if strings.HasPrefix(line, "-") {
+			headerPassed = true
+			continue
+		}
+		if !headerPassed {
+			continue
+		}
+		// WinGet output is space-delimited: Name  Id  Version  Available  Source
+		fields := strings.Fields(line)
+		if len(fields) >= 2 {
+			// Use the package ID (second field) as it's more reliable
+			id := fields[1]
+			if id == "" {
+				continue
+			}
+			items = append(items, CapturedItem{
+				Provider:   "winget",
+				Name:       id,
+				Source:     "winget list",
+				CapturedAt: capturedAt,
+			})
+		}
+	}
+
+	return items
+}
+
+// captureAPTPackages captures installed APT packages (Linux/Debian).
+func (p *Preflight) captureAPTPackages(_ context.Context, capturedAt time.Time) []CapturedItem {
+	// Use dpkg-query for reliable package listing
+	cmd := exec.Command("dpkg-query", "-W", "-f=${Package}\n")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	items := make([]CapturedItem, 0, len(lines))
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		items = append(items, CapturedItem{
+			Provider:   "apt",
+			Name:       strings.TrimSpace(line),
+			Source:     "dpkg-query",
+			CapturedAt: capturedAt,
+		})
 	}
 
 	return items
