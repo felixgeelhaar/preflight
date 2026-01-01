@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.5.0] - 2026-01-01
+
+### Added
+
+- **Gemini AI Provider** (#25): Google's Gemini models now available for AI-powered features
+  - New `gemini` provider option alongside openai, anthropic, ollama
+  - Configurable model selection (gemini-2.0-flash-exp, gemini-1.5-pro, etc.)
+  - Full support for layer analysis and recommendations
+  - Set via `--ai-provider gemini` or `PREFLIGHT_AI_PROVIDER=gemini`
+
+- **Layer Analysis Command**: New `preflight analyze` for configuration health checks
+  - Analyzes layer naming conventions, package counts, and structure
+  - Detects cross-layer issues (duplicate packages, circular dependencies)
+  - Optional AI-powered recommendations with `--recommend` flag
+  - JSON output for CI integration with `--json` flag
+  - Example: `preflight analyze layers/*.yaml --recommend`
+
+- **Outdated Package Upgrade**: New `--upgrade` flag for `preflight outdated`
+  - Automatically upgrade outdated packages after detection
+  - Example: `preflight outdated --upgrade`
+
+### Changed
+
+- **Typed Analysis Status**: Internal refactor to use typed constants for analysis status
+  - `AnalysisStatus` and `RecommendationPriority` types for type safety
+  - Improved code quality and maintainability
+
+### Fixed
+
+- **Test Race Conditions**: Fixed parallel test execution issues
+  - Removed `t.Parallel()` from tests that modify shared state (os.Stderr, package variables)
+  - Fixed git clone tests for CI reliability with proper branch initialization
+
+- **Security Hardening**: Addressed security review findings
+  - Added `io.LimitReader` to HTTP responses in AI providers
+  - IPv6 SSRF protection in URL validation
+  - HTTP connection pooling for external API calls
+
 ## [4.4.1] - 2026-01-01
 
 ### Fixed
