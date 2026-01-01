@@ -530,3 +530,113 @@ func TestOutdatedCheckerRegistry_WithMock(t *testing.T) {
 		assert.Contains(t, names, "mock-unavailable")
 	})
 }
+
+func TestUpgradeOptions(t *testing.T) {
+	t.Parallel()
+
+	t.Run("default options", func(t *testing.T) {
+		t.Parallel()
+		opts := UpgradeOptions{}
+		assert.False(t, opts.DryRun)
+		assert.False(t, opts.IncludeMajor)
+	})
+
+	t.Run("with options set", func(t *testing.T) {
+		t.Parallel()
+		opts := UpgradeOptions{
+			DryRun:       true,
+			IncludeMajor: true,
+		}
+		assert.True(t, opts.DryRun)
+		assert.True(t, opts.IncludeMajor)
+	})
+}
+
+func TestUpgradeResult(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty result", func(t *testing.T) {
+		t.Parallel()
+		result := &UpgradeResult{
+			Upgraded: []UpgradedPackage{},
+			Skipped:  []SkippedPackage{},
+			Failed:   []FailedPackage{},
+		}
+		assert.Empty(t, result.Upgraded)
+		assert.Empty(t, result.Skipped)
+		assert.Empty(t, result.Failed)
+	})
+
+	t.Run("with packages", func(t *testing.T) {
+		t.Parallel()
+		result := &UpgradeResult{
+			Upgraded: []UpgradedPackage{
+				{Name: "pkg1", FromVersion: "1.0.0", ToVersion: "1.1.0", Provider: "brew"},
+			},
+			Skipped: []SkippedPackage{
+				{Name: "pkg2", Reason: "major update", UpdateType: UpdateMajor},
+			},
+			Failed: []FailedPackage{
+				{Name: "pkg3", Error: "network error"},
+			},
+			DryRun: false,
+		}
+		assert.Len(t, result.Upgraded, 1)
+		assert.Len(t, result.Skipped, 1)
+		assert.Len(t, result.Failed, 1)
+		assert.False(t, result.DryRun)
+	})
+
+	t.Run("dry run result", func(t *testing.T) {
+		t.Parallel()
+		result := &UpgradeResult{
+			Upgraded: []UpgradedPackage{
+				{Name: "pkg1", FromVersion: "1.0.0", ToVersion: "1.1.0"},
+			},
+			DryRun: true,
+		}
+		assert.True(t, result.DryRun)
+	})
+}
+
+func TestUpgradedPackage(t *testing.T) {
+	t.Parallel()
+
+	pkg := UpgradedPackage{
+		Name:        "test-pkg",
+		FromVersion: "1.0.0",
+		ToVersion:   "1.1.0",
+		Provider:    "brew",
+	}
+
+	assert.Equal(t, "test-pkg", pkg.Name)
+	assert.Equal(t, "1.0.0", pkg.FromVersion)
+	assert.Equal(t, "1.1.0", pkg.ToVersion)
+	assert.Equal(t, "brew", pkg.Provider)
+}
+
+func TestSkippedPackage(t *testing.T) {
+	t.Parallel()
+
+	pkg := SkippedPackage{
+		Name:       "test-pkg",
+		Reason:     "major update requires --major flag",
+		UpdateType: UpdateMajor,
+	}
+
+	assert.Equal(t, "test-pkg", pkg.Name)
+	assert.Equal(t, "major update requires --major flag", pkg.Reason)
+	assert.Equal(t, UpdateMajor, pkg.UpdateType)
+}
+
+func TestFailedPackage(t *testing.T) {
+	t.Parallel()
+
+	pkg := FailedPackage{
+		Name:  "test-pkg",
+		Error: "permission denied",
+	}
+
+	assert.Equal(t, "test-pkg", pkg.Name)
+	assert.Equal(t, "permission denied", pkg.Error)
+}

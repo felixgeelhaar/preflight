@@ -173,6 +173,53 @@ type OutdatedChecker interface {
 	Check(ctx context.Context, opts OutdatedOptions) (*OutdatedResult, error)
 }
 
+// PackageUpgrader can upgrade outdated packages.
+type PackageUpgrader interface {
+	// Upgrade upgrades the specified packages.
+	Upgrade(ctx context.Context, packages []string, opts UpgradeOptions) (*UpgradeResult, error)
+}
+
+// UpgradeOptions configures package upgrades.
+type UpgradeOptions struct {
+	// DryRun shows what would be upgraded without making changes.
+	DryRun bool `json:"dry_run"`
+	// IncludeMajor allows major version upgrades (breaking changes).
+	IncludeMajor bool `json:"include_major"`
+}
+
+// UpgradeResult contains the results of an upgrade operation.
+type UpgradeResult struct {
+	// Upgraded contains packages that were successfully upgraded.
+	Upgraded []UpgradedPackage `json:"upgraded"`
+	// Skipped contains packages that were skipped (e.g., major updates without --major).
+	Skipped []SkippedPackage `json:"skipped"`
+	// Failed contains packages that failed to upgrade.
+	Failed []FailedPackage `json:"failed"`
+	// DryRun indicates if this was a dry run.
+	DryRun bool `json:"dry_run"`
+}
+
+// UpgradedPackage represents a successfully upgraded package.
+type UpgradedPackage struct {
+	Name        string `json:"name"`
+	FromVersion string `json:"from_version"`
+	ToVersion   string `json:"to_version"`
+	Provider    string `json:"provider"`
+}
+
+// SkippedPackage represents a package that was skipped during upgrade.
+type SkippedPackage struct {
+	Name       string     `json:"name"`
+	Reason     string     `json:"reason"`
+	UpdateType UpdateType `json:"update_type"`
+}
+
+// FailedPackage represents a package that failed to upgrade.
+type FailedPackage struct {
+	Name  string `json:"name"`
+	Error string `json:"error"`
+}
+
 // OutdatedOptions configures outdated checking.
 type OutdatedOptions struct {
 	IncludePatch   bool          `json:"include_patch"`
@@ -364,6 +411,99 @@ func (b *BrewOutdatedChecker) parseOutput(data []byte) (OutdatedPackages, error)
 	}
 
 	return packages, nil
+}
+
+// Upgrade upgrades specified packages using brew upgrade.
+func (b *BrewOutdatedChecker) Upgrade(ctx context.Context, packages []string, opts UpgradeOptions) (*UpgradeResult, error) {
+	if !b.Available() {
+		return nil, ErrScannerNotAvailable
+	}
+
+	result := &UpgradeResult{
+		Upgraded: make([]UpgradedPackage, 0),
+		Skipped:  make([]SkippedPackage, 0),
+		Failed:   make([]FailedPackage, 0),
+		DryRun:   opts.DryRun,
+	}
+
+	// First, get current outdated packages to know versions
+	checkOpts := OutdatedOptions{IncludePatch: true, IncludePinned: false}
+	outdated, err := b.Check(ctx, checkOpts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check outdated packages: %w", err)
+	}
+
+	// Build lookup map for outdated packages
+	outdatedMap := make(map[string]OutdatedPackage)
+	for _, pkg := range outdated.Packages {
+		outdatedMap[pkg.Name] = pkg
+	}
+
+	// If no specific packages provided, use all outdated
+	toUpgrade := packages
+	if len(toUpgrade) == 0 {
+		for _, pkg := range outdated.Packages {
+			toUpgrade = append(toUpgrade, pkg.Name)
+		}
+	}
+
+	// Process each package
+	for _, name := range toUpgrade {
+		pkg, exists := outdatedMap[name]
+		if !exists {
+			// Package is not outdated or not found
+			continue
+		}
+
+		// Check if we should skip major updates
+		if pkg.UpdateType == UpdateMajor && !opts.IncludeMajor {
+			result.Skipped = append(result.Skipped, SkippedPackage{
+				Name:       name,
+				Reason:     "major update requires --major flag",
+				UpdateType: UpdateMajor,
+			})
+			continue
+		}
+
+		// Dry run - don't actually upgrade
+		if opts.DryRun {
+			result.Upgraded = append(result.Upgraded, UpgradedPackage{
+				Name:        name,
+				FromVersion: pkg.CurrentVersion,
+				ToVersion:   pkg.LatestVersion,
+				Provider:    pkg.Provider,
+			})
+			continue
+		}
+
+		// Perform the upgrade
+		var cmd *exec.Cmd
+		if pkg.Provider == "cask" {
+			cmd = b.execCommand(ctx, "brew", "upgrade", "--cask", name)
+		} else {
+			cmd = b.execCommand(ctx, "brew", "upgrade", name)
+		}
+
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+
+		if err := cmd.Run(); err != nil {
+			result.Failed = append(result.Failed, FailedPackage{
+				Name:  name,
+				Error: strings.TrimSpace(stderr.String()),
+			})
+			continue
+		}
+
+		result.Upgraded = append(result.Upgraded, UpgradedPackage{
+			Name:        name,
+			FromVersion: pkg.CurrentVersion,
+			ToVersion:   pkg.LatestVersion,
+			Provider:    pkg.Provider,
+		})
+	}
+
+	return result, nil
 }
 
 // OutdatedCheckerRegistry manages available outdated checkers.
