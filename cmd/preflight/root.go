@@ -93,8 +93,9 @@ func registerFlagCompletions() {
 	// Complete --ai-provider with known providers
 	_ = rootCmd.RegisterFlagCompletionFunc("ai-provider", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 		return []string{
-			"openai\tOpenAI GPT models",
 			"anthropic\tAnthropic Claude models",
+			"gemini\tGoogle Gemini models",
+			"openai\tOpenAI GPT models",
 			"ollama\tLocal Ollama models",
 		}, cobra.ShellCompDirectiveNoFileComp
 	})

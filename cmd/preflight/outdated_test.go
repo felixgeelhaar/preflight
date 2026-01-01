@@ -12,7 +12,7 @@ func TestOutdatedCommand_Flags(t *testing.T) {
 
 	// Verify command exists and has expected flags
 	assert.NotNil(t, outdatedCmd)
-	assert.Equal(t, "outdated", outdatedCmd.Use)
+	assert.Equal(t, "outdated [packages...]", outdatedCmd.Use)
 
 	// Check flags exist
 	flags := outdatedCmd.Flags()
