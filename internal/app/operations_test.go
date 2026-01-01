@@ -112,8 +112,8 @@ func TestRepoClone_NoConfigFile(t *testing.T) {
 	// Create a test git repo without preflight.yaml
 	sourceDir := t.TempDir()
 
-	// Initialize a bare repo
-	cmd := newGitCommand("init", "--bare", sourceDir)
+	// Initialize a bare repo with main branch
+	cmd := newGitCommand("init", "--bare", "--initial-branch=main", sourceDir)
 	require.NoError(t, cmd.Run())
 
 	// Create a temp working dir, add a file, and push
@@ -135,10 +135,15 @@ func TestRepoClone_NoConfigFile(t *testing.T) {
 	cmd = newGitCommand("-C", workRepoPath, "config", "user.name", "Test")
 	require.NoError(t, cmd.Run())
 
+	// Create branch before first commit since cloning empty repo has no branch
+	cmd = newGitCommand("-C", workRepoPath, "checkout", "-b", "main")
+	// Ignore error - branch might already exist
+	_ = cmd.Run()
+
 	cmd = newGitCommand("-C", workRepoPath, "commit", "-m", "Initial commit")
 	require.NoError(t, cmd.Run())
 
-	cmd = newGitCommand("-C", workRepoPath, "push", "-u", "origin", "HEAD")
+	cmd = newGitCommand("-C", workRepoPath, "push", "-u", "origin", "main")
 	require.NoError(t, cmd.Run())
 
 	// Now test cloning
@@ -167,8 +172,8 @@ func TestRepoClone_WithConfigFile(t *testing.T) {
 	// Create a test git repo with preflight.yaml
 	sourceDir := t.TempDir()
 
-	// Initialize a bare repo
-	cmd := newGitCommand("init", "--bare", sourceDir)
+	// Initialize a bare repo with main branch
+	cmd := newGitCommand("init", "--bare", "--initial-branch=main", sourceDir)
 	require.NoError(t, cmd.Run())
 
 	// Create a temp working dir, add preflight.yaml, and push
@@ -197,10 +202,15 @@ targets:
 	cmd = newGitCommand("-C", workRepoPath, "config", "user.name", "Test")
 	require.NoError(t, cmd.Run())
 
+	// Create branch before first commit since cloning empty repo has no branch
+	cmd = newGitCommand("-C", workRepoPath, "checkout", "-b", "main")
+	// Ignore error - branch might already exist
+	_ = cmd.Run()
+
 	cmd = newGitCommand("-C", workRepoPath, "commit", "-m", "Initial commit")
 	require.NoError(t, cmd.Run())
 
-	cmd = newGitCommand("-C", workRepoPath, "push", "-u", "origin", "HEAD")
+	cmd = newGitCommand("-C", workRepoPath, "push", "-u", "origin", "main")
 	require.NoError(t, cmd.Run())
 
 	// Now test cloning (without apply to avoid plan/apply complexity)
