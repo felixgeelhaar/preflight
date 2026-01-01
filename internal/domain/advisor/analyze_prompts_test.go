@@ -357,13 +357,30 @@ func TestParseLayerAnalysisResult_EscapedQuotes(t *testing.T) {
 	assert.Contains(t, result.Summary, "quoted")
 }
 
-func TestLayerAnalysisResult_ErrorField(t *testing.T) {
+func TestLayerAnalysisResult_StatusField(t *testing.T) {
+	// Error handling is done at the application layer, not in the domain model.
+	// The Status field indicates analysis outcome, with fallback to basic analysis.
 	result := LayerAnalysisResult{
 		LayerName: "test",
-		Status:    "error",
-		Error:     "AI analysis failed: connection timeout",
+		Status:    "warning",
+		Summary:   "AI unavailable - 10 packages",
 	}
 
-	assert.Equal(t, "error", result.Status)
-	assert.Contains(t, result.Error, "connection timeout")
+	assert.Equal(t, "warning", result.Status)
+	assert.Contains(t, result.Summary, "AI unavailable")
+}
+
+func TestParseLayerAnalysisResult_ResponseTooLarge(t *testing.T) {
+	// Create a response larger than MaxJSONResponseSize
+	largeResponse := strings.Repeat("x", MaxJSONResponseSize+1)
+
+	_, err := ParseLayerAnalysisResult(largeResponse)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "response too large")
+}
+
+func TestMaxJSONResponseSize(t *testing.T) {
+	// Verify the constant is set to 1MB
+	assert.Equal(t, 1<<20, MaxJSONResponseSize)
 }

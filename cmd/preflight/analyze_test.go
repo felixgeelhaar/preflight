@@ -199,7 +199,7 @@ func TestPerformBasicAnalysis(t *testing.T) {
 			layer: advisor.LayerInfo{
 				Name:     "misc",
 				Path:     "layers/misc.yaml",
-				Packages: make([]string, 60),
+				Packages: make([]string, LargeLayerThreshold+10), // Exceed threshold
 			},
 			expectedStatus: "warning",
 			hasRecs:        true,
@@ -333,11 +333,11 @@ func TestValidateLayerPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Basic validation tests - comprehensive tests are in config/layer_service_test.go
 	tests := []struct {
 		name    string
 		path    string
 		wantErr bool
-		errMsg  string
 	}{
 		{
 			name:    "valid yaml file",
@@ -348,19 +348,11 @@ func TestValidateLayerPath(t *testing.T) {
 			name:    "invalid extension",
 			path:    tmpDir + "/test.txt",
 			wantErr: true,
-			errMsg:  "invalid layer file extension",
 		},
 		{
 			name:    "file not found",
 			path:    tmpDir + "/nonexistent.yaml",
 			wantErr: true,
-			errMsg:  "layer file not found",
-		},
-		{
-			name:    "directory instead of file",
-			path:    tmpDir,
-			wantErr: true,
-			errMsg:  "invalid layer file extension",
 		},
 		{
 			name:    "empty path",
@@ -374,9 +366,6 @@ func TestValidateLayerPath(t *testing.T) {
 			err := validateLayerPath(tt.path)
 			if tt.wantErr {
 				require.Error(t, err)
-				if tt.errMsg != "" {
-					assert.Contains(t, err.Error(), tt.errMsg)
-				}
 			} else {
 				assert.NoError(t, err)
 			}

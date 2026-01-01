@@ -10,7 +10,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
-	"github.com/felixgeelhaar/preflight/internal/validation"
+	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -36,6 +36,10 @@ Examples:
   preflight analyze --json                # JSON output for CI`,
 	RunE: runAnalyze,
 }
+
+// LargeLayerThreshold is the number of packages above which a layer is considered large.
+// Layers with more than this many packages should be considered for splitting.
+const LargeLayerThreshold = 50
 
 var (
 	analyzeRecommend bool
@@ -138,32 +142,9 @@ func findLayerFiles() ([]string, error) {
 	return paths, nil
 }
 
-// validateLayerPath validates a layer file path.
+// validateLayerPath validates a layer file path using the config domain service.
 func validateLayerPath(path string) error {
-	// Basic path validation
-	if err := validation.ValidatePath(path); err != nil {
-		return err
-	}
-
-	// Check file extension
-	ext := strings.ToLower(filepath.Ext(path))
-	if ext != ".yaml" && ext != ".yml" {
-		return fmt.Errorf("invalid layer file extension: %s (expected .yaml or .yml)", ext)
-	}
-
-	// Check file exists and is a regular file
-	info, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("layer file not found: %s", path)
-		}
-		return fmt.Errorf("cannot access layer file: %w", err)
-	}
-	if info.IsDir() {
-		return fmt.Errorf("expected file but got directory: %s", path)
-	}
-
-	return nil
+	return config.ValidateLayerPath(path)
 }
 
 // loadLayerInfos loads layer information from YAML files.
@@ -276,9 +257,9 @@ func analyzeLayersWithAI(ctx context.Context, layers []advisor.LayerInfo, aiProv
 				if !analyzeQuiet && !analyzeJSON {
 					fmt.Fprintf(os.Stderr, "Warning: AI analysis failed for layer %s: %v\n", layer.Name, err)
 				}
-				result.Summary = fmt.Sprintf("AI analysis failed: %v", err)
-				result.Status = "error"
-				result.Error = err.Error()
+				// Fall back to basic analysis when AI fails
+				result = performBasicAnalysis(layer)
+				result.Summary = fmt.Sprintf("AI unavailable - %s", result.Summary)
 			} else {
 				// Parse AI response
 				aiResult, parseErr := advisor.ParseLayerAnalysisResult(response.Content())
@@ -288,7 +269,6 @@ func analyzeLayersWithAI(ctx context.Context, layers []advisor.LayerInfo, aiProv
 						fmt.Fprintf(os.Stderr, "Warning: Failed to parse AI response for layer %s: %v\n", layer.Name, parseErr)
 					}
 					result = performBasicAnalysis(layer)
-					result.Error = fmt.Sprintf("parse error: %v", parseErr)
 				} else {
 					result = *aiResult
 					result.LayerName = layer.Name
@@ -329,14 +309,14 @@ func performBasicAnalysis(layer advisor.LayerInfo) advisor.LayerAnalysisResult {
 			Priority: "low",
 			Message:  "Layer has no packages defined",
 		})
-	case len(layer.Packages) > 50:
+	case len(layer.Packages) > LargeLayerThreshold:
 		result.Summary = fmt.Sprintf("Large layer with %d packages", len(layer.Packages))
 		result.Status = "warning"
 		result.WellOrganized = false
 		result.Recommendations = append(result.Recommendations, advisor.AnalysisRecommendation{
 			Type:     "best_practice",
 			Priority: "medium",
-			Message:  "Consider splitting into smaller, focused layers",
+			Message:  fmt.Sprintf("Consider splitting into smaller, focused layers (threshold: %d packages)", LargeLayerThreshold),
 		})
 	default:
 		result.Summary = fmt.Sprintf("%d packages", len(layer.Packages))

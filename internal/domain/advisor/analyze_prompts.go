@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+// MaxJSONResponseSize limits the size of JSON responses to prevent DoS attacks.
+// 1MB should be sufficient for any reasonable analysis response.
+const MaxJSONResponseSize = 1 << 20 // 1MB
+
 // LayerAnalysisSystemPrompt is the system prompt for layer analysis.
 const LayerAnalysisSystemPrompt = `You are a Preflight configuration expert that analyzes workstation setup layers.
 
@@ -59,6 +63,7 @@ type AnalysisRecommendation struct {
 }
 
 // LayerAnalysisResult represents the analysis result for a single layer.
+// Note: Error handling is done at the application layer, not in this domain model.
 type LayerAnalysisResult struct {
 	LayerName       string                   `json:"layer_name"`
 	Summary         string                   `json:"summary"`
@@ -66,7 +71,6 @@ type LayerAnalysisResult struct {
 	Recommendations []AnalysisRecommendation `json:"recommendations"`
 	PackageCount    int                      `json:"package_count"`
 	WellOrganized   bool                     `json:"well_organized"`
-	Error           string                   `json:"error,omitempty"`
 }
 
 // AnalysisReport represents the complete analysis report.
@@ -161,6 +165,11 @@ func BuildMultiLayerAnalysisPrompt(layers []LayerInfo) Prompt {
 
 // ParseLayerAnalysisResult parses AI response into a layer analysis result.
 func ParseLayerAnalysisResult(response string) (*LayerAnalysisResult, error) {
+	// Check response size to prevent DoS attacks
+	if len(response) > MaxJSONResponseSize {
+		return nil, fmt.Errorf("response too large: %d bytes (max %d)", len(response), MaxJSONResponseSize)
+	}
+
 	jsonStr, err := extractJSON(response)
 	if err != nil {
 		return nil, err

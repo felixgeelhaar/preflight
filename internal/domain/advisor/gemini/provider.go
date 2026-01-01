@@ -14,6 +14,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
@@ -49,13 +51,15 @@ var knownModels = map[string]bool{
 
 // Provider errors.
 var (
-	ErrNotConfigured = errors.New("gemini provider is not configured")
-	ErrEmptyAPIKey   = errors.New("API key is required")
-	ErrEmptyModel    = errors.New("model is required")
-	ErrInvalidModel  = errors.New("unknown model name")
-	ErrAPIError      = errors.New("gemini API error")
-	ErrRateLimit     = errors.New("rate limit exceeded")
-	ErrUnauthorized  = errors.New("unauthorized - check API key")
+	ErrNotConfigured   = errors.New("gemini provider is not configured")
+	ErrEmptyAPIKey     = errors.New("API key is required")
+	ErrEmptyModel      = errors.New("model is required")
+	ErrInvalidModel    = errors.New("unknown model name")
+	ErrAPIError        = errors.New("gemini API error")
+	ErrRateLimit       = errors.New("rate limit exceeded")
+	ErrUnauthorized    = errors.New("unauthorized - check API key")
+	ErrEmptyResponse   = errors.New("empty response from API")
+	ErrInvalidEndpoint = errors.New("invalid endpoint URL")
 )
 
 // API request types.
@@ -125,7 +129,82 @@ func (c Config) Validate() error {
 	if !IsKnownModel(c.Model) {
 		return fmt.Errorf("%w: %s", ErrInvalidModel, c.Model)
 	}
+	if c.Endpoint != "" {
+		if err := validateEndpoint(c.Endpoint); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+// validateEndpoint validates a custom endpoint URL for security.
+// It ensures HTTPS is used and prevents SSRF attacks.
+func validateEndpoint(endpoint string) error {
+	parsed, err := url.Parse(endpoint)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidEndpoint, err)
+	}
+
+	// Get the hostname without port
+	host := strings.ToLower(parsed.Hostname())
+
+	// Require HTTPS for security (except localhost for testing)
+	isHTTPS := parsed.Scheme == "https"
+	isLocalhostHTTP := parsed.Scheme == "http" && isLocalhost(host)
+	if !isHTTPS && !isLocalhostHTTP {
+		return fmt.Errorf("%w: HTTPS required for non-localhost endpoints", ErrInvalidEndpoint)
+	}
+
+	// Block potentially dangerous hosts (SSRF protection)
+	blockedHosts := []string{
+		"169.254.169.254",          // AWS metadata
+		"metadata.google.internal", // GCP metadata
+		"metadata.azure.com",       // Azure metadata
+	}
+	for _, blocked := range blockedHosts {
+		if host == blocked {
+			return fmt.Errorf("%w: blocked host for security", ErrInvalidEndpoint)
+		}
+	}
+
+	// Block private IP ranges (basic SSRF protection) - only for non-localhost
+	if !isLocalhost(host) && isPrivateIP(host) {
+		return fmt.Errorf("%w: private IP addresses not allowed", ErrInvalidEndpoint)
+	}
+
+	return nil
+}
+
+// isLocalhost checks if a host is localhost or loopback.
+func isLocalhost(host string) bool {
+	return host == "localhost" ||
+		host == "127.0.0.1" ||
+		host == "::1" ||
+		strings.HasPrefix(host, "127.")
+}
+
+// isPrivateIP checks if a host is a private IP address.
+func isPrivateIP(host string) bool {
+	// 10.0.0.0/8
+	if strings.HasPrefix(host, "10.") {
+		return true
+	}
+	// 192.168.0.0/16
+	if strings.HasPrefix(host, "192.168.") {
+		return true
+	}
+	// 172.16.0.0/12 (172.16.x.x - 172.31.x.x)
+	if strings.HasPrefix(host, "172.") {
+		parts := strings.Split(host, ".")
+		if len(parts) >= 2 {
+			// Check second octet is 16-31
+			secondOctet := parts[1]
+			if secondOctet >= "16" && secondOctet <= "31" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // IsKnownModel checks if a model name is in the known models list.
@@ -285,9 +364,17 @@ func (p *Provider) Complete(ctx context.Context, prompt advisor.Prompt) (advisor
 	}
 
 	// Extract text content from first candidate
-	var content string
-	if len(genResp.Candidates) > 0 && len(genResp.Candidates[0].Content.Parts) > 0 {
-		content = genResp.Candidates[0].Content.Parts[0].Text
+	// Explicitly handle empty response to avoid silent failures
+	if len(genResp.Candidates) == 0 {
+		return advisor.Response{}, fmt.Errorf("%w: no candidates returned", ErrEmptyResponse)
+	}
+	if len(genResp.Candidates[0].Content.Parts) == 0 {
+		return advisor.Response{}, fmt.Errorf("%w: no content parts in response", ErrEmptyResponse)
+	}
+
+	content := genResp.Candidates[0].Content.Parts[0].Text
+	if content == "" {
+		return advisor.Response{}, fmt.Errorf("%w: empty text content", ErrEmptyResponse)
 	}
 
 	return advisor.NewResponse(content, genResp.UsageMetadata.TotalTokenCount, genResp.ModelVersion), nil

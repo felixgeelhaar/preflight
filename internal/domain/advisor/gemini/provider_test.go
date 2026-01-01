@@ -343,3 +343,196 @@ func TestNewProviderWithConfig_DefaultTimeout(t *testing.T) {
 	assert.NotNil(t, provider)
 	// Should use DefaultTimeout
 }
+
+func TestProvider_Complete_EmptyResponse(t *testing.T) {
+	tests := []struct {
+		name     string
+		response generateResponse
+		errMsg   string
+	}{
+		{
+			name: "no candidates",
+			response: generateResponse{
+				Candidates: []candidate{},
+			},
+			errMsg: "no candidates returned",
+		},
+		{
+			name: "no content parts",
+			response: generateResponse{
+				Candidates: []candidate{
+					{
+						Content: content{
+							Parts: []part{},
+						},
+					},
+				},
+			},
+			errMsg: "no content parts",
+		},
+		{
+			name: "empty text content",
+			response: generateResponse{
+				Candidates: []candidate{
+					{
+						Content: content{
+							Parts: []part{{Text: ""}},
+						},
+					},
+				},
+			},
+			errMsg: "empty text content",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(tt.response)
+			}))
+			defer server.Close()
+
+			provider := &Provider{
+				apiKey:   "test-key",
+				model:    DefaultModel,
+				endpoint: server.URL,
+				client:   server.Client(),
+			}
+
+			prompt := advisor.NewPrompt("", "Hello")
+			_, err := provider.Complete(context.Background(), prompt)
+
+			assert.ErrorIs(t, err, ErrEmptyResponse)
+			assert.Contains(t, err.Error(), tt.errMsg)
+		})
+	}
+}
+
+func TestValidateEndpoint(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint string
+		wantErr  bool
+		errMsg   string
+	}{
+		{
+			name:     "valid HTTPS endpoint",
+			endpoint: "https://api.example.com",
+			wantErr:  false,
+		},
+		{
+			name:     "HTTP localhost allowed",
+			endpoint: "http://localhost:8080",
+			wantErr:  false,
+		},
+		{
+			name:     "HTTP 127.0.0.1 allowed",
+			endpoint: "http://127.0.0.1:8080",
+			wantErr:  false,
+		},
+		{
+			name:     "HTTP not allowed for remote",
+			endpoint: "http://api.example.com",
+			wantErr:  true,
+			errMsg:   "HTTPS required",
+		},
+		{
+			name:     "AWS metadata blocked",
+			endpoint: "https://169.254.169.254",
+			wantErr:  true,
+			errMsg:   "blocked host",
+		},
+		{
+			name:     "GCP metadata blocked",
+			endpoint: "https://metadata.google.internal",
+			wantErr:  true,
+			errMsg:   "blocked host",
+		},
+		{
+			name:     "private IP 10.x blocked",
+			endpoint: "https://10.0.0.1",
+			wantErr:  true,
+			errMsg:   "private IP",
+		},
+		{
+			name:     "private IP 192.168.x blocked",
+			endpoint: "https://192.168.1.1",
+			wantErr:  true,
+			errMsg:   "private IP",
+		},
+		{
+			name:     "private IP 172.16.x blocked",
+			endpoint: "https://172.16.0.1",
+			wantErr:  true,
+			errMsg:   "private IP",
+		},
+		{
+			name:     "invalid URL",
+			endpoint: "://invalid",
+			wantErr:  true,
+			errMsg:   "invalid endpoint",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateEndpoint(tt.endpoint)
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfig_Validate_Endpoint(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  Config
+		wantErr bool
+	}{
+		{
+			name: "valid config with custom HTTPS endpoint",
+			config: Config{
+				APIKey:   "test-key",
+				Model:    "gemini-2.0-flash",
+				Endpoint: "https://custom.api.com",
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid config with HTTP endpoint",
+			config: Config{
+				APIKey:   "test-key",
+				Model:    "gemini-2.0-flash",
+				Endpoint: "http://custom.api.com",
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid config with localhost HTTP",
+			config: Config{
+				APIKey:   "test-key",
+				Model:    "gemini-2.0-flash",
+				Endpoint: "http://localhost:8080",
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
