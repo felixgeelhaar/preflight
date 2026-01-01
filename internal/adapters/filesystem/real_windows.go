@@ -25,14 +25,14 @@ const (
 
 // REPARSE_DATA_BUFFER is the structure for mount point reparse data
 type REPARSE_DATA_BUFFER struct {
-	ReparseTag        uint32
-	ReparseDataLength uint16
-	Reserved          uint16
+	ReparseTag           uint32
+	ReparseDataLength    uint16
+	Reserved             uint16
 	SubstituteNameOffset uint16
 	SubstituteNameLength uint16
-	PrintNameOffset   uint16
-	PrintNameLength   uint16
-	PathBuffer        [1]uint16
+	PrintNameOffset      uint16
+	PrintNameLength      uint16
+	PathBuffer           [1]uint16
 }
 
 // IsJunction checks if a path is a junction point.

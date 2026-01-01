@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/felixgeelhaar/preflight/internal/adapters/command"
+	"github.com/felixgeelhaar/preflight/internal/adapters/filesystem"
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
-	"github.com/felixgeelhaar/preflight/internal/adapters/command"
-	"github.com/felixgeelhaar/preflight/internal/adapters/filesystem"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
 	"github.com/felixgeelhaar/preflight/internal/provider/git"
 	"github.com/felixgeelhaar/preflight/internal/testutil"
