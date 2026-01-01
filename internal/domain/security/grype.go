@@ -203,6 +203,14 @@ func (g *GrypeScanner) parseOutput(data []byte) (Vulnerabilities, int, error) {
 		return Vulnerabilities{}, 0, nil
 	}
 
+	// Grype may output warning/error messages before the JSON
+	// Find the start of the JSON object
+	jsonStart := bytes.Index(data, []byte("{"))
+	if jsonStart == -1 {
+		return Vulnerabilities{}, 0, nil
+	}
+	data = data[jsonStart:]
+
 	var output grypeOutput
 	if err := json.Unmarshal(data, &output); err != nil {
 		return nil, 0, err
