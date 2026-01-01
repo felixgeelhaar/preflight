@@ -335,3 +335,123 @@ func TestDefaultCaptureConfigs(t *testing.T) {
 		}
 	}
 }
+
+func TestDotfilesCapturer_BrokenSymlinks_SkipsAndReports(t *testing.T) {
+	t.Parallel()
+
+	homeDir := t.TempDir()
+	targetDir := t.TempDir()
+
+	// Create a directory with a broken symlink
+	zshDir := filepath.Join(homeDir, ".config", "zsh")
+	require.NoError(t, os.MkdirAll(zshDir, 0755))
+
+	// Create a valid file
+	require.NoError(t, os.WriteFile(filepath.Join(zshDir, "aliases.zsh"), []byte("# aliases"), 0644))
+
+	// Create a broken symlink (points to non-existent target)
+	brokenLink := filepath.Join(zshDir, "broken.zsh")
+	require.NoError(t, os.Symlink("/nonexistent/path/to/file.zsh", brokenLink))
+
+	fs := filesystem.NewRealFileSystem()
+	capturer := NewDotfilesCapturer(fs, homeDir, targetDir)
+
+	// Use a custom config that captures the zsh directory
+	capturer = capturer.WithConfigs([]DotfilesCaptureConfig{
+		{
+			Provider:    "shell",
+			SourcePaths: []string{"~/.config/zsh"},
+			TargetDir:   "shell",
+		},
+	})
+
+	result, err := capturer.Capture()
+	require.NoError(t, err, "capture should not fail on broken symlinks")
+	require.NotNil(t, result)
+
+	// Should have captured the valid file
+	assert.Positive(t, len(result.Dotfiles), "should capture valid files")
+
+	// Should report the broken symlink
+	assert.Len(t, result.BrokenSymlinks, 1, "should report broken symlink")
+	assert.Equal(t, brokenLink, result.BrokenSymlinks[0].Path)
+	assert.Equal(t, "/nonexistent/path/to/file.zsh", result.BrokenSymlinks[0].Target)
+
+	// Verify valid file was copied
+	assert.FileExists(t, filepath.Join(targetDir, "dotfiles", "shell", "aliases.zsh"))
+
+	// Verify broken symlink was NOT copied
+	assert.NoFileExists(t, filepath.Join(targetDir, "dotfiles", "shell", "broken.zsh"))
+}
+
+func TestDotfilesCapturer_BrokenSymlinks_SourcePath(t *testing.T) {
+	t.Parallel()
+
+	homeDir := t.TempDir()
+	targetDir := t.TempDir()
+
+	// Create a broken symlink as the source path itself
+	brokenSourceDir := filepath.Join(homeDir, ".config", "broken-app")
+	require.NoError(t, os.MkdirAll(filepath.Dir(brokenSourceDir), 0755))
+	require.NoError(t, os.Symlink("/nonexistent/config/dir", brokenSourceDir))
+
+	fs := filesystem.NewRealFileSystem()
+	capturer := NewDotfilesCapturer(fs, homeDir, targetDir)
+
+	// Use a custom config that points to the broken symlink
+	capturer = capturer.WithConfigs([]DotfilesCaptureConfig{
+		{
+			Provider:    "broken",
+			SourcePaths: []string{"~/.config/broken-app"},
+			TargetDir:   "broken",
+		},
+	})
+
+	result, err := capturer.Capture()
+	require.NoError(t, err, "capture should not fail when source path is broken symlink")
+	require.NotNil(t, result)
+
+	// Should report the broken symlink
+	assert.Len(t, result.BrokenSymlinks, 1, "should report broken source symlink")
+	assert.Equal(t, brokenSourceDir, result.BrokenSymlinks[0].Path)
+}
+
+func TestDotfilesCapturer_ValidSymlinks_Followed(t *testing.T) {
+	t.Parallel()
+
+	homeDir := t.TempDir()
+	targetDir := t.TempDir()
+
+	// Create actual content in a different location
+	actualDir := filepath.Join(homeDir, "actual-configs")
+	require.NoError(t, os.MkdirAll(actualDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(actualDir, "config.lua"), []byte("-- config"), 0644))
+
+	// Create a symlink that points to the actual content
+	configDir := filepath.Join(homeDir, ".config")
+	require.NoError(t, os.MkdirAll(configDir, 0755))
+	symlinkDir := filepath.Join(configDir, "app")
+	require.NoError(t, os.Symlink(actualDir, symlinkDir))
+
+	fs := filesystem.NewRealFileSystem()
+	capturer := NewDotfilesCapturer(fs, homeDir, targetDir)
+
+	capturer = capturer.WithConfigs([]DotfilesCaptureConfig{
+		{
+			Provider:    "app",
+			SourcePaths: []string{"~/.config/app"},
+			TargetDir:   "app",
+		},
+	})
+
+	result, err := capturer.Capture()
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Should capture the content through the valid symlink
+	assert.Positive(t, len(result.Dotfiles), "should capture files through valid symlinks")
+	assert.Empty(t, result.BrokenSymlinks, "should not report any broken symlinks")
+
+	// Verify content was captured
+	assert.FileExists(t, filepath.Join(targetDir, "dotfiles", "app", "config.lua"))
+}

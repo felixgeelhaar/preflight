@@ -37,6 +37,12 @@ type CapturedDotfile struct {
 	Size int64
 }
 
+// BrokenSymlink represents a broken symlink encountered during capture.
+type BrokenSymlink struct {
+	Path   string
+	Target string
+}
+
 // DotfilesCaptureResult holds the results of a dotfiles capture.
 type DotfilesCaptureResult struct {
 	// Dotfiles are the captured dotfile entries
@@ -47,6 +53,8 @@ type DotfilesCaptureResult struct {
 	Target string
 	// Warnings are any warnings encountered during capture
 	Warnings []string
+	// BrokenSymlinks are symlinks that point to non-existent targets
+	BrokenSymlinks []BrokenSymlink
 }
 
 // TotalSize returns the total size of all captured dotfiles.
@@ -208,12 +216,13 @@ func (c *DotfilesCapturer) Capture() (*DotfilesCaptureResult, error) {
 	}
 
 	for _, cfg := range c.configs {
-		dotfiles, warnings, err := c.captureProvider(cfg)
+		providerResult, err := c.captureProvider(cfg)
 		if err != nil {
 			return nil, err
 		}
-		result.Dotfiles = append(result.Dotfiles, dotfiles...)
-		result.Warnings = append(result.Warnings, warnings...)
+		result.Dotfiles = append(result.Dotfiles, providerResult.dotfiles...)
+		result.Warnings = append(result.Warnings, providerResult.warnings...)
+		result.BrokenSymlinks = append(result.BrokenSymlinks, providerResult.brokenSymlinks...)
 	}
 
 	return result, nil
@@ -223,15 +232,16 @@ func (c *DotfilesCapturer) Capture() (*DotfilesCaptureResult, error) {
 func (c *DotfilesCapturer) CaptureProvider(provider string) (*DotfilesCaptureResult, error) {
 	for _, cfg := range c.configs {
 		if cfg.Provider == provider {
-			dotfiles, warnings, err := c.captureProvider(cfg)
+			providerResult, err := c.captureProvider(cfg)
 			if err != nil {
 				return nil, err
 			}
 			return &DotfilesCaptureResult{
-				Dotfiles:  dotfiles,
-				TargetDir: c.getDotfilesDir(),
-				Target:    c.target,
-				Warnings:  warnings,
+				Dotfiles:       providerResult.dotfiles,
+				TargetDir:      c.getDotfilesDir(),
+				Target:         c.target,
+				Warnings:       providerResult.warnings,
+				BrokenSymlinks: providerResult.brokenSymlinks,
 			}, nil
 		}
 	}
@@ -249,10 +259,16 @@ func (c *DotfilesCapturer) getDotfilesDir() string {
 	return filepath.Join(c.targetDir, "dotfiles")
 }
 
+// captureProviderResult holds results from capturing a single provider.
+type captureProviderResult struct {
+	dotfiles       []CapturedDotfile
+	warnings       []string
+	brokenSymlinks []BrokenSymlink
+}
+
 // captureProvider captures dotfiles for a single provider configuration.
-func (c *DotfilesCapturer) captureProvider(cfg DotfilesCaptureConfig) ([]CapturedDotfile, []string, error) {
-	var dotfiles []CapturedDotfile
-	var warnings []string
+func (c *DotfilesCapturer) captureProvider(cfg DotfilesCaptureConfig) (*captureProviderResult, error) {
+	result := &captureProviderResult{}
 
 	destDir := filepath.Join(c.getDotfilesDir(), cfg.TargetDir)
 
@@ -260,50 +276,90 @@ func (c *DotfilesCapturer) captureProvider(cfg DotfilesCaptureConfig) ([]Capture
 		// Expand ~ to home directory
 		expandedPath := c.expandPath(sourcePath)
 
-		// Check if source exists
-		info, err := os.Stat(expandedPath)
+		// Use Lstat to not follow symlinks - detect broken symlinks at source level
+		info, err := os.Lstat(expandedPath)
 		if os.IsNotExist(err) {
 			continue // Skip non-existent paths
 		}
 		if err != nil {
-			warnings = append(warnings, "failed to stat "+sourcePath+": "+err.Error())
+			result.warnings = append(result.warnings, "failed to stat "+sourcePath+": "+err.Error())
 			continue
+		}
+
+		// Check if source path itself is a symlink
+		if info.Mode()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(expandedPath)
+			if err != nil {
+				result.warnings = append(result.warnings, "failed to read symlink "+sourcePath+": "+err.Error())
+				continue
+			}
+			// Check if target exists and resolve the symlink
+			resolvedPath, err := filepath.EvalSymlinks(expandedPath)
+			if err != nil {
+				result.brokenSymlinks = append(result.brokenSymlinks, BrokenSymlink{
+					Path:   expandedPath,
+					Target: target,
+				})
+				continue
+			}
+			// Valid symlink - use resolved path and get info of target
+			expandedPath = resolvedPath
+			info, err = os.Stat(expandedPath)
+			if err != nil {
+				result.warnings = append(result.warnings, "failed to stat symlink target "+sourcePath+": "+err.Error())
+				continue
+			}
 		}
 
 		if info.IsDir() {
 			// Capture directory recursively
-			captured, err := c.captureDirectory(cfg.Provider, expandedPath, destDir, cfg.ExcludePaths)
+			captured, brokenLinks, err := c.captureDirectory(cfg.Provider, expandedPath, destDir, cfg.ExcludePaths)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
-			dotfiles = append(dotfiles, captured...)
+			result.dotfiles = append(result.dotfiles, captured...)
+			result.brokenSymlinks = append(result.brokenSymlinks, brokenLinks...)
 		} else {
 			// Capture single file
 			captured, err := c.captureFile(cfg.Provider, expandedPath, destDir, filepath.Base(expandedPath))
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			if captured != nil {
-				dotfiles = append(dotfiles, *captured)
+				result.dotfiles = append(result.dotfiles, *captured)
 			}
 		}
 	}
 
-	return dotfiles, warnings, nil
+	return result, nil
 }
 
 // captureDirectory recursively captures a directory.
-func (c *DotfilesCapturer) captureDirectory(provider, sourceDir, destDir string, excludes []string) ([]CapturedDotfile, error) {
+func (c *DotfilesCapturer) captureDirectory(provider, sourceDir, destDir string, excludes []string) ([]CapturedDotfile, []BrokenSymlink, error) {
 	var dotfiles []CapturedDotfile
+	var brokenSymlinks []BrokenSymlink
 
 	// Ensure destination directory exists
 	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
+	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, walkErr error) error {
+		// Handle walk errors - often caused by broken symlinks
+		if walkErr != nil {
+			// Check if this is a broken symlink
+			linfo, lstatErr := os.Lstat(path)
+			if lstatErr == nil && linfo.Mode()&os.ModeSymlink != 0 {
+				// It's a symlink that couldn't be followed - broken symlink
+				target, _ := os.Readlink(path)
+				brokenSymlinks = append(brokenSymlinks, BrokenSymlink{
+					Path:   path,
+					Target: target,
+				})
+				return nil // Skip and continue
+			}
+			// Not a symlink issue, propagate the error
+			return walkErr
 		}
 
 		// Get relative path from source directory
@@ -323,6 +379,39 @@ func (c *DotfilesCapturer) captureDirectory(provider, sourceDir, destDir string,
 				return filepath.SkipDir
 			}
 			return nil
+		}
+
+		// Check if this is a symlink
+		linfo, err := os.Lstat(path)
+		if err != nil {
+			return err
+		}
+		if linfo.Mode()&os.ModeSymlink != 0 {
+			// It's a symlink - check if it's valid
+			target, readErr := os.Readlink(path)
+			if readErr != nil {
+				brokenSymlinks = append(brokenSymlinks, BrokenSymlink{Path: path, Target: ""})
+				return nil //nolint:nilerr // intentionally skipping broken symlinks
+			}
+			_, evalErr := filepath.EvalSymlinks(path)
+			if evalErr != nil {
+				// Broken symlink - skip it
+				brokenSymlinks = append(brokenSymlinks, BrokenSymlink{
+					Path:   path,
+					Target: target,
+				})
+				return nil //nolint:nilerr // intentionally skipping broken symlinks
+			}
+			// Valid symlink - get the actual info
+			var statErr error
+			info, statErr = os.Stat(path)
+			if statErr != nil {
+				brokenSymlinks = append(brokenSymlinks, BrokenSymlink{
+					Path:   path,
+					Target: target,
+				})
+				return nil //nolint:nilerr // intentionally skipping broken symlinks
+			}
 		}
 
 		destPath := filepath.Join(destDir, relPath)
@@ -361,7 +450,7 @@ func (c *DotfilesCapturer) captureDirectory(provider, sourceDir, destDir string,
 		return nil
 	})
 
-	return dotfiles, err
+	return dotfiles, brokenSymlinks, err
 }
 
 // captureFile captures a single file.

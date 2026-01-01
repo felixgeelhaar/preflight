@@ -201,7 +201,19 @@ func captureDotfiles() error {
 
 	// Print warnings
 	for _, warning := range result.Warnings {
-		fmt.Printf("Warning: %s\n", warning)
+		fmt.Printf("⚠ Warning: %s\n", warning)
+	}
+
+	// Print broken symlinks
+	if len(result.BrokenSymlinks) > 0 {
+		fmt.Printf("\n⚠ Skipped %d broken symlink(s):\n", len(result.BrokenSymlinks))
+		for _, bs := range result.BrokenSymlinks {
+			if bs.Target != "" {
+				fmt.Printf("  %s -> %s (target does not exist)\n", bs.Path, bs.Target)
+			} else {
+				fmt.Printf("  %s (broken symlink)\n", bs.Path)
+			}
+		}
 	}
 
 	if result.FileCount() > 0 {
