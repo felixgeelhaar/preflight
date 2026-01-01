@@ -123,3 +123,54 @@ func TestStepID_Provider(t *testing.T) {
 		}
 	}
 }
+
+func TestMustNewStepID(t *testing.T) {
+	t.Run("valid ID does not panic", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("MustNewStepID panicked unexpectedly: %v", r)
+			}
+		}()
+
+		id := MustNewStepID("brew:install:git")
+		if id.String() != "brew:install:git" {
+			t.Errorf("MustNewStepID returned wrong value: %q", id.String())
+		}
+	})
+
+	t.Run("invalid ID panics", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("MustNewStepID should have panicked for invalid ID")
+			}
+		}()
+
+		MustNewStepID("")
+	})
+
+	t.Run("invalid format panics", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("MustNewStepID should have panicked for invalid format")
+			}
+		}()
+
+		MustNewStepID("invalid id with spaces")
+	})
+}
+
+func TestStepID_IsZero(t *testing.T) {
+	t.Run("zero value is zero", func(t *testing.T) {
+		var id StepID
+		if !id.IsZero() {
+			t.Error("zero value StepID should return true for IsZero()")
+		}
+	})
+
+	t.Run("valid ID is not zero", func(t *testing.T) {
+		id, _ := NewStepID("brew:install:git")
+		if id.IsZero() {
+			t.Error("valid StepID should return false for IsZero()")
+		}
+	})
+}

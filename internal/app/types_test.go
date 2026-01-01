@@ -502,3 +502,138 @@ func TestDoctorReportWithPatches(t *testing.T) {
 		assert.Len(t, byLayer["layers/work.yaml"], 1)
 	})
 }
+
+func TestDoctorOptions_SecurityOptions(t *testing.T) {
+	t.Parallel()
+
+	t.Run("with security enabled", func(t *testing.T) {
+		t.Parallel()
+		opts := NewDoctorOptions("", "").WithSecurity(true)
+		assert.True(t, opts.SecurityEnabled)
+	})
+
+	t.Run("with security scanner", func(t *testing.T) {
+		t.Parallel()
+		opts := NewDoctorOptions("", "").WithSecurityScanner("grype")
+		assert.Equal(t, "grype", opts.SecurityScanner)
+	})
+
+	t.Run("with security severity", func(t *testing.T) {
+		t.Parallel()
+		opts := NewDoctorOptions("", "").WithSecuritySeverity("high")
+		assert.Equal(t, "high", opts.SecuritySeverity)
+	})
+
+	t.Run("with security ignore", func(t *testing.T) {
+		t.Parallel()
+		opts := NewDoctorOptions("", "").WithSecurityIgnore([]string{"CVE-2024-1234"})
+		assert.Equal(t, []string{"CVE-2024-1234"}, opts.SecurityIgnore)
+	})
+
+	t.Run("with security fail on", func(t *testing.T) {
+		t.Parallel()
+		opts := NewDoctorOptions("", "").WithSecurityFailOn("critical")
+		assert.Equal(t, "critical", opts.SecurityFailOn)
+	})
+
+	t.Run("with outdated enabled", func(t *testing.T) {
+		t.Parallel()
+		opts := NewDoctorOptions("", "").WithOutdated(true)
+		assert.True(t, opts.OutdatedEnabled)
+	})
+
+	t.Run("with outdated max age", func(t *testing.T) {
+		t.Parallel()
+		opts := NewDoctorOptions("", "").WithOutdatedMaxAge(90 * 24 * time.Hour)
+		assert.Equal(t, 90*24*time.Hour, opts.OutdatedMaxAge)
+	})
+
+	t.Run("with deprecated enabled", func(t *testing.T) {
+		t.Parallel()
+		opts := NewDoctorOptions("", "").WithDeprecated(true)
+		assert.True(t, opts.DeprecatedEnabled)
+	})
+
+	t.Run("with quick mode", func(t *testing.T) {
+		t.Parallel()
+		opts := NewDoctorOptions("", "").
+			WithSecurity(true).
+			WithOutdated(true).
+			WithQuick(true)
+		assert.True(t, opts.Quick)
+		assert.False(t, opts.SecurityEnabled)
+		assert.False(t, opts.OutdatedEnabled)
+	})
+}
+
+func TestDoctorReport_SecurityHelpers(t *testing.T) {
+	t.Parallel()
+
+	t.Run("no security issues by default", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{}
+		assert.False(t, report.HasSecurityIssues())
+		assert.Equal(t, 0, report.SecurityVulnerabilityCount())
+		assert.False(t, report.HasCriticalVulnerabilities())
+	})
+
+	t.Run("no outdated packages by default", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{}
+		assert.False(t, report.HasOutdatedPackages())
+		assert.Equal(t, 0, report.OutdatedCount())
+	})
+
+	t.Run("no deprecated packages by default", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{}
+		assert.False(t, report.HasDeprecatedPackages())
+		assert.Equal(t, 0, report.DeprecatedCount())
+	})
+
+	t.Run("total health issues empty report", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{}
+		assert.Equal(t, 0, report.TotalHealthIssues())
+	})
+
+	t.Run("has outdated packages", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{
+			OutdatedPackages: []OutdatedPackage{
+				{Name: "git", CurrentVersion: "2.40.0", LatestVersion: "2.43.0"},
+			},
+		}
+		assert.True(t, report.HasOutdatedPackages())
+		assert.Equal(t, 1, report.OutdatedCount())
+	})
+
+	t.Run("has deprecated packages", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{
+			DeprecatedPackages: []DeprecatedPackage{
+				{Name: "python@2", Reason: "deprecated"},
+			},
+		}
+		assert.True(t, report.HasDeprecatedPackages())
+		assert.Equal(t, 1, report.DeprecatedCount())
+	})
+
+	t.Run("total health issues with all types", func(t *testing.T) {
+		t.Parallel()
+		report := DoctorReport{
+			Issues: []DoctorIssue{
+				{Severity: SeverityError, Message: "test"},
+			},
+			OutdatedPackages: []OutdatedPackage{
+				{Name: "git"},
+				{Name: "curl"},
+			},
+			DeprecatedPackages: []DeprecatedPackage{
+				{Name: "python@2"},
+			},
+		}
+		// 1 issue + 2 outdated + 1 deprecated = 4
+		assert.Equal(t, 4, report.TotalHealthIssues())
+	})
+}
