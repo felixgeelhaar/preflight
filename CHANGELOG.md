@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.4.1] - 2026-01-01
+
+### Fixed
+
+- **Broken Symlink Handling** (#23): Config capture no longer fails on broken symlinks
+  - Broken symlinks are now skipped with a warning instead of failing capture
+  - Displays list of skipped broken symlinks with their target paths
+  - Valid symlinks are properly followed and their contents captured
+
 ## [4.4.0] - 2026-01-01
 
 ### Added
