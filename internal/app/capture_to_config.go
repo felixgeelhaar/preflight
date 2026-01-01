@@ -1,10 +1,13 @@
 package app
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -231,6 +234,10 @@ func (g *CaptureConfigGenerator) addProviderConfigToLayer(layer *captureLayerYAM
 		}
 	case "runtime":
 		layer.Runtime = g.generateRuntimeFromCapture(items)
+	case "nvim":
+		layer.Nvim = g.generateNvimFromCapture(items)
+	case "ssh":
+		layer.SSH = g.generateSSHFromCapture(items)
 	}
 }
 
@@ -377,8 +384,18 @@ func (g *CaptureConfigGenerator) generateProviderLayerIfSupported(name, provider
 		}
 	case "runtime":
 		layer.Runtime = g.generateRuntimeFromCapture(items)
+	case "nvim":
+		layer.Nvim = g.generateNvimFromCapture(items)
+		if layer.Nvim == nil {
+			return false, nil
+		}
+	case "ssh":
+		layer.SSH = g.generateSSHFromCapture(items)
+		if layer.SSH == nil {
+			return false, nil
+		}
 	default:
-		// Provider not supported for layer generation (e.g., ssh, nvim)
+		// Provider not supported for layer generation
 		return false, nil
 	}
 
@@ -475,6 +492,16 @@ func (g *CaptureConfigGenerator) generateLayerFromCapture(findings *CaptureFindi
 	// Generate runtime section
 	if runtimeItems, ok := byProvider["runtime"]; ok && len(runtimeItems) > 0 {
 		layer.Runtime = g.generateRuntimeFromCapture(runtimeItems)
+	}
+
+	// Generate nvim section
+	if nvimItems, ok := byProvider["nvim"]; ok && len(nvimItems) > 0 {
+		layer.Nvim = g.generateNvimFromCapture(nvimItems)
+	}
+
+	// Generate ssh section
+	if sshItems, ok := byProvider["ssh"]; ok && len(sshItems) > 0 {
+		layer.SSH = g.generateSSHFromCapture(sshItems)
 	}
 
 	data, err := yaml.Marshal(layer)
@@ -584,6 +611,395 @@ func (g *CaptureConfigGenerator) generateRuntimeFromCapture(items []CapturedItem
 	return runtime
 }
 
+func (g *CaptureConfigGenerator) generateNvimFromCapture(items []CapturedItem) *captureNvimYAML {
+	if len(items) == 0 {
+		return nil
+	}
+
+	nvim := &captureNvimYAML{}
+
+	for _, item := range items {
+		switch item.Name {
+		case "config":
+			if configPath, ok := item.Value.(string); ok {
+				nvim.ConfigPath = configPath
+				nvim.Preset = detectNvimPreset(configPath)
+				nvim.PluginManager = detectPluginManager(configPath)
+				nvim.ConfigManaged = isGitManaged(configPath)
+			}
+		case "lazy-lock.json":
+			if lockPath, ok := item.Value.(string); ok {
+				nvim.PluginCount = countLazyPlugins(lockPath)
+				if nvim.PluginManager == "" {
+					nvim.PluginManager = "lazy.nvim"
+				}
+			}
+		case "packer_compiled.lua":
+			if nvim.PluginManager == "" {
+				nvim.PluginManager = "packer"
+			}
+		case ".vimrc":
+			if nvim.Preset == "" {
+				nvim.Preset = "legacy"
+			}
+		}
+	}
+
+	// Set default preset if we have a config but couldn't detect type
+	if nvim.ConfigPath != "" && nvim.Preset == "" {
+		nvim.Preset = "custom"
+	}
+
+	return nvim
+}
+
+// detectNvimPreset checks for known distribution markers.
+func detectNvimPreset(configPath string) string {
+	// Check for LazyVim
+	lazyVimMarker := filepath.Join(configPath, "lazyvim.json")
+	if _, err := os.Stat(lazyVimMarker); err == nil {
+		return "lazyvim"
+	}
+
+	// Check for LazyVim in lazy-lock.json
+	lazyLock := filepath.Join(configPath, "lazy-lock.json")
+	if data, err := os.ReadFile(lazyLock); err == nil {
+		if strings.Contains(string(data), "LazyVim") {
+			return "lazyvim"
+		}
+	}
+
+	// Check for NvChad
+	nvChadMarker := filepath.Join(configPath, "lua", "core")
+	customDir := filepath.Join(configPath, "lua", "custom")
+	if _, err := os.Stat(nvChadMarker); err == nil {
+		if _, err := os.Stat(customDir); err == nil {
+			return "nvchad"
+		}
+	}
+
+	// Check for AstroNvim
+	astroMarker := filepath.Join(configPath, "lua", "astronvim")
+	if _, err := os.Stat(astroMarker); err == nil {
+		return "astronvim"
+	}
+
+	// Check for LunarVim (usually at ~/.local/share/lunarvim)
+	if strings.Contains(configPath, "lvim") || strings.Contains(configPath, "lunarvim") {
+		return "lunarvim"
+	}
+
+	return "custom"
+}
+
+// detectPluginManager checks what plugin manager is used.
+func detectPluginManager(configPath string) string {
+	// Check for lazy.nvim
+	lazyLock := filepath.Join(configPath, "lazy-lock.json")
+	if _, err := os.Stat(lazyLock); err == nil {
+		return "lazy.nvim"
+	}
+
+	// Check for packer
+	packerCompiled := filepath.Join(configPath, "plugin", "packer_compiled.lua")
+	if _, err := os.Stat(packerCompiled); err == nil {
+		return "packer"
+	}
+
+	// Check in init.lua for plugin manager references
+	initLua := filepath.Join(configPath, "init.lua")
+	if data, err := os.ReadFile(initLua); err == nil {
+		content := string(data)
+		if strings.Contains(content, "lazy.nvim") || strings.Contains(content, "folke/lazy") {
+			return "lazy.nvim"
+		}
+		if strings.Contains(content, "packer") || strings.Contains(content, "wbthomason/packer") {
+			return "packer"
+		}
+		if strings.Contains(content, "vim-plug") || strings.Contains(content, "junegunn/vim-plug") {
+			return "vim-plug"
+		}
+	}
+
+	return ""
+}
+
+// countLazyPlugins counts plugins in lazy-lock.json.
+func countLazyPlugins(lockPath string) int {
+	data, err := os.ReadFile(lockPath)
+	if err != nil {
+		return 0
+	}
+
+	var plugins map[string]interface{}
+	if err := json.Unmarshal(data, &plugins); err != nil {
+		return 0
+	}
+
+	return len(plugins)
+}
+
+// isGitManaged checks if a directory is under git version control.
+func isGitManaged(path string) bool {
+	gitDir := filepath.Join(path, ".git")
+	if info, err := os.Stat(gitDir); err == nil {
+		return info.IsDir()
+	}
+	return false
+}
+
+func (g *CaptureConfigGenerator) generateSSHFromCapture(items []CapturedItem) *captureSSHYAML {
+	if len(items) == 0 {
+		return nil
+	}
+
+	ssh := &captureSSHYAML{}
+
+	for _, item := range items {
+		if item.Name == "config" {
+			if configPath, ok := item.Value.(string); ok {
+				ssh.ConfigPath = configPath
+				hosts, defaults := parseSSHConfig(configPath)
+				ssh.Hosts = hosts
+				ssh.Defaults = defaults
+			}
+		}
+	}
+
+	// Detect SSH keys
+	if ssh.ConfigPath != "" {
+		sshDir := filepath.Dir(ssh.ConfigPath)
+		ssh.Keys = detectSSHKeys(sshDir)
+	}
+
+	if ssh.ConfigPath == "" && len(ssh.Hosts) == 0 && len(ssh.Keys) == 0 {
+		return nil
+	}
+
+	return ssh
+}
+
+// parseSSHConfig parses ~/.ssh/config into hosts and defaults.
+func parseSSHConfig(configPath string) ([]captureSSHHostYAML, *captureSSHDefaults) {
+	file, err := os.Open(configPath)
+	if err != nil {
+		return nil, nil
+	}
+	defer func() { _ = file.Close() }()
+
+	var hosts []captureSSHHostYAML
+	defaults := &captureSSHDefaults{}
+	var currentHost *captureSSHHostYAML
+
+	scanner := bufio.NewScanner(file)
+	inGlobalSection := true
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Parse key-value pairs
+		parts := strings.SplitN(line, " ", 2)
+		if len(parts) < 2 {
+			parts = strings.SplitN(line, "\t", 2)
+			if len(parts) < 2 {
+				continue
+			}
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		// Handle Host directive
+		if strings.EqualFold(key, "Host") {
+			// Save previous host if exists
+			if currentHost != nil {
+				hosts = append(hosts, *currentHost)
+			}
+
+			// Skip wildcard patterns for now
+			if strings.Contains(value, "*") {
+				currentHost = nil
+				continue
+			}
+
+			inGlobalSection = false
+			currentHost = &captureSSHHostYAML{
+				Name: value,
+			}
+			continue
+		}
+
+		// Handle options
+		if inGlobalSection {
+			// Global defaults
+			switch strings.ToLower(key) {
+			case "addkeystoagent":
+				defaults.AddKeysToAgent = value
+			case "usekeychain":
+				defaults.UseKeychain = value
+			case "identitiesonly":
+				defaults.IdentitiesOnly = value
+			case "serveraliveinterval":
+				defaults.ServerAliveInterval = value
+			}
+		} else if currentHost != nil {
+			// Host-specific options
+			switch strings.ToLower(key) {
+			case "hostname":
+				currentHost.HostName = value
+			case "user":
+				currentHost.User = value
+			case "identityfile":
+				currentHost.IdentityFile = value
+			case "port":
+				currentHost.Port = value
+			}
+		}
+	}
+
+	// Don't forget the last host
+	if currentHost != nil {
+		hosts = append(hosts, *currentHost)
+	}
+
+	// Return nil defaults if empty
+	if defaults.AddKeysToAgent == "" && defaults.UseKeychain == "" &&
+		defaults.IdentitiesOnly == "" && defaults.ServerAliveInterval == "" {
+		defaults = nil
+	}
+
+	return hosts, defaults
+}
+
+// detectSSHKeys finds SSH key files in the .ssh directory.
+func detectSSHKeys(sshDir string) []captureSSHKeyYAML {
+	entries, err := os.ReadDir(sshDir)
+	if err != nil {
+		return nil
+	}
+
+	keys := make([]captureSSHKeyYAML, 0, len(entries))
+	seen := make(map[string]bool)
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		name := entry.Name()
+
+		// Skip known non-key files
+		if name == "config" || name == "known_hosts" || name == "authorized_keys" ||
+			strings.HasSuffix(name, ".pub") {
+			continue
+		}
+
+		// Check if this looks like a private key
+		keyPath := filepath.Join(sshDir, name)
+		if !looksLikePrivateKey(keyPath) {
+			continue
+		}
+
+		// Avoid duplicates (e.g., if we process both id_rsa and id_rsa.pub)
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+
+		key := captureSSHKeyYAML{
+			Name: name,
+			Type: detectKeyType(keyPath),
+		}
+
+		// Check for passphrase by looking at the key file header
+		key.HasPassphrase = keyHasPassphrase(keyPath)
+
+		// Try to get comment from public key
+		pubKeyPath := keyPath + ".pub"
+		if data, err := os.ReadFile(pubKeyPath); err == nil {
+			parts := strings.Fields(string(data))
+			if len(parts) >= 3 {
+				key.Comment = parts[2]
+			}
+		}
+
+		keys = append(keys, key)
+	}
+
+	return keys
+}
+
+// looksLikePrivateKey checks if a file appears to be an SSH private key.
+func looksLikePrivateKey(path string) bool {
+	file, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer func() { _ = file.Close() }()
+
+	// Read first line
+	scanner := bufio.NewScanner(file)
+	if scanner.Scan() {
+		line := scanner.Text()
+		return strings.Contains(line, "PRIVATE KEY")
+	}
+	return false
+}
+
+// detectKeyType determines the type of SSH key.
+func detectKeyType(path string) string {
+	file, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = file.Close() }()
+
+	scanner := bufio.NewScanner(file)
+	if scanner.Scan() {
+		line := scanner.Text()
+		switch {
+		case strings.Contains(line, "OPENSSH"):
+			// Modern OpenSSH format - check public key for type
+			pubKeyPath := path + ".pub"
+			if data, err := os.ReadFile(pubKeyPath); err == nil {
+				content := string(data)
+				if strings.HasPrefix(content, "ssh-ed25519") {
+					return "ed25519"
+				}
+				if strings.HasPrefix(content, "ssh-rsa") {
+					return "rsa"
+				}
+				if strings.HasPrefix(content, "ecdsa-") {
+					return "ecdsa"
+				}
+			}
+			return "ed25519" // Default for modern keys
+		case strings.Contains(line, "RSA"):
+			return "rsa"
+		case strings.Contains(line, "EC"):
+			return "ecdsa"
+		case strings.Contains(line, "DSA"):
+			return "dsa"
+		}
+	}
+	return ""
+}
+
+// keyHasPassphrase checks if a private key is encrypted.
+func keyHasPassphrase(path string) bool {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	content := string(data)
+	return strings.Contains(content, "ENCRYPTED")
+}
+
 // YAML structure types for marshaling
 
 type captureManifestYAML struct {
@@ -602,6 +1018,8 @@ type captureLayerYAML struct {
 	Shell    *captureShellYAML    `yaml:"shell,omitempty"`
 	VSCode   *captureVSCodeYAML   `yaml:"vscode,omitempty"`
 	Runtime  *captureRuntimeYAML  `yaml:"runtime,omitempty"`
+	Nvim     *captureNvimYAML     `yaml:"nvim,omitempty"`
+	SSH      *captureSSHYAML      `yaml:"ssh,omitempty"`
 }
 
 type capturePackagesYAML struct {
@@ -656,4 +1074,45 @@ type captureRuntimeYAML struct {
 type captureRuntimeToolYAML struct {
 	Name    string `yaml:"name"`
 	Version string `yaml:"version,omitempty"`
+}
+
+// Nvim YAML types
+
+type captureNvimYAML struct {
+	Preset        string `yaml:"preset,omitempty"`         // lazyvim, nvchad, astrovim, custom
+	ConfigPath    string `yaml:"config_path,omitempty"`    // Path to config directory
+	PluginManager string `yaml:"plugin_manager,omitempty"` // lazy.nvim, packer, vim-plug
+	PluginCount   int    `yaml:"plugin_count,omitempty"`   // Number of plugins detected
+	ConfigManaged bool   `yaml:"config_managed,omitempty"` // Config is under version control
+}
+
+// SSH YAML types
+
+type captureSSHYAML struct {
+	ConfigPath string               `yaml:"config_path,omitempty"` // Path to SSH config
+	Defaults   *captureSSHDefaults  `yaml:"defaults,omitempty"`    // Global SSH options
+	Hosts      []captureSSHHostYAML `yaml:"hosts,omitempty"`       // Host configurations
+	Keys       []captureSSHKeyYAML  `yaml:"keys,omitempty"`        // Key references (never content)
+}
+
+type captureSSHDefaults struct {
+	AddKeysToAgent      string `yaml:"AddKeysToAgent,omitempty"`
+	UseKeychain         string `yaml:"UseKeychain,omitempty"`
+	IdentitiesOnly      string `yaml:"IdentitiesOnly,omitempty"`
+	ServerAliveInterval string `yaml:"ServerAliveInterval,omitempty"`
+}
+
+type captureSSHHostYAML struct {
+	Name         string `yaml:"name"`                    // Host alias
+	HostName     string `yaml:"hostname,omitempty"`      // Actual hostname (may be redacted)
+	User         string `yaml:"user,omitempty"`          // Username
+	IdentityFile string `yaml:"identity_file,omitempty"` // Path to key file
+	Port         string `yaml:"port,omitempty"`          // Port if non-standard
+}
+
+type captureSSHKeyYAML struct {
+	Name          string `yaml:"name"`                     // Key filename
+	Type          string `yaml:"type,omitempty"`           // ed25519, rsa, ecdsa
+	HasPassphrase bool   `yaml:"has_passphrase,omitempty"` // Whether key is encrypted
+	Comment       string `yaml:"comment,omitempty"`        // Key comment/email
 }

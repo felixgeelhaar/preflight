@@ -526,3 +526,311 @@ func TestCaptureConfigGenerator_SmartSplit(t *testing.T) {
 		assert.Contains(t, string(content), "ms-python.python")
 	})
 }
+
+func TestCaptureConfigGenerator_NvimLayer(t *testing.T) {
+	t.Parallel()
+
+	t.Run("generates nvim config from capture", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		// Create a fake nvim config directory
+		nvimDir := filepath.Join(tmpDir, "nvim-config")
+		require.NoError(t, os.MkdirAll(nvimDir, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(nvimDir, "init.lua"), []byte("-- init"), 0o644))
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "nvim", Name: "config", Value: nvimDir, CapturedAt: time.Now()},
+			},
+			Providers:  []string{"nvim"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Read layer content
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Verify nvim config
+		assert.Contains(t, string(content), "nvim:")
+		assert.Contains(t, string(content), "preset: custom")
+		assert.Contains(t, string(content), "config_path:")
+	})
+
+	t.Run("detects lazyvim preset", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		// Create a fake LazyVim config
+		nvimDir := filepath.Join(tmpDir, "nvim-config")
+		require.NoError(t, os.MkdirAll(nvimDir, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(nvimDir, "lazyvim.json"), []byte("{}"), 0o644))
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "nvim", Name: "config", Value: nvimDir, CapturedAt: time.Now()},
+			},
+			Providers:  []string{"nvim"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		assert.Contains(t, string(content), "preset: lazyvim")
+	})
+
+	t.Run("counts plugins from lazy-lock.json", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		// Create a fake config with lazy-lock.json
+		nvimDir := filepath.Join(tmpDir, "nvim-config")
+		require.NoError(t, os.MkdirAll(nvimDir, 0o755))
+
+		lazyLock := `{"plugin1": {}, "plugin2": {}, "plugin3": {}}`
+		require.NoError(t, os.WriteFile(filepath.Join(nvimDir, "lazy-lock.json"), []byte(lazyLock), 0o644))
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "nvim", Name: "config", Value: nvimDir, CapturedAt: time.Now()},
+				{Provider: "nvim", Name: "lazy-lock.json", Value: filepath.Join(nvimDir, "lazy-lock.json"), CapturedAt: time.Now()},
+			},
+			Providers:  []string{"nvim"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		assert.Contains(t, string(content), "plugin_manager: lazy.nvim")
+		assert.Contains(t, string(content), "plugin_count: 3")
+	})
+
+	t.Run("detects git-managed config", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		// Create a fake git-managed config
+		nvimDir := filepath.Join(tmpDir, "nvim-config")
+		require.NoError(t, os.MkdirAll(filepath.Join(nvimDir, ".git"), 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(nvimDir, "init.lua"), []byte("-- init"), 0o644))
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "nvim", Name: "config", Value: nvimDir, CapturedAt: time.Now()},
+			},
+			Providers:  []string{"nvim"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		assert.Contains(t, string(content), "config_managed: true")
+	})
+
+	t.Run("smart split creates nvim layer", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		nvimDir := filepath.Join(tmpDir, "nvim-config")
+		require.NoError(t, os.MkdirAll(nvimDir, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(nvimDir, "init.lua"), []byte("-- init"), 0o644))
+
+		generator := NewCaptureConfigGenerator(tmpDir).WithSmartSplit(true)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "nvim", Name: "config", Value: nvimDir, CapturedAt: time.Now()},
+			},
+			Providers:  []string{"nvim"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Should create nvim.yaml layer
+		layerPath := filepath.Join(tmpDir, "layers", "nvim.yaml")
+		assert.FileExists(t, layerPath)
+
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+		assert.Contains(t, string(content), "nvim:")
+		assert.Contains(t, string(content), "preset: custom")
+	})
+}
+
+func TestCaptureConfigGenerator_SSHLayer(t *testing.T) {
+	t.Parallel()
+
+	t.Run("generates ssh config from capture", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		// Create a fake SSH config
+		sshDir := filepath.Join(tmpDir, ".ssh")
+		require.NoError(t, os.MkdirAll(sshDir, 0o700))
+
+		sshConfig := `Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519
+
+Host work
+    HostName work.example.com
+    User developer
+    Port 2222
+`
+		require.NoError(t, os.WriteFile(filepath.Join(sshDir, "config"), []byte(sshConfig), 0o600))
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "ssh", Name: "config", Value: filepath.Join(sshDir, "config"), CapturedAt: time.Now()},
+			},
+			Providers:  []string{"ssh"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Verify SSH config structure
+		assert.Contains(t, string(content), "ssh:")
+		assert.Contains(t, string(content), "hosts:")
+		assert.Contains(t, string(content), "name: github.com")
+		assert.Contains(t, string(content), "name: work")
+		assert.Contains(t, string(content), "hostname: work.example.com")
+		assert.Contains(t, string(content), "port: \"2222\"")
+	})
+
+	t.Run("captures ssh defaults", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		sshDir := filepath.Join(tmpDir, ".ssh")
+		require.NoError(t, os.MkdirAll(sshDir, 0o700))
+
+		sshConfig := `AddKeysToAgent yes
+UseKeychain yes
+ServerAliveInterval 60
+
+Host github.com
+    User git
+`
+		require.NoError(t, os.WriteFile(filepath.Join(sshDir, "config"), []byte(sshConfig), 0o600))
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "ssh", Name: "config", Value: filepath.Join(sshDir, "config"), CapturedAt: time.Now()},
+			},
+			Providers:  []string{"ssh"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		assert.Contains(t, string(content), "defaults:")
+		assert.Contains(t, string(content), "AddKeysToAgent: \"yes\"")
+		assert.Contains(t, string(content), "UseKeychain: \"yes\"")
+		assert.Contains(t, string(content), "ServerAliveInterval: \"60\"")
+	})
+
+	t.Run("detects ssh keys", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		sshDir := filepath.Join(tmpDir, ".ssh")
+		require.NoError(t, os.MkdirAll(sshDir, 0o700))
+
+		// Create fake SSH key files
+		privateKey := `-----BEGIN OPENSSH PRIVATE KEY-----
+fake private key content
+-----END OPENSSH PRIVATE KEY-----`
+		require.NoError(t, os.WriteFile(filepath.Join(sshDir, "id_ed25519"), []byte(privateKey), 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(sshDir, "id_ed25519.pub"), []byte("ssh-ed25519 AAAA... test@example.com"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(sshDir, "config"), []byte("Host *\n    AddKeysToAgent yes"), 0o600))
+
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "ssh", Name: "config", Value: filepath.Join(sshDir, "config"), CapturedAt: time.Now()},
+			},
+			Providers:  []string{"ssh"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		assert.Contains(t, string(content), "keys:")
+		assert.Contains(t, string(content), "name: id_ed25519")
+		assert.Contains(t, string(content), "type: ed25519")
+		assert.Contains(t, string(content), "comment: test@example.com")
+	})
+
+	t.Run("smart split creates ssh layer", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		sshDir := filepath.Join(tmpDir, ".ssh")
+		require.NoError(t, os.MkdirAll(sshDir, 0o700))
+		require.NoError(t, os.WriteFile(filepath.Join(sshDir, "config"), []byte("Host github.com\n    User git"), 0o600))
+
+		generator := NewCaptureConfigGenerator(tmpDir).WithSmartSplit(true)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "ssh", Name: "config", Value: filepath.Join(sshDir, "config"), CapturedAt: time.Now()},
+			},
+			Providers:  []string{"ssh"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Should create ssh.yaml layer
+		layerPath := filepath.Join(tmpDir, "layers", "ssh.yaml")
+		assert.FileExists(t, layerPath)
+
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+		assert.Contains(t, string(content), "ssh:")
+		assert.Contains(t, string(content), "hosts:")
+	})
+}
