@@ -235,7 +235,8 @@ targets:
 }
 
 func TestRepoClone_DefaultPath(t *testing.T) {
-	t.Parallel()
+	// NOTE: Cannot use t.Parallel() because os.Chdir affects all goroutines
+	// and causes race conditions with other parallel tests.
 
 	// Save and restore cwd
 	origDir, err := os.Getwd()
