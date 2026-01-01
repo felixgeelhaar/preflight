@@ -92,14 +92,18 @@ func (g *CaptureConfigGenerator) generateSmartSplitLayers(ctx context.Context, f
 	// Get brew items for categorization
 	byProvider := findings.ItemsByProvider()
 	brewItems := byProvider["brew"]
+	brewCasks := byProvider["brew-cask"]
 
 	// Provider strategy groups by provider name directly
 	if g.splitStrategy == SplitByProvider {
 		return g.generateProviderSplitLayers(findings, target)
 	}
 
-	// Categorize brew items
-	categorized := categorizer.Categorize(brewItems)
+	// Categorize brew items (formulae and casks together)
+	allBrewItems := make([]CapturedItem, 0, len(brewItems)+len(brewCasks))
+	allBrewItems = append(allBrewItems, brewItems...)
+	allBrewItems = append(allBrewItems, brewCasks...)
+	categorized := categorizer.Categorize(allBrewItems)
 
 	// Use AI to categorize remaining items if available
 	if g.aiCategorizer != nil && len(categorized.Uncategorized) > 0 {
@@ -111,8 +115,8 @@ func (g *CaptureConfigGenerator) generateSmartSplitLayers(ctx context.Context, f
 
 	categorized.SortItemsAlphabetically()
 
-	// Collect layer names for manifest
-	layerNames := make([]string, 0, len(categorized.LayerOrder))
+	// Track created layers to avoid duplicates
+	createdLayers := make(map[string]bool)
 
 	// Generate a layer file for each category with brew items
 	for _, layerName := range categorized.LayerOrder {
@@ -121,24 +125,38 @@ func (g *CaptureConfigGenerator) generateSmartSplitLayers(ctx context.Context, f
 			continue
 		}
 
-		if err := g.generateCategoryLayer(layerName, items, categorizer.GetLayerDescription(layerName)); err != nil {
+		if err := g.generateCategoryLayerWithCasks(layerName, items, categorizer.GetLayerDescription(layerName)); err != nil {
 			return fmt.Errorf("failed to generate layer %s: %w", layerName, err)
 		}
-		layerNames = append(layerNames, layerName)
+		createdLayers[layerName] = true
 	}
 
 	// Handle non-brew providers (git, shell, vscode, runtime) in separate layers
+	// Only add if the layer doesn't already exist from brew categorization
 	for provider, items := range byProvider {
-		if provider == "brew" || len(items) == 0 {
+		if provider == "brew" || provider == "brew-cask" || len(items) == 0 {
 			continue
 		}
 
 		layerName := provider
-		if err := g.generateProviderLayer(layerName, provider, items); err != nil {
+
+		// Skip if this layer already exists from brew categorization
+		if createdLayers[layerName] {
+			continue
+		}
+
+		// Try to generate the layer; only add if successful
+		created, err := g.generateProviderLayerIfSupported(layerName, provider, items)
+		if err != nil {
 			return fmt.Errorf("failed to generate layer %s: %w", layerName, err)
 		}
-		layerNames = append(layerNames, layerName)
+		if created {
+			createdLayers[layerName] = true
+		}
 	}
+
+	// Build ordered layer list from created layers
+	layerNames := g.buildOrderedLayerList(categorized.LayerOrder, createdLayers)
 
 	// Generate manifest with all layers
 	if err := g.generateManifest(target, layerNames); err != nil {
@@ -146,23 +164,66 @@ func (g *CaptureConfigGenerator) generateSmartSplitLayers(ctx context.Context, f
 	}
 
 	return nil
+}
+
+// buildOrderedLayerList creates an ordered, deduplicated list of layer names.
+func (g *CaptureConfigGenerator) buildOrderedLayerList(categoryOrder []string, createdLayers map[string]bool) []string {
+	seen := make(map[string]bool)
+	result := make([]string, 0, len(createdLayers))
+
+	// First add category layers in order
+	for _, name := range categoryOrder {
+		if createdLayers[name] && !seen[name] {
+			result = append(result, name)
+			seen[name] = true
+		}
+	}
+
+	// Then add any remaining created layers (non-brew providers)
+	for name := range createdLayers {
+		if !seen[name] {
+			result = append(result, name)
+			seen[name] = true
+		}
+	}
+
+	return result
 }
 
 // generateProviderSplitLayers creates layer files organized by provider.
 func (g *CaptureConfigGenerator) generateProviderSplitLayers(findings *CaptureFindings, target string) error {
 	byProvider := findings.ItemsByProvider()
-	layerNames := make([]string, 0, len(byProvider))
+	createdLayers := make(map[string]bool)
 
+	// Combine brew and brew-cask into a single "brew" layer
+	brewItems := byProvider["brew"]
+	brewCasks := byProvider["brew-cask"]
+	if len(brewItems) > 0 || len(brewCasks) > 0 {
+		if err := g.generateBrewProviderLayer("brew", brewItems, brewCasks); err != nil {
+			return fmt.Errorf("failed to generate layer brew: %w", err)
+		}
+		createdLayers["brew"] = true
+	}
+
+	// Handle other providers
 	for provider, items := range byProvider {
-		if len(items) == 0 {
+		if provider == "brew" || provider == "brew-cask" || len(items) == 0 {
 			continue
 		}
 
-		layerName := provider
-		if err := g.generateProviderLayer(layerName, provider, items); err != nil {
-			return fmt.Errorf("failed to generate layer %s: %w", layerName, err)
+		created, err := g.generateProviderLayerIfSupported(provider, provider, items)
+		if err != nil {
+			return fmt.Errorf("failed to generate layer %s: %w", provider, err)
 		}
-		layerNames = append(layerNames, layerName)
+		if created {
+			createdLayers[provider] = true
+		}
+	}
+
+	// Build layer names list
+	layerNames := make([]string, 0, len(createdLayers))
+	for name := range createdLayers {
+		layerNames = append(layerNames, name)
 	}
 
 	// Generate manifest with all layers
@@ -173,21 +234,69 @@ func (g *CaptureConfigGenerator) generateProviderSplitLayers(findings *CaptureFi
 	return nil
 }
 
-// generateCategoryLayer creates a layer file for a category of brew packages.
-func (g *CaptureConfigGenerator) generateCategoryLayer(name string, items []CapturedItem, description string) error {
+// generateBrewProviderLayer creates a layer file with both formulae and casks.
+func (g *CaptureConfigGenerator) generateBrewProviderLayer(name string, formulae, casks []CapturedItem) error {
 	layer := captureLayerYAML{
 		Name: name,
 	}
 
-	formulae := make([]string, 0, len(items))
-	for _, item := range items {
-		formulae = append(formulae, item.Name)
+	brew := &captureBrewYAML{}
+	if len(formulae) > 0 {
+		f := make([]string, len(formulae))
+		for i, item := range formulae {
+			f[i] = item.Name
+		}
+		brew.Formulae = f
+	}
+	if len(casks) > 0 {
+		c := make([]string, len(casks))
+		for i, item := range casks {
+			c[i] = item.Name
+		}
+		brew.Casks = c
 	}
 
 	layer.Packages = &capturePackagesYAML{
-		Brew: &captureBrewYAML{
-			Formulae: formulae,
-		},
+		Brew: brew,
+	}
+
+	data, err := yaml.Marshal(layer)
+	if err != nil {
+		return err
+	}
+
+	layerPath := filepath.Join(g.targetDir, "layers", name+".yaml")
+	return os.WriteFile(layerPath, data, 0o644)
+}
+
+// generateCategoryLayerWithCasks creates a layer file separating formulae from casks.
+func (g *CaptureConfigGenerator) generateCategoryLayerWithCasks(name string, items []CapturedItem, description string) error {
+	layer := captureLayerYAML{
+		Name: name,
+	}
+
+	// Separate formulae from casks
+	var formulae, casks []string
+	for _, item := range items {
+		if item.Provider == "brew-cask" {
+			casks = append(casks, item.Name)
+		} else {
+			formulae = append(formulae, item.Name)
+		}
+	}
+
+	// Only create packages section if we have items
+	if len(formulae) > 0 || len(casks) > 0 {
+		brew := &captureBrewYAML{}
+		if len(formulae) > 0 {
+			brew.Formulae = formulae
+		}
+		if len(casks) > 0 {
+			brew.Casks = casks
+		}
+		layer.Packages = &capturePackagesYAML{
+			Brew: brew,
+		}
 	}
 
 	data, err := yaml.Marshal(layer)
@@ -202,8 +311,9 @@ func (g *CaptureConfigGenerator) generateCategoryLayer(name string, items []Capt
 	return os.WriteFile(layerPath, []byte(content), 0o644)
 }
 
-// generateProviderLayer creates a layer file for a non-brew provider.
-func (g *CaptureConfigGenerator) generateProviderLayer(name, provider string, items []CapturedItem) error {
+// generateProviderLayerIfSupported creates a layer file for a non-brew provider.
+// Returns true if the layer was created, false if the provider is not supported.
+func (g *CaptureConfigGenerator) generateProviderLayerIfSupported(name, provider string, items []CapturedItem) (bool, error) {
 	layer := captureLayerYAML{
 		Name: name,
 	}
@@ -224,16 +334,21 @@ func (g *CaptureConfigGenerator) generateProviderLayer(name, provider string, it
 	case "runtime":
 		layer.Runtime = g.generateRuntimeFromCapture(items)
 	default:
-		return nil // Skip unknown providers
+		// Provider not supported for layer generation (e.g., ssh, nvim)
+		return false, nil
 	}
 
 	data, err := yaml.Marshal(layer)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	layerPath := filepath.Join(g.targetDir, "layers", name+".yaml")
-	return os.WriteFile(layerPath, data, 0o644)
+	if err := os.WriteFile(layerPath, data, 0o644); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // generateManifest creates the preflight.yaml manifest file.
@@ -265,16 +380,30 @@ func (g *CaptureConfigGenerator) generateLayerFromCapture(findings *CaptureFindi
 	// Group items by provider
 	byProvider := findings.ItemsByProvider()
 
-	// Generate brew section
-	if brewItems, ok := byProvider["brew"]; ok && len(brewItems) > 0 {
-		formulae := make([]string, 0, len(brewItems))
-		for _, item := range brewItems {
-			formulae = append(formulae, item.Name)
+	// Generate brew section (formulae and casks)
+	brewItems := byProvider["brew"]
+	caskItems := byProvider["brew-cask"]
+	if len(brewItems) > 0 || len(caskItems) > 0 {
+		brew := &captureBrewYAML{}
+
+		if len(brewItems) > 0 {
+			formulae := make([]string, 0, len(brewItems))
+			for _, item := range brewItems {
+				formulae = append(formulae, item.Name)
+			}
+			brew.Formulae = formulae
 		}
+
+		if len(caskItems) > 0 {
+			casks := make([]string, 0, len(caskItems))
+			for _, item := range caskItems {
+				casks = append(casks, item.Name)
+			}
+			brew.Casks = casks
+		}
+
 		layer.Packages = &capturePackagesYAML{
-			Brew: &captureBrewYAML{
-				Formulae: formulae,
-			},
+			Brew: brew,
 		}
 	}
 

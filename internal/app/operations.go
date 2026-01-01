@@ -85,26 +85,44 @@ func (p *Preflight) captureProvider(ctx context.Context, provider, homeDir strin
 }
 
 func (p *Preflight) captureBrewFormulae(_ context.Context, capturedAt time.Time) []CapturedItem {
-	// Try to list installed formulae
+	var items []CapturedItem
+
+	// Capture formulae
 	cmd := exec.Command("brew", "list", "--formula", "-1")
 	output, err := cmd.Output()
-	if err != nil {
-		return nil
+	if err == nil {
+		formulae := strings.Split(strings.TrimSpace(string(output)), "\n")
+		for _, f := range formulae {
+			if f == "" {
+				continue
+			}
+			items = append(items, CapturedItem{
+				Provider:   "brew",
+				Name:       f,
+				Value:      f,
+				Source:     "brew list --formula",
+				CapturedAt: capturedAt,
+			})
+		}
 	}
 
-	formulae := strings.Split(strings.TrimSpace(string(output)), "\n")
-	items := make([]CapturedItem, 0, len(formulae))
-	for _, f := range formulae {
-		if f == "" {
-			continue
+	// Capture casks
+	cmd = exec.Command("brew", "list", "--cask", "-1")
+	output, err = cmd.Output()
+	if err == nil {
+		casks := strings.Split(strings.TrimSpace(string(output)), "\n")
+		for _, c := range casks {
+			if c == "" {
+				continue
+			}
+			items = append(items, CapturedItem{
+				Provider:   "brew-cask",
+				Name:       c,
+				Value:      c,
+				Source:     "brew list --cask",
+				CapturedAt: capturedAt,
+			})
 		}
-		items = append(items, CapturedItem{
-			Provider:   "brew",
-			Name:       f,
-			Value:      f,
-			Source:     "brew list --formula",
-			CapturedAt: capturedAt,
-		})
 	}
 
 	return items
