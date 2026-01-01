@@ -2,6 +2,8 @@ package app
 
 import (
 	"time"
+
+	"github.com/felixgeelhaar/preflight/internal/domain/security"
 )
 
 // CaptureOptions configures the capture operation.
@@ -79,16 +81,58 @@ type DoctorOptions struct {
 	UpdateConfig bool
 	// DryRun shows changes without writing
 	DryRun bool
+
+	// Security options
+	// SecurityEnabled enables vulnerability scanning
+	SecurityEnabled bool
+	// SecurityScanner specifies which scanner to use (grype, trivy, auto)
+	SecurityScanner string
+	// SecuritySeverity sets minimum severity to report (critical, high, medium, low)
+	SecuritySeverity string
+	// SecurityIgnore lists CVE IDs to ignore
+	SecurityIgnore []string
+	// SecurityFailOn sets severity threshold for failure
+	SecurityFailOn string
+
+	// Outdated options
+	// OutdatedEnabled enables outdated package detection
+	OutdatedEnabled bool
+	// OutdatedMaxAge is the maximum age before a package is considered outdated
+	OutdatedMaxAge time.Duration
+	// OutdatedIgnoreMajor ignores major version updates
+	OutdatedIgnoreMajor bool
+
+	// Deprecated options
+	// DeprecatedEnabled enables deprecation warnings
+	DeprecatedEnabled bool
+	// DeprecatedEOLWarn warns this duration before EOL
+	DeprecatedEOLWarn time.Duration
+
+	// Speed control
+	// Quick skips slow checks (security, outdated)
+	Quick bool
+	// SecurityOnly runs only security checks
+	SecurityOnly bool
+	// OutdatedOnly runs only outdated checks
+	OutdatedOnly bool
 }
 
 // NewDoctorOptions creates default doctor options.
 func NewDoctorOptions(configPath, target string) DoctorOptions {
 	return DoctorOptions{
-		ConfigPath:   configPath,
-		Target:       target,
-		Verbose:      false,
-		UpdateConfig: false,
-		DryRun:       false,
+		ConfigPath:        configPath,
+		Target:            target,
+		Verbose:           false,
+		UpdateConfig:      false,
+		DryRun:            false,
+		SecurityEnabled:   true,
+		SecurityScanner:   "auto",
+		SecuritySeverity:  "medium",
+		SecurityFailOn:    "critical",
+		OutdatedEnabled:   true,
+		OutdatedMaxAge:    90 * 24 * time.Hour, // 90 days
+		DeprecatedEnabled: true,
+		DeprecatedEOLWarn: 365 * 24 * time.Hour, // 1 year
 	}
 }
 
@@ -107,6 +151,64 @@ func (o DoctorOptions) WithUpdateConfig(updateConfig bool) DoctorOptions {
 // WithDryRun enables dry run mode.
 func (o DoctorOptions) WithDryRun(dryRun bool) DoctorOptions {
 	o.DryRun = dryRun
+	return o
+}
+
+// WithSecurity enables or disables security scanning.
+func (o DoctorOptions) WithSecurity(enabled bool) DoctorOptions {
+	o.SecurityEnabled = enabled
+	return o
+}
+
+// WithSecurityScanner sets the security scanner (grype, trivy, auto).
+func (o DoctorOptions) WithSecurityScanner(scanner string) DoctorOptions {
+	o.SecurityScanner = scanner
+	return o
+}
+
+// WithSecuritySeverity sets the minimum severity to report.
+func (o DoctorOptions) WithSecuritySeverity(severity string) DoctorOptions {
+	o.SecuritySeverity = severity
+	return o
+}
+
+// WithSecurityIgnore sets CVE IDs to ignore.
+func (o DoctorOptions) WithSecurityIgnore(ids []string) DoctorOptions {
+	o.SecurityIgnore = ids
+	return o
+}
+
+// WithSecurityFailOn sets the severity threshold for failure.
+func (o DoctorOptions) WithSecurityFailOn(severity string) DoctorOptions {
+	o.SecurityFailOn = severity
+	return o
+}
+
+// WithOutdated enables or disables outdated package detection.
+func (o DoctorOptions) WithOutdated(enabled bool) DoctorOptions {
+	o.OutdatedEnabled = enabled
+	return o
+}
+
+// WithOutdatedMaxAge sets the maximum age before a package is considered outdated.
+func (o DoctorOptions) WithOutdatedMaxAge(age time.Duration) DoctorOptions {
+	o.OutdatedMaxAge = age
+	return o
+}
+
+// WithDeprecated enables or disables deprecation warnings.
+func (o DoctorOptions) WithDeprecated(enabled bool) DoctorOptions {
+	o.DeprecatedEnabled = enabled
+	return o
+}
+
+// WithQuick enables quick mode, skipping slow checks.
+func (o DoctorOptions) WithQuick(quick bool) DoctorOptions {
+	o.Quick = quick
+	if quick {
+		o.SecurityEnabled = false
+		o.OutdatedEnabled = false
+	}
 	return o
 }
 
@@ -199,7 +301,53 @@ type DoctorReport struct {
 	SuggestedPatches []ConfigPatch
 	CheckedAt        time.Time
 	Duration         time.Duration
+
+	// Security results
+	SecurityScanResult *security.ScanResult
+	OutdatedPackages   []OutdatedPackage
+	DeprecatedPackages []DeprecatedPackage
 }
+
+// OutdatedPackage represents a package with available updates.
+type OutdatedPackage struct {
+	Name           string
+	CurrentVersion string
+	LatestVersion  string
+	UpdateType     UpdateType
+	Provider       string
+	Age            time.Duration
+}
+
+// UpdateType indicates the type of version update.
+type UpdateType string
+
+// UpdateType constants.
+const (
+	UpdateTypeMajor UpdateType = "major"
+	UpdateTypeMinor UpdateType = "minor"
+	UpdateTypePatch UpdateType = "patch"
+)
+
+// DeprecatedPackage represents a deprecated or EOL package.
+type DeprecatedPackage struct {
+	Name        string
+	Provider    string
+	Reason      DeprecationReason
+	EOLDate     *time.Time
+	Alternative string
+	Message     string
+}
+
+// DeprecationReason indicates why a package is deprecated.
+type DeprecationReason string
+
+// DeprecationReason constants.
+const (
+	DeprecationReasonEOL          DeprecationReason = "end-of-life"
+	DeprecationReasonArchived     DeprecationReason = "archived"
+	DeprecationReasonDeprecated   DeprecationReason = "deprecated"
+	DeprecationReasonUnmaintained DeprecationReason = "unmaintained"
+)
 
 // IssueCount returns the total number of issues.
 func (r DoctorReport) IssueCount() int {
@@ -291,6 +439,53 @@ func (r DoctorReport) PatchesByLayer() map[string][]ConfigPatch {
 		result[patch.LayerPath] = append(result[patch.LayerPath], patch)
 	}
 	return result
+}
+
+// HasSecurityIssues returns true if any security vulnerabilities were found.
+func (r DoctorReport) HasSecurityIssues() bool {
+	return r.SecurityScanResult != nil && r.SecurityScanResult.HasVulnerabilities()
+}
+
+// SecurityVulnerabilityCount returns the number of vulnerabilities found.
+func (r DoctorReport) SecurityVulnerabilityCount() int {
+	if r.SecurityScanResult == nil {
+		return 0
+	}
+	return len(r.SecurityScanResult.Vulnerabilities)
+}
+
+// HasCriticalVulnerabilities returns true if critical vulnerabilities were found.
+func (r DoctorReport) HasCriticalVulnerabilities() bool {
+	return r.SecurityScanResult != nil && r.SecurityScanResult.HasCritical()
+}
+
+// HasOutdatedPackages returns true if any outdated packages were found.
+func (r DoctorReport) HasOutdatedPackages() bool {
+	return len(r.OutdatedPackages) > 0
+}
+
+// OutdatedCount returns the number of outdated packages.
+func (r DoctorReport) OutdatedCount() int {
+	return len(r.OutdatedPackages)
+}
+
+// HasDeprecatedPackages returns true if any deprecated packages were found.
+func (r DoctorReport) HasDeprecatedPackages() bool {
+	return len(r.DeprecatedPackages) > 0
+}
+
+// DeprecatedCount returns the number of deprecated packages.
+func (r DoctorReport) DeprecatedCount() int {
+	return len(r.DeprecatedPackages)
+}
+
+// TotalHealthIssues returns the total count of all health issues.
+func (r DoctorReport) TotalHealthIssues() int {
+	total := r.IssueCount()
+	total += r.SecurityVulnerabilityCount()
+	total += r.OutdatedCount()
+	total += r.DeprecatedCount()
+	return total
 }
 
 // FixResult holds the results of a fix operation.

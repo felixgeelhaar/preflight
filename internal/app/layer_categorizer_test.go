@@ -332,3 +332,67 @@ func TestLayerCategorizer_LayerOrder(t *testing.T) {
 	assert.Less(t, baseIdx, goIdx, "base should come before dev-go")
 	assert.Less(t, goIdx, dockerIdx, "dev-go should come before containers")
 }
+
+// TestLayerCategorizer_Issue19Packages tests the packages that were recategorized
+// as part of Issue #19 (Improve misc.yaml categorization).
+func TestLayerCategorizer_Issue19Packages(t *testing.T) {
+	t.Parallel()
+
+	c := NewLayerCategorizer()
+
+	tests := []struct {
+		name     string
+		pkg      string
+		expected string
+	}{
+		// AI category
+		{"claude", "claude", "ai"},
+		{"ollama-app", "ollama-app", "ai"},
+
+		// Security category
+		{"bitwarden", "bitwarden", "security"},
+
+		// Media category
+		{"figma", "figma", "media"},
+		{"tesseract", "tesseract", "media"},
+		{"elgato-camera-hub", "elgato-camera-hub", "media"},
+		{"elgato-stream-deck", "elgato-stream-deck", "media"},
+
+		// Productivity category
+		{"monitorcontrol", "monitorcontrol", "productivity"},
+
+		// dev-lua category
+		{"love", "love", "dev-lua"},
+		{"lua", "lua", "dev-lua"},
+		{"luajit", "luajit", "dev-lua"},
+		{"stylua", "stylua", "dev-lua"},
+
+		// dev-python category
+		{"miniconda", "miniconda", "dev-python"},
+
+		// dev-go category
+		{"gremlins", "gremlins", "dev-go"},
+		{"relicta", "relicta", "dev-go"},
+
+		// base category
+		{"hyperfine", "hyperfine", "base"},
+		{"preflight", "preflight", "base"},
+
+		// shell category
+		{"ttyd", "ttyd", "shell"},
+
+		// editor category (versioned tree-sitter)
+		{"tree-sitter@0.25", "tree-sitter@0.25", "editor"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			items := []CapturedItem{{Name: tt.pkg, Provider: "brew"}}
+			result := c.Categorize(items)
+
+			_, ok := result.Layers[tt.expected]
+			assert.True(t, ok, "expected %q to be in layer %q, got layers: %v", tt.pkg, tt.expected, result.LayerOrder)
+		})
+	}
+}

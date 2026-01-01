@@ -388,3 +388,141 @@ func TestCaptureConfigGenerator_GenerateFromCapture(t *testing.T) {
 		assert.Contains(t, string(content), "name: invalid")
 	})
 }
+
+func TestCaptureConfigGenerator_SmartSplit(t *testing.T) {
+	t.Parallel()
+
+	t.Run("merges dotfiles with brew packages in same layer", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		generator := NewCaptureConfigGenerator(tmpDir).WithSmartSplit(true)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				// Brew packages categorized to "git" layer
+				{Provider: "brew", Name: "gh", Value: "gh", CapturedAt: time.Now()},
+				{Provider: "brew", Name: "lazygit", Value: "lazygit", CapturedAt: time.Now()},
+				// Git dotfile config - should be merged into "git" layer
+				{Provider: "git", Name: "user.name", Value: "Test User", CapturedAt: time.Now()},
+				{Provider: "git", Name: "user.email", Value: "test@example.com", CapturedAt: time.Now()},
+				{Provider: "git", Name: "core.editor", Value: "nvim", CapturedAt: time.Now()},
+				{Provider: "git", Name: "init.defaultBranch", Value: "main", CapturedAt: time.Now()},
+			},
+			Providers:  []string{"brew", "git"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Read git layer content
+		layerPath := filepath.Join(tmpDir, "layers", "git.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Verify both brew packages AND git config are in the same layer
+		assert.Contains(t, string(content), "gh")
+		assert.Contains(t, string(content), "lazygit")
+		assert.Contains(t, string(content), "git:")
+		assert.Contains(t, string(content), "user:")
+		assert.Contains(t, string(content), "name: Test User")
+		assert.Contains(t, string(content), "email: test@example.com")
+		assert.Contains(t, string(content), "core:")
+		assert.Contains(t, string(content), "editor: nvim")
+		assert.Contains(t, string(content), "init:")
+		assert.Contains(t, string(content), "defaultBranch: main")
+	})
+
+	t.Run("merges shell config with shell packages", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		generator := NewCaptureConfigGenerator(tmpDir).WithSmartSplit(true)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				// Brew packages categorized to "shell" layer
+				{Provider: "brew", Name: "zsh", Value: "zsh", CapturedAt: time.Now()},
+				{Provider: "brew", Name: "starship", Value: "starship", CapturedAt: time.Now()},
+				// Shell dotfile config - should be merged into "shell" layer
+				{Provider: "shell", Name: ".zshrc", Value: "~/.zshrc", CapturedAt: time.Now()},
+			},
+			Providers:  []string{"brew", "shell"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Read shell layer content
+		layerPath := filepath.Join(tmpDir, "layers", "shell.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Verify both brew packages AND shell config are in the same layer
+		assert.Contains(t, string(content), "zsh")
+		assert.Contains(t, string(content), "starship")
+		assert.Contains(t, string(content), "shell:")
+		assert.Contains(t, string(content), "default: zsh")
+	})
+
+	t.Run("creates dotfile layer when no corresponding brew packages", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		generator := NewCaptureConfigGenerator(tmpDir).WithSmartSplit(true)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				// Only git config, no brew packages that categorize to "git"
+				{Provider: "git", Name: "user.name", Value: "Test User", CapturedAt: time.Now()},
+			},
+			Providers:  []string{"git"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Read git layer content
+		layerPath := filepath.Join(tmpDir, "layers", "git.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Verify git config is present
+		assert.Contains(t, string(content), "git:")
+		assert.Contains(t, string(content), "name: Test User")
+	})
+
+	t.Run("vscode extensions go to editor layer", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		generator := NewCaptureConfigGenerator(tmpDir).WithSmartSplit(true)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				// Brew packages categorized to "editor" layer
+				{Provider: "brew", Name: "neovim", Value: "neovim", CapturedAt: time.Now()},
+				{Provider: "brew-cask", Name: "visual-studio-code", Value: "visual-studio-code", CapturedAt: time.Now()},
+				// VSCode extensions - should be merged into "editor" layer
+				{Provider: "vscode", Name: "golang.go", Value: "golang.go", CapturedAt: time.Now()},
+				{Provider: "vscode", Name: "ms-python.python", Value: "ms-python.python", CapturedAt: time.Now()},
+			},
+			Providers:  []string{"brew", "brew-cask", "vscode"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Read editor layer content
+		layerPath := filepath.Join(tmpDir, "layers", "editor.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Verify both brew packages AND vscode extensions are in the same layer
+		assert.Contains(t, string(content), "neovim")
+		assert.Contains(t, string(content), "visual-studio-code")
+		assert.Contains(t, string(content), "vscode:")
+		assert.Contains(t, string(content), "golang.go")
+		assert.Contains(t, string(content), "ms-python.python")
+	})
+}

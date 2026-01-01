@@ -166,6 +166,10 @@ func defaultCategories() []LayerCategory {
 				// Misc essentials
 				"ncurses", "readline", "gettext", "libiconv",
 				"pcre", "pcre2", "oniguruma",
+				// Benchmarking
+				"hyperfine", "bench", "time",
+				// Self-reference
+				"preflight",
 			},
 			Prefixes: []string{
 				"gnu-",
@@ -182,6 +186,10 @@ func defaultCategories() []LayerCategory {
 				"sqlc", "migrate", "goose", "sqlboiler", "ent",
 				"buf", "protoc-gen-go", "protoc-gen-go-grpc",
 				"ko", "tinygo",
+				// Testing tools
+				"gremlins", "ginkgo", "gomega",
+				// Release tools
+				"relicta", "changie", "svu",
 			},
 			Patterns: []string{
 				"^go@",     // versioned go
@@ -216,6 +224,7 @@ func defaultCategories() []LayerCategory {
 				"ruff", "black", "isort", "flake8", "pylint", "mypy", "pyright",
 				"pytest", "tox", "nox", "coverage", "hypothesis",
 				"virtualenv", "pyenv", "conda", "mamba", "micromamba",
+				"miniconda", "anaconda", "miniforge",
 				"ipython", "jupyter", "jupyterlab", "notebook",
 				"numpy", "pandas", "scipy", "matplotlib",
 				"django", "flask", "fastapi", "uvicorn", "gunicorn",
@@ -299,6 +308,8 @@ func defaultCategories() []LayerCategory {
 				"stylua", "selene", "lua-language-server",
 				"lpeg", "luv", "luasocket", "luafilesystem",
 				"fennel", "moonscript",
+				// Game frameworks
+				"love", "corona",
 			},
 			Patterns: []string{
 				"^lua@",
@@ -336,6 +347,8 @@ func defaultCategories() []LayerCategory {
 				"gitleaks", "trufflehog", "detect-secrets", "git-secrets",
 				"openssl", "libressl", "gnutls",
 				"pinentry", "pinentry-mac",
+				// Password managers (GUI)
+				"bitwarden", "1password", "lastpass", "dashlane", "keepassxc",
 			},
 			Patterns: []string{
 				".*security.*",
@@ -440,6 +453,9 @@ func defaultCategories() []LayerCategory {
 				// LSP tools
 				"efm-langserver", "diagnostic-languageserver",
 			},
+			Patterns: []string{
+				"^tree-sitter@", // versioned tree-sitter
+			},
 		},
 		{
 			Name:        "shell",
@@ -459,6 +475,8 @@ func defaultCategories() []LayerCategory {
 				"ghostty", "warp", "tabby", "rio",
 				// Terminal utilities
 				"terminal-notifier", "reattach-to-user-namespace",
+				// Web-based terminal
+				"ttyd", "gotty", "wetty",
 			},
 			Patterns: []string{
 				"^zsh-",
@@ -507,15 +525,23 @@ func defaultCategories() []LayerCategory {
 				"imagemagick", "graphicsmagick", "vips", "libvips",
 				"gifsicle", "gifski", "pngquant", "jpegoptim", "oxipng",
 				"exiftool", "dcraw",
+				// OCR
+				"tesseract", "tesseract-lang", "ocrmypdf",
 				// Audio
 				"sox", "lame", "flac", "opus", "vorbis-tools",
 				"mpv", "vlc",
 				// Recording
 				"asciinema", "vhs", "agg", "terminalizer",
 				"obs", "obs-studio",
+				// Streaming hardware
+				"elgato-camera-hub", "elgato-stream-deck", "elgato-control-center",
+				"elgato-wave-link",
 				// Creative
 				"inkscape", "gimp", "blender", "krita",
 				"darktable", "rawtherapee",
+				// Design tools
+				"figma", "sketch", "affinity-designer", "affinity-photo",
+				"canva", "adobe-creative-cloud",
 				// Diagrams
 				"graphviz", "plantuml", "mermaid-cli", "d2",
 			},
@@ -542,8 +568,10 @@ func defaultCategories() []LayerCategory {
 			Description: "AI and machine learning tools",
 			Exact: []string{
 				// Local LLMs
-				"ollama", "llama-cpp", "llamafile",
+				"ollama", "ollama-app", "llama-cpp", "llamafile",
 				"llm", "ttok", "strip-tags",
+				// AI assistants
+				"claude", "chatgpt", "github-copilot",
 				// Cloud APIs
 				"openai", "anthropic", "cohere",
 				// ML frameworks
@@ -646,6 +674,8 @@ func defaultCategories() []LayerCategory {
 				"karabiner-elements",
 				// Menu bar
 				"bartender", "dozer", "hidden-bar", "vanilla",
+				// Display control
+				"monitorcontrol", "lunar", "displaylink",
 				// Notes/PKM
 				"obsidian", "notion", "logseq", "roam", "craft",
 				"bear", "apple-notes", "joplin", "zettlr",

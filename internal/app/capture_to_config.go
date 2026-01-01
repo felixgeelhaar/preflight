@@ -115,43 +115,58 @@ func (g *CaptureConfigGenerator) generateSmartSplitLayers(ctx context.Context, f
 
 	categorized.SortItemsAlphabetically()
 
-	// Track created layers to avoid duplicates
+	// Build layer content map to merge brew packages with provider configs
+	layerContent := make(map[string]*captureLayerYAML)
 	createdLayers := make(map[string]bool)
 
-	// Generate a layer file for each category with brew items
+	// First pass: populate with brew categorized items
 	for _, layerName := range categorized.LayerOrder {
 		items := categorized.Layers[layerName]
 		if len(items) == 0 {
 			continue
 		}
 
-		if err := g.generateCategoryLayerWithCasks(layerName, items, categorizer.GetLayerDescription(layerName)); err != nil {
-			return fmt.Errorf("failed to generate layer %s: %w", layerName, err)
-		}
+		layer := g.buildLayerFromBrewItems(layerName, items)
+		layerContent[layerName] = layer
 		createdLayers[layerName] = true
 	}
 
-	// Handle non-brew providers (git, shell, vscode, runtime) in separate layers
-	// Only add if the layer doesn't already exist from brew categorization
+	// Second pass: merge provider configs into appropriate layers
+	providerToLayer := map[string]string{
+		"git":     "git",
+		"shell":   "shell",
+		"vscode":  "editor",
+		"runtime": "runtime",
+	}
+
 	for provider, items := range byProvider {
 		if provider == "brew" || provider == "brew-cask" || len(items) == 0 {
 			continue
 		}
 
+		// Determine target layer name
 		layerName := provider
-
-		// Skip if this layer already exists from brew categorization
-		if createdLayers[layerName] {
-			continue
+		if mappedLayer, ok := providerToLayer[provider]; ok {
+			layerName = mappedLayer
 		}
 
-		// Try to generate the layer; only add if successful
-		created, err := g.generateProviderLayerIfSupported(layerName, provider, items)
-		if err != nil {
-			return fmt.Errorf("failed to generate layer %s: %w", layerName, err)
-		}
-		if created {
+		// Get or create layer
+		layer := layerContent[layerName]
+		if layer == nil {
+			layer = &captureLayerYAML{Name: layerName}
+			layerContent[layerName] = layer
 			createdLayers[layerName] = true
+		}
+
+		// Add provider config to layer
+		g.addProviderConfigToLayer(layer, provider, items)
+	}
+
+	// Write all layers to disk
+	for layerName, layer := range layerContent {
+		description := categorizer.GetLayerDescription(layerName)
+		if err := g.writeLayerFile(layerName, layer, description); err != nil {
+			return fmt.Errorf("failed to write layer %s: %w", layerName, err)
 		}
 	}
 
@@ -164,6 +179,77 @@ func (g *CaptureConfigGenerator) generateSmartSplitLayers(ctx context.Context, f
 	}
 
 	return nil
+}
+
+// buildLayerFromBrewItems creates a layer struct from brew items.
+func (g *CaptureConfigGenerator) buildLayerFromBrewItems(name string, items []CapturedItem) *captureLayerYAML {
+	layer := &captureLayerYAML{
+		Name: name,
+	}
+
+	// Separate formulae from casks
+	var formulae, casks []string
+	for _, item := range items {
+		if item.Provider == "brew-cask" {
+			casks = append(casks, item.Name)
+		} else {
+			formulae = append(formulae, item.Name)
+		}
+	}
+
+	// Only create packages section if we have items
+	if len(formulae) > 0 || len(casks) > 0 {
+		brew := &captureBrewYAML{}
+		if len(formulae) > 0 {
+			brew.Formulae = formulae
+		}
+		if len(casks) > 0 {
+			brew.Casks = casks
+		}
+		layer.Packages = &capturePackagesYAML{
+			Brew: brew,
+		}
+	}
+
+	return layer
+}
+
+// addProviderConfigToLayer adds provider-specific config to a layer.
+func (g *CaptureConfigGenerator) addProviderConfigToLayer(layer *captureLayerYAML, provider string, items []CapturedItem) {
+	switch provider {
+	case "git":
+		layer.Git = g.generateGitFromCapture(items)
+	case "shell":
+		layer.Shell = g.generateShellFromCapture(items)
+	case "vscode":
+		extensions := make([]string, 0, len(items))
+		for _, item := range items {
+			extensions = append(extensions, item.Name)
+		}
+		layer.VSCode = &captureVSCodeYAML{
+			Extensions: extensions,
+		}
+	case "runtime":
+		layer.Runtime = g.generateRuntimeFromCapture(items)
+	}
+}
+
+// writeLayerFile writes a layer to disk with optional description comment.
+func (g *CaptureConfigGenerator) writeLayerFile(name string, layer *captureLayerYAML, description string) error {
+	data, err := yaml.Marshal(layer)
+	if err != nil {
+		return err
+	}
+
+	var content string
+	if description != "" {
+		content = fmt.Sprintf("# %s\n%s", description, string(data))
+	} else {
+		content = string(data)
+	}
+
+	layerPath := filepath.Join(g.targetDir, "layers", name+".yaml")
+	return os.WriteFile(layerPath, []byte(content), 0o644)
 }
 
 // buildOrderedLayerList creates an ordered, deduplicated list of layer names.
@@ -267,48 +353,6 @@ func (g *CaptureConfigGenerator) generateBrewProviderLayer(name string, formulae
 
 	layerPath := filepath.Join(g.targetDir, "layers", name+".yaml")
 	return os.WriteFile(layerPath, data, 0o644)
-}
-
-// generateCategoryLayerWithCasks creates a layer file separating formulae from casks.
-func (g *CaptureConfigGenerator) generateCategoryLayerWithCasks(name string, items []CapturedItem, description string) error {
-	layer := captureLayerYAML{
-		Name: name,
-	}
-
-	// Separate formulae from casks
-	var formulae, casks []string
-	for _, item := range items {
-		if item.Provider == "brew-cask" {
-			casks = append(casks, item.Name)
-		} else {
-			formulae = append(formulae, item.Name)
-		}
-	}
-
-	// Only create packages section if we have items
-	if len(formulae) > 0 || len(casks) > 0 {
-		brew := &captureBrewYAML{}
-		if len(formulae) > 0 {
-			brew.Formulae = formulae
-		}
-		if len(casks) > 0 {
-			brew.Casks = casks
-		}
-		layer.Packages = &capturePackagesYAML{
-			Brew: brew,
-		}
-	}
-
-	data, err := yaml.Marshal(layer)
-	if err != nil {
-		return err
-	}
-
-	// Add description as YAML comment
-	content := fmt.Sprintf("# %s\n%s", description, string(data))
-
-	layerPath := filepath.Join(g.targetDir, "layers", name+".yaml")
-	return os.WriteFile(layerPath, []byte(content), 0o644)
 }
 
 // generateProviderLayerIfSupported creates a layer file for a non-brew provider.
