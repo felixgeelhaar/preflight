@@ -19,6 +19,8 @@ type CompileContext struct {
 	config     map[string]interface{}
 	provenance string
 	resolver   *lock.Resolver
+	configRoot string // Root directory of preflight configuration
+	target     string // Current target name (e.g., "work", "personal")
 }
 
 // NewCompileContext creates a new CompileContext with the given configuration.
@@ -61,6 +63,8 @@ func (c CompileContext) WithProvenance(provenance string) CompileContext {
 		config:     c.config,
 		provenance: provenance,
 		resolver:   c.resolver,
+		configRoot: c.configRoot,
+		target:     c.target,
 	}
 }
 
@@ -76,6 +80,40 @@ func (c CompileContext) WithResolver(resolver *lock.Resolver) CompileContext {
 		config:     c.config,
 		provenance: c.provenance,
 		resolver:   resolver,
+		configRoot: c.configRoot,
+		target:     c.target,
+	}
+}
+
+// ConfigRoot returns the root directory of the preflight configuration.
+func (c CompileContext) ConfigRoot() string {
+	return c.configRoot
+}
+
+// WithConfigRoot returns a new CompileContext with the config root set.
+func (c CompileContext) WithConfigRoot(configRoot string) CompileContext {
+	return CompileContext{
+		config:     c.config,
+		provenance: c.provenance,
+		resolver:   c.resolver,
+		configRoot: configRoot,
+		target:     c.target,
+	}
+}
+
+// Target returns the current target name.
+func (c CompileContext) Target() string {
+	return c.target
+}
+
+// WithTarget returns a new CompileContext with the target set.
+func (c CompileContext) WithTarget(target string) CompileContext {
+	return CompileContext{
+		config:     c.config,
+		provenance: c.provenance,
+		resolver:   c.resolver,
+		configRoot: c.configRoot,
+		target:     target,
 	}
 }
 

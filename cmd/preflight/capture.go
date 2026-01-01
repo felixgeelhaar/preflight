@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/felixgeelhaar/preflight/internal/adapters/filesystem"
 	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/spf13/cobra"
@@ -27,6 +28,8 @@ Examples:
   preflight capture --all --split-by language # Organize by programming language
   preflight capture --all --split-by stack    # Organize by tech stack (frontend, backend, devops)
   preflight capture --all --split-by provider # Organize by provider (brew, git, vscode)
+  preflight capture --include-configs         # Copy config files to dotfiles/
+  preflight capture --include-configs -t work # Copy configs to dotfiles.work/
 
 Split strategies:
   category (default) - Fine-grained categories (base, dev-go, security, containers)
@@ -39,12 +42,13 @@ The --smart-split flag is equivalent to --split-by category.`,
 }
 
 var (
-	captureAll        bool
-	captureProvider   string
-	captureOutput     string
-	captureTarget     string
-	captureSmartSplit bool
-	captureSplitBy    string
+	captureAll            bool
+	captureProvider       string
+	captureOutput         string
+	captureTarget         string
+	captureSmartSplit     bool
+	captureSplitBy        string
+	captureIncludeConfigs bool
 )
 
 func init() {
@@ -54,6 +58,7 @@ func init() {
 	captureCmd.Flags().StringVarP(&captureTarget, "target", "t", "default", "Target name for the configuration")
 	captureCmd.Flags().BoolVar(&captureSmartSplit, "smart-split", false, "Automatically organize packages into logical layer files (equivalent to --split-by category)")
 	captureCmd.Flags().StringVar(&captureSplitBy, "split-by", "", fmt.Sprintf("Split strategy for layer organization (%s)", strings.Join(app.ValidSplitStrategies(), ", ")))
+	captureCmd.Flags().BoolVar(&captureIncludeConfigs, "include-configs", false, "Copy config files to dotfiles/ directory for full reproducibility")
 
 	rootCmd.AddCommand(captureCmd)
 }
@@ -162,6 +167,63 @@ func runCapture(_ *cobra.Command, _ []string) error {
 			fmt.Printf("\nGenerated configuration in %s/\n", captureOutput)
 		}
 		fmt.Println("Run 'preflight plan' to review the changes.")
+	}
+
+	// Capture config files if requested
+	if captureIncludeConfigs {
+		if err := captureDotfiles(); err != nil {
+			return fmt.Errorf("dotfiles capture failed: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// captureDotfiles copies config files to the dotfiles/ directory.
+func captureDotfiles() error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	fs := filesystem.NewRealFileSystem()
+	capturer := app.NewDotfilesCapturer(fs, homeDir, captureOutput)
+
+	// Use per-target directory if target is specified and not "default"
+	if captureTarget != "" && captureTarget != "default" {
+		capturer = capturer.WithTarget(captureTarget)
+	}
+
+	result, err := capturer.Capture()
+	if err != nil {
+		return err
+	}
+
+	// Print warnings
+	for _, warning := range result.Warnings {
+		fmt.Printf("Warning: %s\n", warning)
+	}
+
+	if result.FileCount() > 0 {
+		fmt.Printf("\nCaptured %d config files to %s/\n", result.FileCount(), result.TargetDir)
+
+		// Show summary by provider
+		byProvider := result.DotfilesByProvider()
+		for provider, files := range byProvider {
+			fileCount := 0
+			for _, f := range files {
+				if !f.IsDirectory {
+					fileCount++
+				}
+			}
+			if fileCount > 0 {
+				fmt.Printf("  %s: %d files\n", provider, fileCount)
+			}
+		}
+
+		fmt.Println("\nAdd config_source to your layers to use these files.")
+	} else {
+		fmt.Println("\nNo config files found to capture.")
 	}
 
 	return nil

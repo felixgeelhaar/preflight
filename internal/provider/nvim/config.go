@@ -7,10 +7,12 @@ import (
 
 // Config represents the nvim configuration section.
 type Config struct {
-	Preset        string `yaml:"preset,omitempty"`
-	PluginManager string `yaml:"plugin_manager,omitempty"`
-	ConfigRepo    string `yaml:"config_repo,omitempty"`
-	EnsureInstall bool   `yaml:"ensure_install,omitempty"`
+	Preset        string   `yaml:"preset,omitempty"`
+	PluginManager string   `yaml:"plugin_manager,omitempty"`
+	ConfigRepo    string   `yaml:"config_repo,omitempty"`
+	EnsureInstall bool     `yaml:"ensure_install,omitempty"`
+	ConfigSource  string   `yaml:"config_source,omitempty"` // Local dotfiles path
+	ExtraPlugins  []string `yaml:"extra_plugins,omitempty"` // Additional plugins for layer-specific customization
 }
 
 // ConfigPath returns the path to the Neovim configuration directory.

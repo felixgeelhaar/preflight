@@ -77,12 +77,13 @@ type GitInclude struct {
 
 // GitConfig represents git configuration.
 type GitConfig struct {
-	User     GitUserConfig     `yaml:"user,omitempty"`
-	Core     GitCoreConfig     `yaml:"core,omitempty"`
-	Commit   GitCommitConfig   `yaml:"commit,omitempty"`
-	GPG      GitGPGConfig      `yaml:"gpg,omitempty"`
-	Aliases  map[string]string `yaml:"alias,omitempty"`
-	Includes []GitInclude      `yaml:"includes,omitempty"`
+	User         GitUserConfig     `yaml:"user,omitempty"`
+	Core         GitCoreConfig     `yaml:"core,omitempty"`
+	Commit       GitCommitConfig   `yaml:"commit,omitempty"`
+	GPG          GitGPGConfig      `yaml:"gpg,omitempty"`
+	Aliases      map[string]string `yaml:"alias,omitempty"`
+	Includes     []GitInclude      `yaml:"includes,omitempty"`
+	ConfigSource string            `yaml:"config_source,omitempty"` // Path to gitconfig.d directory
 }
 
 // SSHDefaultsConfig represents SSH global defaults (Host *).
@@ -123,10 +124,11 @@ type SSHMatchConfig struct {
 
 // SSHConfig represents SSH configuration.
 type SSHConfig struct {
-	Include  string            `yaml:"include,omitempty"`
-	Defaults SSHDefaultsConfig `yaml:"defaults,omitempty"`
-	Hosts    []SSHHostConfig   `yaml:"hosts,omitempty"`
-	Matches  []SSHMatchConfig  `yaml:"matches,omitempty"`
+	Include      string            `yaml:"include,omitempty"`
+	Defaults     SSHDefaultsConfig `yaml:"defaults,omitempty"`
+	Hosts        []SSHHostConfig   `yaml:"hosts,omitempty"`
+	Matches      []SSHMatchConfig  `yaml:"matches,omitempty"`
+	ConfigSource string            `yaml:"config_source,omitempty"` // Path to ssh config file
 }
 
 // RuntimeToolConfig represents a tool with its version.
@@ -149,6 +151,12 @@ type RuntimeConfig struct {
 	Plugins []RuntimePluginConfig `yaml:"plugins,omitempty"`
 }
 
+// TmuxConfig represents tmux configuration.
+type TmuxConfig struct {
+	ConfigSource string   `yaml:"config_source,omitempty"` // Path to tmux config (e.g., "dotfiles/tmux")
+	Plugins      []string `yaml:"plugins,omitempty"`       // TPM plugins
+}
+
 // ShellCustomPlugin represents a custom shell plugin from a git repository.
 type ShellCustomPlugin struct {
 	Name string `yaml:"name"`
@@ -166,25 +174,37 @@ type ShellConfigEntry struct {
 
 // ShellStarshipConfig represents starship prompt configuration.
 type ShellStarshipConfig struct {
-	Enabled bool   `yaml:"enabled,omitempty"`
-	Preset  string `yaml:"preset,omitempty"`
+	Enabled      bool   `yaml:"enabled,omitempty"`
+	Preset       string `yaml:"preset,omitempty"`
+	ConfigSource string `yaml:"config_source,omitempty"` // Path to starship.toml
+}
+
+// ShellConfigSource represents paths to shell configuration files.
+type ShellConfigSource struct {
+	Aliases   string `yaml:"aliases,omitempty"`   // Path to aliases file (e.g., "dotfiles/shell/aliases.zsh")
+	Functions string `yaml:"functions,omitempty"` // Path to functions file
+	Env       string `yaml:"env,omitempty"`       // Path to environment file
+	Dir       string `yaml:"dir,omitempty"`       // Path to directory with all shell configs
 }
 
 // ShellConfig represents shell configuration.
 type ShellConfig struct {
-	Default  string              `yaml:"default,omitempty"`
-	Shells   []ShellConfigEntry  `yaml:"shells,omitempty"`
-	Starship ShellStarshipConfig `yaml:"starship,omitempty"`
-	Env      map[string]string   `yaml:"env,omitempty"`
-	Aliases  map[string]string   `yaml:"aliases,omitempty"`
+	Default      string              `yaml:"default,omitempty"`
+	Shells       []ShellConfigEntry  `yaml:"shells,omitempty"`
+	Starship     ShellStarshipConfig `yaml:"starship,omitempty"`
+	Env          map[string]string   `yaml:"env,omitempty"`
+	Aliases      map[string]string   `yaml:"aliases,omitempty"`
+	ConfigSource *ShellConfigSource  `yaml:"config_source,omitempty"` // Paths to shell config files
 }
 
 // NvimConfig represents Neovim editor configuration.
 type NvimConfig struct {
-	Preset        string `yaml:"preset,omitempty"`
-	PluginManager string `yaml:"plugin_manager,omitempty"`
-	ConfigRepo    string `yaml:"config_repo,omitempty"`
-	EnsureInstall bool   `yaml:"ensure_install,omitempty"`
+	Preset        string   `yaml:"preset,omitempty"`
+	PluginManager string   `yaml:"plugin_manager,omitempty"`
+	ConfigRepo    string   `yaml:"config_repo,omitempty"`
+	EnsureInstall bool     `yaml:"ensure_install,omitempty"`
+	ConfigSource  string   `yaml:"config_source,omitempty"` // Path to local dotfiles (e.g., "dotfiles/nvim")
+	ExtraPlugins  []string `yaml:"extra_plugins,omitempty"` // Additional plugins for layer-specific customization
 }
 
 // VSCodeKeybinding represents a single VSCode keybinding.
@@ -197,9 +217,10 @@ type VSCodeKeybinding struct {
 
 // VSCodeConfig represents VSCode editor configuration.
 type VSCodeConfig struct {
-	Extensions  []string               `yaml:"extensions,omitempty"`
-	Settings    map[string]interface{} `yaml:"settings,omitempty"`
-	Keybindings []VSCodeKeybinding     `yaml:"keybindings,omitempty"`
+	Extensions   []string               `yaml:"extensions,omitempty"`
+	Settings     map[string]interface{} `yaml:"settings,omitempty"`
+	Keybindings  []VSCodeKeybinding     `yaml:"keybindings,omitempty"`
+	ConfigSource string                 `yaml:"config_source,omitempty"` // Path to local dotfiles (e.g., "dotfiles/vscode")
 }
 
 // Layer is a composable configuration overlay.
@@ -214,6 +235,7 @@ type Layer struct {
 	Shell      ShellConfig
 	Nvim       NvimConfig
 	VSCode     VSCodeConfig
+	Tmux       TmuxConfig
 }
 
 // layerYAML is the YAML representation for unmarshaling.
@@ -227,6 +249,7 @@ type layerYAML struct {
 	Shell    ShellConfig       `yaml:"shell,omitempty"`
 	Nvim     NvimConfig        `yaml:"nvim,omitempty"`
 	VSCode   VSCodeConfig      `yaml:"vscode,omitempty"`
+	Tmux     TmuxConfig        `yaml:"tmux,omitempty"`
 }
 
 // ParseLayer parses a Layer from YAML bytes.
@@ -251,6 +274,7 @@ func ParseLayer(data []byte) (*Layer, error) {
 		Shell:    raw.Shell,
 		Nvim:     raw.Nvim,
 		VSCode:   raw.VSCode,
+		Tmux:     raw.Tmux,
 	}, nil
 }
 

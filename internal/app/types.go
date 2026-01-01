@@ -14,6 +14,10 @@ type CaptureOptions struct {
 	IncludeSecrets bool
 	// HomeDir overrides the home directory for capture
 	HomeDir string
+	// IncludeConfigs copies config files to dotfiles/ for full reproducibility
+	IncludeConfigs bool
+	// Target specifies which target to capture for (for per-target dotfiles)
+	Target string
 }
 
 // NewCaptureOptions creates default capture options.
@@ -33,6 +37,18 @@ func (o CaptureOptions) WithProviders(providers ...string) CaptureOptions {
 // WithSecrets enables secret capture.
 func (o CaptureOptions) WithSecrets(include bool) CaptureOptions {
 	o.IncludeSecrets = include
+	return o
+}
+
+// WithConfigs enables capturing config files to dotfiles/ directory.
+func (o CaptureOptions) WithConfigs(include bool) CaptureOptions {
+	o.IncludeConfigs = include
+	return o
+}
+
+// WithTarget sets the target for per-target dotfiles capture.
+func (o CaptureOptions) WithTarget(target string) CaptureOptions {
+	o.Target = target
 	return o
 }
 

@@ -13,6 +13,7 @@ type MergedConfig struct {
 	Shell      ShellConfig
 	Nvim       NvimConfig
 	VSCode     VSCodeConfig
+	Tmux       TmuxConfig
 	provenance ProvenanceMap
 }
 
@@ -179,6 +180,12 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 			m.trackProvenance(merged, "git.gpg.program", layer.Git.GPG.Program, layer.Provenance)
 		}
 
+		// Merge git config_source (scalar: last-wins)
+		if layer.Git.ConfigSource != "" {
+			merged.Git.ConfigSource = layer.Git.ConfigSource
+			m.trackProvenance(merged, "git.config_source", layer.Git.ConfigSource, layer.Provenance)
+		}
+
 		// Merge aliases (deep merge, last-wins per key)
 		for key, value := range layer.Git.Aliases {
 			aliasesMap[key] = value
@@ -238,6 +245,12 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 			}
 		}
 
+		// Merge SSH config_source (scalar: last-wins)
+		if layer.SSH.ConfigSource != "" {
+			merged.SSH.ConfigSource = layer.SSH.ConfigSource
+			m.trackProvenance(merged, "ssh.config_source", layer.SSH.ConfigSource, layer.Provenance)
+		}
+
 		// Merge runtime config (scalars: last-wins)
 		if layer.Runtime.Backend != "" {
 			merged.Runtime.Backend = layer.Runtime.Backend
@@ -281,6 +294,10 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 			merged.Shell.Starship.Preset = layer.Shell.Starship.Preset
 			m.trackProvenance(merged, "shell.starship.preset", layer.Shell.Starship.Preset, layer.Provenance)
 		}
+		if layer.Shell.Starship.ConfigSource != "" {
+			merged.Shell.Starship.ConfigSource = layer.Shell.Starship.ConfigSource
+			m.trackProvenance(merged, "shell.starship.config_source", layer.Shell.Starship.ConfigSource, layer.Provenance)
+		}
 
 		// Merge shell env (deep merge, last-wins per key)
 		for key, value := range layer.Shell.Env {
@@ -292,6 +309,29 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 		for key, value := range layer.Shell.Aliases {
 			shellAliasesMap[key] = value
 			m.trackProvenance(merged, "shell.aliases", key, layer.Provenance)
+		}
+
+		// Merge shell config_source (struct: last-wins per field)
+		if layer.Shell.ConfigSource != nil {
+			if merged.Shell.ConfigSource == nil {
+				merged.Shell.ConfigSource = &ShellConfigSource{}
+			}
+			if layer.Shell.ConfigSource.Aliases != "" {
+				merged.Shell.ConfigSource.Aliases = layer.Shell.ConfigSource.Aliases
+				m.trackProvenance(merged, "shell.config_source.aliases", layer.Shell.ConfigSource.Aliases, layer.Provenance)
+			}
+			if layer.Shell.ConfigSource.Functions != "" {
+				merged.Shell.ConfigSource.Functions = layer.Shell.ConfigSource.Functions
+				m.trackProvenance(merged, "shell.config_source.functions", layer.Shell.ConfigSource.Functions, layer.Provenance)
+			}
+			if layer.Shell.ConfigSource.Env != "" {
+				merged.Shell.ConfigSource.Env = layer.Shell.ConfigSource.Env
+				m.trackProvenance(merged, "shell.config_source.env", layer.Shell.ConfigSource.Env, layer.Provenance)
+			}
+			if layer.Shell.ConfigSource.Dir != "" {
+				merged.Shell.ConfigSource.Dir = layer.Shell.ConfigSource.Dir
+				m.trackProvenance(merged, "shell.config_source.dir", layer.Shell.ConfigSource.Dir, layer.Provenance)
+			}
 		}
 
 		// Merge nvim config (scalars: last-wins)
@@ -310,6 +350,26 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 		if layer.Nvim.EnsureInstall {
 			merged.Nvim.EnsureInstall = true
 			m.trackProvenance(merged, "nvim.ensure_install", "true", layer.Provenance)
+		}
+		if layer.Nvim.ConfigSource != "" {
+			merged.Nvim.ConfigSource = layer.Nvim.ConfigSource
+			m.trackProvenance(merged, "nvim.config_source", layer.Nvim.ConfigSource, layer.Provenance)
+		}
+
+		// Merge nvim extra_plugins (set union)
+		for _, plugin := range layer.Nvim.ExtraPlugins {
+			// Deduplicate by checking if already present
+			found := false
+			for _, existing := range merged.Nvim.ExtraPlugins {
+				if existing == plugin {
+					found = true
+					break
+				}
+			}
+			if !found {
+				merged.Nvim.ExtraPlugins = append(merged.Nvim.ExtraPlugins, plugin)
+			}
+			m.trackProvenance(merged, "nvim.extra_plugins", plugin, layer.Provenance)
 		}
 
 		// Merge VSCode extensions (set union) - O(n) with map lookup
@@ -340,6 +400,33 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 				merged.VSCode.Keybindings = append(merged.VSCode.Keybindings, kb)
 			}
 			m.trackProvenance(merged, "vscode.keybindings", kb.Key, layer.Provenance)
+		}
+
+		// Merge VSCode config_source (scalar: last-wins)
+		if layer.VSCode.ConfigSource != "" {
+			merged.VSCode.ConfigSource = layer.VSCode.ConfigSource
+			m.trackProvenance(merged, "vscode.config_source", layer.VSCode.ConfigSource, layer.Provenance)
+		}
+
+		// Merge Tmux config (scalars: last-wins)
+		if layer.Tmux.ConfigSource != "" {
+			merged.Tmux.ConfigSource = layer.Tmux.ConfigSource
+			m.trackProvenance(merged, "tmux.config_source", layer.Tmux.ConfigSource, layer.Provenance)
+		}
+
+		// Merge Tmux plugins (set union)
+		for _, plugin := range layer.Tmux.Plugins {
+			found := false
+			for _, existing := range merged.Tmux.Plugins {
+				if existing == plugin {
+					found = true
+					break
+				}
+			}
+			if !found {
+				merged.Tmux.Plugins = append(merged.Tmux.Plugins, plugin)
+			}
+			m.trackProvenance(merged, "tmux.plugins", plugin, layer.Provenance)
 		}
 	}
 

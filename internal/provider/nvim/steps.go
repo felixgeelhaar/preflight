@@ -244,3 +244,109 @@ func (s *LazyLockStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 		nil,
 	)
 }
+
+// ConfigSourceStep manages symlinking local dotfiles for Neovim configuration.
+type ConfigSourceStep struct {
+	sourcePath string // Absolute path to config source (e.g., /path/to/preflight/dotfiles/nvim)
+	destPath   string // Destination path (e.g., ~/.config/nvim)
+	id         compiler.StepID
+	fs         ports.FileSystem
+}
+
+// NewConfigSourceStep creates a new ConfigSourceStep.
+func NewConfigSourceStep(sourcePath, destPath string, fs ports.FileSystem) *ConfigSourceStep {
+	id := compiler.MustNewStepID("nvim:config-source")
+	return &ConfigSourceStep{
+		sourcePath: sourcePath,
+		destPath:   destPath,
+		id:         id,
+		fs:         fs,
+	}
+}
+
+// ID returns the step identifier.
+func (s *ConfigSourceStep) ID() compiler.StepID {
+	return s.id
+}
+
+// DependsOn returns dependencies for this step.
+func (s *ConfigSourceStep) DependsOn() []compiler.StepID {
+	return nil
+}
+
+// Check verifies if the symlink is already correct.
+func (s *ConfigSourceStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
+	destPath := ports.ExpandPath(s.destPath)
+
+	// Check if destination exists and is a symlink to our source
+	isLink, target := s.fs.IsSymlink(destPath)
+	if isLink && target == s.sourcePath {
+		return compiler.StatusSatisfied, nil
+	}
+
+	return compiler.StatusNeedsApply, nil
+}
+
+// Plan returns the diff for this step.
+func (s *ConfigSourceStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
+	destPath := ports.ExpandPath(s.destPath)
+
+	// Determine what currently exists at destination
+	var oldValue string
+	if s.fs.Exists(destPath) {
+		isLink, target := s.fs.IsSymlink(destPath)
+		if isLink {
+			oldValue = fmt.Sprintf("symlink -> %s", target)
+		} else {
+			oldValue = "existing directory"
+		}
+	}
+
+	return compiler.NewDiff(
+		compiler.DiffTypeModify,
+		"config-source",
+		fmt.Sprintf("symlink -> %s", s.sourcePath),
+		oldValue,
+		fmt.Sprintf("Link %s to local config source", s.destPath),
+	), nil
+}
+
+// Apply creates the symlink.
+func (s *ConfigSourceStep) Apply(_ compiler.RunContext) error {
+	destPath := ports.ExpandPath(s.destPath)
+
+	// If destination exists but is not a symlink to our source, we need to handle it
+	if s.fs.Exists(destPath) {
+		isLink, target := s.fs.IsSymlink(destPath)
+		if isLink && target == s.sourcePath {
+			// Already correctly linked
+			return nil
+		}
+		// Remove existing (could be dir/file/wrong symlink)
+		if err := s.fs.Remove(destPath); err != nil {
+			return fmt.Errorf("failed to remove existing %s: %w", destPath, err)
+		}
+	}
+
+	// Ensure parent directory exists
+	parentDir := ports.ExpandPath("~/.config")
+	if err := s.fs.MkdirAll(parentDir, 0755); err != nil {
+		return fmt.Errorf("failed to create parent directory: %w", err)
+	}
+
+	// Create the symlink
+	if err := s.fs.CreateLink(s.sourcePath, destPath); err != nil {
+		return fmt.Errorf("failed to create symlink: %w", err)
+	}
+
+	return nil
+}
+
+// Explain provides context for this step.
+func (s *ConfigSourceStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
+	return compiler.NewExplanation(
+		"Link Local Config Source",
+		fmt.Sprintf("Create a symlink from %s to your local dotfiles at %s. This enables full config reproducibility while keeping your config files in version control.", s.destPath, s.sourcePath),
+		nil,
+	)
+}
