@@ -74,24 +74,24 @@ func runAnalyze(_ *cobra.Command, args []string) error {
 	}
 
 	if len(layerPaths) == 0 {
+		err := fmt.Errorf("no layers found")
 		if analyzeJSON {
-			outputAnalyzeJSON(nil, fmt.Errorf("no layers found"))
+			outputAnalyzeJSON(nil, err)
 		} else {
 			fmt.Println("No layer files found.")
 			fmt.Println("Create layers in the 'layers/' directory or provide paths as arguments.")
 		}
-		return nil
+		return err // Return error for proper exit code
 	}
 
 	// Load layer information
 	layers, err := loadLayerInfos(layerPaths)
 	if err != nil {
+		loadErr := fmt.Errorf("failed to load layers: %w", err)
 		if analyzeJSON {
-			outputAnalyzeJSON(nil, err)
-		} else {
-			return fmt.Errorf("failed to load layers: %w", err)
+			outputAnalyzeJSON(nil, loadErr)
 		}
-		return nil
+		return loadErr // Return error for proper exit code
 	}
 
 	// Get AI provider if not disabled
@@ -390,7 +390,9 @@ func outputAnalyzeJSON(report *advisor.AnalysisReport, err error) {
 
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
-	_ = enc.Encode(output)
+	if encErr := enc.Encode(output); encErr != nil {
+		fmt.Fprintf(os.Stderr, "Error encoding JSON output: %v\n", encErr)
+	}
 }
 
 func outputAnalyzeText(report *advisor.AnalysisReport, quiet bool, recommend bool) {

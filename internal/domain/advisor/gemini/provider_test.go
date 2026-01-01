@@ -468,6 +468,22 @@ func TestValidateEndpoint(t *testing.T) {
 			errMsg:   "private IP",
 		},
 		{
+			name:     "private IP 172.31.x blocked",
+			endpoint: "https://172.31.255.255",
+			wantErr:  true,
+			errMsg:   "private IP",
+		},
+		{
+			name:     "172.9.x NOT private (regression test)",
+			endpoint: "https://172.9.0.1",
+			wantErr:  false, // 172.9.x.x is NOT in the private range 172.16-31
+		},
+		{
+			name:     "172.32.x NOT private",
+			endpoint: "https://172.32.0.1",
+			wantErr:  false, // 172.32.x.x is outside the private range
+		},
+		{
 			name:     "invalid URL",
 			endpoint: "://invalid",
 			wantErr:  true,

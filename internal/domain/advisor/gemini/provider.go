@@ -15,6 +15,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ const (
 	DefaultModel    = "gemini-2.5-flash"
 	DefaultEndpoint = "https://generativelanguage.googleapis.com/v1beta"
 	DefaultTimeout  = 60 * time.Second
+	MaxResponseSize = 10 * 1024 * 1024 // 10MB max response to prevent DoS
 )
 
 // Known Gemini models for validation.
@@ -197,9 +199,10 @@ func isPrivateIP(host string) bool {
 	if strings.HasPrefix(host, "172.") {
 		parts := strings.Split(host, ".")
 		if len(parts) >= 2 {
-			// Check second octet is 16-31
-			secondOctet := parts[1]
-			if secondOctet >= "16" && secondOctet <= "31" {
+			// Parse second octet as integer to avoid string comparison bugs
+			// (e.g., "9" > "16" in string comparison)
+			secondOctet, err := strconv.Atoi(parts[1])
+			if err == nil && secondOctet >= 16 && secondOctet <= 31 {
 				return true
 			}
 		}
@@ -336,7 +339,8 @@ func (p *Provider) Complete(ctx context.Context, prompt advisor.Prompt) (advisor
 	}
 	defer resp.Body.Close() //nolint:errcheck // Best effort close after reading body
 
-	body, err := io.ReadAll(resp.Body)
+	// Limit response size to prevent memory exhaustion DoS
+	body, err := io.ReadAll(io.LimitReader(resp.Body, MaxResponseSize))
 	if err != nil {
 		return advisor.Response{}, fmt.Errorf("failed to read response: %w", err)
 	}
