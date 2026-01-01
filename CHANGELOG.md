@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.4.0] - 2026-01-01
+
 ### Added
+
+- **Dotfiles Capture & Symlink Support** (#22): Full machine reproducibility via dotfiles directory
+  - `preflight capture --include-configs` copies config files to `dotfiles/` directory
+  - New `config_source` field in provider configs references local dotfiles
+  - ConfigSourceStep creates symlinks during apply (e.g., `~/.config/nvim` → `dotfiles/nvim`)
+  - Per-target directories: `dotfiles.work/`, `dotfiles.personal/` with automatic fallback
+  - Provider-specific capture configs for nvim, shell, starship, tmux, vscode, ssh, git
+  - Exclude patterns for plugin caches (lazy/, pack/, .zcompdump*)
+  - Priority order: `config_source` > `config_repo` > `preset`
 
 - **Split Strategies for Capture**: New `--split-by` flag for flexible layer organization
   - `category` (default): Fine-grained categories (base, dev-go, security, containers)
@@ -22,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - AI suggests layer assignments with reasoning for unknown packages
 
 ### Fixed
+
+- **Capture Smart-Split**: Properly populate nvim and ssh layers in smart-split mode
 
 - **Step ID Validation**: Allow `@` symbol in step IDs for versioned packages
   - Fixes panic when capturing packages like `go@1.24`, `python@3.12`, `openssl@3`
