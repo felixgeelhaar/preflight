@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -141,33 +142,28 @@ func TestExtractPackages(t *testing.T) {
 }
 
 func TestIsWellNamedLayer(t *testing.T) {
+	// Naming convention tests are now primarily in analyzer_test.go
+	// This tests the integration with the domain service
 	tests := []struct {
 		name     string
 		expected bool
 	}{
 		{"base", true},
 		{"dev-go", true},
-		{"dev-python", true},
-		{"role.developer", true},
-		{"identity.work", true},
-		{"device.laptop", true},
-		{"misc", true},
-		{"security", true},
-		{"media", true},
 		{"random-name", false},
-		{"my-layer", false},
-		{"tools", false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := isWellNamedLayer(tt.name)
+			result := layerAnalyzer.IsWellNamedLayer(tt.name)
 			assert.Equal(t, tt.expected, result, "layer '%s' naming check", tt.name)
 		})
 	}
 }
 
-func TestPerformBasicAnalysis(t *testing.T) {
+func TestAnalyzeBasic(t *testing.T) {
+	// Basic analysis tests are now primarily in analyzer_test.go
+	// This tests the integration with the domain service
 	tests := []struct {
 		name           string
 		layer          advisor.LayerInfo
@@ -199,26 +195,16 @@ func TestPerformBasicAnalysis(t *testing.T) {
 			layer: advisor.LayerInfo{
 				Name:     "misc",
 				Path:     "layers/misc.yaml",
-				Packages: make([]string, LargeLayerThreshold+10), // Exceed threshold
+				Packages: make([]string, layerAnalyzer.LargeLayerThreshold+10), // Exceed threshold
 			},
 			expectedStatus: "warning",
 			hasRecs:        true,
-		},
-		{
-			name: "poorly named layer",
-			layer: advisor.LayerInfo{
-				Name:     "my-stuff",
-				Path:     "layers/my-stuff.yaml",
-				Packages: []string{"git"},
-			},
-			expectedStatus: "good",
-			hasRecs:        true, // Should have naming convention recommendation
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := performBasicAnalysis(tt.layer)
+			result := layerAnalyzer.AnalyzeBasic(tt.layer)
 
 			assert.Equal(t, tt.layer.Name, result.LayerName)
 			assert.Equal(t, tt.expectedStatus, result.Status)
@@ -230,6 +216,8 @@ func TestPerformBasicAnalysis(t *testing.T) {
 }
 
 func TestFindCrossLayerIssues(t *testing.T) {
+	// Cross-layer issue tests are now primarily in analyzer_test.go
+	// This tests the integration with the domain service
 	tests := []struct {
 		name          string
 		layers        []advisor.LayerInfo
@@ -253,20 +241,11 @@ func TestFindCrossLayerIssues(t *testing.T) {
 			expectIssues:  true,
 			issueContains: "git",
 		},
-		{
-			name: "cask duplicate normalized",
-			layers: []advisor.LayerInfo{
-				{Name: "base", Path: "layers/base.yaml", Packages: []string{"docker"}},
-				{Name: "dev", Path: "layers/dev.yaml", Packages: []string{"docker (cask)"}},
-			},
-			expectIssues:  true,
-			issueContains: "docker",
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			issues := findCrossLayerIssues(tt.layers)
+			issues := layerAnalyzer.FindCrossLayerIssues(tt.layers)
 
 			if tt.expectIssues {
 				assert.NotEmpty(t, issues)
@@ -288,6 +267,8 @@ func TestFindCrossLayerIssues(t *testing.T) {
 }
 
 func TestGetStatusIcon(t *testing.T) {
+	// Status icon tests are now primarily in analyzer_test.go
+	// This tests the integration with the domain service
 	tests := []struct {
 		status   string
 		expected string
@@ -296,30 +277,30 @@ func TestGetStatusIcon(t *testing.T) {
 		{"warning", "⚠"},
 		{"needs_attention", "⛔"},
 		{"unknown", "○"},
-		{"", "○"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.status, func(t *testing.T) {
-			result := getStatusIcon(tt.status)
+			result := advisor.GetStatusIcon(tt.status)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
 func TestGetPriorityPrefix(t *testing.T) {
+	// Priority prefix tests are now primarily in analyzer_test.go
+	// This tests the integration with the domain service
 	tests := []struct {
 		priority string
 	}{
 		{"high"},
 		{"medium"},
 		{"low"},
-		{"unknown"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.priority, func(t *testing.T) {
-			result := getPriorityPrefix(tt.priority)
+			result := advisor.GetPriorityPrefix(tt.priority)
 			assert.NotEmpty(t, result)
 		})
 	}
@@ -441,4 +422,79 @@ func TestLoadLayerInfos_InvalidYAML(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse")
+}
+
+func TestFindLayerFiles(t *testing.T) {
+	// Save current working directory
+	originalWd, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Create temporary directory structure
+	tmpDir := t.TempDir()
+	layersDir := filepath.Join(tmpDir, "layers")
+	require.NoError(t, os.MkdirAll(layersDir, 0755))
+
+	// Change to temp directory
+	require.NoError(t, os.Chdir(tmpDir))
+	t.Cleanup(func() {
+		_ = os.Chdir(originalWd)
+	})
+
+	t.Run("empty layers directory", func(t *testing.T) {
+		paths, err := findLayerFiles()
+		require.NoError(t, err)
+		assert.Empty(t, paths)
+	})
+
+	t.Run("finds yaml files", func(t *testing.T) {
+		require.NoError(t, os.WriteFile(filepath.Join(layersDir, "base.yaml"), []byte("name: base\n"), 0644))
+		require.NoError(t, os.WriteFile(filepath.Join(layersDir, "dev.yaml"), []byte("name: dev\n"), 0644))
+
+		paths, err := findLayerFiles()
+		require.NoError(t, err)
+		assert.Len(t, paths, 2)
+		assert.Contains(t, paths, "layers/base.yaml")
+		assert.Contains(t, paths, "layers/dev.yaml")
+	})
+
+	t.Run("finds yml files", func(t *testing.T) {
+		require.NoError(t, os.WriteFile(filepath.Join(layersDir, "extra.yml"), []byte("name: extra\n"), 0644))
+
+		paths, err := findLayerFiles()
+		require.NoError(t, err)
+		assert.Len(t, paths, 3) // 2 yaml + 1 yml
+		assert.Contains(t, paths, "layers/extra.yml")
+	})
+
+	t.Run("ignores non-yaml files", func(t *testing.T) {
+		require.NoError(t, os.WriteFile(filepath.Join(layersDir, "readme.txt"), []byte("readme\n"), 0644))
+		require.NoError(t, os.WriteFile(filepath.Join(layersDir, "config.json"), []byte("{}"), 0644))
+
+		paths, err := findLayerFiles()
+		require.NoError(t, err)
+		// Should still only have the yaml/yml files
+		for _, p := range paths {
+			ext := filepath.Ext(p)
+			assert.True(t, ext == ".yaml" || ext == ".yml", "unexpected extension: %s", ext)
+		}
+	})
+}
+
+func TestFindLayerFiles_NoLayersDir(t *testing.T) {
+	// Save current working directory
+	originalWd, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Create temporary directory WITHOUT layers subdirectory
+	tmpDir := t.TempDir()
+
+	// Change to temp directory
+	require.NoError(t, os.Chdir(tmpDir))
+	t.Cleanup(func() {
+		_ = os.Chdir(originalWd)
+	})
+
+	paths, err := findLayerFiles()
+	require.NoError(t, err)
+	assert.Empty(t, paths)
 }

@@ -37,9 +37,9 @@ Examples:
 	RunE: runAnalyze,
 }
 
-// LargeLayerThreshold is the number of packages above which a layer is considered large.
-// Layers with more than this many packages should be considered for splitting.
-const LargeLayerThreshold = 50
+// layerAnalyzer is the domain service for layer analysis.
+// It encapsulates business logic for analyzing layer quality.
+var layerAnalyzer = advisor.NewLayerAnalyzer()
 
 var (
 	analyzeRecommend bool
@@ -258,7 +258,7 @@ func analyzeLayersWithAI(ctx context.Context, layers []advisor.LayerInfo, aiProv
 					fmt.Fprintf(os.Stderr, "Warning: AI analysis failed for layer %s: %v\n", layer.Name, err)
 				}
 				// Fall back to basic analysis when AI fails
-				result = performBasicAnalysis(layer)
+				result = layerAnalyzer.AnalyzeBasic(layer)
 				result.Summary = fmt.Sprintf("AI unavailable - %s", result.Summary)
 			} else {
 				// Parse AI response
@@ -268,7 +268,7 @@ func analyzeLayersWithAI(ctx context.Context, layers []advisor.LayerInfo, aiProv
 					if !analyzeQuiet && !analyzeJSON {
 						fmt.Fprintf(os.Stderr, "Warning: Failed to parse AI response for layer %s: %v\n", layer.Name, parseErr)
 					}
-					result = performBasicAnalysis(layer)
+					result = layerAnalyzer.AnalyzeBasic(layer)
 				} else {
 					result = *aiResult
 					result.LayerName = layer.Name
@@ -277,97 +277,17 @@ func analyzeLayersWithAI(ctx context.Context, layers []advisor.LayerInfo, aiProv
 			}
 		} else {
 			// Basic analysis without AI
-			result = performBasicAnalysis(layer)
+			result = layerAnalyzer.AnalyzeBasic(layer)
 		}
 
 		report.TotalRecommendations += len(result.Recommendations)
 		report.Layers = append(report.Layers, result)
 	}
 
-	// Check for cross-layer issues
-	report.CrossLayerIssues = findCrossLayerIssues(layers)
+	// Check for cross-layer issues using domain service
+	report.CrossLayerIssues = layerAnalyzer.FindCrossLayerIssues(layers)
 
 	return report
-}
-
-// performBasicAnalysis does simple heuristic-based analysis.
-func performBasicAnalysis(layer advisor.LayerInfo) advisor.LayerAnalysisResult {
-	result := advisor.LayerAnalysisResult{
-		LayerName:       layer.Name,
-		PackageCount:    len(layer.Packages),
-		Recommendations: []advisor.AnalysisRecommendation{},
-		WellOrganized:   true,
-	}
-
-	// Determine status based on package count
-	switch {
-	case len(layer.Packages) == 0:
-		result.Summary = "Empty layer"
-		result.Status = "warning"
-		result.Recommendations = append(result.Recommendations, advisor.AnalysisRecommendation{
-			Type:     "best_practice",
-			Priority: "low",
-			Message:  "Layer has no packages defined",
-		})
-	case len(layer.Packages) > LargeLayerThreshold:
-		result.Summary = fmt.Sprintf("Large layer with %d packages", len(layer.Packages))
-		result.Status = "warning"
-		result.WellOrganized = false
-		result.Recommendations = append(result.Recommendations, advisor.AnalysisRecommendation{
-			Type:     "best_practice",
-			Priority: "medium",
-			Message:  fmt.Sprintf("Consider splitting into smaller, focused layers (threshold: %d packages)", LargeLayerThreshold),
-		})
-	default:
-		result.Summary = fmt.Sprintf("%d packages", len(layer.Packages))
-		result.Status = "good"
-	}
-
-	// Check layer naming conventions
-	if !isWellNamedLayer(layer.Name) {
-		result.Recommendations = append(result.Recommendations, advisor.AnalysisRecommendation{
-			Type:     "best_practice",
-			Priority: "low",
-			Message:  "Consider using naming convention: base, dev-*, role.*, identity.*, device.*",
-		})
-	}
-
-	return result
-}
-
-// isWellNamedLayer checks if layer follows naming conventions.
-func isWellNamedLayer(name string) bool {
-	prefixes := []string{"base", "dev-", "role.", "identity.", "device.", "misc", "security", "media"}
-	for _, prefix := range prefixes {
-		if name == prefix || strings.HasPrefix(name, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
-// findCrossLayerIssues looks for issues across all layers.
-func findCrossLayerIssues(layers []advisor.LayerInfo) []string {
-	var issues []string
-
-	// Check for duplicate packages
-	packageLayers := make(map[string][]string)
-	for _, layer := range layers {
-		for _, pkg := range layer.Packages {
-			// Normalize package name (remove " (cask)" suffix for comparison)
-			normalizedPkg := strings.TrimSuffix(pkg, " (cask)")
-			packageLayers[normalizedPkg] = append(packageLayers[normalizedPkg], layer.Name)
-		}
-	}
-
-	for pkg, layerNames := range packageLayers {
-		if len(layerNames) > 1 {
-			issues = append(issues, fmt.Sprintf("Package '%s' appears in multiple layers: %s",
-				pkg, strings.Join(layerNames, ", ")))
-		}
-	}
-
-	return issues
 }
 
 func outputAnalyzeJSON(report *advisor.AnalysisReport, err error) {
@@ -406,7 +326,7 @@ func outputAnalyzeText(report *advisor.AnalysisReport, quiet bool, recommend boo
 
 	// Print each layer
 	for _, layer := range report.Layers {
-		statusIcon := getStatusIcon(layer.Status)
+		statusIcon := advisor.GetStatusIcon(layer.Status)
 		fmt.Printf("\n📦 %s (%d packages)\n", layer.LayerName, layer.PackageCount)
 		fmt.Printf("  %s %s\n", statusIcon, layer.Summary)
 
@@ -414,7 +334,7 @@ func outputAnalyzeText(report *advisor.AnalysisReport, quiet bool, recommend boo
 		if recommend && len(layer.Recommendations) > 0 {
 			fmt.Println("  💡 Recommendations:")
 			for _, rec := range layer.Recommendations {
-				priority := getPriorityPrefix(rec.Priority)
+				priority := advisor.GetPriorityPrefix(rec.Priority)
 				fmt.Printf("    %s %s\n", priority, rec.Message)
 				if len(rec.Packages) > 0 && !quiet {
 					fmt.Printf("       Packages: %s\n", strings.Join(rec.Packages, ", "))
@@ -444,32 +364,6 @@ func outputAnalyzeText(report *advisor.AnalysisReport, quiet bool, recommend boo
 	if !quiet && len(report.Layers) > 1 {
 		fmt.Println()
 		printLayerSummaryTable(report.Layers)
-	}
-}
-
-func getStatusIcon(status string) string {
-	switch status {
-	case "good":
-		return "✓"
-	case "warning":
-		return "⚠"
-	case "needs_attention":
-		return "⛔"
-	default:
-		return "○"
-	}
-}
-
-func getPriorityPrefix(priority string) string {
-	switch priority {
-	case "high":
-		return "\033[91m•\033[0m"
-	case "medium":
-		return "\033[93m•\033[0m"
-	case "low":
-		return "\033[32m•\033[0m"
-	default:
-		return "•"
 	}
 }
 

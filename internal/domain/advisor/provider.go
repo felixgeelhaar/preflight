@@ -2,7 +2,15 @@ package advisor
 
 import (
 	"context"
+	"errors"
 )
+
+// MaxPromptSize is the maximum allowed size for prompts (100KB).
+// This prevents excessively large prompts from consuming too many tokens.
+const MaxPromptSize = 100 * 1024 // 100KB
+
+// ErrPromptTooLarge is returned when a prompt exceeds the maximum size.
+var ErrPromptTooLarge = errors.New("prompt size exceeds maximum allowed")
 
 // Prompt represents a prompt to send to an AI provider.
 type Prompt struct {
@@ -60,6 +68,20 @@ func (p Prompt) WithTemperature(temp float64) Prompt {
 		maxTokens:    p.maxTokens,
 		temperature:  temp,
 	}
+}
+
+// Size returns the total size of the prompt in bytes.
+func (p Prompt) Size() int {
+	return len(p.systemPrompt) + len(p.userPrompt)
+}
+
+// Validate checks if the prompt is within acceptable limits.
+// Returns ErrPromptTooLarge if the combined size exceeds MaxPromptSize.
+func (p Prompt) Validate() error {
+	if p.Size() > MaxPromptSize {
+		return ErrPromptTooLarge
+	}
+	return nil
 }
 
 // Response represents a response from an AI provider.

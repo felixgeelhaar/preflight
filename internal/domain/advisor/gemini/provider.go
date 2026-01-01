@@ -292,6 +292,11 @@ func (p *Provider) Complete(ctx context.Context, prompt advisor.Prompt) (advisor
 		return advisor.Response{}, ErrNotConfigured
 	}
 
+	// Validate prompt size to prevent excessive token usage
+	if err := prompt.Validate(); err != nil {
+		return advisor.Response{}, fmt.Errorf("invalid prompt: %w", err)
+	}
+
 	// Build request
 	reqBody := generateRequest{
 		Contents: []content{

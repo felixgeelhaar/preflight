@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+// MaxLayerFileSize is the maximum allowed size for layer files (1MB).
+// This prevents DoS attacks from excessively large configuration files.
+const MaxLayerFileSize = 1 * 1024 * 1024 // 1MB
+
 // LayerService provides domain operations for layer files.
 type LayerService struct{}
 
@@ -62,6 +66,11 @@ func ValidateLayerPath(path string) error {
 	}
 	if info.IsDir() {
 		return fmt.Errorf("expected file but got directory: %s", path)
+	}
+
+	// Check file size to prevent DoS from excessively large files
+	if info.Size() > MaxLayerFileSize {
+		return fmt.Errorf("layer file too large: %d bytes (max %d bytes)", info.Size(), MaxLayerFileSize)
 	}
 
 	return nil

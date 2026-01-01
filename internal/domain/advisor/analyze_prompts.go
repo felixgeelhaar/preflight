@@ -184,6 +184,27 @@ func ParseLayerAnalysisResult(response string) (*LayerAnalysisResult, error) {
 }
 
 // extractJSON attempts to extract JSON from an AI response using multiple strategies.
+//
+// AI models often wrap JSON responses in markdown code blocks, add explanatory text,
+// or include nested JSON objects. This function handles these cases using a cascade
+// of increasingly permissive extraction strategies:
+//
+// Strategy 1 - Code Block Extraction (preferred):
+// Looks for JSON wrapped in markdown code blocks (```json ... ``` or ``` ... ```).
+// This is the most reliable because LLMs are trained to format structured data
+// in code blocks when instructed to return JSON.
+//
+// Strategy 2 - Balanced Brace Extraction:
+// If no code block is found, finds the first '{' and tracks brace depth to find
+// the matching closing '}'. This handles cases where the model includes explanatory
+// text before or after the JSON, like "Here is the analysis:\n{...}".
+//
+// Strategy 3 - First/Last Brace Fallback:
+// As a last resort, takes content between the first '{' and last '}' in the response.
+// This may include nested objects or multiple JSON responses, so validation is critical.
+//
+// Each strategy validates the extracted string with json.Valid before returning.
+// If all strategies fail, an error is returned with the response length for debugging.
 func extractJSON(response string) (string, error) {
 	// Strategy 1: Look for markdown code block with json/JSON
 	jsonStr := extractFromCodeBlock(response)

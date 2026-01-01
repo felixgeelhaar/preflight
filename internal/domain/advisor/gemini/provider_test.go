@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -551,4 +552,77 @@ func TestConfig_Validate_Endpoint(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProvider_Complete_PromptTooLarge(t *testing.T) {
+	provider := NewProvider("test-key")
+
+	// Create a prompt that exceeds the max size
+	largeContent := make([]byte, advisor.MaxPromptSize+1)
+	for i := range largeContent {
+		largeContent[i] = 'x'
+	}
+	prompt := advisor.NewPrompt(string(largeContent), "")
+
+	_, err := provider.Complete(context.Background(), prompt)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, advisor.ErrPromptTooLarge)
+}
+
+func TestProvider_Complete_ContextCancellation(t *testing.T) {
+	// Create a server that delays response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		// Simulate slow response - wait for context to be cancelled
+		time.Sleep(100 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	provider := &Provider{
+		apiKey:   "test-key",
+		model:    DefaultModel,
+		endpoint: server.URL,
+		client:   server.Client(),
+	}
+
+	// Create a context that's already cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	prompt := advisor.NewPrompt("", "Hello")
+	_, err := provider.Complete(ctx, prompt)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "context canceled")
+}
+
+func TestProvider_Complete_ContextTimeout(t *testing.T) {
+	// Create a server that delays response longer than the timeout
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		time.Sleep(200 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	provider := &Provider{
+		apiKey:   "test-key",
+		model:    DefaultModel,
+		endpoint: server.URL,
+		client:   server.Client(),
+	}
+
+	// Create a context with a short timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	prompt := advisor.NewPrompt("", "Hello")
+	_, err := provider.Complete(ctx, prompt)
+
+	require.Error(t, err)
+	// Error should be related to context deadline
+	assert.True(t,
+		strings.Contains(err.Error(), "context deadline exceeded") ||
+			strings.Contains(err.Error(), "context canceled"),
+		"expected context error, got: %v", err)
 }

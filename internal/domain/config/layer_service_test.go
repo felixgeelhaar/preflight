@@ -187,3 +187,45 @@ func TestNewLayerService(t *testing.T) {
 	service := NewLayerService()
 	assert.NotNil(t, service)
 }
+
+func TestValidateLayerPath_FileSizeLimit(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a file that exceeds the max size
+	largePath := filepath.Join(tmpDir, "large.yaml")
+	largeContent := make([]byte, MaxLayerFileSize+1)
+	// Fill with valid YAML content
+	copy(largeContent, "name: large\ndata: ")
+	require.NoError(t, os.WriteFile(largePath, largeContent, 0644))
+
+	// Verify the file is actually larger than the max size
+	info, err := os.Stat(largePath)
+	require.NoError(t, err)
+	assert.Greater(t, info.Size(), int64(MaxLayerFileSize))
+
+	// Validation should fail for oversized files
+	err = ValidateLayerPath(largePath)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "layer file too large")
+
+	// Create a file at exactly the max size (should pass)
+	exactPath := filepath.Join(tmpDir, "exact.yaml")
+	exactContent := make([]byte, MaxLayerFileSize)
+	copy(exactContent, "name: exact\ndata: ")
+	require.NoError(t, os.WriteFile(exactPath, exactContent, 0644))
+
+	err = ValidateLayerPath(exactPath)
+	assert.NoError(t, err)
+
+	// Create a small file (should pass)
+	smallPath := filepath.Join(tmpDir, "small.yaml")
+	require.NoError(t, os.WriteFile(smallPath, []byte("name: small\n"), 0644))
+
+	err = ValidateLayerPath(smallPath)
+	assert.NoError(t, err)
+}
+
+func TestMaxLayerFileSize_Constant(t *testing.T) {
+	// Verify the constant is set to 1MB
+	assert.Equal(t, int64(1*1024*1024), int64(MaxLayerFileSize))
+}
