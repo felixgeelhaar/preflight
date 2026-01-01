@@ -101,8 +101,7 @@ func TestHookRunner_RunHooks_Empty(t *testing.T) {
 }
 
 func TestHookRunner_RunHooks_Success(t *testing.T) {
-	t.Parallel()
-
+	// NOTE: Cannot use t.Parallel() - hook execution may write to os.Stderr
 	runner := NewHookRunner(t.TempDir())
 	ctx := context.Background()
 
@@ -115,8 +114,7 @@ func TestHookRunner_RunHooks_Success(t *testing.T) {
 }
 
 func TestHookRunner_RunHooks_Timeout(t *testing.T) {
-	t.Parallel()
-
+	// NOTE: Cannot use t.Parallel() - hook execution may write to os.Stderr
 	runner := NewHookRunner(t.TempDir())
 	ctx := context.Background()
 
@@ -129,8 +127,7 @@ func TestHookRunner_RunHooks_Timeout(t *testing.T) {
 }
 
 func TestHookRunner_RunHooks_OnErrorContinue(t *testing.T) {
-	t.Parallel()
-
+	// NOTE: Cannot use t.Parallel() - modifies os.Stderr during capture
 	runner := NewHookRunner(t.TempDir())
 	ctx := context.Background()
 
@@ -158,8 +155,7 @@ func TestHookRunner_RunHooks_OnErrorContinue(t *testing.T) {
 }
 
 func TestHookRunner_RunHooks_OnErrorFail(t *testing.T) {
-	t.Parallel()
-
+	// NOTE: Cannot use t.Parallel() - hook execution may write to os.Stderr
 	runner := NewHookRunner(t.TempDir())
 	ctx := context.Background()
 
@@ -173,8 +169,7 @@ func TestHookRunner_RunHooks_OnErrorFail(t *testing.T) {
 }
 
 func TestHookRunner_runHook_NoCommandOrScript(t *testing.T) {
-	t.Parallel()
-
+	// NOTE: Cannot use t.Parallel() - hook execution may write to os.Stderr
 	runner := NewHookRunner(t.TempDir())
 	ctx := context.Background()
 
@@ -185,8 +180,7 @@ func TestHookRunner_runHook_NoCommandOrScript(t *testing.T) {
 }
 
 func TestHookRunner_runHook_Script(t *testing.T) {
-	t.Parallel()
-
+	// NOTE: Cannot use t.Parallel() - hook execution may write to os.Stderr
 	runner := NewHookRunner(t.TempDir())
 	ctx := context.Background()
 
@@ -201,8 +195,7 @@ func TestHookRunner_runHook_Script(t *testing.T) {
 }
 
 func TestHookRunner_runHook_CustomTimeout(t *testing.T) {
-	t.Parallel()
-
+	// NOTE: Cannot use t.Parallel() - hook execution may write to os.Stderr
 	runner := NewHookRunner(t.TempDir())
 	ctx := context.Background()
 

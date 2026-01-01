@@ -2333,7 +2333,7 @@ func TestPrintError(t *testing.T) {
 }
 
 func TestNewMarketplaceService(t *testing.T) {
-	t.Parallel()
+	// NOTE: Cannot use t.Parallel() - modifies package-level mpOfflineMode variable
 
 	// Store original value
 	origOffline := mpOfflineMode
@@ -2345,7 +2345,7 @@ func TestNewMarketplaceService(t *testing.T) {
 }
 
 func TestNewMarketplaceService_Default(t *testing.T) {
-	t.Parallel()
+	// NOTE: Cannot use t.Parallel() - modifies package-level mpOfflineMode variable
 
 	// Store original value
 	origOffline := mpOfflineMode
