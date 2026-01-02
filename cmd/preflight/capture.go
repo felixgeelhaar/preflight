@@ -135,8 +135,24 @@ func runCapture(_ *cobra.Command, _ []string) error {
 			HomeDir:    findings.HomeDir,
 		}
 
+		// Capture config files BEFORE config generation if requested
+		// This allows the generator to populate config_source fields
+		var dotfilesResult *app.DotfilesCaptureResult
+		if captureIncludeConfigs {
+			var err error
+			dotfilesResult, err = captureDotfiles()
+			if err != nil {
+				return fmt.Errorf("dotfiles capture failed: %w", err)
+			}
+		}
+
 		// Generate configuration from accepted items
 		generator := app.NewCaptureConfigGenerator(captureOutput)
+
+		// Pass dotfiles result to generator for config_source population
+		if dotfilesResult != nil {
+			generator.WithDotfiles(dotfilesResult)
+		}
 
 		// Handle split strategy
 		var strategy app.SplitStrategy
@@ -166,24 +182,23 @@ func runCapture(_ *cobra.Command, _ []string) error {
 		} else {
 			fmt.Printf("\nGenerated configuration in %s/\n", captureOutput)
 		}
-		fmt.Println("Run 'preflight plan' to review the changes.")
-	}
 
-	// Capture config files if requested
-	if captureIncludeConfigs {
-		if err := captureDotfiles(); err != nil {
-			return fmt.Errorf("dotfiles capture failed: %w", err)
+		if dotfilesResult != nil && dotfilesResult.FileCount() > 0 {
+			fmt.Println("Config sources automatically linked to layer configuration.")
 		}
+
+		fmt.Println("Run 'preflight plan' to review the changes.")
 	}
 
 	return nil
 }
 
 // captureDotfiles copies config files to the dotfiles/ directory.
-func captureDotfiles() error {
+// Returns the capture result so it can be passed to the config generator.
+func captureDotfiles() (*app.DotfilesCaptureResult, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("failed to get home directory: %w", err)
+		return nil, fmt.Errorf("failed to get home directory: %w", err)
 	}
 
 	fs := filesystem.NewRealFileSystem()
@@ -196,7 +211,7 @@ func captureDotfiles() error {
 
 	result, err := capturer.Capture()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Print warnings
@@ -232,11 +247,9 @@ func captureDotfiles() error {
 				fmt.Printf("  %s: %d files\n", provider, fileCount)
 			}
 		}
-
-		fmt.Println("\nAdd config_source to your layers to use these files.")
 	} else {
 		fmt.Println("\nNo config files found to capture.")
 	}
 
-	return nil
+	return result, nil
 }

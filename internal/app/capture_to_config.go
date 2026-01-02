@@ -14,10 +14,11 @@ import (
 
 // CaptureConfigGenerator generates configuration files from captured items.
 type CaptureConfigGenerator struct {
-	targetDir     string
-	smartSplit    bool
-	splitStrategy SplitStrategy
-	aiCategorizer AICategorizer
+	targetDir      string
+	smartSplit     bool
+	splitStrategy  SplitStrategy
+	aiCategorizer  AICategorizer
+	dotfilesResult *DotfilesCaptureResult
 }
 
 // NewCaptureConfigGenerator creates a new generator.
@@ -45,6 +46,12 @@ func (g *CaptureConfigGenerator) WithSplitStrategy(strategy SplitStrategy) *Capt
 // WithAICategorizer sets an AI categorizer for enhanced categorization.
 func (g *CaptureConfigGenerator) WithAICategorizer(ai AICategorizer) *CaptureConfigGenerator {
 	g.aiCategorizer = ai
+	return g
+}
+
+// WithDotfiles sets the dotfiles capture result for config_source population.
+func (g *CaptureConfigGenerator) WithDotfiles(result *DotfilesCaptureResult) *CaptureConfigGenerator {
+	g.dotfilesResult = result
 	return g
 }
 
@@ -172,6 +179,8 @@ func (g *CaptureConfigGenerator) generateSmartSplitLayers(ctx context.Context, f
 
 	// Write all layers to disk
 	for layerName, layer := range layerContent {
+		// Apply config_source from captured dotfiles before writing
+		g.applyDotfilesToLayer(layer)
 		description := categorizer.GetLayerDescription(layerName)
 		if err := g.writeLayerFile(layerName, layer, description); err != nil {
 			return fmt.Errorf("failed to write layer %s: %w", layerName, err)
@@ -253,6 +262,84 @@ func (g *CaptureConfigGenerator) addProviderConfigToLayer(layer *captureLayerYAM
 		g.addGemPackagesToLayer(layer, items)
 	case "cargo":
 		g.addCargoPackagesToLayer(layer, items)
+	}
+}
+
+// applyDotfilesToLayer populates config_source fields from captured dotfiles.
+func (g *CaptureConfigGenerator) applyDotfilesToLayer(layer *captureLayerYAML) {
+	if g.dotfilesResult == nil {
+		return
+	}
+
+	byProvider := g.dotfilesResult.DotfilesByProvider()
+
+	// Helper to get the relative dotfiles path for a provider
+	getConfigSource := func(provider string) string {
+		if files, ok := byProvider[provider]; ok && len(files) > 0 {
+			// Use the target directory relative path
+			// e.g., "dotfiles/nvim" or "dotfiles.work/nvim"
+			baseDir := g.dotfilesResult.TargetDir
+			return baseDir + "/" + provider
+		}
+		return ""
+	}
+
+	// Apply config_source to each provider that has captured dotfiles
+	if configSource := getConfigSource("nvim"); configSource != "" {
+		if layer.Nvim == nil {
+			layer.Nvim = &captureNvimYAML{}
+		}
+		layer.Nvim.ConfigSource = configSource
+	}
+
+	if configSource := getConfigSource("vscode"); configSource != "" {
+		if layer.VSCode == nil {
+			layer.VSCode = &captureVSCodeYAML{}
+		}
+		layer.VSCode.ConfigSource = configSource
+	}
+
+	if configSource := getConfigSource("git"); configSource != "" {
+		if layer.Git == nil {
+			layer.Git = &captureGitYAML{}
+		}
+		layer.Git.ConfigSource = configSource
+	}
+
+	if configSource := getConfigSource("ssh"); configSource != "" {
+		if layer.SSH == nil {
+			layer.SSH = &captureSSHYAML{}
+		}
+		layer.SSH.ConfigSource = configSource
+	}
+
+	if configSource := getConfigSource("tmux"); configSource != "" {
+		if layer.Tmux == nil {
+			layer.Tmux = &captureTmuxYAML{}
+		}
+		layer.Tmux.ConfigSource = configSource
+	}
+
+	// Handle shell config sources
+	if configSource := getConfigSource("shell"); configSource != "" {
+		if layer.Shell == nil {
+			layer.Shell = &captureShellYAML{}
+		}
+		if layer.Shell.ConfigSource == nil {
+			layer.Shell.ConfigSource = &captureShellConfigSourceYAML{}
+		}
+		layer.Shell.ConfigSource.Dir = configSource
+	}
+
+	// Handle starship separately (it's under shell but captured as separate provider)
+	if configSource := getConfigSource("starship"); configSource != "" {
+		if layer.Shell == nil {
+			layer.Shell = &captureShellYAML{}
+		}
+		if layer.Shell.Starship == nil {
+			layer.Shell.Starship = &captureStarshipYAML{}
+		}
+		layer.Shell.Starship.ConfigSource = configSource
 	}
 }
 
@@ -368,6 +455,9 @@ func (g *CaptureConfigGenerator) generateBrewProviderLayer(name string, formulae
 		Brew: brew,
 	}
 
+	// Apply config_source from captured dotfiles before writing
+	g.applyDotfilesToLayer(&layer)
+
 	data, err := yaml.Marshal(layer)
 	if err != nil {
 		return err
@@ -423,6 +513,9 @@ func (g *CaptureConfigGenerator) generateProviderLayerIfSupported(name, provider
 		// Provider not supported for layer generation
 		return false, nil
 	}
+
+	// Apply config_source from captured dotfiles before writing
+	g.applyDotfilesToLayer(&layer)
 
 	data, err := yaml.Marshal(layer)
 	if err != nil {
@@ -553,6 +646,9 @@ func (g *CaptureConfigGenerator) generateLayerFromCapture(findings *CaptureFindi
 	if cargoItems, ok := byProvider["cargo"]; ok && len(cargoItems) > 0 {
 		g.addCargoPackagesToLayer(&layer, cargoItems)
 	}
+
+	// Apply config_source from captured dotfiles before writing
+	g.applyDotfilesToLayer(&layer)
 
 	data, err := yaml.Marshal(layer)
 	if err != nil {
@@ -1205,6 +1301,7 @@ type captureLayerYAML struct {
 	Runtime  *captureRuntimeYAML  `yaml:"runtime,omitempty"`
 	Nvim     *captureNvimYAML     `yaml:"nvim,omitempty"`
 	SSH      *captureSSHYAML      `yaml:"ssh,omitempty"`
+	Tmux     *captureTmuxYAML     `yaml:"tmux,omitempty"`
 }
 
 type capturePackagesYAML struct {
@@ -1243,9 +1340,10 @@ type captureBrewYAML struct {
 }
 
 type captureGitYAML struct {
-	User *captureGitUserYAML `yaml:"user,omitempty"`
-	Core *captureGitCoreYAML `yaml:"core,omitempty"`
-	Init *captureGitInitYAML `yaml:"init,omitempty"`
+	User         *captureGitUserYAML `yaml:"user,omitempty"`
+	Core         *captureGitCoreYAML `yaml:"core,omitempty"`
+	Init         *captureGitInitYAML `yaml:"init,omitempty"`
+	ConfigSource string              `yaml:"config_source,omitempty"` // Path to gitconfig.d directory (e.g., "dotfiles/git")
 }
 
 type captureGitUserYAML struct {
@@ -1262,8 +1360,10 @@ type captureGitInitYAML struct {
 }
 
 type captureShellYAML struct {
-	Default string                  `yaml:"default,omitempty"`
-	Shells  []captureShellEntryYAML `yaml:"shells,omitempty"`
+	Default      string                        `yaml:"default,omitempty"`
+	Shells       []captureShellEntryYAML       `yaml:"shells,omitempty"`
+	ConfigSource *captureShellConfigSourceYAML `yaml:"config_source,omitempty"` // Paths to shell config files
+	Starship     *captureStarshipYAML          `yaml:"starship,omitempty"`      // Starship prompt configuration
 }
 
 type captureShellEntryYAML struct {
@@ -1273,8 +1373,27 @@ type captureShellEntryYAML struct {
 	Plugins   []string `yaml:"plugins,omitempty"`
 }
 
+// captureShellConfigSourceYAML represents paths to shell configuration files.
+type captureShellConfigSourceYAML struct {
+	Aliases   string `yaml:"aliases,omitempty"`   // Path to aliases file
+	Functions string `yaml:"functions,omitempty"` // Path to functions file
+	Env       string `yaml:"env,omitempty"`       // Path to env file
+	Dir       string `yaml:"dir,omitempty"`       // Path to shell config directory
+}
+
+// captureStarshipYAML represents Starship prompt configuration.
+type captureStarshipYAML struct {
+	ConfigSource string `yaml:"config_source,omitempty"` // Path to starship.toml (e.g., "dotfiles/starship")
+}
+
+// captureTmuxYAML represents Tmux configuration.
+type captureTmuxYAML struct {
+	ConfigSource string `yaml:"config_source,omitempty"` // Path to tmux config (e.g., "dotfiles/tmux")
+}
+
 type captureVSCodeYAML struct {
-	Extensions []string `yaml:"extensions,omitempty"`
+	Extensions   []string `yaml:"extensions,omitempty"`
+	ConfigSource string   `yaml:"config_source,omitempty"` // Path to dotfiles (e.g., "dotfiles/vscode")
 }
 
 type captureRuntimeYAML struct {
@@ -1294,15 +1413,17 @@ type captureNvimYAML struct {
 	PluginManager string `yaml:"plugin_manager,omitempty"` // lazy.nvim, packer, vim-plug
 	PluginCount   int    `yaml:"plugin_count,omitempty"`   // Number of plugins detected
 	ConfigManaged bool   `yaml:"config_managed,omitempty"` // Config is under version control
+	ConfigSource  string `yaml:"config_source,omitempty"`  // Path to dotfiles (e.g., "dotfiles/nvim")
 }
 
 // SSH YAML types
 
 type captureSSHYAML struct {
-	ConfigPath string               `yaml:"config_path,omitempty"` // Path to SSH config
-	Defaults   *captureSSHDefaults  `yaml:"defaults,omitempty"`    // Global SSH options
-	Hosts      []captureSSHHostYAML `yaml:"hosts,omitempty"`       // Host configurations
-	Keys       []captureSSHKeyYAML  `yaml:"keys,omitempty"`        // Key references (never content)
+	ConfigPath   string               `yaml:"config_path,omitempty"`   // Path to SSH config
+	ConfigSource string               `yaml:"config_source,omitempty"` // Path to dotfiles (e.g., "dotfiles/ssh")
+	Defaults     *captureSSHDefaults  `yaml:"defaults,omitempty"`      // Global SSH options
+	Hosts        []captureSSHHostYAML `yaml:"hosts,omitempty"`         // Host configurations
+	Keys         []captureSSHKeyYAML  `yaml:"keys,omitempty"`          // Key references (never content)
 }
 
 type captureSSHDefaults struct {
