@@ -977,3 +977,68 @@ func TestDoctorOptions_WithUpdateConfig(t *testing.T) {
 	assert.True(t, opts.UpdateConfig)
 	assert.True(t, opts.DryRun)
 }
+
+func TestIsValidGoModulePath(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		path     string
+		expected bool
+	}{
+		{
+			name:     "valid github.com path",
+			path:     "github.com/user/tool",
+			expected: true,
+		},
+		{
+			name:     "valid golang.org path",
+			path:     "golang.org/x/tools/cmd/goimports",
+			expected: true,
+		},
+		{
+			name:     "valid gitlab.com path",
+			path:     "gitlab.com/group/project/cmd/cli",
+			expected: true,
+		},
+		{
+			name:     "simple name without domain",
+			path:     "relicta",
+			expected: false,
+		},
+		{
+			name:     "name with slash but no domain",
+			path:     "user/tool",
+			expected: false,
+		},
+		{
+			name:     "empty string",
+			path:     "",
+			expected: false,
+		},
+		{
+			name:     "starts with dot",
+			path:     "./local/path",
+			expected: false,
+		},
+		{
+			name:     "starts with slash",
+			path:     "/absolute/path",
+			expected: false,
+		},
+		{
+			name:     "domain only without path",
+			path:     "github.com",
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result := isValidGoModulePath(tc.path)
+			assert.Equal(t, tc.expected, result, "path: %s", tc.path)
+		})
+	}
+}

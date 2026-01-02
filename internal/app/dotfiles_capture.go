@@ -139,6 +139,11 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 		{
 			Provider: "shell",
 			SourcePaths: []string{
+				"~/.zshrc",
+				"~/.zshenv",
+				"~/.zprofile",
+				"~/.zlogin",
+				"~/.zlogout",
 				"~/.zshrc.d",
 				"~/.config/zsh",
 				"~/.zsh",
@@ -204,6 +209,32 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				"credentials",
 			},
 			TargetDir: "git",
+		},
+		{
+			Provider: "terminal",
+			SourcePaths: []string{
+				// WezTerm
+				"~/.wezterm.lua",
+				"~/.config/wezterm",
+				// Alacritty
+				"~/.alacritty.toml",
+				"~/.alacritty.yml",
+				"~/.config/alacritty",
+				// Kitty
+				"~/.config/kitty",
+				// Hyper
+				"~/.hyper.js",
+				"~/.config/hyper",
+				// iTerm2 (macOS)
+				"~/Library/Preferences/com.googlecode.iterm2.plist",
+				// Ghostty
+				"~/.config/ghostty",
+			},
+			ExcludePaths: []string{
+				"*.log",
+				"cache",
+			},
+			TargetDir: "terminal",
 		},
 	}
 }

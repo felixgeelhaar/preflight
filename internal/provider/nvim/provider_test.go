@@ -94,3 +94,23 @@ func TestProvider_Compile_PresetWithLazyLock(t *testing.T) {
 	// preset step + lazy-lock step
 	assert.Len(t, steps, 2)
 }
+
+func TestProvider_Compile_CustomPreset_NoSteps(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
+	p := nvim.NewProvider(fs, runner)
+
+	// "custom" preset means user has their own config - no step should be created
+	raw := map[string]interface{}{
+		"nvim": map[string]interface{}{
+			"preset": "custom",
+		},
+	}
+	ctx := compiler.NewCompileContext(raw)
+	steps, err := p.Compile(ctx)
+
+	require.NoError(t, err)
+	assert.Empty(t, steps, "custom preset should not create any steps")
+}

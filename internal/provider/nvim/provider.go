@@ -52,8 +52,8 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 	case cfg.ConfigRepo != "":
 		// Add config repo step if specified (alternative to preset)
 		steps = append(steps, NewConfigRepoStep(cfg.ConfigRepo, p.fs, p.runner))
-	case cfg.Preset != "":
-		// Add preset step if specified
+	case cfg.Preset != "" && cfg.Preset != "custom":
+		// Add preset step if specified (skip "custom" which means user has their own config)
 		steps = append(steps, NewPresetStep(cfg.Preset, p.fs, p.runner))
 	}
 
