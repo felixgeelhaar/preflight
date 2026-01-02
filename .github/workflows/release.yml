@@ -45,7 +45,8 @@ jobs:
           CGO_ENABLED: '0'
         run: |
           mkdir -p dist
-          go build -ldflags "-s -w -X main.version=${{ steps.version.outputs.VERSION }} -X main.commit=${{ github.sha }}" \
+          BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          go build -ldflags "-s -w -X main.version=${{ steps.version.outputs.VERSION }} -X main.commit=${{ github.sha }} -X main.buildDate=${BUILD_DATE}" \
             -o dist/preflight ./cmd/preflight
 
       - name: Create archive
