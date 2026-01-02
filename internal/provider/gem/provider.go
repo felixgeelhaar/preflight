@@ -35,7 +35,7 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 	steps := make([]compiler.Step, 0, len(cfg.Gems))
 
 	for _, g := range cfg.Gems {
-		steps = append(steps, NewGemStep(g, p.runner))
+		steps = append(steps, NewStep(g, p.runner))
 	}
 
 	return steps, nil

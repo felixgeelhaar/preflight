@@ -9,17 +9,17 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/validation"
 )
 
-// GemStep represents a Ruby gem installation step.
-type GemStep struct {
+// Step represents a Ruby gem installation step.
+type Step struct {
 	gem    Gem
 	id     compiler.StepID
 	runner ports.CommandRunner
 }
 
-// NewGemStep creates a new GemStep.
-func NewGemStep(gem Gem, runner ports.CommandRunner) *GemStep {
+// NewStep creates a new gem Step.
+func NewStep(gem Gem, runner ports.CommandRunner) *Step {
 	id := compiler.MustNewStepID("gem:gem:" + gem.Name)
-	return &GemStep{
+	return &Step{
 		gem:    gem,
 		id:     id,
 		runner: runner,
@@ -27,17 +27,17 @@ func NewGemStep(gem Gem, runner ports.CommandRunner) *GemStep {
 }
 
 // ID returns the step identifier.
-func (s *GemStep) ID() compiler.StepID {
+func (s *Step) ID() compiler.StepID {
 	return s.id
 }
 
 // DependsOn returns the step dependencies.
-func (s *GemStep) DependsOn() []compiler.StepID {
+func (s *Step) DependsOn() []compiler.StepID {
 	return nil
 }
 
 // Check determines if the gem is already installed.
-func (s *GemStep) Check(ctx compiler.RunContext) (compiler.StepStatus, error) {
+func (s *Step) Check(ctx compiler.RunContext) (compiler.StepStatus, error) {
 	// Use gem list -i to check if gem is installed
 	result, err := s.runner.Run(ctx.Context(), "gem", "list", "-i", s.gem.Name)
 	if err != nil {
@@ -52,7 +52,7 @@ func (s *GemStep) Check(ctx compiler.RunContext) (compiler.StepStatus, error) {
 }
 
 // Plan returns the diff for this step.
-func (s *GemStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
+func (s *Step) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 	version := s.gem.Version
 	if version == "" {
 		version = "latest"
@@ -61,7 +61,7 @@ func (s *GemStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 }
 
 // Apply executes the gem installation.
-func (s *GemStep) Apply(ctx compiler.RunContext) error {
+func (s *Step) Apply(ctx compiler.RunContext) error {
 	// Validate gem name before execution to prevent command injection
 	if err := validation.ValidateGemName(s.gem.FullName()); err != nil {
 		return fmt.Errorf("invalid gem name: %w", err)
@@ -83,7 +83,7 @@ func (s *GemStep) Apply(ctx compiler.RunContext) error {
 }
 
 // Explain provides a human-readable explanation.
-func (s *GemStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
+func (s *Step) Explain(_ compiler.ExplainContext) compiler.Explanation {
 	desc := fmt.Sprintf("Installs the %s gem via RubyGems.", s.gem.Name)
 	if s.gem.Version != "" {
 		desc += fmt.Sprintf(" Version: %s", s.gem.Version)

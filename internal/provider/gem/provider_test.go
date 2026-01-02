@@ -112,14 +112,14 @@ func TestProvider_Compile_InvalidConfig(t *testing.T) {
 	}
 }
 
-func TestGemStep_Check_Installed(t *testing.T) {
+func TestStep_Check_Installed(t *testing.T) {
 	runner := mocks.NewCommandRunner()
 	runner.AddResult("gem", []string{"list", "-i", "rails"}, ports.CommandResult{
 		Stdout:   "true",
 		ExitCode: 0,
 	})
 
-	step := NewGemStep(Gem{Name: "rails"}, runner)
+	step := NewStep(Gem{Name: "rails"}, runner)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(runCtx)
@@ -131,14 +131,14 @@ func TestGemStep_Check_Installed(t *testing.T) {
 	}
 }
 
-func TestGemStep_Check_NotInstalled(t *testing.T) {
+func TestStep_Check_NotInstalled(t *testing.T) {
 	runner := mocks.NewCommandRunner()
 	runner.AddResult("gem", []string{"list", "-i", "rails"}, ports.CommandResult{
 		Stdout:   "false",
 		ExitCode: 1,
 	})
 
-	step := NewGemStep(Gem{Name: "rails"}, runner)
+	step := NewStep(Gem{Name: "rails"}, runner)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(runCtx)
@@ -150,14 +150,14 @@ func TestGemStep_Check_NotInstalled(t *testing.T) {
 	}
 }
 
-func TestGemStep_Apply(t *testing.T) {
+func TestStep_Apply(t *testing.T) {
 	runner := mocks.NewCommandRunner()
 	runner.AddResult("gem", []string{"install", "rails"}, ports.CommandResult{
 		Stdout:   "Successfully installed rails-7.0.0",
 		ExitCode: 0,
 	})
 
-	step := NewGemStep(Gem{Name: "rails"}, runner)
+	step := NewStep(Gem{Name: "rails"}, runner)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(runCtx)
@@ -166,14 +166,14 @@ func TestGemStep_Apply(t *testing.T) {
 	}
 }
 
-func TestGemStep_Apply_WithVersion(t *testing.T) {
+func TestStep_Apply_WithVersion(t *testing.T) {
 	runner := mocks.NewCommandRunner()
 	runner.AddResult("gem", []string{"install", "bundler", "-v", "2.4.0"}, ports.CommandResult{
 		Stdout:   "Successfully installed bundler-2.4.0",
 		ExitCode: 0,
 	})
 
-	step := NewGemStep(Gem{Name: "bundler", Version: "2.4.0"}, runner)
+	step := NewStep(Gem{Name: "bundler", Version: "2.4.0"}, runner)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(runCtx)
@@ -182,8 +182,8 @@ func TestGemStep_Apply_WithVersion(t *testing.T) {
 	}
 }
 
-func TestGemStep_Plan(t *testing.T) {
-	step := NewGemStep(Gem{Name: "rails", Version: "7.0.0"}, nil)
+func TestStep_Plan(t *testing.T) {
+	step := NewStep(Gem{Name: "rails", Version: "7.0.0"}, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	diff, err := step.Plan(runCtx)
@@ -204,8 +204,8 @@ func TestGemStep_Plan(t *testing.T) {
 	}
 }
 
-func TestGemStep_Explain(t *testing.T) {
-	step := NewGemStep(Gem{Name: "rails", Version: "7.0.0"}, nil)
+func TestStep_Explain(t *testing.T) {
+	step := NewStep(Gem{Name: "rails", Version: "7.0.0"}, nil)
 	explainCtx := compiler.NewExplainContext()
 
 	explanation := step.Explain(explainCtx)
