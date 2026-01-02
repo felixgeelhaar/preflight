@@ -2,6 +2,8 @@ package gotools
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
@@ -95,12 +97,17 @@ func TestProvider_Compile_InvalidConfig(t *testing.T) {
 }
 
 func TestToolStep_Check_Installed(t *testing.T) {
-	runner := mocks.NewCommandRunner()
-	runner.AddResult("which", []string{"gopls"}, ports.CommandResult{
-		Stdout:   "/home/user/go/bin/gopls",
-		ExitCode: 0,
-	})
+	// Create a temp directory to act as GOBIN with a fake binary
+	tempDir := t.TempDir()
+	t.Setenv("GOBIN", tempDir)
 
+	// Create a fake binary file
+	fakeBinary := filepath.Join(tempDir, "gopls")
+	if err := os.WriteFile(fakeBinary, []byte("fake"), 0755); err != nil {
+		t.Fatalf("failed to create fake binary: %v", err)
+	}
+
+	runner := mocks.NewCommandRunner()
 	step := NewToolStep(Tool{Module: "golang.org/x/tools/gopls", Version: "latest"}, runner)
 	runCtx := compiler.NewRunContext(context.Background())
 
@@ -114,10 +121,12 @@ func TestToolStep_Check_Installed(t *testing.T) {
 }
 
 func TestToolStep_Check_NotInstalled(t *testing.T) {
-	// Use a tool with a binary name that definitely doesn't exist
-	// Check() uses os.Stat on GOBIN, not the runner mock
+	// Create an empty temp directory as GOBIN (no binaries)
+	tempDir := t.TempDir()
+	t.Setenv("GOBIN", tempDir)
+
 	runner := mocks.NewCommandRunner()
-	step := NewToolStep(Tool{Module: "example.com/nonexistent/definitely-not-installed-xyz123", Version: "latest"}, runner)
+	step := NewToolStep(Tool{Module: "golang.org/x/tools/gopls", Version: "latest"}, runner)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(runCtx)
