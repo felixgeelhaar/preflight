@@ -134,3 +134,27 @@ func TestCaptureReviewOptions_WithAcceptAll(t *testing.T) {
 
 	assert.True(t, opts.AcceptAll)
 }
+
+func TestRunCaptureReview_AcceptAllBypassesTUI(t *testing.T) {
+	t.Parallel()
+
+	// Create test items
+	items := []CaptureItem{
+		{Name: "git", Category: "brew", Type: CaptureTypeFormula, Details: "version control"},
+		{Name: "nvim", Category: "brew", Type: CaptureTypeFormula, Details: "editor"},
+	}
+
+	// With AcceptAll, RunCaptureReview should return immediately without TUI
+	opts := NewCaptureReviewOptions().WithAcceptAll(true)
+	result, err := RunCaptureReview(t.Context(), items, opts)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.False(t, result.Cancelled)
+	assert.Len(t, result.AcceptedItems, 2)
+	assert.Empty(t, result.RejectedItems)
+
+	// Verify items are returned correctly
+	assert.Equal(t, "git", result.AcceptedItems[0].Name)
+	assert.Equal(t, "nvim", result.AcceptedItems[1].Name)
+}

@@ -23,6 +23,7 @@ selectively import them into your configuration.
 Examples:
   preflight capture                           # Interactive capture
   preflight capture --all                     # Accept all discovered items
+  preflight capture --yes                     # Accept all (alias for --all)
   preflight capture --provider brew           # Only capture Homebrew packages
   preflight capture --all --smart-split       # Organize into logical layers (category-based)
   preflight capture --all --split-by language # Organize by programming language
@@ -64,10 +65,13 @@ func init() {
 }
 
 func runCapture(_ *cobra.Command, _ []string) error {
-	opts := tui.NewCaptureReviewOptions().
-		WithAcceptAll(captureAll)
+	// Respect both --all flag and global --yes flag
+	acceptAll := captureAll || yesFlag
 
-	if captureAll {
+	opts := tui.NewCaptureReviewOptions().
+		WithAcceptAll(acceptAll)
+
+	if acceptAll {
 		opts.Interactive = false
 	}
 
