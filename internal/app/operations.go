@@ -557,6 +557,7 @@ func (p *Preflight) captureNpmGlobals(_ context.Context, capturedAt time.Time) [
 }
 
 // captureGoTools captures installed Go tools from GOBIN or GOPATH/bin.
+// Only captures tools that have valid Go module paths (installed via go install).
 func (p *Preflight) captureGoTools(_ context.Context, capturedAt time.Time) []CapturedItem {
 	// Determine the Go bin directory
 	gobin := os.Getenv("GOBIN")
@@ -580,21 +581,80 @@ func (p *Preflight) captureGoTools(_ context.Context, capturedAt time.Time) []Ca
 
 	items := make([]CapturedItem, 0, len(entries))
 	for _, entry := range entries {
-		// Skip directories and non-executable files
+		// Skip directories
 		if entry.IsDir() {
 			continue
 		}
-		name := entry.Name()
+
+		binaryPath := filepath.Join(gobin, entry.Name())
+
+		// Get module path using go version -m
+		modulePath := getGoToolModulePath(binaryPath)
+		if modulePath == "" {
+			// Skip tools without valid module paths (e.g., copied from Homebrew)
+			continue
+		}
+
 		items = append(items, CapturedItem{
 			Provider:   "go",
-			Name:       name,
-			Value:      name,
+			Name:       entry.Name(),
+			Value:      modulePath,
 			Source:     gobin,
 			CapturedAt: capturedAt,
 		})
 	}
 
 	return items
+}
+
+// getGoToolModulePath extracts the Go module path from a binary using go version -m.
+// Returns empty string if the binary is not a Go binary or doesn't have module info.
+func getGoToolModulePath(binaryPath string) string {
+	cmd := exec.Command("go", "version", "-m", binaryPath)
+	output, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+
+	// Parse output to find the module path
+	// Format:
+	// /path/to/binary: go1.21.0
+	//         path    github.com/user/tool
+	//         mod     github.com/user/tool    v1.2.3  h1:...
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		// Look for "path" line which contains the main module path
+		if strings.HasPrefix(line, "path\t") || strings.HasPrefix(line, "path ") {
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				modulePath := fields[1]
+				// Validate it looks like a Go module path (contains a domain)
+				if isValidGoModulePath(modulePath) {
+					return modulePath
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// isValidGoModulePath checks if a string looks like a valid Go module path.
+// Valid module paths start with a domain (contain at least one dot and a slash).
+func isValidGoModulePath(path string) bool {
+	// Must contain a dot (for the domain) and a slash (for the path)
+	// Examples: github.com/user/tool, golang.org/x/tools
+	if !strings.Contains(path, ".") {
+		return false
+	}
+	if !strings.Contains(path, "/") {
+		return false
+	}
+	// Shouldn't start with . or /
+	if strings.HasPrefix(path, ".") || strings.HasPrefix(path, "/") {
+		return false
+	}
+	return true
 }
 
 // capturePipPackages captures user-installed pip packages.

@@ -1110,7 +1110,7 @@ func parseSSHConfig(configPath string) ([]captureSSHHostYAML, *captureSSHDefault
 
 			inGlobalSection = false
 			currentHost = &captureSSHHostYAML{
-				Name: value,
+				Host: value,
 			}
 			continue
 		}
@@ -1434,7 +1434,7 @@ type captureSSHDefaults struct {
 }
 
 type captureSSHHostYAML struct {
-	Name         string `yaml:"name"`                    // Host alias
+	Host         string `yaml:"host"`                    // Host alias (matches SSHHostConfig.Host)
 	HostName     string `yaml:"hostname,omitempty"`      // Actual hostname (may be redacted)
 	User         string `yaml:"user,omitempty"`          // Username
 	IdentityFile string `yaml:"identity_file,omitempty"` // Path to key file

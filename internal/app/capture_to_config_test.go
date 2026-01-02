@@ -723,8 +723,8 @@ Host work
 		// Verify SSH config structure
 		assert.Contains(t, string(content), "ssh:")
 		assert.Contains(t, string(content), "hosts:")
-		assert.Contains(t, string(content), "name: github.com")
-		assert.Contains(t, string(content), "name: work")
+		assert.Contains(t, string(content), "host: github.com")
+		assert.Contains(t, string(content), "host: work")
 		assert.Contains(t, string(content), "hostname: work.example.com")
 		assert.Contains(t, string(content), "port: \"2222\"")
 	})
