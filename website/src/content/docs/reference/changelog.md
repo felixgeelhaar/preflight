@@ -7,9 +7,31 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [4.6.0] - 2026-01-02
 
 ### Added
+
+- **Language Package Manager Providers**: Capture and apply support for 5 language-specific package managers
+  - **npm provider**: Global npm packages via `npm install -g`
+    - Parse `npm list -g --depth=0 --json` for capture
+    - Scoped package support (`@org/pkg@version`)
+    - Version pinning with `@version` syntax
+  - **go provider**: Go tools via `go install`
+    - Scans `$GOBIN` or `$GOPATH/bin` for installed tools
+    - Module path support (`golang.org/x/tools/gopls@latest`)
+    - Automatic binary name extraction
+  - **pip provider**: Python user packages via `pip install --user`
+    - Parse `pip list --format=json --user` for capture
+    - Version specifiers (`==`, `>=`, `~=`) support
+    - User-scope installation (no sudo required)
+  - **gem provider**: Ruby gems via `gem install`
+    - Parse `gem list` for capture
+    - Version pinning with `-v` flag
+    - System and user gem detection
+  - **cargo provider**: Rust crates via `cargo install`
+    - Parse `cargo install --list` for capture
+    - Version pinning with `--version` flag
+    - Binary crate installation
 
 - **Split Strategies for Capture**: New `--split-by` flag for flexible layer organization
   - `category` (default): Fine-grained categories (base, dev-go, security, containers)
@@ -28,6 +50,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Step ID Validation**: Allow `@` symbol in step IDs for versioned packages
   - Fixes panic when capturing packages like `go@1.24`, `python@3.12`, `openssl@3`
   - Updated regex pattern to include `@` in valid characters
+
+### Example Configuration
+
+```yaml
+# layers/dev-node.yaml
+packages:
+  npm:
+    packages:
+      - "@anthropic-ai/claude-code"
+      - pnpm@10.24.0
+      - typescript
+
+# layers/dev-go.yaml
+packages:
+  go:
+    tools:
+      - golang.org/x/tools/gopls@latest
+      - github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+# layers/dev-python.yaml
+packages:
+  pip:
+    packages:
+      - httpie
+      - black==23.1.0
+      - ruff>=0.1.0
+
+# layers/dev-ruby.yaml
+packages:
+  gem:
+    gems:
+      - rails
+      - bundler@2.4
+
+# layers/dev-rust.yaml
+packages:
+  cargo:
+    crates:
+      - ripgrep
+      - bat@0.24.0
+```
 
 ---
 
@@ -1003,6 +1066,7 @@ policies:
 
 ---
 
+[4.6.0]: https://github.com/felixgeelhaar/preflight/compare/v4.0.1...v4.6.0
 [4.0.1]: https://github.com/felixgeelhaar/preflight/compare/v4.0.0...v4.0.1
 [4.0.0]: https://github.com/felixgeelhaar/preflight/compare/v3.4.0...v4.0.0
 [3.4.0]: https://github.com/felixgeelhaar/preflight/compare/v3.3.2...v3.4.0

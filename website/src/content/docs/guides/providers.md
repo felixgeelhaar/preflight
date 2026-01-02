@@ -404,6 +404,116 @@ vscode:
 - Lock installed versions (best-effort)
 - Detect settings drift
 
+### npm
+
+Global npm package management.
+
+```yaml
+packages:
+  npm:
+    packages:
+      - typescript
+      - eslint
+      - "@anthropic-ai/claude-code"
+      - pnpm@10.24.0
+```
+
+**Capabilities:**
+- Install global npm packages
+- Scoped package support (`@org/package`)
+- Version pinning with `@version` syntax
+- Capture from `npm list -g --depth=0 --json`
+
+**Check:** Parses `npm list -g --depth=0 --json` output
+**Apply:** `npm install -g <package>[@version]`
+
+### go
+
+Go tools installation via `go install`.
+
+```yaml
+packages:
+  go:
+    tools:
+      - golang.org/x/tools/gopls@latest
+      - github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      - github.com/air-verse/air@latest
+```
+
+**Capabilities:**
+- Install Go tools from module paths
+- Version pinning with `@version` syntax
+- Capture from `$GOBIN` or `$GOPATH/bin`
+- Automatic binary name extraction from module path
+
+**Check:** Checks for binary in `$GOBIN`
+**Apply:** `go install <module>@<version>`
+
+### pip
+
+Python user package management.
+
+```yaml
+packages:
+  pip:
+    packages:
+      - httpie
+      - black==23.1.0
+      - ruff>=0.1.0
+      - mypy~=1.0
+```
+
+**Capabilities:**
+- Install packages in user scope (no sudo)
+- Version specifiers: `==` (exact), `>=` (minimum), `~=` (compatible)
+- Capture from `pip list --format=json --user`
+
+**Check:** `pip show <package>`
+**Apply:** `pip install --user <package>[specifier]`
+
+### gem
+
+Ruby gem management.
+
+```yaml
+packages:
+  gem:
+    gems:
+      - rails
+      - bundler@2.4
+      - rubocop
+```
+
+**Capabilities:**
+- Install Ruby gems
+- Version pinning with `@version` syntax
+- Capture from `gem list`
+
+**Check:** `gem list <gem> -i`
+**Apply:** `gem install <gem>` or `gem install <gem> -v <version>`
+
+### cargo
+
+Rust crate installation via `cargo install`.
+
+```yaml
+packages:
+  cargo:
+    crates:
+      - ripgrep
+      - bat@0.24.0
+      - fd-find
+      - tokei
+```
+
+**Capabilities:**
+- Install binary crates from crates.io
+- Version pinning with `@version` syntax
+- Capture from `cargo install --list`
+
+**Check:** Parses `cargo install --list` output
+**Apply:** `cargo install <crate>` or `cargo install <crate> --version <v>`
+
 ## Provider Execution
 
 ### Step Interface
