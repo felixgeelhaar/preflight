@@ -1,0 +1,1608 @@
+{
+  "version": "1",
+  "created_at": "2026-01-02T14:06:53.574105Z",
+  "updated_at": "2026-01-02T14:06:53.574105Z",
+  "scope": {},
+  "fingerprints": [
+    {
+      "fingerprint": "39f5c123b7bb0030b8985fe98d78280c",
+      "rule_id": "G115",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574043Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "951c6d16ea2d1234674823563e2e1ae5",
+      "rule_id": "G106",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574043Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "bceef8b9d535784f22cc3778c4a8fabc",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574044Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "730e31e69c87ac165db4790e3ac4ab38",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574046Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "f9619a2be5d66e4e8ae41c1fa6a774c6",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574046Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2c03a973a55615cdd2f7e1990b8cf7b5",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574049Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a01a9030998f61e9f3f9478d042af815",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57405Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ca324a307e8d717e858622d71ace038a",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57405Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a0156910020115de3d69c864d2696ccd",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57405Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "c01b8e873dea7d36610f8bd2bd82c07d",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574052Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "d57f94cc378caffef2ebcd9261532366",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574053Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "8e2e6c13e649381cdc642bbd26d00c75",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574053Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "009bb5c9a555c099692e7154f82a7c18",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574053Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "e9c2902bc730a813f6f3933e3815bd8f",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574053Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "785fda8d06b68dd955021dfdef1ce222",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574053Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "0abc4ba21a99c9732055ff12fbc7ef2d",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574054Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "c613c8f7ebe99e5563c2d1a370084dd3",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574055Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "17dee8b136295cf06612066bc08d1cee",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574055Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "85dc17ac64659e728bda5465e232a6a1",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574055Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "847bdc95cab88cc516fd52ed5007f13c",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574057Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "8834460edeae3325e327927d8b8cfa26",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574058Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "40aa1878d61b86896fb29ced63bd5cbc",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574058Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2692c73f39973a3e1529d06acf8876f4",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574058Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ba1faa7290e3af5417a65dd68a3e21fd",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574058Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "28523f46e012e4f27234333df150bb97",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574058Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "683e625e12d93dc794eed81ac4b7322c",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574058Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "0575f1d8f1e3900947840cad0f3de484",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574058Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "73b244d54da9bee55172d7f88f44c127",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574059Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "51206179b5d7680b730cafa11cb2127f",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574059Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "0f81d78562a0a13cc0e71cbd3158f987",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57406Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "75f0b2366db920cd9afff74e12fc70f0",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57406Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "da2b35e13f265ac3fb1018cfda0cd702",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57406Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "7d9746f90b2adfd537bb0b71ca34b3c3",
+      "rule_id": "G204",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57406Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "39d027131f876530ee88996134e823fa",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57406Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "29f58134bc4bff0a3c6efc3dd17fc7f1",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57406Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "9d5004ddc53552c6f0eab571a8e26574",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57406Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "7420779fdc606a57cfa4580b4802d649",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574061Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a6df843e26021d3d50ebc2329008dc3f",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574061Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "f932e48cfaed76b5b698d916c245279a",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574062Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "4d827e36a3b871c517d31e88c80473d1",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574063Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "96f3a5f045453406dea592c72f17be58",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574063Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "72fe0d66132651e9c220957b41b8dec7",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574063Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "5211035a82422964512f1c597f4b3e22",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574063Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "b194ee7223b48e61500c454ee93115c4",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574063Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "e4c19fbcd91b3a53fcdd960ab9a744c8",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574063Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "28eb54409b60b096a39f6a936dbebc9a",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574063Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ee00697390f710a809bb5d9319cae5e8",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574063Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "cf7dec18816c5a6ebc04272cad3c6ff6",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574064Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "65c6b59825c47c06542cec2a7d3bbc6e",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574064Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a2971cba184ba9ae3e10a12c6e613e1e",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574064Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2b48c4187d27766fa8a2c8e1a9f239ce",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574064Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "e990850fbfba7182886ea326b1abdc83",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574064Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "35a3aa2b3708584dd3605725aa6d1342",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574064Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ad7906fdf041b54be28df358ea2f42c5",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574064Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "bf21ccb9b08bae7f5aead31ccc4a8e2a",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574064Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2da86a0a287912536e0347784617d895",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574065Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a6aab374a6c98b32663f93d382479678",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574065Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "6e74fc7ba786b2c4dc8b4afdadc1f23a",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574068Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "8e550c4fc14b8154973f5ee6057c3b43",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574068Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "47f9ba0a96a55e7e600daf44292ef3f6",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574068Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "042ccf11956b0aa1028eb77884d33af6",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574068Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "e29e309079d819c46a5fd4cec96d80e9",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574068Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "b538a49d1f24192ed7ba6d536d7ac0cc",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574068Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2389e5801b9fbf0f433acbdf4dda24d6",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574068Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "f2fdf48969afe52bb589588dcd613195",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574068Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "05f125f24484d62725841d01f7d4e8da",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574069Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "1b3aa5f8b69a9be7896188f9fc8abb37",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574069Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "3c9f90f5d5d879e27a956d84db61f36e",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574069Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "00acfe5ef7789a6eced08a91847a69bc",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574069Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a07f7c48b5ef0c2cb10151ec0f0b7e1f",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574069Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2927201e2859973e0cc410204ea9dcae",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574069Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ea505c674f39efa8401039d5e18b126b",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574069Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "5778bb544d277d11c938efcbc919fa61",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574069Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "0a76d694800d2f572142667bf1f8df99",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574069Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "cdb2cccea872bf930f4f2ff9ab06855b",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574069Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "cb8bf8f98decea9ade3b4d6b35eabb02",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57407Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a6e568bae72fad61542e7888a1d0d325",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574078Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "93d8e868d92d77a7ce645ae4655d2990",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574078Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "6d5477ab250958053a06903c2a45589e",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574078Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "9f9f905fe3079c422d26624b60e5542b",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574078Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2d4e569028a665eeec4b5c25175c0946",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574078Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "c6544df089c51d6a91845bf230cf8fdf",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574078Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "7d7fa0d4ead852b5b7e080e773bfa296",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574079Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "22777ec0b6b9dbcbfc824b77a98e520d",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574079Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2998b2c1abf842af50e5080a09165a8b",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574079Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a7bdb36a074afb302217b4999e465763",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574079Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "dc1653f27a48e53a54dfb8ba66a62e84",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574079Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "1988990f9231e7c4ccbbed0e793de337",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574079Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "5922a2cb948abd75e834ea8ae34093c8",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574079Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "e4d20a558f9421a428aa68182413dca3",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57408Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "f83221b0782831cc8ac0880d69fb0fff",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57408Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "152e434b4dbc1f88ed65db08444f1d6c",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57408Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "0cdf488411581d481d78a45c15c7ff56",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57408Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a429be59b223d2133967dc8542530380",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57408Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "bb77bb81e44aab4c754da1f508097f29",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57408Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "c130b478e9d0c6b66877ea32a8b0cdfc",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57408Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a3eb124844c3a2de92d2fa2361edd50b",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574081Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "77e081763d74d8f4883230f0ba523cbe",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574081Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "933be1a1aa7910d43f2e7b6bc52d3bd0",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574081Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "44dee865e9dd1326582cb43320564040",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574081Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "731b0c8ca70339947f99e8ea5bad7850",
+      "rule_id": "G110",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574081Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "32acecff7a6d62a7c38cd683206d8787",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574081Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "5b6ceef361734468f1e7176a51a52b54",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574081Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "62e3154b0ef3b08933e296242fd21db0",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574081Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2367a0e8a197ce5e39e96f5cd27f788b",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574081Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "42f9a1e1c644de1a469bb93f6b03ac4a",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574082Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "15e0ed38b4c51c323288dc9dc38a60fc",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574082Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "dc30f619f40362c270f811f86866761c",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574082Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "25ee1ac23e03ff4adbb5e4afa028c181",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574082Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a653d6289b7d1376799fd9deefb91d60",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574082Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "56a4f59bf353179c2942cc53274424e8",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574082Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "97b4a02f81f2e5582df68dd0bef3bb70",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574083Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "9d59cd7092b7b09aa6dfd24b57732e72",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574083Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ea45b7becbb5a6325dbacc5345e93b10",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574086Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ffb9a3997b567f02e1626c417d48079b",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574086Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ebbf370bd16a278ce664578595fc140d",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574086Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "61ac2c5bf3128ca3fb06b21bed8e6791",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574087Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2093e8e70e5696cc1e13a7053050055a",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574087Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "33967992279b11bc3ede9cef04a3df37",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574087Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "42128a08b883d152f9756eb735127e9d",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574087Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "22773618062191d058766fe738fc9da3",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574087Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "d2cd376d56b735fd412a7f14d4a63ddc",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574087Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "635e077391c6d60df25f003457ae462a",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574087Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "786165ad75de08aeecb5fd0a1deb94a0",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574087Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2103eab190d5c1b9214a9f168a887a32",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574088Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "d627ea521f76f4a619134fe6b4141578",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574088Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ce43996c17a5323188081bd43e91a928",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574088Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "fabf6784a48de686e1fa7bb5e3867898",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574088Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "95b6bf6cd0090d70e301fa1974455c95",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574088Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ac52d3223a675f5edbfadd5bb4d88a39",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574088Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "88c2325695634df4881220f67f5d19e1",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574088Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "bc9c40669ba42b2cfa17fd8439d2b4e2",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574088Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "cec6f307f3cbf3059089ce2ab63daa0a",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574089Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "db5c8e991d39ff1da6d5de7e239ba8df",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574089Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "6b8b3bcbc8591d10955ddbd1220d2809",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574089Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "9d7ea14c2015fe4bc5d865244e6a18b1",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574089Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "61fc87dd337d3012f1f3cc2dbcfd65d6",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574089Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "80e7490149c38776d3065ae5d626c6f4",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574089Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "f0ca7dcc1cd14d8c7bf6b9b921441f53",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574089Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "893f71754a4bc78c2c865f1041ecc480",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574089Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "790cb36df1b81646d1b5f7b23fe507d1",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574089Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "0cdf4bd54cd7e3beb018c92f1f9c67d6",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57409Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "dbdaa86f36c53c018192786c2f568292",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57409Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "32ab71138579c994a001e84eae29b0c3",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57409Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "f2834e043c823d5d4ba74635993dec79",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57409Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "03872c909ba7035321aba9a2d399f1c3",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57409Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "0411c9c3b568a77490fa5a32c3f1634b",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57409Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "27c12fd15e9d7109e684657c8c47a4a5",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57409Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "e3826bac3251876f6594714c1b9412a6",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57409Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "8e9223796d32cd8daa354d43582f275a",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57409Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ee9d161a52d8cb75d7a5f677a98cf83a",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.57409Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "28cd698caf77bcec75b9fa7d0915e52e",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574091Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ceee6568bec3bb63f0322e7ab528d080",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574098Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "e1382f87a655778a95bb5cc7dd33c470",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574098Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "da2fc0547eb2b136147ca65119bf3286",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574098Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "24024c48e46077a60924a8aaa56a6df6",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574098Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a8e52b7be2b103106f69040faa8e4954",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574098Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "5019249bc25edf204950fd03843b780b",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574098Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "953d599bad7218969029a201bfae5900",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574098Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ba60fb23df2311645ce516f174762915",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574099Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "c5d2d85c04a5e7ae3883be6786eea543",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574099Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "980b11336d5665abe33e7f142342ad73",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574099Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "ceafdb87a9e52327dda130a64bea3901",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574099Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "d58a1a101990ba21ce6ac4b70b3d48e9",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574099Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "af12c8e992665c2ccc1430ac8dd5d586",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574099Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "9d99a6173b0c6859412fed42175adf8d",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574099Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "e608c6cd4af2574a0b56b17b28662212",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574099Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "6a754aa58fd9e6e63807c56a056443e1",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.5741Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "d69ed9ae2a4a4b1e50503e6cc998dcb5",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.5741Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "36fd0df40a29f7c458bc60b8853cd2a7",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.5741Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "db41c03784a9e7ac5daff69de47ed0dd",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.5741Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "344c021e56e36dfe8f44cf510814557f",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.5741Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "927bbfd9468197cd67d016fe591bc799",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.5741Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "e3be53b924922a48f86175e508d97197",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.5741Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "5b154bcc68f3105ac6cf1977244f0fe1",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574101Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "35c571ae290da3718b8aeb5cff1fee98",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574101Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "64a052f1c844ffda0bad079d6fe9e9d8",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574101Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "653e24678d2b700a59beee183efd825f",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574101Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "6a91974ae1afd37a7ed0da9eb66ffd44",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574101Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "739bbca3e512faabb8d79313670b5edb",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574101Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "dd4d2127beb168660a843bb6767ed724",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574101Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "7f2329c70426b12eda4e43288742719e",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574102Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "b39efff386205edb2bca3e4c88a440d1",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574102Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "6a674f119f063339d1bf6386ba001d61",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574102Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "256cb5cc2742982829deb5956e901f68",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574102Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "e369c624ba669ec945666dea7ae30eb8",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574102Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "8794af0833c9010910321175493c73bc",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574102Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "b0c003db7cdc81cab59f37ab9bc02e77",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574102Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "4fafeeeb7d08d8abd3fe36e26d0bee1c",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574103Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "94b6650a085d8ba094264bac6f708d2c",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574103Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "43e0389f4c07ae083f3f7e1d4b340aab",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574103Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2b7df25f052ee8aea6c7093cfb924eb3",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574103Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "a3747fccf414282132698c6acddfe963",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574103Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "24a450624e29afd854e7e43f76e67c4b",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574103Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "8d3759d21e1b9849cf5908b84bfffe5f",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574104Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "2067d6836b2a3610dc4f55ff56b4d3ae",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574104Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "133105831bc8f3142a8f49ab61d76c9e",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574104Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "214779d125e296e2249cead1abe4bb96",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574104Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "52fdbd409fa231b11698efe67df47031",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574104Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    },
+    {
+      "fingerprint": "4403654eac27ffe2d3b9be02a2855f1c",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-02T14:06:53.574104Z",
+      "reason": "Expected CLI tool behavior: command execution, file operations, and HTTP endpoints are core functionality"
+    }
+  ]
+}
