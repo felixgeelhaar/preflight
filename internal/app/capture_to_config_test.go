@@ -834,3 +834,146 @@ fake private key content
 		assert.Contains(t, string(content), "hosts:")
 	})
 }
+
+func TestCaptureConfigGenerator_WithDotfiles(t *testing.T) {
+	t.Parallel()
+
+	t.Run("populates config_source from dotfiles result", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		// Create a mock dotfiles capture result
+		dotfilesResult := &DotfilesCaptureResult{
+			TargetDir: "dotfiles",
+			Dotfiles: []CapturedDotfile{
+				{Provider: "nvim", SourcePath: "~/.config/nvim", RelativePath: "init.lua", DestPath: "dotfiles/nvim/init.lua"},
+				{Provider: "vscode", SourcePath: "~/Library/Application Support/Code/User/settings.json", RelativePath: "settings.json", DestPath: "dotfiles/vscode/settings.json"},
+				{Provider: "git", SourcePath: "~/.gitconfig.d", RelativePath: "alias.gitconfig", DestPath: "dotfiles/git/alias.gitconfig"},
+				{Provider: "ssh", SourcePath: "~/.ssh/config", RelativePath: "config", DestPath: "dotfiles/ssh/config"},
+				{Provider: "shell", SourcePath: "~/.zshrc.d", RelativePath: "aliases.zsh", DestPath: "dotfiles/shell/aliases.zsh"},
+				{Provider: "starship", SourcePath: "~/.config/starship.toml", RelativePath: "starship.toml", DestPath: "dotfiles/starship/starship.toml"},
+				{Provider: "tmux", SourcePath: "~/.tmux.conf", RelativePath: "tmux.conf", DestPath: "dotfiles/tmux/tmux.conf"},
+			},
+		}
+
+		generator := NewCaptureConfigGenerator(tmpDir).WithDotfiles(dotfilesResult)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "brew", Name: "git", Value: "git", CapturedAt: time.Now()},
+				{Provider: "nvim", Name: "config", Value: map[string]any{"preset": "lazyvim"}, CapturedAt: time.Now()},
+			},
+			Providers:  []string{"brew", "nvim"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		// Read layer content
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		contentStr := string(content)
+
+		// Verify config_source fields are populated
+		assert.Contains(t, contentStr, "config_source: dotfiles/nvim", "nvim config_source should be set")
+		assert.Contains(t, contentStr, "config_source: dotfiles/vscode", "vscode config_source should be set")
+		assert.Contains(t, contentStr, "config_source: dotfiles/git", "git config_source should be set")
+		assert.Contains(t, contentStr, "config_source: dotfiles/ssh", "ssh config_source should be set")
+		assert.Contains(t, contentStr, "config_source: dotfiles/tmux", "tmux config_source should be set")
+	})
+
+	t.Run("populates shell config_source with dir and starship", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		dotfilesResult := &DotfilesCaptureResult{
+			TargetDir: "dotfiles",
+			Dotfiles: []CapturedDotfile{
+				{Provider: "shell", SourcePath: "~/.zshrc.d", RelativePath: "aliases.zsh", DestPath: "dotfiles/shell/aliases.zsh"},
+				{Provider: "starship", SourcePath: "~/.config/starship.toml", RelativePath: "starship.toml", DestPath: "dotfiles/starship/starship.toml"},
+			},
+		}
+
+		generator := NewCaptureConfigGenerator(tmpDir).WithDotfiles(dotfilesResult)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "shell", Name: ".zshrc", Value: "~/.zshrc", CapturedAt: time.Now()},
+			},
+			Providers:  []string{"shell"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		contentStr := string(content)
+
+		// Verify shell config_source.dir is set
+		assert.Contains(t, contentStr, "dir: dotfiles/shell", "shell config_source.dir should be set")
+		// Verify starship config_source is set
+		assert.Contains(t, contentStr, "config_source: dotfiles/starship", "starship config_source should be set")
+	})
+
+	t.Run("per-target dotfiles directory", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		dotfilesResult := &DotfilesCaptureResult{
+			TargetDir: "dotfiles.work",
+			Target:    "work",
+			Dotfiles: []CapturedDotfile{
+				{Provider: "nvim", SourcePath: "~/.config/nvim", RelativePath: "init.lua", DestPath: "dotfiles.work/nvim/init.lua"},
+			},
+		}
+
+		generator := NewCaptureConfigGenerator(tmpDir).WithDotfiles(dotfilesResult)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "brew", Name: "git", Value: "git", CapturedAt: time.Now()},
+			},
+			Providers:  []string{"brew"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "work")
+		require.NoError(t, err)
+
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Verify config_source uses per-target directory
+		assert.Contains(t, string(content), "config_source: dotfiles.work/nvim")
+	})
+
+	t.Run("no dotfiles does not add config_source", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+
+		// No dotfiles result passed
+		generator := NewCaptureConfigGenerator(tmpDir)
+		findings := &CaptureFindings{
+			Items: []CapturedItem{
+				{Provider: "brew", Name: "git", Value: "git", CapturedAt: time.Now()},
+			},
+			Providers:  []string{"brew"},
+			CapturedAt: time.Now(),
+		}
+
+		err := generator.GenerateFromCapture(findings, "default")
+		require.NoError(t, err)
+
+		layerPath := filepath.Join(tmpDir, "layers", "captured.yaml")
+		content, err := os.ReadFile(layerPath)
+		require.NoError(t, err)
+
+		// Verify no config_source is present
+		assert.NotContains(t, string(content), "config_source:")
+	})
+}
