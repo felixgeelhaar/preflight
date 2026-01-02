@@ -43,6 +43,7 @@ func NewMerger() *Merger {
 func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 	// Calculate capacity hints for pre-allocation
 	var formulaeCount, casksCount, tapsCount, ppasCount, aptPkgCount int
+	var npmPkgCount, goToolsCount, pipPkgCount, gemCount, cratesCount int
 	var filesCount, aliasesCount, includesCount, sshHostsCount, sshMatchesCount int
 	var toolsCount, pluginsCount, shellsCount, envCount, aliasCount int
 	var extCount, keybindingsCount int
@@ -53,6 +54,11 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 		tapsCount += len(layer.Packages.Brew.Taps)
 		ppasCount += len(layer.Packages.Apt.PPAs)
 		aptPkgCount += len(layer.Packages.Apt.Packages)
+		npmPkgCount += len(layer.Packages.Npm.Packages)
+		goToolsCount += len(layer.Packages.Go.Tools)
+		pipPkgCount += len(layer.Packages.Pip.Packages)
+		gemCount += len(layer.Packages.Gem.Gems)
+		cratesCount += len(layer.Packages.Cargo.Crates)
 		filesCount += len(layer.Files)
 		aliasesCount += len(layer.Git.Aliases)
 		includesCount += len(layer.Git.Includes)
@@ -77,6 +83,11 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 	tapsSet := make(map[string]bool, tapsCount)
 	ppasSet := make(map[string]bool, ppasCount)
 	aptPackagesSet := make(map[string]bool, aptPkgCount)
+	npmPackagesSet := make(map[string]bool, npmPkgCount)
+	goToolsSet := make(map[string]bool, goToolsCount)
+	pipPackagesSet := make(map[string]bool, pipPkgCount)
+	gemsSet := make(map[string]bool, gemCount)
+	cratesSet := make(map[string]bool, cratesCount)
 	filesMap := make(map[string]FileDeclaration, filesCount)
 	aliasesMap := make(map[string]string, aliasesCount)
 	includesSet := make(map[string]bool, includesCount)
@@ -134,6 +145,51 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 				merged.Packages.Apt.Packages = append(merged.Packages.Apt.Packages, pkg)
 			}
 			m.trackProvenance(merged, "packages.apt.packages", pkg, layer.Provenance)
+		}
+
+		// Merge npm packages
+		for _, pkg := range layer.Packages.Npm.Packages {
+			if !npmPackagesSet[pkg] {
+				npmPackagesSet[pkg] = true
+				merged.Packages.Npm.Packages = append(merged.Packages.Npm.Packages, pkg)
+			}
+			m.trackProvenance(merged, "packages.npm.packages", pkg, layer.Provenance)
+		}
+
+		// Merge go tools
+		for _, tool := range layer.Packages.Go.Tools {
+			if !goToolsSet[tool] {
+				goToolsSet[tool] = true
+				merged.Packages.Go.Tools = append(merged.Packages.Go.Tools, tool)
+			}
+			m.trackProvenance(merged, "packages.go.tools", tool, layer.Provenance)
+		}
+
+		// Merge pip packages
+		for _, pkg := range layer.Packages.Pip.Packages {
+			if !pipPackagesSet[pkg] {
+				pipPackagesSet[pkg] = true
+				merged.Packages.Pip.Packages = append(merged.Packages.Pip.Packages, pkg)
+			}
+			m.trackProvenance(merged, "packages.pip.packages", pkg, layer.Provenance)
+		}
+
+		// Merge gem packages
+		for _, gem := range layer.Packages.Gem.Gems {
+			if !gemsSet[gem] {
+				gemsSet[gem] = true
+				merged.Packages.Gem.Gems = append(merged.Packages.Gem.Gems, gem)
+			}
+			m.trackProvenance(merged, "packages.gem.gems", gem, layer.Provenance)
+		}
+
+		// Merge cargo crates
+		for _, crate := range layer.Packages.Cargo.Crates {
+			if !cratesSet[crate] {
+				cratesSet[crate] = true
+				merged.Packages.Cargo.Crates = append(merged.Packages.Cargo.Crates, crate)
+			}
+			m.trackProvenance(merged, "packages.cargo.crates", crate, layer.Provenance)
 		}
 
 		// Merge files (last-wins for same path)

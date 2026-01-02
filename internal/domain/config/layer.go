@@ -38,10 +38,40 @@ type AptPackages struct {
 	Packages []string `yaml:"packages,omitempty"`
 }
 
+// NpmPackages represents npm global package configuration.
+type NpmPackages struct {
+	Packages []string `yaml:"packages,omitempty"` // e.g., "@anthropic-ai/claude-code", "pnpm@10.0"
+}
+
+// GoPackages represents Go tool installation configuration.
+type GoPackages struct {
+	Tools []string `yaml:"tools,omitempty"` // e.g., "golang.org/x/tools/gopls@latest"
+}
+
+// PipPackages represents pip package configuration.
+type PipPackages struct {
+	Packages []string `yaml:"packages,omitempty"` // e.g., "httpie", "black==23.1.0"
+}
+
+// GemPackages represents RubyGems configuration.
+type GemPackages struct {
+	Gems []string `yaml:"gems,omitempty"` // e.g., "rails", "bundler@2.4"
+}
+
+// CargoPackages represents Cargo (Rust) crate configuration.
+type CargoPackages struct {
+	Crates []string `yaml:"crates,omitempty"` // e.g., "ripgrep", "bat@0.22"
+}
+
 // PackageSet represents all package manager configurations.
 type PackageSet struct {
-	Brew BrewPackages `yaml:"brew,omitempty"`
-	Apt  AptPackages  `yaml:"apt,omitempty"`
+	Brew  BrewPackages  `yaml:"brew,omitempty"`
+	Apt   AptPackages   `yaml:"apt,omitempty"`
+	Npm   NpmPackages   `yaml:"npm,omitempty"`
+	Go    GoPackages    `yaml:"go,omitempty"`
+	Pip   PipPackages   `yaml:"pip,omitempty"`
+	Gem   GemPackages   `yaml:"gem,omitempty"`
+	Cargo CargoPackages `yaml:"cargo,omitempty"`
 }
 
 // GitUserConfig represents git user configuration.

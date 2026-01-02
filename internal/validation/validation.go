@@ -30,6 +30,11 @@ var (
 	ErrInvalidChocoPackage = errors.New("invalid chocolatey package name")
 	ErrInvalidChocoSource  = errors.New("invalid chocolatey source")
 	ErrInvalidURL          = errors.New("invalid URL")
+	ErrInvalidNpmPackage   = errors.New("invalid npm package name")
+	ErrInvalidGoTool       = errors.New("invalid Go tool path")
+	ErrInvalidPipPackage   = errors.New("invalid pip package name")
+	ErrInvalidGemName      = errors.New("invalid gem name")
+	ErrInvalidCargoCrate   = errors.New("invalid cargo crate name")
 )
 
 // Compiled regex patterns for validation (compiled once for performance).
@@ -82,6 +87,26 @@ var (
 	// urlRegex matches valid HTTP/HTTPS URLs for Chocolatey sources
 	// Examples: "https://community.chocolatey.org/api/v2/", "https://nuget.internal.com/v3/"
 	urlRegex = regexp.MustCompile(`^https?://[a-zA-Z0-9][a-zA-Z0-9._/-]*$`)
+
+	// npmPackageRegex matches valid npm package names (scoped or unscoped with optional @version)
+	// Examples: "lodash", "@types/node", "@anthropic-ai/claude-code@2.0.0", "pnpm@10.24.0"
+	npmPackageRegex = regexp.MustCompile(`^(@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*(@[a-zA-Z0-9._-]+)?$`)
+
+	// goToolRegex matches valid Go module paths with optional @version
+	// Examples: "golang.org/x/tools/gopls@latest", "github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.0"
+	goToolRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]*(\.[a-zA-Z0-9._-]+)*(/[a-zA-Z0-9._-]+)+(@[a-zA-Z0-9._-]+)?$`)
+
+	// pipPackageRegex matches valid pip package names with optional version specifier
+	// Examples: "requests", "black==23.1.0", "ruff>=0.1.0", "numpy~=1.24.0"
+	pipPackageRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]*([=<>!~]=?[a-zA-Z0-9._*-]+)?$`)
+
+	// gemRegex matches valid gem names with optional @version
+	// Examples: "rails", "bundler@2.4.0", "rake"
+	gemRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]*(@[a-zA-Z0-9._-]+)?$`)
+
+	// crateRegex matches valid cargo crate names with optional @version
+	// Examples: "ripgrep", "bat@0.22.1", "tokio"
+	crateRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*(@[a-zA-Z0-9._-]+)?$`)
 
 	// shellMetaChars contains shell metacharacters that could enable injection
 	shellMetaChars = []string{";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r", "\\"}
@@ -443,6 +468,119 @@ func ValidatePluginName(name string) error {
 
 	if containsShellMeta(name) {
 		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, name)
+	}
+
+	return nil
+}
+
+// ValidateNpmPackage validates an npm package name with optional version.
+// Supports scoped packages (@org/pkg) and version suffixes (@version).
+// Examples: "lodash", "@types/node", "@anthropic-ai/claude-code@2.0.0", "pnpm@10.24.0"
+func ValidateNpmPackage(name string) error {
+	if name == "" {
+		return ErrEmptyInput
+	}
+
+	if len(name) > 256 {
+		return fmt.Errorf("%w: package name too long", ErrInvalidNpmPackage)
+	}
+
+	// Convert to lowercase for validation (npm packages are case-insensitive)
+	lower := strings.ToLower(name)
+	if !npmPackageRegex.MatchString(lower) {
+		return fmt.Errorf("%w: %q is not a valid npm package name", ErrInvalidNpmPackage, name)
+	}
+
+	if containsShellMeta(name) {
+		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, name)
+	}
+
+	return nil
+}
+
+// ValidateGoTool validates a Go tool module path with optional version.
+// Examples: "golang.org/x/tools/gopls@latest", "github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.0"
+func ValidateGoTool(tool string) error {
+	if tool == "" {
+		return ErrEmptyInput
+	}
+
+	if len(tool) > 512 {
+		return fmt.Errorf("%w: tool path too long", ErrInvalidGoTool)
+	}
+
+	if !goToolRegex.MatchString(tool) {
+		return fmt.Errorf("%w: %q is not a valid Go module path", ErrInvalidGoTool, tool)
+	}
+
+	if containsShellMeta(tool) {
+		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, tool)
+	}
+
+	return nil
+}
+
+// ValidatePipPackage validates a pip package name with optional version specifier.
+// Examples: "requests", "black==23.1.0", "ruff>=0.1.0", "numpy~=1.24.0"
+func ValidatePipPackage(pkg string) error {
+	if pkg == "" {
+		return ErrEmptyInput
+	}
+
+	if len(pkg) > 256 {
+		return fmt.Errorf("%w: package name too long", ErrInvalidPipPackage)
+	}
+
+	if !pipPackageRegex.MatchString(pkg) {
+		return fmt.Errorf("%w: %q is not a valid pip package name", ErrInvalidPipPackage, pkg)
+	}
+
+	if containsShellMeta(pkg) {
+		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, pkg)
+	}
+
+	return nil
+}
+
+// ValidateGemName validates a Ruby gem name with optional version.
+// Examples: "rails", "bundler@2.4.0", "rake"
+func ValidateGemName(gem string) error {
+	if gem == "" {
+		return ErrEmptyInput
+	}
+
+	if len(gem) > 256 {
+		return fmt.Errorf("%w: gem name too long", ErrInvalidGemName)
+	}
+
+	if !gemRegex.MatchString(gem) {
+		return fmt.Errorf("%w: %q is not a valid gem name", ErrInvalidGemName, gem)
+	}
+
+	if containsShellMeta(gem) {
+		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, gem)
+	}
+
+	return nil
+}
+
+// ValidateCargoCrate validates a Cargo crate name with optional version.
+// Examples: "ripgrep", "bat@0.22.1", "tokio"
+func ValidateCargoCrate(crate string) error {
+	if crate == "" {
+		return ErrEmptyInput
+	}
+
+	if len(crate) > 256 {
+		return fmt.Errorf("%w: crate name too long", ErrInvalidCargoCrate)
+	}
+
+	if !crateRegex.MatchString(crate) {
+		return fmt.Errorf("%w: %q is not a valid crate name", ErrInvalidCargoCrate, crate)
+	}
+
+	if containsShellMeta(crate) {
+		return fmt.Errorf("%w: %q contains shell metacharacters", ErrCommandInjection, crate)
 	}
 
 	return nil

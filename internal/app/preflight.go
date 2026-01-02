@@ -17,9 +17,14 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/policy"
 	"github.com/felixgeelhaar/preflight/internal/provider/apt"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
+	"github.com/felixgeelhaar/preflight/internal/provider/cargo"
 	"github.com/felixgeelhaar/preflight/internal/provider/files"
+	"github.com/felixgeelhaar/preflight/internal/provider/gem"
 	"github.com/felixgeelhaar/preflight/internal/provider/git"
+	"github.com/felixgeelhaar/preflight/internal/provider/gotools"
+	"github.com/felixgeelhaar/preflight/internal/provider/npm"
 	"github.com/felixgeelhaar/preflight/internal/provider/nvim"
+	"github.com/felixgeelhaar/preflight/internal/provider/pip"
 	"github.com/felixgeelhaar/preflight/internal/provider/runtime"
 	"github.com/felixgeelhaar/preflight/internal/provider/shell"
 	"github.com/felixgeelhaar/preflight/internal/provider/ssh"
@@ -48,12 +53,17 @@ func New(out io.Writer) *Preflight {
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(apt.NewProvider(cmdRunner))
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
+	comp.RegisterProvider(cargo.NewProvider(cmdRunner))
 	comp.RegisterProvider(files.NewProvider(fs))
+	comp.RegisterProvider(gem.NewProvider(cmdRunner))
 	comp.RegisterProvider(git.NewProvider(fs))
-	comp.RegisterProvider(ssh.NewProvider(fs))
+	comp.RegisterProvider(gotools.NewProvider(cmdRunner))
+	comp.RegisterProvider(npm.NewProvider(cmdRunner))
+	comp.RegisterProvider(nvim.NewProvider(fs, cmdRunner))
+	comp.RegisterProvider(pip.NewProvider(cmdRunner))
 	comp.RegisterProvider(runtime.NewProvider(fs))
 	comp.RegisterProvider(shell.NewProvider(fs))
-	comp.RegisterProvider(nvim.NewProvider(fs, cmdRunner))
+	comp.RegisterProvider(ssh.NewProvider(fs))
 	comp.RegisterProvider(vscode.NewProvider(fs, cmdRunner, plat))
 
 	return &Preflight{

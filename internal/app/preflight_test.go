@@ -632,9 +632,9 @@ func TestPreflight_Capture_DefaultProviders(t *testing.T) {
 		t.Fatalf("Capture() error = %v", err)
 	}
 
-	// Should have default providers (brew, git, ssh, shell, nvim, vscode, runtime)
-	if len(findings.Providers) != 7 {
-		t.Errorf("expected 7 default providers, got %d: %v", len(findings.Providers), findings.Providers)
+	// Should have default providers (brew, git, ssh, shell, nvim, vscode, runtime, npm, go, pip, gem, cargo)
+	if len(findings.Providers) != 12 {
+		t.Errorf("expected 12 default providers, got %d: %v", len(findings.Providers), findings.Providers)
 	}
 }
 

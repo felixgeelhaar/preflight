@@ -17,6 +17,41 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 	apt["packages"] = toInterfaceSlice(m.Packages.Apt.Packages)
 	raw["apt"] = apt
 
+	// Convert npm packages
+	if len(m.Packages.Npm.Packages) > 0 {
+		npm := make(map[string]interface{})
+		npm["packages"] = toInterfaceSlice(m.Packages.Npm.Packages)
+		raw["npm"] = npm
+	}
+
+	// Convert go tools
+	if len(m.Packages.Go.Tools) > 0 {
+		goTools := make(map[string]interface{})
+		goTools["tools"] = toInterfaceSlice(m.Packages.Go.Tools)
+		raw["go"] = goTools
+	}
+
+	// Convert pip packages
+	if len(m.Packages.Pip.Packages) > 0 {
+		pip := make(map[string]interface{})
+		pip["packages"] = toInterfaceSlice(m.Packages.Pip.Packages)
+		raw["pip"] = pip
+	}
+
+	// Convert gem packages
+	if len(m.Packages.Gem.Gems) > 0 {
+		gem := make(map[string]interface{})
+		gem["gems"] = toInterfaceSlice(m.Packages.Gem.Gems)
+		raw["gem"] = gem
+	}
+
+	// Convert cargo crates
+	if len(m.Packages.Cargo.Crates) > 0 {
+		cargo := make(map[string]interface{})
+		cargo["crates"] = toInterfaceSlice(m.Packages.Cargo.Crates)
+		raw["cargo"] = cargo
+	}
+
 	// Convert files - transform FileDeclaration to provider format
 	// For now, map generated files to links, templates to templates
 	files := make(map[string]interface{})

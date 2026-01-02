@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -40,7 +41,7 @@ func (p *Preflight) Capture(ctx context.Context, opts CaptureOptions) (*CaptureF
 	// Determine which providers to capture
 	providers := opts.Providers
 	if len(providers) == 0 {
-		providers = []string{"brew", "git", "ssh", "shell", "nvim", "vscode", "runtime"}
+		providers = []string{"brew", "git", "ssh", "shell", "nvim", "vscode", "runtime", "npm", "go", "pip", "gem", "cargo"}
 	}
 
 	for _, provider := range providers {
@@ -87,6 +88,17 @@ func (p *Preflight) captureProvider(ctx context.Context, provider, homeDir strin
 	// Linux package managers
 	case "apt":
 		items = p.captureAPTPackages(ctx, now)
+	// Language package managers
+	case "npm":
+		items = p.captureNpmGlobals(ctx, now)
+	case "go":
+		items = p.captureGoTools(ctx, now)
+	case "pip":
+		items = p.capturePipPackages(ctx, now)
+	case "gem":
+		items = p.captureGemPackages(ctx, now)
+	case "cargo":
+		items = p.captureCargoCrates(ctx, now)
 	default:
 		return nil, fmt.Errorf("unknown provider: %s", provider)
 	}
@@ -495,6 +507,224 @@ func (p *Preflight) captureAPTPackages(_ context.Context, capturedAt time.Time) 
 			Provider:   "apt",
 			Name:       strings.TrimSpace(line),
 			Source:     "dpkg-query",
+			CapturedAt: capturedAt,
+		})
+	}
+
+	return items
+}
+
+// captureNpmGlobals captures globally installed npm packages.
+func (p *Preflight) captureNpmGlobals(_ context.Context, capturedAt time.Time) []CapturedItem {
+	// Run npm list -g --depth=0 --json
+	cmd := exec.Command("npm", "list", "-g", "--depth=0", "--json")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	// Parse JSON output
+	var result struct {
+		Dependencies map[string]struct {
+			Version string `json:"version"`
+		} `json:"dependencies"`
+	}
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil
+	}
+
+	items := make([]CapturedItem, 0, len(result.Dependencies))
+	for name, info := range result.Dependencies {
+		// Skip npm itself
+		if name == "npm" {
+			continue
+		}
+		// Format as name@version
+		value := name
+		if info.Version != "" {
+			value = fmt.Sprintf("%s@%s", name, info.Version)
+		}
+		items = append(items, CapturedItem{
+			Provider:   "npm",
+			Name:       name,
+			Value:      value,
+			Source:     "npm list -g",
+			CapturedAt: capturedAt,
+		})
+	}
+
+	return items
+}
+
+// captureGoTools captures installed Go tools from GOBIN or GOPATH/bin.
+func (p *Preflight) captureGoTools(_ context.Context, capturedAt time.Time) []CapturedItem {
+	// Determine the Go bin directory
+	gobin := os.Getenv("GOBIN")
+	if gobin == "" {
+		gopath := os.Getenv("GOPATH")
+		if gopath == "" {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return nil
+			}
+			gopath = filepath.Join(home, "go")
+		}
+		gobin = filepath.Join(gopath, "bin")
+	}
+
+	// List files in the directory
+	entries, err := os.ReadDir(gobin)
+	if err != nil {
+		return nil
+	}
+
+	items := make([]CapturedItem, 0, len(entries))
+	for _, entry := range entries {
+		// Skip directories and non-executable files
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		items = append(items, CapturedItem{
+			Provider:   "go",
+			Name:       name,
+			Value:      name,
+			Source:     gobin,
+			CapturedAt: capturedAt,
+		})
+	}
+
+	return items
+}
+
+// capturePipPackages captures user-installed pip packages.
+func (p *Preflight) capturePipPackages(_ context.Context, capturedAt time.Time) []CapturedItem {
+	// Run pip list --format=json --user
+	cmd := exec.Command("pip", "list", "--format=json", "--user")
+	output, err := cmd.Output()
+	if err != nil {
+		// Try pip3 as fallback
+		cmd = exec.Command("pip3", "list", "--format=json", "--user")
+		output, err = cmd.Output()
+		if err != nil {
+			return nil
+		}
+	}
+
+	// Parse JSON output - array of objects with name and version fields
+	var packages []struct {
+		Name    string `json:"name"`
+		Version string `json:"version"`
+	}
+	if err := json.Unmarshal(output, &packages); err != nil {
+		return nil
+	}
+
+	items := make([]CapturedItem, 0, len(packages))
+	for _, pkg := range packages {
+		// Format as name==version (pip convention)
+		value := pkg.Name
+		if pkg.Version != "" {
+			value = fmt.Sprintf("%s==%s", pkg.Name, pkg.Version)
+		}
+		items = append(items, CapturedItem{
+			Provider:   "pip",
+			Name:       pkg.Name,
+			Value:      value,
+			Source:     "pip list --user",
+			CapturedAt: capturedAt,
+		})
+	}
+
+	return items
+}
+
+// captureGemPackages captures installed Ruby gems.
+func (p *Preflight) captureGemPackages(_ context.Context, capturedAt time.Time) []CapturedItem {
+	// Run gem list --no-versions for cleaner output
+	cmd := exec.Command("gem", "list", "--local")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	// Parse output - each line is "gemname (version, version, ...)"
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	items := make([]CapturedItem, 0, len(lines))
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		// Parse "gemname (version)" format
+		parts := strings.SplitN(line, " ", 2)
+		name := strings.TrimSpace(parts[0])
+		if name == "" {
+			continue
+		}
+
+		value := name
+		if len(parts) > 1 {
+			// Extract first version from "(version, version, ...)"
+			versionPart := strings.Trim(parts[1], "()")
+			versions := strings.Split(versionPart, ", ")
+			if len(versions) > 0 && versions[0] != "" {
+				value = fmt.Sprintf("%s@%s", name, strings.TrimSpace(versions[0]))
+			}
+		}
+
+		items = append(items, CapturedItem{
+			Provider:   "gem",
+			Name:       name,
+			Value:      value,
+			Source:     "gem list",
+			CapturedAt: capturedAt,
+		})
+	}
+
+	return items
+}
+
+// captureCargoCrates captures installed Cargo crates.
+func (p *Preflight) captureCargoCrates(_ context.Context, capturedAt time.Time) []CapturedItem {
+	// Run cargo install --list
+	cmd := exec.Command("cargo", "install", "--list")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	// Parse output - format is:
+	// crate-name v1.2.3:
+	//     binary1
+	//     binary2
+	// another-crate v2.0.0:
+	//     binary
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	items := make([]CapturedItem, 0)
+	for _, line := range lines {
+		// Only process lines that start with a crate name (not indented binary names)
+		if line == "" || strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") {
+			continue
+		}
+		// Parse "crate-name v1.2.3:" format
+		parts := strings.Fields(line)
+		if len(parts) < 2 {
+			continue
+		}
+		name := parts[0]
+		version := strings.TrimPrefix(parts[1], "v")
+		version = strings.TrimSuffix(version, ":")
+
+		value := name
+		if version != "" {
+			value = fmt.Sprintf("%s@%s", name, version)
+		}
+
+		items = append(items, CapturedItem{
+			Provider:   "cargo",
+			Name:       name,
+			Value:      value,
+			Source:     "cargo install --list",
 			CapturedAt: capturedAt,
 		})
 	}

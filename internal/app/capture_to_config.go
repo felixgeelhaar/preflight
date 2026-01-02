@@ -140,6 +140,11 @@ func (g *CaptureConfigGenerator) generateSmartSplitLayers(ctx context.Context, f
 		"shell":   "shell",
 		"vscode":  "editor",
 		"runtime": "runtime",
+		"npm":     "dev-node",
+		"go":      "dev-go",
+		"pip":     "dev-python",
+		"gem":     "dev-ruby",
+		"cargo":   "dev-rust",
 	}
 
 	for provider, items := range byProvider {
@@ -238,6 +243,16 @@ func (g *CaptureConfigGenerator) addProviderConfigToLayer(layer *captureLayerYAM
 		layer.Nvim = g.generateNvimFromCapture(items)
 	case "ssh":
 		layer.SSH = g.generateSSHFromCapture(items)
+	case "npm":
+		g.addNpmPackagesToLayer(layer, items)
+	case "go":
+		g.addGoToolsToLayer(layer, items)
+	case "pip":
+		g.addPipPackagesToLayer(layer, items)
+	case "gem":
+		g.addGemPackagesToLayer(layer, items)
+	case "cargo":
+		g.addCargoPackagesToLayer(layer, items)
 	}
 }
 
@@ -394,6 +409,16 @@ func (g *CaptureConfigGenerator) generateProviderLayerIfSupported(name, provider
 		if layer.SSH == nil {
 			return false, nil
 		}
+	case "npm":
+		g.addNpmPackagesToLayer(&layer, items)
+	case "go":
+		g.addGoToolsToLayer(&layer, items)
+	case "pip":
+		g.addPipPackagesToLayer(&layer, items)
+	case "gem":
+		g.addGemPackagesToLayer(&layer, items)
+	case "cargo":
+		g.addCargoPackagesToLayer(&layer, items)
 	default:
 		// Provider not supported for layer generation
 		return false, nil
@@ -504,6 +529,31 @@ func (g *CaptureConfigGenerator) generateLayerFromCapture(findings *CaptureFindi
 		layer.SSH = g.generateSSHFromCapture(sshItems)
 	}
 
+	// Generate npm section
+	if npmItems, ok := byProvider["npm"]; ok && len(npmItems) > 0 {
+		g.addNpmPackagesToLayer(&layer, npmItems)
+	}
+
+	// Generate go section
+	if goItems, ok := byProvider["go"]; ok && len(goItems) > 0 {
+		g.addGoToolsToLayer(&layer, goItems)
+	}
+
+	// Generate pip section
+	if pipItems, ok := byProvider["pip"]; ok && len(pipItems) > 0 {
+		g.addPipPackagesToLayer(&layer, pipItems)
+	}
+
+	// Generate gem section
+	if gemItems, ok := byProvider["gem"]; ok && len(gemItems) > 0 {
+		g.addGemPackagesToLayer(&layer, gemItems)
+	}
+
+	// Generate cargo section
+	if cargoItems, ok := byProvider["cargo"]; ok && len(cargoItems) > 0 {
+		g.addCargoPackagesToLayer(&layer, cargoItems)
+	}
+
 	data, err := yaml.Marshal(layer)
 	if err != nil {
 		return err
@@ -609,6 +659,141 @@ func (g *CaptureConfigGenerator) generateRuntimeFromCapture(items []CapturedItem
 	}
 
 	return runtime
+}
+
+// addNpmPackagesToLayer adds npm packages to a layer's packages section.
+func (g *CaptureConfigGenerator) addNpmPackagesToLayer(layer *captureLayerYAML, items []CapturedItem) {
+	if len(items) == 0 {
+		return
+	}
+
+	packages := make([]string, 0, len(items))
+	for _, item := range items {
+		if s, ok := item.Value.(string); ok && s != "" {
+			packages = append(packages, s)
+		} else {
+			packages = append(packages, item.Name)
+		}
+	}
+
+	if len(packages) == 0 {
+		return
+	}
+
+	if layer.Packages == nil {
+		layer.Packages = &capturePackagesYAML{}
+	}
+	layer.Packages.Npm = &captureNpmYAML{
+		Packages: packages,
+	}
+}
+
+// addGoToolsToLayer adds go tools to a layer's packages section.
+func (g *CaptureConfigGenerator) addGoToolsToLayer(layer *captureLayerYAML, items []CapturedItem) {
+	if len(items) == 0 {
+		return
+	}
+
+	tools := make([]string, 0, len(items))
+	for _, item := range items {
+		if s, ok := item.Value.(string); ok && s != "" {
+			tools = append(tools, s)
+		} else {
+			tools = append(tools, item.Name)
+		}
+	}
+
+	if len(tools) == 0 {
+		return
+	}
+
+	if layer.Packages == nil {
+		layer.Packages = &capturePackagesYAML{}
+	}
+	layer.Packages.Go = &captureGoYAML{
+		Tools: tools,
+	}
+}
+
+// addPipPackagesToLayer adds pip packages to a layer's packages section.
+func (g *CaptureConfigGenerator) addPipPackagesToLayer(layer *captureLayerYAML, items []CapturedItem) {
+	if len(items) == 0 {
+		return
+	}
+
+	packages := make([]string, 0, len(items))
+	for _, item := range items {
+		if s, ok := item.Value.(string); ok && s != "" {
+			packages = append(packages, s)
+		} else {
+			packages = append(packages, item.Name)
+		}
+	}
+
+	if len(packages) == 0 {
+		return
+	}
+
+	if layer.Packages == nil {
+		layer.Packages = &capturePackagesYAML{}
+	}
+	layer.Packages.Pip = &capturePipYAML{
+		Packages: packages,
+	}
+}
+
+// addGemPackagesToLayer adds gem packages to a layer's packages section.
+func (g *CaptureConfigGenerator) addGemPackagesToLayer(layer *captureLayerYAML, items []CapturedItem) {
+	if len(items) == 0 {
+		return
+	}
+
+	gems := make([]string, 0, len(items))
+	for _, item := range items {
+		if s, ok := item.Value.(string); ok && s != "" {
+			gems = append(gems, s)
+		} else {
+			gems = append(gems, item.Name)
+		}
+	}
+
+	if len(gems) == 0 {
+		return
+	}
+
+	if layer.Packages == nil {
+		layer.Packages = &capturePackagesYAML{}
+	}
+	layer.Packages.Gem = &captureGemYAML{
+		Gems: gems,
+	}
+}
+
+// addCargoPackagesToLayer adds cargo crates to a layer's packages section.
+func (g *CaptureConfigGenerator) addCargoPackagesToLayer(layer *captureLayerYAML, items []CapturedItem) {
+	if len(items) == 0 {
+		return
+	}
+
+	crates := make([]string, 0, len(items))
+	for _, item := range items {
+		if s, ok := item.Value.(string); ok && s != "" {
+			crates = append(crates, s)
+		} else {
+			crates = append(crates, item.Name)
+		}
+	}
+
+	if len(crates) == 0 {
+		return
+	}
+
+	if layer.Packages == nil {
+		layer.Packages = &capturePackagesYAML{}
+	}
+	layer.Packages.Cargo = &captureCargoYAML{
+		Crates: crates,
+	}
 }
 
 func (g *CaptureConfigGenerator) generateNvimFromCapture(items []CapturedItem) *captureNvimYAML {
@@ -1023,7 +1208,32 @@ type captureLayerYAML struct {
 }
 
 type capturePackagesYAML struct {
-	Brew *captureBrewYAML `yaml:"brew,omitempty"`
+	Brew  *captureBrewYAML  `yaml:"brew,omitempty"`
+	Npm   *captureNpmYAML   `yaml:"npm,omitempty"`
+	Go    *captureGoYAML    `yaml:"go,omitempty"`
+	Pip   *capturePipYAML   `yaml:"pip,omitempty"`
+	Gem   *captureGemYAML   `yaml:"gem,omitempty"`
+	Cargo *captureCargoYAML `yaml:"cargo,omitempty"`
+}
+
+type captureNpmYAML struct {
+	Packages []string `yaml:"packages,omitempty"`
+}
+
+type captureGoYAML struct {
+	Tools []string `yaml:"tools,omitempty"`
+}
+
+type capturePipYAML struct {
+	Packages []string `yaml:"packages,omitempty"`
+}
+
+type captureGemYAML struct {
+	Gems []string `yaml:"gems,omitempty"`
+}
+
+type captureCargoYAML struct {
+	Crates []string `yaml:"crates,omitempty"`
 }
 
 type captureBrewYAML struct {
