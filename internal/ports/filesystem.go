@@ -52,3 +52,42 @@ func ExpandPath(path string) string {
 	}
 	return path
 }
+
+// ApplyTargetSuffix adds a target suffix to the first path component.
+// This enables per-target configuration overrides in a home-mirrored structure.
+//
+// Examples:
+//   - ".config/nvim" with target "work" -> configRoot/.config.work/nvim
+//   - ".gitconfig" with target "work" -> configRoot/.gitconfig.work
+func ApplyTargetSuffix(path, configRoot, target string) string {
+	if path == "" || target == "" {
+		return filepath.Join(configRoot, path)
+	}
+
+	parts := strings.SplitN(path, string(filepath.Separator), 2)
+	if len(parts) == 0 {
+		return filepath.Join(configRoot, path)
+	}
+
+	// Add suffix to first component
+	parts[0] = parts[0] + "." + target
+
+	if len(parts) == 1 {
+		return filepath.Join(configRoot, parts[0])
+	}
+	return filepath.Join(configRoot, parts[0], parts[1])
+}
+
+// IsPathWithinRoot validates that a path stays within the given root directory.
+// Returns false if the path escapes the root via ".." or other traversal.
+func IsPathWithinRoot(root, path string) bool {
+	cleanRoot := filepath.Clean(root)
+	cleanPath := filepath.Clean(path)
+
+	rel, err := filepath.Rel(cleanRoot, cleanPath)
+	if err != nil {
+		return false
+	}
+
+	return !strings.HasPrefix(rel, "..") && rel != ".."
+}

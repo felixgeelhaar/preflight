@@ -17,8 +17,6 @@ type DotfilesCaptureConfig struct {
 	SourcePaths []string
 	// ExcludePaths are patterns to exclude (supports globs)
 	ExcludePaths []string
-	// TargetDir is the subdirectory under dotfiles/
-	TargetDir string
 }
 
 // CapturedDotfile represents a captured dotfile entry.
@@ -27,9 +25,10 @@ type CapturedDotfile struct {
 	Provider string
 	// SourcePath is the original path on the source machine
 	SourcePath string
-	// RelativePath is the path relative to the provider's target dir
-	RelativePath string
-	// DestPath is the full path under dotfiles/
+	// HomeRelPath is the path relative to home directory (e.g., ".config/nvim/init.lua")
+	// This mirrors the home directory structure in the repository
+	HomeRelPath string
+	// DestPath is the full path in the repository (repo root + HomeRelPath)
 	DestPath string
 	// IsDirectory indicates if this is a directory
 	IsDirectory bool
@@ -134,7 +133,6 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				"*.swo",
 				"*~",
 			},
-			TargetDir: "nvim",
 		},
 		{
 			Provider: "shell",
@@ -154,14 +152,12 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				".zsh_history",
 				".zsh_sessions",
 			},
-			TargetDir: "shell",
 		},
 		{
 			Provider: "starship",
 			SourcePaths: []string{
 				"~/.config/starship.toml",
 			},
-			TargetDir: "starship",
 		},
 		{
 			Provider: "tmux",
@@ -173,7 +169,6 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				"plugins",
 				"resurrect",
 			},
-			TargetDir: "tmux",
 		},
 		{
 			Provider: "vscode",
@@ -183,7 +178,6 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				"~/.config/Code/User/settings.json",
 				"~/.config/Code/User/keybindings.json",
 			},
-			TargetDir: "vscode",
 		},
 		{
 			Provider: "ssh",
@@ -197,7 +191,6 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				"known_hosts",
 				"authorized_keys",
 			},
-			TargetDir: "ssh",
 		},
 		{
 			Provider: "git",
@@ -210,7 +203,6 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				"credentials",
 				".gitconfig.local", // May contain signing keys or secrets
 			},
-			TargetDir: "git",
 		},
 		{
 			Provider: "terminal",
@@ -236,7 +228,6 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				"*.log",
 				"cache",
 			},
-			TargetDir: "terminal",
 		},
 	}
 }
@@ -284,12 +275,40 @@ func (c *DotfilesCapturer) CaptureProvider(provider string) (*DotfilesCaptureRes
 	}, nil
 }
 
-// getDotfilesDir returns the dotfiles directory, considering per-target support.
+// getDotfilesDir returns the repository root directory.
+// Files are stored directly mirroring the home directory structure.
 func (c *DotfilesCapturer) getDotfilesDir() string {
-	if c.target != "" {
-		return filepath.Join(c.targetDir, "dotfiles."+c.target)
+	return c.targetDir
+}
+
+// relativeToHome computes the path relative to home directory.
+// e.g., "/Users/foo/.config/nvim/init.lua" -> ".config/nvim/init.lua"
+func (c *DotfilesCapturer) relativeToHome(absPath string) string {
+	rel, err := filepath.Rel(c.homeDir, absPath)
+	if err != nil {
+		// Fall back to just the base name if we can't compute relative path
+		return filepath.Base(absPath)
 	}
-	return filepath.Join(c.targetDir, "dotfiles")
+	return rel
+}
+
+// getDestPath computes the destination path in the repository.
+// For per-target support, uses suffixed paths:
+//   - Default target: .gitconfig, .config/nvim/
+//   - Work target: .gitconfig.work, .config.work/nvim/
+func (c *DotfilesCapturer) getDestPath(homeRelPath string) string {
+	if c.target == "" || c.target == "default" {
+		return filepath.Join(c.targetDir, homeRelPath)
+	}
+
+	// For per-target, add suffix to the first path component
+	// .gitconfig -> .gitconfig.work
+	// .config/nvim/init.lua -> .config.work/nvim/init.lua
+	parts := strings.Split(homeRelPath, string(filepath.Separator))
+	if len(parts) > 0 {
+		parts[0] = parts[0] + "." + c.target
+	}
+	return filepath.Join(c.targetDir, filepath.Join(parts...))
 }
 
 // captureProviderResult holds results from capturing a single provider.
@@ -302,8 +321,6 @@ type captureProviderResult struct {
 // captureProvider captures dotfiles for a single provider configuration.
 func (c *DotfilesCapturer) captureProvider(cfg DotfilesCaptureConfig) (*captureProviderResult, error) {
 	result := &captureProviderResult{}
-
-	destDir := filepath.Join(c.getDotfilesDir(), cfg.TargetDir)
 
 	for _, sourcePath := range cfg.SourcePaths {
 		// Expand ~ to home directory
@@ -318,6 +335,9 @@ func (c *DotfilesCapturer) captureProvider(cfg DotfilesCaptureConfig) (*captureP
 			result.warnings = append(result.warnings, "failed to stat "+sourcePath+": "+err.Error())
 			continue
 		}
+
+		// Compute home-relative path for this source
+		homeRelPath := c.relativeToHome(expandedPath)
 
 		// Check if source path itself is a symlink
 		if info.Mode()&os.ModeSymlink != 0 {
@@ -345,16 +365,16 @@ func (c *DotfilesCapturer) captureProvider(cfg DotfilesCaptureConfig) (*captureP
 		}
 
 		if info.IsDir() {
-			// Capture directory recursively
-			captured, brokenLinks, err := c.captureDirectory(cfg.Provider, expandedPath, destDir, cfg.ExcludePaths)
+			// Capture directory recursively with home-mirrored paths
+			captured, brokenLinks, err := c.captureDirectory(cfg.Provider, expandedPath, homeRelPath, cfg.ExcludePaths)
 			if err != nil {
 				return nil, err
 			}
 			result.dotfiles = append(result.dotfiles, captured...)
 			result.brokenSymlinks = append(result.brokenSymlinks, brokenLinks...)
 		} else {
-			// Capture single file
-			captured, err := c.captureFile(cfg.Provider, expandedPath, destDir, filepath.Base(expandedPath))
+			// Capture single file with home-mirrored path
+			captured, err := c.captureFile(cfg.Provider, expandedPath, homeRelPath)
 			if err != nil {
 				return nil, err
 			}
@@ -368,9 +388,13 @@ func (c *DotfilesCapturer) captureProvider(cfg DotfilesCaptureConfig) (*captureP
 }
 
 // captureDirectory recursively captures a directory.
-func (c *DotfilesCapturer) captureDirectory(provider, sourceDir, destDir string, excludes []string) ([]CapturedDotfile, []BrokenSymlink, error) {
+// homeRelDir is the path relative to home (e.g., ".config/nvim").
+func (c *DotfilesCapturer) captureDirectory(provider, sourceDir, homeRelDir string, excludes []string) ([]CapturedDotfile, []BrokenSymlink, error) {
 	var dotfiles []CapturedDotfile
 	var brokenSymlinks []BrokenSymlink
+
+	// Compute destination directory using home-relative path
+	destDir := c.getDestPath(homeRelDir)
 
 	// Ensure destination directory exists
 	if err := os.MkdirAll(destDir, 0755); err != nil {
@@ -447,7 +471,9 @@ func (c *DotfilesCapturer) captureDirectory(provider, sourceDir, destDir string,
 			}
 		}
 
-		destPath := filepath.Join(destDir, relPath)
+		// Compute home-relative path for this file/directory
+		homeRelPath := filepath.Join(homeRelDir, relPath)
+		destPath := c.getDestPath(homeRelPath)
 
 		if info.IsDir() {
 			// Create directory
@@ -455,11 +481,11 @@ func (c *DotfilesCapturer) captureDirectory(provider, sourceDir, destDir string,
 				return err
 			}
 			dotfiles = append(dotfiles, CapturedDotfile{
-				Provider:     provider,
-				SourcePath:   path,
-				RelativePath: relPath,
-				DestPath:     destPath,
-				IsDirectory:  true,
+				Provider:    provider,
+				SourcePath:  path,
+				HomeRelPath: homeRelPath,
+				DestPath:    destPath,
+				IsDirectory: true,
 			})
 		} else {
 			// Ensure parent directory exists
@@ -471,12 +497,12 @@ func (c *DotfilesCapturer) captureDirectory(provider, sourceDir, destDir string,
 				return err
 			}
 			dotfiles = append(dotfiles, CapturedDotfile{
-				Provider:     provider,
-				SourcePath:   path,
-				RelativePath: relPath,
-				DestPath:     destPath,
-				IsDirectory:  false,
-				Size:         info.Size(),
+				Provider:    provider,
+				SourcePath:  path,
+				HomeRelPath: homeRelPath,
+				DestPath:    destPath,
+				IsDirectory: false,
+				Size:        info.Size(),
 			})
 		}
 
@@ -487,16 +513,17 @@ func (c *DotfilesCapturer) captureDirectory(provider, sourceDir, destDir string,
 }
 
 // captureFile captures a single file.
-func (c *DotfilesCapturer) captureFile(provider, sourcePath, destDir, fileName string) (*CapturedDotfile, error) {
+// homeRelPath is the path relative to home (e.g., ".gitconfig").
+func (c *DotfilesCapturer) captureFile(provider, sourcePath, homeRelPath string) (*CapturedDotfile, error) {
 	info, err := os.Stat(sourcePath)
 	if err != nil {
 		return nil, err
 	}
 
-	destPath := filepath.Join(destDir, fileName)
+	destPath := c.getDestPath(homeRelPath)
 
 	// Create destination directory
-	if err := os.MkdirAll(destDir, 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 		return nil, err
 	}
 
@@ -506,12 +533,12 @@ func (c *DotfilesCapturer) captureFile(provider, sourcePath, destDir, fileName s
 	}
 
 	return &CapturedDotfile{
-		Provider:     provider,
-		SourcePath:   sourcePath,
-		RelativePath: fileName,
-		DestPath:     destPath,
-		IsDirectory:  false,
-		Size:         info.Size(),
+		Provider:    provider,
+		SourcePath:  sourcePath,
+		HomeRelPath: homeRelPath,
+		DestPath:    destPath,
+		IsDirectory: false,
+		Size:        info.Size(),
 	}, nil
 }
 

@@ -34,13 +34,14 @@ func TestDotfilesCapturer_CaptureNvimConfig(t *testing.T) {
 	require.NotNil(t, result)
 
 	assert.Positive(t, len(result.Dotfiles), "should capture nvim files")
-	assert.Equal(t, filepath.Join(targetDir, "dotfiles"), result.TargetDir)
+	// TargetDir now returns repo root (home-mirrored structure)
+	assert.Equal(t, targetDir, result.TargetDir)
 
-	// Verify files were copied
-	copiedInit := filepath.Join(targetDir, "dotfiles", "nvim", "init.lua")
+	// Verify files were copied to home-mirrored paths
+	copiedInit := filepath.Join(targetDir, ".config", "nvim", "init.lua")
 	assert.FileExists(t, copiedInit)
 
-	copiedConfig := filepath.Join(targetDir, "dotfiles", "nvim", "lua", "config.lua")
+	copiedConfig := filepath.Join(targetDir, ".config", "nvim", "lua", "config.lua")
 	assert.FileExists(t, copiedConfig)
 }
 
@@ -73,16 +74,16 @@ func TestDotfilesCapturer_ExcludesPluginCaches(t *testing.T) {
 
 	// Check that lazy and pack directories were NOT captured
 	for _, d := range result.Dotfiles {
-		assert.NotContains(t, d.RelativePath, "lazy", "lazy directory should be excluded")
-		assert.NotContains(t, d.RelativePath, "pack", "pack directory should be excluded")
+		assert.NotContains(t, d.HomeRelPath, "lazy", "lazy directory should be excluded")
+		assert.NotContains(t, d.HomeRelPath, "pack", "pack directory should be excluded")
 	}
 
-	// Verify excluded files don't exist in output
-	assert.NoFileExists(t, filepath.Join(targetDir, "dotfiles", "nvim", "lazy", "plugin.lua"))
-	assert.NoFileExists(t, filepath.Join(targetDir, "dotfiles", "nvim", "pack", "native.lua"))
+	// Verify excluded files don't exist in output (home-mirrored paths)
+	assert.NoFileExists(t, filepath.Join(targetDir, ".config", "nvim", "lazy", "plugin.lua"))
+	assert.NoFileExists(t, filepath.Join(targetDir, ".config", "nvim", "pack", "native.lua"))
 
 	// But init.lua should exist
-	assert.FileExists(t, filepath.Join(targetDir, "dotfiles", "nvim", "init.lua"))
+	assert.FileExists(t, filepath.Join(targetDir, ".config", "nvim", "init.lua"))
 }
 
 func TestDotfilesCapturer_SkipsNonExistentPaths(t *testing.T) {
@@ -121,12 +122,12 @@ func TestDotfilesCapturer_PerTargetDirectory(t *testing.T) {
 	result, err := capturer.CaptureProvider("starship")
 	require.NoError(t, err)
 
-	// Should use per-target directory
-	assert.Equal(t, filepath.Join(targetDir, "dotfiles.work"), result.TargetDir)
+	// TargetDir now returns repo root (home-mirrored structure)
+	assert.Equal(t, targetDir, result.TargetDir)
 	assert.Equal(t, "work", result.Target)
 
-	// File should be in per-target directory
-	copiedStarship := filepath.Join(targetDir, "dotfiles.work", "starship", "starship.toml")
+	// File should be in per-target suffixed path (.config.work/starship.toml)
+	copiedStarship := filepath.Join(targetDir, ".config.work", "starship.toml")
 	assert.FileExists(t, copiedStarship)
 }
 
@@ -155,14 +156,14 @@ func TestDotfilesCapturer_CaptureShellConfig(t *testing.T) {
 	hasAliases := false
 	hasFunctions := false
 	for _, d := range result.Dotfiles {
-		if d.RelativePath == "aliases.zsh" {
+		if filepath.Base(d.HomeRelPath) == "aliases.zsh" {
 			hasAliases = true
 		}
-		if d.RelativePath == "functions.zsh" {
+		if filepath.Base(d.HomeRelPath) == "functions.zsh" {
 			hasFunctions = true
 		}
 		// .zcompdump should be excluded
-		assert.NotContains(t, d.RelativePath, "zcompdump")
+		assert.NotContains(t, d.HomeRelPath, "zcompdump")
 	}
 
 	assert.True(t, hasAliases, "should capture aliases.zsh")
@@ -193,11 +194,11 @@ func TestDotfilesCapturer_CaptureSSHConfig(t *testing.T) {
 
 	// Should only capture config
 	assert.Len(t, result.Dotfiles, 1)
-	assert.Equal(t, "config", result.Dotfiles[0].RelativePath)
+	assert.Equal(t, ".ssh/config", result.Dotfiles[0].HomeRelPath)
 
 	// Verify private keys were NOT captured
-	assert.NoFileExists(t, filepath.Join(targetDir, "dotfiles", "ssh", "id_ed25519"))
-	assert.NoFileExists(t, filepath.Join(targetDir, "dotfiles", "ssh", "known_hosts"))
+	assert.NoFileExists(t, filepath.Join(targetDir, ".ssh", "id_ed25519"))
+	assert.NoFileExists(t, filepath.Join(targetDir, ".ssh", "known_hosts"))
 }
 
 func TestDotfilesCapturer_CaptureAll(t *testing.T) {
@@ -361,7 +362,6 @@ func TestDotfilesCapturer_BrokenSymlinks_SkipsAndReports(t *testing.T) {
 		{
 			Provider:    "shell",
 			SourcePaths: []string{"~/.config/zsh"},
-			TargetDir:   "shell",
 		},
 	})
 
@@ -377,11 +377,11 @@ func TestDotfilesCapturer_BrokenSymlinks_SkipsAndReports(t *testing.T) {
 	assert.Equal(t, brokenLink, result.BrokenSymlinks[0].Path)
 	assert.Equal(t, "/nonexistent/path/to/file.zsh", result.BrokenSymlinks[0].Target)
 
-	// Verify valid file was copied
-	assert.FileExists(t, filepath.Join(targetDir, "dotfiles", "shell", "aliases.zsh"))
+	// Verify valid file was copied (home-mirrored structure)
+	assert.FileExists(t, filepath.Join(targetDir, ".config", "zsh", "aliases.zsh"))
 
 	// Verify broken symlink was NOT copied
-	assert.NoFileExists(t, filepath.Join(targetDir, "dotfiles", "shell", "broken.zsh"))
+	assert.NoFileExists(t, filepath.Join(targetDir, ".config", "zsh", "broken.zsh"))
 }
 
 func TestDotfilesCapturer_BrokenSymlinks_SourcePath(t *testing.T) {
@@ -403,7 +403,6 @@ func TestDotfilesCapturer_BrokenSymlinks_SourcePath(t *testing.T) {
 		{
 			Provider:    "broken",
 			SourcePaths: []string{"~/.config/broken-app"},
-			TargetDir:   "broken",
 		},
 	})
 
@@ -440,7 +439,6 @@ func TestDotfilesCapturer_ValidSymlinks_Followed(t *testing.T) {
 		{
 			Provider:    "app",
 			SourcePaths: []string{"~/.config/app"},
-			TargetDir:   "app",
 		},
 	})
 
@@ -452,8 +450,8 @@ func TestDotfilesCapturer_ValidSymlinks_Followed(t *testing.T) {
 	assert.Positive(t, len(result.Dotfiles), "should capture files through valid symlinks")
 	assert.Empty(t, result.BrokenSymlinks, "should not report any broken symlinks")
 
-	// Verify content was captured
-	assert.FileExists(t, filepath.Join(targetDir, "dotfiles", "app", "config.lua"))
+	// Verify content was captured (home-mirrored structure)
+	assert.FileExists(t, filepath.Join(targetDir, ".config", "app", "config.lua"))
 }
 
 func TestDotfilesCapturer_CaptureGitConfig(t *testing.T) {
@@ -486,8 +484,8 @@ func TestDotfilesCapturer_CaptureGitConfig(t *testing.T) {
 	// Should capture both .gitconfig and .config/git/ignore
 	assert.GreaterOrEqual(t, len(result.Dotfiles), 2, "should capture both .gitconfig and git/ignore")
 
-	// Verify .gitconfig was captured (renamed to config in git/ dir)
-	capturedGitconfig := filepath.Join(targetDir, "dotfiles", "git", ".gitconfig")
+	// Verify .gitconfig was captured (home-mirrored structure)
+	capturedGitconfig := filepath.Join(targetDir, ".gitconfig")
 	assert.FileExists(t, capturedGitconfig, ".gitconfig should be captured")
 
 	// Verify content is correct
@@ -495,8 +493,8 @@ func TestDotfilesCapturer_CaptureGitConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "Test User")
 
-	// Verify .config/git/ignore was captured
-	capturedIgnore := filepath.Join(targetDir, "dotfiles", "git", "ignore")
+	// Verify .config/git/ignore was captured (home-mirrored structure)
+	capturedIgnore := filepath.Join(targetDir, ".config", "git", "ignore")
 	assert.FileExists(t, capturedIgnore, "git/ignore should be captured")
 }
 
@@ -519,9 +517,9 @@ func TestDotfilesCapturer_ExcludesGitconfigLocal(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
-	// Verify .gitconfig was captured
-	assert.FileExists(t, filepath.Join(targetDir, "dotfiles", "git", ".gitconfig"))
+	// Verify .gitconfig was captured (home-mirrored structure)
+	assert.FileExists(t, filepath.Join(targetDir, ".gitconfig"))
 
 	// Verify .gitconfig.local was NOT captured
-	assert.NoFileExists(t, filepath.Join(targetDir, "dotfiles", "git", ".gitconfig.local"))
+	assert.NoFileExists(t, filepath.Join(targetDir, ".gitconfig.local"))
 }

@@ -842,17 +842,17 @@ func TestCaptureConfigGenerator_WithDotfiles(t *testing.T) {
 		t.Parallel()
 		tmpDir := t.TempDir()
 
-		// Create a mock dotfiles capture result
+		// Create a mock dotfiles capture result with home-mirrored paths
 		dotfilesResult := &DotfilesCaptureResult{
-			TargetDir: "dotfiles",
+			TargetDir: tmpDir,
 			Dotfiles: []CapturedDotfile{
-				{Provider: "nvim", SourcePath: "~/.config/nvim", RelativePath: "init.lua", DestPath: "dotfiles/nvim/init.lua"},
-				{Provider: "vscode", SourcePath: "~/Library/Application Support/Code/User/settings.json", RelativePath: "settings.json", DestPath: "dotfiles/vscode/settings.json"},
-				{Provider: "git", SourcePath: "~/.gitconfig.d", RelativePath: "alias.gitconfig", DestPath: "dotfiles/git/alias.gitconfig"},
-				{Provider: "ssh", SourcePath: "~/.ssh/config", RelativePath: "config", DestPath: "dotfiles/ssh/config"},
-				{Provider: "shell", SourcePath: "~/.zshrc.d", RelativePath: "aliases.zsh", DestPath: "dotfiles/shell/aliases.zsh"},
-				{Provider: "starship", SourcePath: "~/.config/starship.toml", RelativePath: "starship.toml", DestPath: "dotfiles/starship/starship.toml"},
-				{Provider: "tmux", SourcePath: "~/.tmux.conf", RelativePath: "tmux.conf", DestPath: "dotfiles/tmux/tmux.conf"},
+				{Provider: "nvim", SourcePath: "~/.config/nvim", HomeRelPath: ".config/nvim", DestPath: filepath.Join(tmpDir, ".config", "nvim"), IsDirectory: true},
+				{Provider: "vscode", SourcePath: "~/Library/Application Support/Code/User/settings.json", HomeRelPath: "Library/Application Support/Code/User/settings.json", DestPath: filepath.Join(tmpDir, "Library", "Application Support", "Code", "User", "settings.json")},
+				{Provider: "git", SourcePath: "~/.gitconfig", HomeRelPath: ".gitconfig", DestPath: filepath.Join(tmpDir, ".gitconfig")},
+				{Provider: "ssh", SourcePath: "~/.ssh/config", HomeRelPath: ".ssh/config", DestPath: filepath.Join(tmpDir, ".ssh", "config")},
+				{Provider: "shell", SourcePath: "~/.zshrc", HomeRelPath: ".zshrc", DestPath: filepath.Join(tmpDir, ".zshrc")},
+				{Provider: "starship", SourcePath: "~/.config/starship.toml", HomeRelPath: ".config/starship.toml", DestPath: filepath.Join(tmpDir, ".config", "starship.toml")},
+				{Provider: "tmux", SourcePath: "~/.tmux.conf", HomeRelPath: ".tmux.conf", DestPath: filepath.Join(tmpDir, ".tmux.conf")},
 			},
 		}
 
@@ -876,12 +876,12 @@ func TestCaptureConfigGenerator_WithDotfiles(t *testing.T) {
 
 		contentStr := string(content)
 
-		// Verify config_source fields are populated
-		assert.Contains(t, contentStr, "config_source: dotfiles/nvim", "nvim config_source should be set")
-		assert.Contains(t, contentStr, "config_source: dotfiles/vscode", "vscode config_source should be set")
-		assert.Contains(t, contentStr, "config_source: dotfiles/git", "git config_source should be set")
-		assert.Contains(t, contentStr, "config_source: dotfiles/ssh", "ssh config_source should be set")
-		assert.Contains(t, contentStr, "config_source: dotfiles/tmux", "tmux config_source should be set")
+		// Verify config_source fields are populated with home-relative paths
+		assert.Contains(t, contentStr, "config_source: .config/nvim", "nvim config_source should be set")
+		assert.Contains(t, contentStr, "config_source: Library/Application Support/Code/User", "vscode config_source should be set")
+		assert.Contains(t, contentStr, "config_source: .gitconfig", "git config_source should be set")
+		assert.Contains(t, contentStr, "config_source: .ssh", "ssh config_source should be set")
+		assert.Contains(t, contentStr, "config_source: .tmux.conf", "tmux config_source should be set")
 	})
 
 	t.Run("populates shell config_source with dir and starship", func(t *testing.T) {
@@ -889,10 +889,10 @@ func TestCaptureConfigGenerator_WithDotfiles(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		dotfilesResult := &DotfilesCaptureResult{
-			TargetDir: "dotfiles",
+			TargetDir: tmpDir,
 			Dotfiles: []CapturedDotfile{
-				{Provider: "shell", SourcePath: "~/.zshrc.d", RelativePath: "aliases.zsh", DestPath: "dotfiles/shell/aliases.zsh"},
-				{Provider: "starship", SourcePath: "~/.config/starship.toml", RelativePath: "starship.toml", DestPath: "dotfiles/starship/starship.toml"},
+				{Provider: "shell", SourcePath: "~/.zshrc", HomeRelPath: ".zshrc", DestPath: filepath.Join(tmpDir, ".zshrc")},
+				{Provider: "starship", SourcePath: "~/.config/starship.toml", HomeRelPath: ".config/starship.toml", DestPath: filepath.Join(tmpDir, ".config", "starship.toml")},
 			},
 		}
 
@@ -914,21 +914,22 @@ func TestCaptureConfigGenerator_WithDotfiles(t *testing.T) {
 
 		contentStr := string(content)
 
-		// Verify shell config_source.dir is set
-		assert.Contains(t, contentStr, "dir: dotfiles/shell", "shell config_source.dir should be set")
-		// Verify starship config_source is set
-		assert.Contains(t, contentStr, "config_source: dotfiles/starship", "starship config_source should be set")
+		// Verify shell config_source.dir is set with home-relative path
+		assert.Contains(t, contentStr, "dir: .zshrc", "shell config_source.dir should be set")
+		// Verify starship config_source is set with home-relative path
+		assert.Contains(t, contentStr, "config_source: .config", "starship config_source should be set")
 	})
 
 	t.Run("per-target dotfiles directory", func(t *testing.T) {
 		t.Parallel()
 		tmpDir := t.TempDir()
 
+		// With home-mirrored structure, per-target uses suffixed paths
 		dotfilesResult := &DotfilesCaptureResult{
-			TargetDir: "dotfiles.work",
+			TargetDir: tmpDir,
 			Target:    "work",
 			Dotfiles: []CapturedDotfile{
-				{Provider: "nvim", SourcePath: "~/.config/nvim", RelativePath: "init.lua", DestPath: "dotfiles.work/nvim/init.lua"},
+				{Provider: "nvim", SourcePath: "~/.config/nvim", HomeRelPath: ".config.work/nvim", DestPath: filepath.Join(tmpDir, ".config.work", "nvim"), IsDirectory: true},
 			},
 		}
 
@@ -948,8 +949,8 @@ func TestCaptureConfigGenerator_WithDotfiles(t *testing.T) {
 		content, err := os.ReadFile(layerPath)
 		require.NoError(t, err)
 
-		// Verify config_source uses per-target directory
-		assert.Contains(t, string(content), "config_source: dotfiles.work/nvim")
+		// Verify config_source uses per-target suffixed path
+		assert.Contains(t, string(content), "config_source: .config.work/nvim")
 	})
 
 	t.Run("no dotfiles does not add config_source", func(t *testing.T) {

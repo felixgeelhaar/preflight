@@ -273,13 +273,31 @@ func (g *CaptureConfigGenerator) applyDotfilesToLayer(layer *captureLayerYAML) {
 
 	byProvider := g.dotfilesResult.DotfilesByProvider()
 
-	// Helper to get the relative dotfiles path for a provider
+	// Helper to get the home-relative path for a provider's config.
+	// Returns the directory containing the first captured file/dir for this provider.
+	// e.g., ".config/nvim" for nvim, ".ssh" for ssh, or ".gitconfig" for a single file.
 	getConfigSource := func(provider string) string {
-		if files, ok := byProvider[provider]; ok && len(files) > 0 {
-			// Use the target directory relative path
-			// e.g., "dotfiles/nvim" or "dotfiles.work/nvim"
-			baseDir := g.dotfilesResult.TargetDir
-			return baseDir + "/" + provider
+		files, ok := byProvider[provider]
+		if !ok || len(files) == 0 {
+			return ""
+		}
+
+		// Find a non-directory file or the root directory for this provider
+		for _, file := range files {
+			if file.HomeRelPath != "" {
+				// For directories, return the directory path
+				// For files, return the file path (parent will be used by providers)
+				if file.IsDirectory {
+					return file.HomeRelPath
+				}
+				// For single files, return the directory containing them
+				// unless it's a dotfile at home root (e.g., .gitconfig)
+				dir := filepath.Dir(file.HomeRelPath)
+				if dir == "." {
+					return file.HomeRelPath // Root-level file like .gitconfig
+				}
+				return dir
+			}
 		}
 		return ""
 	}

@@ -1,8 +1,8 @@
 package nvim
 
 import (
-	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
@@ -66,32 +66,54 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 }
 
 // resolveConfigSource resolves a config_source path with per-target override support.
+// Uses home-mirrored structure where the config root mirrors $HOME.
+// Per-target uses suffixed first path component (e.g., .config.work/nvim).
+// Returns empty string if path traversal is detected.
 func (p *Provider) resolveConfigSource(configSource, configRoot, target string) string {
-	if configRoot == "" {
+	if configRoot == "" || configSource == "" {
 		return ""
 	}
 
-	// Check per-target directory first: dotfiles.{target}/{configSource}
-	if target != "" {
-		targetPath := filepath.Join(configRoot, "dotfiles."+target, configSource)
-		if _, err := os.Stat(targetPath); err == nil {
+	// Security: reject paths that could escape configRoot
+	if strings.Contains(configSource, "..") {
+		return ""
+	}
+
+	// Check per-target path first: suffix the first path component
+	// e.g., .config/nvim with target "work" -> .config.work/nvim
+	if target != "" && target != "default" {
+		targetPath := p.applyTargetSuffix(configSource, configRoot, target)
+		if p.isPathWithinRoot(configRoot, targetPath) && p.fs.Exists(targetPath) {
 			return targetPath
 		}
 	}
 
-	// Fall back to shared directory: dotfiles/{configSource}
-	sharedPath := filepath.Join(configRoot, "dotfiles", configSource)
-	if _, err := os.Stat(sharedPath); err == nil {
+	// Fall back to shared path (home-mirrored structure)
+	sharedPath := filepath.Join(configRoot, configSource)
+	if p.isPathWithinRoot(configRoot, sharedPath) && p.fs.Exists(sharedPath) {
 		return sharedPath
 	}
 
-	// If configSource is already a path under dotfiles/, use it directly
-	fullPath := filepath.Join(configRoot, configSource)
-	if _, err := os.Stat(fullPath); err == nil {
-		return fullPath
+	// Legacy support: check old dotfiles/ structure during migration
+	legacyPath := filepath.Join(configRoot, "dotfiles", configSource)
+	if p.isPathWithinRoot(configRoot, legacyPath) && p.fs.Exists(legacyPath) {
+		return legacyPath
 	}
 
 	return ""
+}
+
+// isPathWithinRoot validates that a path stays within the config root.
+func (p *Provider) isPathWithinRoot(root, path string) bool {
+	return ports.IsPathWithinRoot(root, path)
+}
+
+// applyTargetSuffix adds the target suffix to the first path component.
+// Examples:
+//   - ".config/nvim" with target "work" -> configRoot/.config.work/nvim
+//   - ".gitconfig" with target "work" -> configRoot/.gitconfig.work
+func (p *Provider) applyTargetSuffix(configSource, configRoot, target string) string {
+	return ports.ApplyTargetSuffix(configSource, configRoot, target)
 }
 
 // Ensure Provider implements compiler.Provider.

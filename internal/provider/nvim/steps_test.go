@@ -485,3 +485,207 @@ func TestLazyLockStep_Explain(t *testing.T) {
 	assert.NotEmpty(t, exp.Summary())
 	assert.Contains(t, exp.Detail(), "lazy-lock")
 }
+
+// ConfigSourceStep tests
+
+func TestConfigSourceStep_ID(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	step := nvim.NewConfigSourceStep("/home/user/dotfiles/.config/nvim", "~/.config/nvim", fs)
+
+	assert.Equal(t, "nvim:config-source", step.ID().String())
+}
+
+func TestConfigSourceStep_DependsOn(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	step := nvim.NewConfigSourceStep("/home/user/dotfiles/.config/nvim", "~/.config/nvim", fs)
+
+	deps := step.DependsOn()
+	assert.Empty(t, deps)
+}
+
+func TestConfigSourceStep_Check_CorrectSymlink(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	sourcePath := "/home/user/dotfiles/.config/nvim"
+	destPath := ports.ExpandPath("~/.config/nvim")
+
+	// Simulate correct symlink exists
+	fs.AddSymlink(destPath, sourcePath)
+
+	step := nvim.NewConfigSourceStep(sourcePath, "~/.config/nvim", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusSatisfied, status)
+}
+
+func TestConfigSourceStep_Check_NoSymlink(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	sourcePath := "/home/user/dotfiles/.config/nvim"
+
+	step := nvim.NewConfigSourceStep(sourcePath, "~/.config/nvim", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestConfigSourceStep_Check_WrongTarget(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	sourcePath := "/home/user/dotfiles/.config/nvim"
+	destPath := ports.ExpandPath("~/.config/nvim")
+
+	// Simulate symlink pointing to wrong target
+	fs.AddSymlink(destPath, "/some/other/path")
+
+	step := nvim.NewConfigSourceStep(sourcePath, "~/.config/nvim", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestConfigSourceStep_Plan_NoExisting(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	sourcePath := "/home/user/dotfiles/.config/nvim"
+
+	step := nvim.NewConfigSourceStep(sourcePath, "~/.config/nvim", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	diff, err := step.Plan(ctx)
+
+	require.NoError(t, err)
+	assert.NotEmpty(t, diff.Summary())
+	// Name contains "symlink -> <sourcePath>"
+	assert.Contains(t, diff.Name(), sourcePath)
+}
+
+func TestConfigSourceStep_Plan_ExistingSymlink(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	sourcePath := "/home/user/dotfiles/.config/nvim"
+	destPath := ports.ExpandPath("~/.config/nvim")
+
+	// Simulate existing wrong symlink
+	fs.AddSymlink(destPath, "/some/other/path")
+
+	step := nvim.NewConfigSourceStep(sourcePath, "~/.config/nvim", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	diff, err := step.Plan(ctx)
+
+	require.NoError(t, err)
+	assert.Contains(t, diff.OldValue(), "/some/other/path")
+}
+
+func TestConfigSourceStep_Plan_ExistingDirectory(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	sourcePath := "/home/user/dotfiles/.config/nvim"
+	destPath := ports.ExpandPath("~/.config/nvim")
+
+	// Simulate existing directory (not a symlink)
+	fs.AddDir(destPath)
+
+	step := nvim.NewConfigSourceStep(sourcePath, "~/.config/nvim", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	diff, err := step.Plan(ctx)
+
+	require.NoError(t, err)
+	assert.Contains(t, diff.OldValue(), "existing directory")
+}
+
+func TestConfigSourceStep_Apply_CreateNew(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	sourcePath := "/home/user/dotfiles/.config/nvim"
+
+	step := nvim.NewConfigSourceStep(sourcePath, "~/.config/nvim", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+
+	require.NoError(t, err)
+	// Verify symlink was created
+	destPath := ports.ExpandPath("~/.config/nvim")
+	isLink, target := fs.IsSymlink(destPath)
+	assert.True(t, isLink)
+	assert.Equal(t, sourcePath, target)
+}
+
+func TestConfigSourceStep_Apply_AlreadyCorrect(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	sourcePath := "/home/user/dotfiles/.config/nvim"
+	destPath := ports.ExpandPath("~/.config/nvim")
+
+	// Already has correct symlink
+	fs.AddSymlink(destPath, sourcePath)
+
+	step := nvim.NewConfigSourceStep(sourcePath, "~/.config/nvim", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+
+	require.NoError(t, err)
+}
+
+func TestConfigSourceStep_Apply_ReplaceWrongSymlink(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	sourcePath := "/home/user/dotfiles/.config/nvim"
+	destPath := ports.ExpandPath("~/.config/nvim")
+
+	// Wrong symlink exists
+	fs.AddSymlink(destPath, "/wrong/path")
+
+	step := nvim.NewConfigSourceStep(sourcePath, "~/.config/nvim", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+
+	require.NoError(t, err)
+	// Verify new symlink
+	isLink, target := fs.IsSymlink(destPath)
+	assert.True(t, isLink)
+	assert.Equal(t, sourcePath, target)
+}
+
+func TestConfigSourceStep_Explain(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	sourcePath := "/home/user/dotfiles/.config/nvim"
+
+	step := nvim.NewConfigSourceStep(sourcePath, "~/.config/nvim", fs)
+	ctx := compiler.NewExplainContext()
+
+	exp := step.Explain(ctx)
+
+	assert.NotEmpty(t, exp.Summary())
+	assert.Contains(t, exp.Detail(), sourcePath)
+	assert.Contains(t, exp.Detail(), "symlink")
+}
