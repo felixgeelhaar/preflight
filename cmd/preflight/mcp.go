@@ -19,11 +19,19 @@ The MCP server exposes preflight functionality to AI agents (like Claude Code)
 via the Model Context Protocol, enabling intelligent configuration management.
 
 Available tools:
-  - preflight_plan      Show what changes would be made
-  - preflight_apply     Apply configuration changes
-  - preflight_doctor    Verify system state
-  - preflight_validate  Validate configuration
-  - preflight_status    Get current status
+  - preflight_plan           Show what changes would be made
+  - preflight_apply          Apply configuration changes
+  - preflight_doctor         Verify system state
+  - preflight_validate       Validate configuration
+  - preflight_status         Get current status
+  - preflight_capture        Capture current machine configuration
+  - preflight_diff           Show configuration vs system differences
+  - preflight_security       Scan for security vulnerabilities
+  - preflight_outdated       Check for outdated packages
+  - preflight_rollback       List or restore file snapshots
+  - preflight_sync           Sync configuration with remote repository
+  - preflight_marketplace    Browse presets and capability packs
+  - preflight_analyze_tools  Analyze tools for redundancy/deprecation
 
 Examples:
   preflight mcp                     # Start stdio MCP server

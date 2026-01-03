@@ -252,3 +252,64 @@ func TestValidateSyncInput(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateToolAnalyzeInput(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   *ToolAnalyzeInput
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "valid single tool",
+			input:   &ToolAnalyzeInput{Tools: []string{"trivy"}},
+			wantErr: false,
+		},
+		{
+			name:    "valid multiple tools",
+			input:   &ToolAnalyzeInput{Tools: []string{"trivy", "grype", "golint"}},
+			wantErr: false,
+		},
+		{
+			name:    "empty tools list",
+			input:   &ToolAnalyzeInput{Tools: []string{}},
+			wantErr: true,
+			errMsg:  "tools list is required",
+		},
+		{
+			name:    "nil tools list",
+			input:   &ToolAnalyzeInput{},
+			wantErr: true,
+			errMsg:  "tools list is required",
+		},
+		{
+			name:    "invalid tool name with semicolon",
+			input:   &ToolAnalyzeInput{Tools: []string{"trivy;rm"}},
+			wantErr: true,
+			errMsg:  "invalid tool name",
+		},
+		{
+			name:    "invalid tool name with spaces",
+			input:   &ToolAnalyzeInput{Tools: []string{"trivy grype"}},
+			wantErr: true,
+			errMsg:  "invalid tool name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateToolAnalyzeInput(tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

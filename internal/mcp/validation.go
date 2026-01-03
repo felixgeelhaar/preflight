@@ -114,3 +114,16 @@ func ValidateSyncInput(in *SyncInput) error {
 	}
 	return nil
 }
+
+// ValidateToolAnalyzeInput validates ToolAnalyzeInput fields.
+func ValidateToolAnalyzeInput(in *ToolAnalyzeInput) error {
+	if len(in.Tools) == 0 {
+		return fmt.Errorf("tools list is required")
+	}
+	for _, tool := range in.Tools {
+		if err := validation.ValidatePackageName(tool); err != nil {
+			return fmt.Errorf("invalid tool name %q: %w", tool, err)
+		}
+	}
+	return nil
+}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/felixgeelhaar/mcp-go"
 	"github.com/felixgeelhaar/preflight/internal/app"
+	"github.com/felixgeelhaar/preflight/internal/domain/catalog/tools"
 	"github.com/felixgeelhaar/preflight/internal/domain/marketplace"
 	"github.com/felixgeelhaar/preflight/internal/domain/security"
 	"github.com/felixgeelhaar/preflight/internal/domain/snapshot"
@@ -375,6 +376,39 @@ type MarketplacePackage struct {
 	Featured    bool     `json:"featured,omitempty"`
 }
 
+// ToolAnalyzeInput is the input for the preflight_analyze_tools tool.
+type ToolAnalyzeInput struct {
+	Tools []string `json:"tools" jsonschema:"required,description=List of tool names to analyze (e.g. trivy, grype, golint)"`
+}
+
+// ToolAnalyzeOutput is the output for the preflight_analyze_tools tool.
+type ToolAnalyzeOutput struct {
+	ToolsAnalyzed  int                   `json:"tools_analyzed"`
+	IssuesFound    int                   `json:"issues_found"`
+	Consolidations int                   `json:"consolidations"`
+	Findings       []ToolAnalyzeFinding  `json:"findings,omitempty"`
+	Summary        *ToolAnalyzeSummary   `json:"summary,omitempty"`
+}
+
+// ToolAnalyzeFinding represents a finding from tool analysis.
+type ToolAnalyzeFinding struct {
+	Type        string   `json:"type"`        // redundancy, deprecated, consolidation
+	Severity    string   `json:"severity"`    // info, warning, error
+	Tools       []string `json:"tools"`
+	Message     string   `json:"message"`
+	Suggestion  string   `json:"suggestion,omitempty"`
+	Replacement string   `json:"replacement,omitempty"`
+	Category    string   `json:"category,omitempty"`
+	Docs        string   `json:"docs,omitempty"`
+}
+
+// ToolAnalyzeSummary contains analysis summary statistics.
+type ToolAnalyzeSummary struct {
+	Deprecations   int `json:"deprecations"`
+	Redundancies   int `json:"redundancies"`
+	Consolidations int `json:"consolidations"`
+}
+
 // RegisterAll registers all MCP tools with the server.
 func RegisterAll(srv *mcp.Server, preflight *app.Preflight, defaultConfig, defaultTarget string, versionInfo VersionInfo) {
 	// Phase 1: Core Operations
@@ -395,6 +429,7 @@ func RegisterAll(srv *mcp.Server, preflight *app.Preflight, defaultConfig, defau
 	registerRollbackTool(srv)
 	registerSyncTool(srv, preflight, defaultConfig, defaultTarget)
 	registerMarketplaceTool(srv)
+	registerToolAnalyzeTool(srv)
 }
 
 func registerPlanTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig, defaultTarget string) {
@@ -1280,6 +1315,72 @@ func registerMarketplaceTool(srv *mcp.Server) {
 					Message: "Unknown action. Use: search, info, list, or featured",
 				}, nil
 			}
+		})
+}
+
+func registerToolAnalyzeTool(srv *mcp.Server) {
+	srv.Tool("preflight_analyze_tools").
+		Description("Analyze development tools for redundancy, deprecation warnings, and consolidation opportunities. Detects deprecated tools (golint → golangci-lint), redundant tools (grype + trivy → keep trivy), and consolidation opportunities ([grype, syft, gitleaks] → trivy).").
+		ReadOnly().
+		Handler(func(ctx context.Context, in ToolAnalyzeInput) (*ToolAnalyzeOutput, error) {
+			// Validate inputs
+			if err := ValidateToolAnalyzeInput(&in); err != nil {
+				return nil, err
+			}
+
+			// Load the knowledge base
+			kb, err := tools.LoadKnowledgeBase()
+			if err != nil {
+				return nil, fmt.Errorf("failed to load tool knowledge base: %w", err)
+			}
+
+			// Create analyzer and run analysis
+			analyzer := security.NewToolAnalyzer(kb)
+			result, err := analyzer.Analyze(ctx, in.Tools)
+			if err != nil {
+				return nil, fmt.Errorf("analysis failed: %w", err)
+			}
+
+			// Count findings by type for summary
+			var deprecations, redundancies, consolidations int
+			for _, f := range result.Findings {
+				switch f.Type {
+				case security.FindingDeprecated:
+					deprecations++
+				case security.FindingRedundancy:
+					redundancies++
+				case security.FindingConsolidation:
+					consolidations++
+				}
+			}
+
+			// Build output
+			output := &ToolAnalyzeOutput{
+				ToolsAnalyzed:  result.ToolsAnalyzed,
+				IssuesFound:    result.IssuesFound,
+				Consolidations: result.Consolidations,
+				Findings:       make([]ToolAnalyzeFinding, 0, len(result.Findings)),
+				Summary: &ToolAnalyzeSummary{
+					Deprecations:   deprecations,
+					Redundancies:   redundancies,
+					Consolidations: consolidations,
+				},
+			}
+
+			for _, f := range result.Findings {
+				output.Findings = append(output.Findings, ToolAnalyzeFinding{
+					Type:        string(f.Type),
+					Severity:    string(f.Severity),
+					Tools:       f.Tools,
+					Message:     f.Message,
+					Suggestion:  f.Suggestion,
+					Replacement: f.Replacement,
+					Category:    f.Category,
+					Docs:        f.Docs,
+				})
+			}
+
+			return output, nil
 		})
 }
 

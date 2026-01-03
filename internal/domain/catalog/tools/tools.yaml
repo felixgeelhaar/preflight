@@ -1,0 +1,579 @@
+# Tool Knowledge Base
+# This file contains metadata about development tools including:
+# - Categories and capabilities
+# - Supersedes relationships (what tools can replace others)
+# - Deprecation information
+# - Documentation links
+
+tools:
+  # =============================================================================
+  # Security Scanners
+  # =============================================================================
+  trivy:
+    category: security_scanner
+    capabilities:
+      - vulnerability_scanning
+      - sbom_generation
+      - secret_detection
+      - iac_scanning
+      - container_scanning
+      - filesystem_scanning
+    supersedes:
+      - tool: grype
+        reason: "vulnerability scanning with broader coverage"
+      - tool: syft
+        reason: "SBOM generation included"
+      - tool: gitleaks
+        reason: "secret detection (use trivy fs --scanners secret)"
+    docs: "https://trivy.dev"
+
+  grype:
+    category: security_scanner
+    capabilities:
+      - vulnerability_scanning
+    docs: "https://github.com/anchore/grype"
+
+  syft:
+    category: sbom_generator
+    capabilities:
+      - sbom_generation
+    docs: "https://github.com/anchore/syft"
+
+  gitleaks:
+    category: secret_scanner
+    capabilities:
+      - secret_detection
+      - git_history_scanning
+    docs: "https://github.com/gitleaks/gitleaks"
+
+  snyk:
+    category: security_scanner
+    capabilities:
+      - vulnerability_scanning
+      - license_scanning
+      - iac_scanning
+    docs: "https://snyk.io/docs/"
+
+  gosec:
+    category: security_scanner
+    capabilities:
+      - go_security_linting
+    docs: "https://github.com/securego/gosec"
+
+  # =============================================================================
+  # Go Linters & Tools
+  # =============================================================================
+  golangci-lint:
+    category: go_linter
+    capabilities:
+      - static_analysis
+      - style_checking
+      - security_linting
+      - complexity_analysis
+      - error_checking
+    supersedes:
+      - tool: golint
+        reason: "included as linter (deprecated upstream)"
+      - tool: staticcheck
+        reason: "included as linter"
+      - tool: errcheck
+        reason: "included as linter"
+      - tool: govet
+        reason: "included as linter"
+      - tool: ineffassign
+        reason: "included as linter"
+      - tool: deadcode
+        reason: "included as linter"
+      - tool: gosimple
+        reason: "included as linter"
+      - tool: unused
+        reason: "included as linter"
+    docs: "https://golangci-lint.run/"
+
+  golint:
+    category: go_linter
+    deprecated: true
+    deprecated_since: "2020-06-15"
+    successor: golangci-lint
+    reason: "Frozen and deprecated by Go team - use golangci-lint instead"
+    docs: "https://github.com/golang/lint"
+
+  staticcheck:
+    category: go_linter
+    capabilities:
+      - static_analysis
+    docs: "https://staticcheck.io/"
+
+  errcheck:
+    category: go_linter
+    capabilities:
+      - error_checking
+    docs: "https://github.com/kisielk/errcheck"
+
+  govet:
+    category: go_linter
+    capabilities:
+      - static_analysis
+    docs: "https://pkg.go.dev/cmd/vet"
+
+  ineffassign:
+    category: go_linter
+    capabilities:
+      - dead_code_detection
+    docs: "https://github.com/gordonklaus/ineffassign"
+
+  deadcode:
+    category: go_linter
+    deprecated: true
+    deprecated_since: "2023-01-01"
+    successor: golangci-lint
+    reason: "Use golangci-lint with unused linter instead"
+
+  gosimple:
+    category: go_linter
+    capabilities:
+      - code_simplification
+    docs: "https://staticcheck.io/docs/checks#SA"
+
+  unused:
+    category: go_linter
+    capabilities:
+      - dead_code_detection
+    docs: "https://staticcheck.io/docs/checks#U"
+
+  # =============================================================================
+  # Go Dependency Management
+  # =============================================================================
+  dep:
+    category: go_dependency_manager
+    deprecated: true
+    deprecated_since: "2020-01-01"
+    successor: go_modules
+    reason: "Superseded by Go modules (go mod) - migrate to go.mod"
+    docs: "https://github.com/golang/dep"
+
+  # =============================================================================
+  # Node.js Package Managers
+  # =============================================================================
+  npm:
+    category: node_package_manager
+    capabilities:
+      - package_management
+      - script_running
+      - registry_publishing
+    docs: "https://docs.npmjs.com/"
+
+  yarn:
+    category: node_package_manager
+    capabilities:
+      - package_management
+      - script_running
+      - workspaces
+      - plug_n_play
+    docs: "https://yarnpkg.com/"
+
+  pnpm:
+    category: node_package_manager
+    capabilities:
+      - package_management
+      - script_running
+      - workspaces
+      - content_addressable_storage
+    supersedes:
+      - tool: npm
+        reason: "faster with disk-efficient storage"
+      - tool: yarn
+        reason: "faster with strict dependency resolution"
+    docs: "https://pnpm.io/"
+
+  bun:
+    category: node_package_manager
+    capabilities:
+      - package_management
+      - script_running
+      - bundling
+      - testing
+      - runtime
+    supersedes:
+      - tool: npm
+        reason: "faster package installation and runtime"
+      - tool: yarn
+        reason: "faster package installation"
+    docs: "https://bun.sh/"
+
+  # =============================================================================
+  # Python Tools
+  # =============================================================================
+  pip:
+    category: python_package_manager
+    capabilities:
+      - package_management
+    docs: "https://pip.pypa.io/"
+
+  poetry:
+    category: python_package_manager
+    capabilities:
+      - package_management
+      - dependency_resolution
+      - virtual_environments
+      - project_management
+    supersedes:
+      - tool: pip
+        reason: "better dependency resolution and project management"
+      - tool: pipenv
+        reason: "more reliable and faster"
+    docs: "https://python-poetry.org/"
+
+  pipenv:
+    category: python_package_manager
+    capabilities:
+      - package_management
+      - virtual_environments
+    docs: "https://pipenv.pypa.io/"
+
+  uv:
+    category: python_package_manager
+    capabilities:
+      - package_management
+      - virtual_environments
+      - python_installation
+    supersedes:
+      - tool: pip
+        reason: "10-100x faster installation"
+      - tool: poetry
+        reason: "faster with pip-compatible interface"
+      - tool: pipenv
+        reason: "faster and more reliable"
+      - tool: pyenv
+        reason: "includes Python version management"
+    docs: "https://github.com/astral-sh/uv"
+
+  # =============================================================================
+  # Python Linters & Formatters
+  # =============================================================================
+  ruff:
+    category: python_linter
+    capabilities:
+      - linting
+      - formatting
+      - import_sorting
+    supersedes:
+      - tool: flake8
+        reason: "10-100x faster with same rules"
+      - tool: pylint
+        reason: "faster with comparable coverage"
+      - tool: isort
+        reason: "includes import sorting"
+      - tool: black
+        reason: "includes formatting (ruff format)"
+      - tool: pyupgrade
+        reason: "includes upgrade rules"
+      - tool: autoflake
+        reason: "includes unused import removal"
+    docs: "https://docs.astral.sh/ruff/"
+
+  flake8:
+    category: python_linter
+    capabilities:
+      - linting
+    docs: "https://flake8.pycqa.org/"
+
+  pylint:
+    category: python_linter
+    capabilities:
+      - linting
+      - type_checking
+    docs: "https://pylint.org/"
+
+  black:
+    category: python_formatter
+    capabilities:
+      - formatting
+    docs: "https://black.readthedocs.io/"
+
+  isort:
+    category: python_formatter
+    capabilities:
+      - import_sorting
+    docs: "https://pycqa.github.io/isort/"
+
+  pyupgrade:
+    category: python_linter
+    capabilities:
+      - syntax_upgrading
+    docs: "https://github.com/asottile/pyupgrade"
+
+  autoflake:
+    category: python_linter
+    capabilities:
+      - unused_import_removal
+    docs: "https://github.com/PyCQA/autoflake"
+
+  # =============================================================================
+  # Version Managers
+  # =============================================================================
+  mise:
+    category: version_manager
+    capabilities:
+      - runtime_version_management
+      - environment_management
+      - task_running
+    supersedes:
+      - tool: asdf
+        reason: "faster and more features (drop-in replacement)"
+      - tool: rtx
+        reason: "rtx was renamed to mise"
+      - tool: nvm
+        reason: "manages Node.js and more"
+      - tool: pyenv
+        reason: "manages Python and more"
+      - tool: rbenv
+        reason: "manages Ruby and more"
+      - tool: goenv
+        reason: "manages Go and more"
+      - tool: tfenv
+        reason: "manages Terraform and more"
+    docs: "https://mise.jdx.dev/"
+
+  asdf:
+    category: version_manager
+    capabilities:
+      - runtime_version_management
+    docs: "https://asdf-vm.com/"
+
+  rtx:
+    category: version_manager
+    deprecated: true
+    deprecated_since: "2024-01-01"
+    successor: mise
+    reason: "rtx was renamed to mise"
+    docs: "https://mise.jdx.dev/"
+
+  nvm:
+    category: version_manager
+    capabilities:
+      - node_version_management
+    docs: "https://github.com/nvm-sh/nvm"
+
+  fnm:
+    category: version_manager
+    capabilities:
+      - node_version_management
+    supersedes:
+      - tool: nvm
+        reason: "faster (written in Rust)"
+    docs: "https://github.com/Schniz/fnm"
+
+  pyenv:
+    category: version_manager
+    capabilities:
+      - python_version_management
+    docs: "https://github.com/pyenv/pyenv"
+
+  rbenv:
+    category: version_manager
+    capabilities:
+      - ruby_version_management
+    docs: "https://github.com/rbenv/rbenv"
+
+  goenv:
+    category: version_manager
+    capabilities:
+      - go_version_management
+    docs: "https://github.com/go-nv/goenv"
+
+  tfenv:
+    category: version_manager
+    capabilities:
+      - terraform_version_management
+    docs: "https://github.com/tfutils/tfenv"
+
+  # =============================================================================
+  # Container Tools
+  # =============================================================================
+  docker:
+    category: container_runtime
+    capabilities:
+      - container_runtime
+      - image_building
+      - compose
+    docs: "https://docs.docker.com/"
+
+  podman:
+    category: container_runtime
+    capabilities:
+      - container_runtime
+      - image_building
+      - rootless_containers
+    supersedes:
+      - tool: docker
+        reason: "rootless and daemonless alternative"
+    docs: "https://podman.io/"
+
+  colima:
+    category: container_runtime
+    capabilities:
+      - container_runtime
+      - docker_compatibility
+      - kubernetes
+    docs: "https://github.com/abiosoft/colima"
+
+  orbstack:
+    category: container_runtime
+    capabilities:
+      - container_runtime
+      - docker_compatibility
+      - linux_vms
+    supersedes:
+      - tool: docker
+        reason: "faster and lighter on macOS"
+      - tool: colima
+        reason: "faster and more integrated"
+    docs: "https://orbstack.dev/"
+
+  # =============================================================================
+  # JavaScript/TypeScript Linters & Formatters
+  # =============================================================================
+  eslint:
+    category: javascript_linter
+    capabilities:
+      - linting
+      - formatting
+    docs: "https://eslint.org/"
+
+  prettier:
+    category: javascript_formatter
+    capabilities:
+      - formatting
+    docs: "https://prettier.io/"
+
+  biome:
+    category: javascript_linter
+    capabilities:
+      - linting
+      - formatting
+    supersedes:
+      - tool: eslint
+        reason: "faster linting (written in Rust)"
+      - tool: prettier
+        reason: "includes formatting"
+    docs: "https://biomejs.dev/"
+
+  # =============================================================================
+  # Rust Tools
+  # =============================================================================
+  cargo:
+    category: rust_package_manager
+    capabilities:
+      - package_management
+      - building
+      - testing
+    docs: "https://doc.rust-lang.org/cargo/"
+
+  clippy:
+    category: rust_linter
+    capabilities:
+      - linting
+    docs: "https://github.com/rust-lang/rust-clippy"
+
+  rustfmt:
+    category: rust_formatter
+    capabilities:
+      - formatting
+    docs: "https://github.com/rust-lang/rustfmt"
+
+  # =============================================================================
+  # Database Tools
+  # =============================================================================
+  sqlc:
+    category: sql_codegen
+    capabilities:
+      - sql_to_go
+      - type_safe_queries
+    docs: "https://sqlc.dev/"
+
+  pgcli:
+    category: database_client
+    capabilities:
+      - postgresql_client
+      - auto_completion
+    supersedes:
+      - tool: psql
+        reason: "better auto-completion and syntax highlighting"
+    docs: "https://www.pgcli.com/"
+
+  psql:
+    category: database_client
+    capabilities:
+      - postgresql_client
+    docs: "https://www.postgresql.org/docs/current/app-psql.html"
+
+  # =============================================================================
+  # Shell Prompts
+  # =============================================================================
+  starship:
+    category: shell_prompt
+    capabilities:
+      - cross_shell_prompt
+      - git_integration
+      - language_detection
+    supersedes:
+      - tool: powerlevel10k
+        reason: "cross-shell compatible"
+      - tool: oh-my-posh
+        reason: "faster and more lightweight"
+    docs: "https://starship.rs/"
+
+  powerlevel10k:
+    category: shell_prompt
+    capabilities:
+      - zsh_prompt
+      - git_integration
+    docs: "https://github.com/romkatv/powerlevel10k"
+
+  oh-my-posh:
+    category: shell_prompt
+    capabilities:
+      - cross_shell_prompt
+      - git_integration
+    docs: "https://ohmyposh.dev/"
+
+  # =============================================================================
+  # Git Tools
+  # =============================================================================
+  lazygit:
+    category: git_client
+    capabilities:
+      - git_tui
+      - interactive_staging
+    docs: "https://github.com/jesseduffield/lazygit"
+
+  tig:
+    category: git_client
+    capabilities:
+      - git_tui
+      - log_viewer
+    docs: "https://jonas.github.io/tig/"
+
+  gitui:
+    category: git_client
+    capabilities:
+      - git_tui
+      - interactive_staging
+    docs: "https://github.com/extrawurst/gitui"
+
+  delta:
+    category: git_pager
+    capabilities:
+      - syntax_highlighting
+      - side_by_side_diff
+    supersedes:
+      - tool: diff-so-fancy
+        reason: "more features and syntax highlighting"
+    docs: "https://github.com/dandavison/delta"
+
+  diff-so-fancy:
+    category: git_pager
+    capabilities:
+      - diff_highlighting
+    docs: "https://github.com/so-fancy/diff-so-fancy"

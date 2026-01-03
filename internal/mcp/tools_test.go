@@ -1444,8 +1444,8 @@ func TestToolCount(t *testing.T) {
 
 	tools := srv.Tools()
 
-	// We should have 13 tools total
-	assert.Len(t, tools, 13)
+	// We should have 14 tools total
+	assert.Len(t, tools, 14)
 }
 
 // Test MarketplaceInput action validation
