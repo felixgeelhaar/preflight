@@ -455,3 +455,73 @@ func TestDotfilesCapturer_ValidSymlinks_Followed(t *testing.T) {
 	// Verify content was captured
 	assert.FileExists(t, filepath.Join(targetDir, "dotfiles", "app", "config.lua"))
 }
+
+func TestDotfilesCapturer_CaptureGitConfig(t *testing.T) {
+	t.Parallel()
+
+	homeDir := t.TempDir()
+	targetDir := t.TempDir()
+
+	// Create .gitconfig file
+	gitconfigContent := `[user]
+	name = Test User
+	email = test@example.com
+[core]
+	editor = nvim
+`
+	require.NoError(t, os.WriteFile(filepath.Join(homeDir, ".gitconfig"), []byte(gitconfigContent), 0644))
+
+	// Create .config/git/ignore file
+	gitDir := filepath.Join(homeDir, ".config", "git")
+	require.NoError(t, os.MkdirAll(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "ignore"), []byte("*.log\n"), 0644))
+
+	fs := filesystem.NewRealFileSystem()
+	capturer := NewDotfilesCapturer(fs, homeDir, targetDir)
+
+	result, err := capturer.CaptureProvider("git")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Should capture both .gitconfig and .config/git/ignore
+	assert.GreaterOrEqual(t, len(result.Dotfiles), 2, "should capture both .gitconfig and git/ignore")
+
+	// Verify .gitconfig was captured (renamed to config in git/ dir)
+	capturedGitconfig := filepath.Join(targetDir, "dotfiles", "git", ".gitconfig")
+	assert.FileExists(t, capturedGitconfig, ".gitconfig should be captured")
+
+	// Verify content is correct
+	content, err := os.ReadFile(capturedGitconfig)
+	require.NoError(t, err)
+	assert.Contains(t, string(content), "Test User")
+
+	// Verify .config/git/ignore was captured
+	capturedIgnore := filepath.Join(targetDir, "dotfiles", "git", "ignore")
+	assert.FileExists(t, capturedIgnore, "git/ignore should be captured")
+}
+
+func TestDotfilesCapturer_ExcludesGitconfigLocal(t *testing.T) {
+	t.Parallel()
+
+	homeDir := t.TempDir()
+	targetDir := t.TempDir()
+
+	// Create .gitconfig file (should be captured)
+	require.NoError(t, os.WriteFile(filepath.Join(homeDir, ".gitconfig"), []byte("[user]\n\tname = Test\n"), 0644))
+
+	// Create .gitconfig.local file (should be excluded - may contain secrets)
+	require.NoError(t, os.WriteFile(filepath.Join(homeDir, ".gitconfig.local"), []byte("[user]\n\tsigningkey = SECRET\n"), 0644))
+
+	fs := filesystem.NewRealFileSystem()
+	capturer := NewDotfilesCapturer(fs, homeDir, targetDir)
+
+	result, err := capturer.CaptureProvider("git")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Verify .gitconfig was captured
+	assert.FileExists(t, filepath.Join(targetDir, "dotfiles", "git", ".gitconfig"))
+
+	// Verify .gitconfig.local was NOT captured
+	assert.NoFileExists(t, filepath.Join(targetDir, "dotfiles", "git", ".gitconfig.local"))
+}

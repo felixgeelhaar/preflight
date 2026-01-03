@@ -202,11 +202,13 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 		{
 			Provider: "git",
 			SourcePaths: []string{
+				"~/.gitconfig",
 				"~/.gitconfig.d",
 				"~/.config/git",
 			},
 			ExcludePaths: []string{
 				"credentials",
+				".gitconfig.local", // May contain signing keys or secrets
 			},
 			TargetDir: "git",
 		},
