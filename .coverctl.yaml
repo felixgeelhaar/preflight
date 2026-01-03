@@ -26,7 +26,7 @@ policy:
     # Application layer
     - name: app
       match: ["./internal/app/..."]
-      min: 55  # External commands untestable (vscode, mise, asdf, GitHub API)
+      min: 43  # External commands untestable (vscode, mise, asdf, GitHub API, fleet sync)
 
     - name: cli
       match: ["./cmd/..."]
