@@ -13,6 +13,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// testVersionInfo returns a VersionInfo for testing.
+func testVersionInfo() VersionInfo {
+	return VersionInfo{
+		Version:   "test-1.0.0",
+		Commit:    "abc1234",
+		BuildDate: "2026-01-03T00:00:00Z",
+	}
+}
+
 func TestRegisterAll(t *testing.T) {
 	preflight := app.New(bytes.NewBuffer(nil))
 	srv := mcp.NewServer(mcp.ServerInfo{
@@ -20,7 +29,7 @@ func TestRegisterAll(t *testing.T) {
 		Version: "1.0.0",
 	})
 
-	RegisterAll(srv, preflight, "preflight.yaml", "default")
+	RegisterAll(srv, preflight, "preflight.yaml", "default", testVersionInfo())
 
 	// Verify all tools are registered
 	tools := srv.Tools()
@@ -43,7 +52,7 @@ func TestPlanTool_NoConfig(t *testing.T) {
 		Version: "1.0.0",
 	})
 
-	RegisterAll(srv, preflight, "nonexistent.yaml", "default")
+	RegisterAll(srv, preflight, "nonexistent.yaml", "default", testVersionInfo())
 
 	// Find the tool in the tools list
 	var planTool *struct{ Name, Description string }
@@ -65,7 +74,7 @@ func TestValidateTool_NoConfig(t *testing.T) {
 		Version: "1.0.0",
 	})
 
-	RegisterAll(srv, preflight, "nonexistent.yaml", "default")
+	RegisterAll(srv, preflight, "nonexistent.yaml", "default", testVersionInfo())
 
 	// Find the tool in the tools list
 	var validateTool *struct{ Name, Description string }
@@ -87,7 +96,7 @@ func TestStatusTool_NoConfig(t *testing.T) {
 		Version: "1.0.0",
 	})
 
-	RegisterAll(srv, preflight, "nonexistent.yaml", "default")
+	RegisterAll(srv, preflight, "nonexistent.yaml", "default", testVersionInfo())
 
 	// Find the tool in the tools list
 	var statusTool *struct{ Name, Description string }
@@ -109,7 +118,7 @@ func TestDoctorTool_Description(t *testing.T) {
 		Version: "1.0.0",
 	})
 
-	RegisterAll(srv, preflight, "preflight.yaml", "default")
+	RegisterAll(srv, preflight, "preflight.yaml", "default", testVersionInfo())
 
 	// Find the tool in the tools list
 	var doctorTool *struct{ Name, Description string }
@@ -130,7 +139,7 @@ func TestApplyTool_Description(t *testing.T) {
 		Version: "1.0.0",
 	})
 
-	RegisterAll(srv, preflight, "preflight.yaml", "default")
+	RegisterAll(srv, preflight, "preflight.yaml", "default", testVersionInfo())
 
 	// Find the tool in the tools list
 	var applyTool *struct{ Name, Description string }
@@ -307,6 +316,9 @@ func TestValidateOutputTypes(t *testing.T) {
 // TestStatusOutputTypes verifies the status output types.
 func TestStatusOutputTypes(t *testing.T) {
 	output := &StatusOutput{
+		Version:      "v1.0.0",
+		Commit:       "abc1234",
+		BuildDate:    "2026-01-03T00:00:00Z",
 		ConfigExists: true,
 		ConfigPath:   "preflight.yaml",
 		Target:       "work",
@@ -325,6 +337,9 @@ func TestStatusOutputTypes(t *testing.T) {
 		},
 	}
 
+	assert.Equal(t, "v1.0.0", output.Version)
+	assert.Equal(t, "abc1234", output.Commit)
+	assert.Equal(t, "2026-01-03T00:00:00Z", output.BuildDate)
 	assert.True(t, output.ConfigExists)
 	assert.Equal(t, "work", output.Target)
 	assert.Equal(t, 25, output.StepCount)
@@ -545,7 +560,7 @@ func TestRegisterAllNewTools(t *testing.T) {
 		Version: "1.0.0",
 	})
 
-	RegisterAll(srv, preflight, "preflight.yaml", "default")
+	RegisterAll(srv, preflight, "preflight.yaml", "default", testVersionInfo())
 
 	// Verify all tools are registered
 	tools := srv.Tools()

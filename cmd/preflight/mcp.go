@@ -58,8 +58,13 @@ func runMCP(_ *cobra.Command, _ []string) error {
 		Version: version,
 	})
 
-	// Register all tools
-	mcptools.RegisterAll(srv, preflight, mcpConfigPath, mcpTarget)
+	// Register all tools with version info
+	versionInfo := mcptools.VersionInfo{
+		Version:   version,
+		Commit:    commit,
+		BuildDate: buildDate,
+	}
+	mcptools.RegisterAll(srv, preflight, mcpConfigPath, mcpTarget, versionInfo)
 
 	// Serve based on transport
 	if mcpHTTP != "" {

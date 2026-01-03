@@ -123,6 +123,9 @@ type StatusInput struct {
 
 // StatusOutput is the output for the preflight_status tool.
 type StatusOutput struct {
+	Version      string      `json:"version"`
+	Commit       string      `json:"commit"`
+	BuildDate    string      `json:"build_date"`
 	ConfigExists bool        `json:"config_exists"`
 	ConfigPath   string      `json:"config_path"`
 	Target       string      `json:"target"`
@@ -131,6 +134,13 @@ type StatusOutput struct {
 	HasDrift     bool        `json:"has_drift"`
 	DriftCount   int         `json:"drift_count"`
 	Repo         *RepoStatus `json:"repo,omitempty"`
+}
+
+// VersionInfo contains version metadata for the MCP server.
+type VersionInfo struct {
+	Version   string
+	Commit    string
+	BuildDate string
 }
 
 // RepoStatus contains repository status information.
@@ -363,13 +373,13 @@ type MarketplacePackage struct {
 }
 
 // RegisterAll registers all MCP tools with the server.
-func RegisterAll(srv *mcp.Server, preflight *app.Preflight, defaultConfig, defaultTarget string) {
+func RegisterAll(srv *mcp.Server, preflight *app.Preflight, defaultConfig, defaultTarget string, versionInfo VersionInfo) {
 	// Phase 1: Core Operations
 	registerPlanTool(srv, preflight, defaultConfig, defaultTarget)
 	registerApplyTool(srv, preflight, defaultConfig, defaultTarget)
 	registerDoctorTool(srv, preflight, defaultConfig, defaultTarget)
 	registerValidateTool(srv, preflight, defaultConfig, defaultTarget)
-	registerStatusTool(srv, preflight, defaultConfig, defaultTarget)
+	registerStatusTool(srv, preflight, defaultConfig, defaultTarget, versionInfo)
 
 	// Phase 2: Configuration Management
 	registerCaptureTool(srv, preflight)
@@ -604,9 +614,9 @@ func registerValidateTool(srv *mcp.Server, preflight *app.Preflight, defaultConf
 		})
 }
 
-func registerStatusTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig, defaultTarget string) {
+func registerStatusTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig, defaultTarget string, versionInfo VersionInfo) {
 	srv.Tool("preflight_status").
-		Description("Get current preflight status including config validity and drift detection.").
+		Description("Get current preflight status including version info, config validity, and drift detection.").
 		ReadOnly().
 		Handler(func(ctx context.Context, in StatusInput) (*StatusOutput, error) {
 			configPath := in.ConfigPath
@@ -619,6 +629,9 @@ func registerStatusTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig
 			}
 
 			output := &StatusOutput{
+				Version:    versionInfo.Version,
+				Commit:     versionInfo.Commit,
+				BuildDate:  versionInfo.BuildDate,
 				ConfigPath: configPath,
 				Target:     target,
 			}
