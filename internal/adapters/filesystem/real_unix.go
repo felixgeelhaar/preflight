@@ -2,7 +2,10 @@
 
 package filesystem
 
-import "os"
+import (
+	"fmt"
+	"os"
+)
 
 // IsJunction checks if a path is a symlink to a directory.
 // On Unix, there are no junctions - this checks for directory symlinks.
@@ -39,11 +42,17 @@ func (fs *RealFileSystem) IsJunction(path string) (bool, string) {
 // CreateJunction creates a directory symlink on Unix.
 // On Unix, this is the same as CreateSymlink.
 func (fs *RealFileSystem) CreateJunction(target, link string) error {
-	return os.Symlink(target, link)
+	if err := os.Symlink(target, link); err != nil {
+		return fmt.Errorf("failed to create junction %q -> %q: %w", link, target, err)
+	}
+	return nil
 }
 
 // CreateLink creates a symlink to the target.
 // On Unix, symlinks work for both files and directories.
 func (fs *RealFileSystem) CreateLink(target, link string) error {
-	return os.Symlink(target, link)
+	if err := os.Symlink(target, link); err != nil {
+		return fmt.Errorf("failed to create link %q -> %q: %w", link, target, err)
+	}
+	return nil
 }

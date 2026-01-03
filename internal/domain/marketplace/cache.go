@@ -84,7 +84,7 @@ func (m CacheMeta) IsExpired(ttl time.Duration) bool {
 
 // EnsureDir ensures the cache directory exists.
 func (c *Cache) EnsureDir() error {
-	return os.MkdirAll(c.config.BasePath, 0o755)
+	return os.MkdirAll(c.config.BasePath, 0o750)
 }
 
 // GetIndex returns the cached index if valid.
@@ -188,7 +188,7 @@ func (c *Cache) GetPackage(id PackageID, version string) ([]byte, error) {
 // PutPackage caches package content.
 func (c *Cache) PutPackage(id PackageID, version string, data []byte, source string) error {
 	pkgDir := filepath.Dir(c.packagePath(id, version))
-	if err := os.MkdirAll(pkgDir, 0o755); err != nil {
+	if err := os.MkdirAll(pkgDir, 0o750); err != nil {
 		return fmt.Errorf("failed to create package dir: %w", err)
 	}
 

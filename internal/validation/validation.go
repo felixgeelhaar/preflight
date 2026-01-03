@@ -349,20 +349,139 @@ func ValidatePath(path string) error {
 	return nil
 }
 
+// ValidateConfigPath validates a configuration file path.
+// It allows empty paths (will use default) and ensures the path has a valid extension.
+func ValidateConfigPath(path string) error {
+	if path == "" {
+		return nil // Empty is allowed, will use default
+	}
+
+	if len(path) > 4096 {
+		return fmt.Errorf("%w: config path too long (max 4096 characters)", ErrInvalidPath)
+	}
+
+	// Check for shell metacharacters
+	if containsShellMeta(path) {
+		return fmt.Errorf("%w: config path contains shell metacharacters", ErrCommandInjection)
+	}
+
+	// Check for null bytes
+	if strings.ContainsRune(path, '\x00') {
+		return fmt.Errorf("%w: config path contains null byte", ErrInvalidPath)
+	}
+
+	// Ensure it has a valid extension
+	ext := filepath.Ext(path)
+	if ext != ".yaml" && ext != ".yml" {
+		return fmt.Errorf("%w: config file must have .yaml or .yml extension", ErrInvalidPath)
+	}
+
+	return nil
+}
+
+// ValidateTarget validates a target name (alphanumeric with hyphens, underscores, dots).
+func ValidateTarget(target string) error {
+	if target == "" {
+		return nil // Empty is allowed, will use default
+	}
+
+	if len(target) > 100 {
+		return fmt.Errorf("%w: target name too long (max 100 characters)", ErrInvalidPath)
+	}
+
+	// Target should be alphanumeric with hyphens, underscores, and dots
+	for _, r := range target {
+		if !isValidIdentChar(r) {
+			return fmt.Errorf("%w: target name contains invalid character %q", ErrInvalidPath, r)
+		}
+	}
+
+	return nil
+}
+
+// ValidateSnapshotID validates a snapshot identifier.
+func ValidateSnapshotID(id string) error {
+	if id == "" {
+		return nil // Empty is allowed
+	}
+
+	if len(id) > 100 {
+		return fmt.Errorf("%w: snapshot ID too long (max 100 characters)", ErrInvalidPath)
+	}
+
+	// Snapshot IDs should be alphanumeric with hyphens and underscores (no dots)
+	for _, r := range id {
+		if !isValidSnapshotChar(r) {
+			return fmt.Errorf("%w: snapshot ID contains invalid character %q", ErrInvalidPath, r)
+		}
+	}
+
+	return nil
+}
+
+// isValidSnapshotChar checks if a rune is valid in snapshot identifiers.
+func isValidSnapshotChar(r rune) bool {
+	return (r >= 'a' && r <= 'z') ||
+		(r >= 'A' && r <= 'Z') ||
+		(r >= '0' && r <= '9') ||
+		r == '-' || r == '_'
+}
+
 // ValidatePathWithBase validates a path is within the expected base directory.
 // This is the recommended function for file operations.
+// SECURITY: Uses filepath.EvalSymlinks to prevent symlink-based path traversal attacks
+// when paths exist on the filesystem.
 func ValidatePathWithBase(path, basePath string) error {
 	if err := ValidatePath(path); err != nil {
 		return err
 	}
 
-	// Expand and clean both paths
-	expandedPath := expandPath(path)
-	cleanPath := filepath.Clean(expandedPath)
-	cleanBase := filepath.Clean(basePath)
+	// Resolve base path to absolute form
+	absBase, err := filepath.Abs(basePath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve base path: %w", err)
+	}
 
-	// Ensure the path is within the base directory
-	if !strings.HasPrefix(cleanPath, cleanBase) {
+	// Resolve the input path to absolute form
+	expandedPath := expandPath(path)
+	absPath, err := filepath.Abs(expandedPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve path: %w", err)
+	}
+
+	// Clean both paths for comparison
+	cleanBase := filepath.Clean(absBase)
+	cleanPath := filepath.Clean(absPath)
+
+	// Try to evaluate symlinks for existing paths (security hardening)
+	// For symlink attack prevention to work, both paths must be consistently resolved.
+	// If either path doesn't exist on the filesystem, we fall back to comparing cleaned paths.
+	evalBase, baseErr := filepath.EvalSymlinks(cleanBase)
+	if baseErr != nil {
+		evalBase = cleanBase
+	}
+
+	evalPath, pathErr := filepath.EvalSymlinks(cleanPath)
+	if pathErr != nil {
+		evalPath = cleanPath
+	}
+
+	// If one path was resolved via symlinks but the other wasn't,
+	// we need to use a consistent comparison. Fall back to cleaned paths.
+	if (baseErr == nil) != (pathErr == nil) {
+		// Mixed resolution - use cleaned paths for consistency
+		evalBase = cleanBase
+		evalPath = cleanPath
+	}
+
+	// Use filepath.Rel to safely determine if path is within base
+	relPath, err := filepath.Rel(evalBase, evalPath)
+	if err != nil {
+		return fmt.Errorf("%w: cannot determine relative path", ErrPathTraversal)
+	}
+
+	// If relative path starts with "..", the path escapes the base directory
+	if strings.HasPrefix(relPath, "..") {
 		return fmt.Errorf("%w: path %q escapes base directory %q", ErrPathTraversal, path, basePath)
 	}
 
@@ -615,6 +734,15 @@ func containsPathTraversal(path string) bool {
 	}
 
 	return false
+}
+
+// isValidIdentChar checks if a rune is valid for identifier names (target, provider, etc.).
+// Allows alphanumeric, hyphens, underscores, and dots.
+func isValidIdentChar(r rune) bool {
+	return (r >= 'a' && r <= 'z') ||
+		(r >= 'A' && r <= 'Z') ||
+		(r >= '0' && r <= '9') ||
+		r == '-' || r == '_' || r == '.'
 }
 
 // expandPath expands ~ to the home directory.

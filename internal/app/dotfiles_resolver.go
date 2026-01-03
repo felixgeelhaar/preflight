@@ -140,12 +140,15 @@ func (r *DotfilesResolver) legacyToHomeRelPath(providerPath string) string {
 		"vscode":   ".config/Code/User", // Linux path
 		"ssh":      ".ssh",
 		"git":      ".gitconfig",
-		"terminal": ".config/wezterm",
 	}
 
 	// Check if it's a known provider
 	parts := strings.SplitN(providerPath, string(filepath.Separator), 2)
 	if len(parts) > 0 {
+		// Terminal provider needs special handling - try multiple locations
+		if parts[0] == "terminal" {
+			return r.resolveTerminalPath(parts)
+		}
 		if mappedPath, ok := mappings[parts[0]]; ok {
 			if len(parts) == 1 {
 				return mappedPath
@@ -157,6 +160,62 @@ func (r *DotfilesResolver) legacyToHomeRelPath(providerPath string) string {
 
 	// Unknown mapping, return as-is
 	return providerPath
+}
+
+// resolveTerminalPath handles legacy terminal provider paths by checking multiple locations.
+// Terminal emulators store configs at different locations:
+//   - WezTerm: ~/.wezterm.lua or ~/.config/wezterm/
+//   - Alacritty: ~/.alacritty.toml, ~/.alacritty.yml, or ~/.config/alacritty/
+//   - Kitty: ~/.config/kitty/
+//   - Ghostty: ~/.config/ghostty/
+func (r *DotfilesResolver) resolveTerminalPath(parts []string) string {
+	// Terminal paths to check in order of preference
+	terminalPaths := []string{
+		".config/wezterm",
+		".wezterm.lua",
+		".config/alacritty",
+		".alacritty.toml",
+		".alacritty.yml",
+		".config/kitty",
+		".config/ghostty",
+		".hyper.js",
+		".config/hyper",
+	}
+
+	// If there's a subpath (e.g., "terminal/.wezterm.lua"), use it directly
+	if len(parts) > 1 {
+		subPath := parts[1]
+		// Check if subpath is a known terminal file/dir
+		for _, termPath := range terminalPaths {
+			if strings.HasPrefix(subPath, filepath.Base(termPath)) {
+				// Return the subpath as-is since it's already home-relative
+				return subPath
+			}
+		}
+		// For unknown subpaths, try to find a matching terminal path
+		for _, termPath := range terminalPaths {
+			testPath := filepath.Join(r.configRoot, termPath)
+			if r.exists(testPath) {
+				if len(parts) > 1 {
+					return filepath.Join(termPath, parts[1])
+				}
+				return termPath
+			}
+		}
+		// Fall back to the subpath as-is
+		return subPath
+	}
+
+	// No subpath - find the first existing terminal config
+	for _, termPath := range terminalPaths {
+		testPath := filepath.Join(r.configRoot, termPath)
+		if r.exists(testPath) {
+			return termPath
+		}
+	}
+
+	// Default to wezterm if nothing exists
+	return ".config/wezterm"
 }
 
 // ResolveDirectory resolves a config_source directory path.

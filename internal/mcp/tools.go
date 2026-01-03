@@ -4,6 +4,9 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/felixgeelhaar/mcp-go"
@@ -399,6 +402,11 @@ func registerPlanTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig, 
 		Description("Show what changes preflight would make to your system. Creates an execution plan without making changes.").
 		ReadOnly().
 		Handler(func(ctx context.Context, in PlanInput) (*PlanOutput, error) {
+			// Validate inputs
+			if err := ValidatePlanInput(&in); err != nil {
+				return nil, err
+			}
+
 			configPath := in.ConfigPath
 			if configPath == "" {
 				configPath = defaultConfig
@@ -447,6 +455,11 @@ func registerApplyTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig,
 		Description("Apply configuration changes to your system. REQUIRES confirmation=true for safety.").
 		Destructive().
 		Handler(func(ctx context.Context, in ApplyInput) (*ApplyOutput, error) {
+			// Validate inputs
+			if err := ValidateApplyInput(&in); err != nil {
+				return nil, err
+			}
+
 			if !in.Confirm && !in.DryRun {
 				return &ApplyOutput{
 					DryRun:  false,
@@ -521,6 +534,11 @@ func registerDoctorTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig
 		Description("Verify system state against configuration and detect drift. Reports issues and suggests fixes.").
 		ReadOnly().
 		Handler(func(ctx context.Context, in DoctorInput) (*DoctorOutput, error) {
+			// Validate inputs
+			if err := ValidateDoctorInput(&in); err != nil {
+				return nil, err
+			}
+
 			configPath := in.ConfigPath
 			if configPath == "" {
 				configPath = defaultConfig
@@ -576,6 +594,11 @@ func registerValidateTool(srv *mcp.Server, preflight *app.Preflight, defaultConf
 		Description("Validate configuration without applying. Useful for CI/CD pipelines.").
 		ReadOnly().
 		Handler(func(ctx context.Context, in ValidateInput) (*ValidateOutput, error) {
+			// Validate inputs
+			if err := ValidateValidateInput(&in); err != nil {
+				return nil, err
+			}
+
 			configPath := in.ConfigPath
 			if configPath == "" {
 				configPath = defaultConfig
@@ -619,6 +642,11 @@ func registerStatusTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig
 		Description("Get current preflight status including version info, config validity, and drift detection.").
 		ReadOnly().
 		Handler(func(ctx context.Context, in StatusInput) (*StatusOutput, error) {
+			// Validate inputs
+			if err := ValidateStatusInput(&in); err != nil {
+				return nil, err
+			}
+
 			configPath := in.ConfigPath
 			if configPath == "" {
 				configPath = defaultConfig
@@ -686,6 +714,11 @@ func registerCaptureTool(srv *mcp.Server, preflight *app.Preflight) {
 		Description("Capture current machine configuration. Discovers installed packages, dotfiles, and settings.").
 		ReadOnly().
 		Handler(func(ctx context.Context, in CaptureInput) (*CaptureOutput, error) {
+			// Validate inputs
+			if err := ValidateCaptureInput(&in); err != nil {
+				return nil, err
+			}
+
 			opts := app.NewCaptureOptions()
 			if in.Provider != "" {
 				opts = opts.WithProviders(in.Provider)
@@ -722,6 +755,11 @@ func registerDiffTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig, 
 		Description("Show differences between configuration and current system state.").
 		ReadOnly().
 		Handler(func(ctx context.Context, in DiffInput) (*DiffOutput, error) {
+			// Validate inputs
+			if err := ValidateDiffInput(&in); err != nil {
+				return nil, err
+			}
+
 			configPath := in.ConfigPath
 			if configPath == "" {
 				configPath = defaultConfig
@@ -948,6 +986,11 @@ func registerRollbackTool(srv *mcp.Server) {
 	srv.Tool("preflight_rollback").
 		Description("List or restore file snapshots. Snapshots are created before apply operations.").
 		Handler(func(ctx context.Context, in RollbackInput) (*RollbackOutput, error) {
+			// Validate inputs
+			if err := ValidateRollbackInput(&in); err != nil {
+				return nil, err
+			}
+
 			snapshotSvc, err := app.DefaultSnapshotService()
 			if err != nil {
 				return nil, err
@@ -1042,8 +1085,12 @@ func registerSyncTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig, 
 		Description("Sync configuration with remote repository and apply changes. Combines git pull and preflight apply.").
 		Destructive().
 		Handler(func(ctx context.Context, in SyncInput) (*SyncOutput, error) {
-			// This is a status-only tool for MCP - actual sync requires confirmation
-			// and should be done via CLI for safety
+			// Validate inputs
+			if err := ValidateSyncInput(&in); err != nil {
+				return nil, err
+			}
+
+			// Require explicit confirmation for destructive operations
 			if !in.Confirm && !in.DryRun {
 				return &SyncOutput{
 					DryRun:  true,
@@ -1073,21 +1120,77 @@ func registerSyncTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig, 
 				Ahead:  repoStatus.Ahead,
 			}
 
+			// Preview mode - show what would happen
 			if in.DryRun {
-				// Just show what would happen
 				plan, err := preflight.Plan(ctx, configPath, target)
 				if err == nil && plan != nil {
 					output.AppliedSteps = plan.Len()
 				}
-				output.Message = "Dry run: would pull and apply changes"
+				var messages []string
+				if repoStatus.Behind > 0 {
+					messages = append(messages, fmt.Sprintf("Would pull %d commit(s)", repoStatus.Behind))
+				}
+				if output.AppliedSteps > 0 {
+					messages = append(messages, fmt.Sprintf("Would apply %d step(s)", output.AppliedSteps))
+				}
+				if len(messages) == 0 {
+					output.Message = "Already in sync, no changes needed"
+				} else {
+					output.Message = "Dry run: " + strings.Join(messages, ", ")
+				}
 				return output, nil
 			}
 
-			// For actual sync, we would need to run git commands
-			// This is simplified - full implementation would mirror sync.go
-			output.Message = "Sync completed"
+			// Check for uncommitted changes before sync
+			if repoStatus.HasChanges {
+				return nil, fmt.Errorf("uncommitted changes detected - commit or stash changes before syncing")
+			}
+
+			// Step 1: Pull changes if behind
+			if repoStatus.Behind > 0 {
+				if err := gitPullRemote(ctx, "."); err != nil {
+					return nil, fmt.Errorf("failed to pull changes: %w", err)
+				}
+				output.Pulled = true
+			}
+
+			// Step 2: Plan changes
+			plan, err := preflight.Plan(ctx, configPath, target)
+			if err != nil {
+				return nil, fmt.Errorf("failed to plan: %w", err)
+			}
+
+			// Step 3: Apply changes if needed
+			if plan != nil && !plan.IsEmpty() {
+				results, err := preflight.Apply(ctx, plan, false)
+				if err != nil {
+					return nil, fmt.Errorf("failed to apply: %w", err)
+				}
+				output.AppliedSteps = len(results)
+			}
+
+			// Build success message
+			var messages []string
+			if output.Pulled {
+				messages = append(messages, fmt.Sprintf("Pulled %d commit(s)", repoStatus.Behind))
+			}
+			if output.AppliedSteps > 0 {
+				messages = append(messages, fmt.Sprintf("Applied %d step(s)", output.AppliedSteps))
+			}
+			if len(messages) == 0 {
+				output.Message = "Already in sync, no changes needed"
+			} else {
+				output.Message = "Sync completed: " + strings.Join(messages, ", ")
+			}
+
 			return output, nil
 		})
+}
+
+// gitPullRemote pulls changes from the origin remote.
+func gitPullRemote(ctx context.Context, repoPath string) error {
+	cmd := exec.CommandContext(ctx, "git", "-C", repoPath, "pull", "origin")
+	return cmd.Run()
 }
 
 func registerMarketplaceTool(srv *mcp.Server) {
@@ -1200,13 +1303,10 @@ func toMarketplacePackage(pkg marketplace.Package) MarketplacePackage {
 }
 
 func sortSnapshotSets(sets []snapshot.Set) {
-	for i := 0; i < len(sets)-1; i++ {
-		for j := i + 1; j < len(sets); j++ {
-			if sets[j].CreatedAt.After(sets[i].CreatedAt) {
-				sets[i], sets[j] = sets[j], sets[i]
-			}
-		}
-	}
+	// Sort by creation time, newest first (O(n log n) instead of O(n²))
+	sort.Slice(sets, func(i, j int) bool {
+		return sets[i].CreatedAt.After(sets[j].CreatedAt)
+	})
 }
 
 func formatAge(t time.Time) string {

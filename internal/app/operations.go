@@ -19,6 +19,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/provider/nvim"
 	"github.com/felixgeelhaar/preflight/internal/templates"
+	"github.com/felixgeelhaar/preflight/internal/validation"
 )
 
 // Capture discovers current machine configuration.
@@ -1102,6 +1103,21 @@ func (p *Preflight) LockFreeze(ctx context.Context, configPath string) error {
 
 // RepoInit initializes a configuration repository.
 func (p *Preflight) RepoInit(ctx context.Context, opts RepoOptions) error {
+	// Validate inputs to prevent command injection
+	if err := validation.ValidateGitPath(opts.Path); err != nil {
+		return fmt.Errorf("invalid repository path: %w", err)
+	}
+	if opts.Remote != "" {
+		if err := validation.ValidateGitRemoteURL(opts.Remote); err != nil {
+			return fmt.Errorf("invalid remote URL: %w", err)
+		}
+	}
+	if opts.Branch != "" {
+		if err := validation.ValidateGitBranch(opts.Branch); err != nil {
+			return fmt.Errorf("invalid branch name: %w", err)
+		}
+	}
+
 	// Check if already initialized
 	gitDir := filepath.Join(opts.Path, ".git")
 	if _, err := os.Stat(gitDir); err == nil {
@@ -1132,6 +1148,19 @@ func (p *Preflight) RepoInit(ctx context.Context, opts RepoOptions) error {
 
 // RepoInitGitHub initializes a configuration repository and creates a GitHub remote.
 func (p *Preflight) RepoInitGitHub(ctx context.Context, opts GitHubRepoOptions) error {
+	// Validate inputs to prevent command injection
+	if err := validation.ValidateGitPath(opts.Path); err != nil {
+		return fmt.Errorf("invalid repository path: %w", err)
+	}
+	if err := validation.ValidateGitRepoName(opts.Name); err != nil {
+		return fmt.Errorf("invalid repository name: %w", err)
+	}
+	if opts.Branch != "" {
+		if err := validation.ValidateGitBranch(opts.Branch); err != nil {
+			return fmt.Errorf("invalid branch name: %w", err)
+		}
+	}
+
 	runner := command.NewRealRunner()
 	ghClient := github.NewClient(runner)
 
@@ -1240,6 +1269,11 @@ func (p *Preflight) RepoInitGitHub(ctx context.Context, opts GitHubRepoOptions) 
 
 // RepoStatus returns the status of a configuration repository.
 func (p *Preflight) RepoStatus(ctx context.Context, path string) (*RepoStatus, error) {
+	// Validate path to prevent command injection
+	if err := validation.ValidateGitPath(path); err != nil {
+		return nil, fmt.Errorf("invalid repository path: %w", err)
+	}
+
 	status := &RepoStatus{
 		Path: path,
 	}
@@ -1428,6 +1462,17 @@ func (p *Preflight) PrintDiff(result *DiffResult) {
 
 // RepoClone clones a configuration repository and optionally applies it.
 func (p *Preflight) RepoClone(ctx context.Context, opts CloneOptions) (*CloneResult, error) {
+	// Validate URL to prevent command injection
+	if err := validation.ValidateGitRemoteURL(opts.URL); err != nil {
+		return nil, fmt.Errorf("invalid clone URL: %w", err)
+	}
+	// Validate path if provided
+	if opts.Path != "" {
+		if err := validation.ValidateGitPath(opts.Path); err != nil {
+			return nil, fmt.Errorf("invalid destination path: %w", err)
+		}
+	}
+
 	result := &CloneResult{}
 
 	// Determine destination path

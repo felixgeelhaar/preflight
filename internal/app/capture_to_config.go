@@ -359,6 +359,14 @@ func (g *CaptureConfigGenerator) applyDotfilesToLayer(layer *captureLayerYAML) {
 		}
 		layer.Shell.Starship.ConfigSource = configSource
 	}
+
+	// Handle terminal emulator configs (WezTerm, Alacritty, Kitty, etc.)
+	if configSource := getConfigSource("terminal"); configSource != "" {
+		if layer.Terminal == nil {
+			layer.Terminal = &captureTerminalYAML{}
+		}
+		layer.Terminal.ConfigSource = configSource
+	}
 }
 
 // writeLayerFile writes a layer to disk with optional description comment.
@@ -1320,6 +1328,7 @@ type captureLayerYAML struct {
 	Nvim     *captureNvimYAML     `yaml:"nvim,omitempty"`
 	SSH      *captureSSHYAML      `yaml:"ssh,omitempty"`
 	Tmux     *captureTmuxYAML     `yaml:"tmux,omitempty"`
+	Terminal *captureTerminalYAML `yaml:"terminal,omitempty"`
 }
 
 type capturePackagesYAML struct {
@@ -1407,6 +1416,12 @@ type captureStarshipYAML struct {
 // captureTmuxYAML represents Tmux configuration.
 type captureTmuxYAML struct {
 	ConfigSource string `yaml:"config_source,omitempty"` // Path to tmux config (e.g., "dotfiles/tmux")
+}
+
+// captureTerminalYAML represents terminal emulator configurations.
+// Supports WezTerm, Alacritty, Kitty, Ghostty, and other terminal emulators.
+type captureTerminalYAML struct {
+	ConfigSource string `yaml:"config_source,omitempty"` // Path to terminal config (e.g., ".config/wezterm" or ".wezterm.lua")
 }
 
 type captureVSCodeYAML struct {

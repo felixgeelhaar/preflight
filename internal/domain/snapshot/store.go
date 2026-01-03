@@ -60,8 +60,8 @@ func (s *FileStore) Save(ctx context.Context, path string, content []byte) (*Sna
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Ensure base directory exists
-	if err := os.MkdirAll(s.basePath, 0o755); err != nil {
+	// Ensure base directory exists (0700 for privacy - stores user file backups)
+	if err := os.MkdirAll(s.basePath, 0o700); err != nil {
 		return nil, err
 	}
 
@@ -71,9 +71,9 @@ func (s *FileStore) Save(ctx context.Context, path string, content []byte) (*Sna
 	filename := id + ".snapshot"
 	now := time.Now()
 
-	// Write snapshot file
+	// Write snapshot file (0600 for privacy - may contain sensitive content)
 	snapshotPath := filepath.Join(s.basePath, filename)
-	if err := os.WriteFile(snapshotPath, content, 0o644); err != nil {
+	if err := os.WriteFile(snapshotPath, content, 0o600); err != nil {
 		return nil, err
 	}
 
@@ -256,7 +256,7 @@ func (s *FileStore) saveIndex(index *snapshotIndex) error {
 		return err
 	}
 
-	return os.WriteFile(indexPath, data, 0o644)
+	return os.WriteFile(indexPath, data, 0o600)
 }
 
 // sha256Hash returns the SHA256 hash of content.

@@ -103,7 +103,7 @@ func TestRepoClone_InvalidURL(t *testing.T) {
 
 	_, err := p.RepoClone(ctx, opts)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "git clone failed")
+	assert.Contains(t, err.Error(), "invalid clone URL")
 }
 
 func TestRepoClone_NoConfigFile(t *testing.T) {

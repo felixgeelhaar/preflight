@@ -56,9 +56,9 @@ func (s *StateStore) Save(ctx context.Context, state *AppliedState) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Ensure directory exists
+	// Ensure directory exists (0700 for privacy - contains file tracking data)
 	dir := filepath.Dir(s.path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
 
@@ -67,7 +67,7 @@ func (s *StateStore) Save(ctx context.Context, state *AppliedState) error {
 		return err
 	}
 
-	return os.WriteFile(s.path, data, 0o644)
+	return os.WriteFile(s.path, data, 0o600)
 }
 
 // UpdateFile updates a single file in the state.
@@ -155,9 +155,9 @@ func (s *StateStore) loadUnsafe() (*AppliedState, error) {
 
 // saveUnsafe saves state without locking (caller must hold lock).
 func (s *StateStore) saveUnsafe(state *AppliedState) error {
-	// Ensure directory exists
+	// Ensure directory exists (0700 for privacy - contains file tracking data)
 	dir := filepath.Dir(s.path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
 
@@ -166,5 +166,5 @@ func (s *StateStore) saveUnsafe(state *AppliedState) error {
 		return err
 	}
 
-	return os.WriteFile(s.path, data, 0o644)
+	return os.WriteFile(s.path, data, 0o600)
 }

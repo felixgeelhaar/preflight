@@ -206,3 +206,110 @@ func TestExplainContext_WithProvenance(t *testing.T) {
 		t.Error("original context should be unchanged")
 	}
 }
+
+// rollbackableMockStep implements RollbackableStep interface for testing.
+type rollbackableMockStep struct {
+	*mockStep
+	canRollback bool
+	rollbackFn  func(RunContext) error
+}
+
+func newRollbackableMockStep(id string, deps ...string) *rollbackableMockStep {
+	return &rollbackableMockStep{
+		mockStep:    newMockStep(id, deps...),
+		canRollback: true,
+		rollbackFn: func(_ RunContext) error {
+			return nil
+		},
+	}
+}
+
+func (r *rollbackableMockStep) CanRollback() bool {
+	return r.canRollback
+}
+
+func (r *rollbackableMockStep) Rollback(ctx RunContext) error {
+	return r.rollbackFn(ctx)
+}
+
+func TestIsRollbackable_RegularStep(t *testing.T) {
+	step := newMockStep("brew:install:git")
+	if IsRollbackable(step) {
+		t.Error("IsRollbackable should return false for regular step")
+	}
+}
+
+func TestIsRollbackable_RollbackableStep(t *testing.T) {
+	step := newRollbackableMockStep("brew:install:git", "brew:tap:homebrew/core")
+	if !IsRollbackable(step) {
+		t.Error("IsRollbackable should return true for rollbackable step")
+	}
+}
+
+func TestAsRollbackable_RegularStep(t *testing.T) {
+	step := newMockStep("brew:install:git")
+	if AsRollbackable(step) != nil {
+		t.Error("AsRollbackable should return nil for regular step")
+	}
+}
+
+func TestAsRollbackable_RollbackableStep(t *testing.T) {
+	step := newRollbackableMockStep("brew:install:git")
+	rollbackable := AsRollbackable(step)
+	if rollbackable == nil {
+		t.Fatal("AsRollbackable should return non-nil for rollbackable step")
+	}
+	if rollbackable.ID().String() != "brew:install:git" {
+		t.Errorf("ID() = %q, want %q", rollbackable.ID().String(), "brew:install:git")
+	}
+}
+
+func TestRollbackableStep_CanRollback(t *testing.T) {
+	step := newRollbackableMockStep("brew:install:git")
+	rollbackable := AsRollbackable(step)
+
+	if !rollbackable.CanRollback() {
+		t.Error("CanRollback() should return true by default")
+	}
+
+	step.canRollback = false
+	if rollbackable.CanRollback() {
+		t.Error("CanRollback() should return false after setting")
+	}
+}
+
+func TestRollbackableStep_Rollback(t *testing.T) {
+	step := newRollbackableMockStep("brew:install:curl")
+	rolledBack := false
+	step.rollbackFn = func(_ RunContext) error {
+		rolledBack = true
+		return nil
+	}
+
+	rollbackable := AsRollbackable(step)
+	ctx := NewRunContext(context.Background())
+	err := rollbackable.Rollback(ctx)
+	if err != nil {
+		t.Fatalf("Rollback() error = %v", err)
+	}
+	if !rolledBack {
+		t.Error("Rollback() was not called")
+	}
+}
+
+func TestRollbackableStep_Rollback_Error(t *testing.T) {
+	step := newRollbackableMockStep("brew:install:wget")
+	step.rollbackFn = func(_ RunContext) error {
+		return errors.New("rollback failed")
+	}
+
+	rollbackable := AsRollbackable(step)
+	ctx := NewRunContext(context.Background())
+	err := rollbackable.Rollback(ctx)
+	if err == nil {
+		t.Fatal("expected error from Rollback()")
+	}
+	if err.Error() != "rollback failed" {
+		t.Errorf("error = %q, want %q", err.Error(), "rollback failed")
+	}
+}

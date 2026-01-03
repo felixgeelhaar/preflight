@@ -341,13 +341,14 @@ func resolve1Password(key string) (string, error) {
 	// key format: vault/item/field
 	parts := strings.Split(key, "/")
 	if len(parts) < 2 {
-		return "", fmt.Errorf("invalid 1password key format: %s", key)
+		return "", fmt.Errorf("invalid 1password key format (expected vault/item/field)")
 	}
 
 	cmd := exec.Command("op", "item", "get", parts[1], "--vault", parts[0], "--field", parts[len(parts)-1])
 	output, err := cmd.Output()
 	if err != nil {
-		return "", err
+		// Redact error details to prevent secret leakage via stderr
+		return "", fmt.Errorf("failed to retrieve secret from 1password (vault: %s, item: %s)", parts[0], parts[1])
 	}
 	return strings.TrimSpace(string(output)), nil
 }
@@ -356,7 +357,8 @@ func resolveBitwarden(key string) (string, error) {
 	cmd := exec.Command("bw", "get", "password", key)
 	output, err := cmd.Output()
 	if err != nil {
-		return "", err
+		// Redact error details to prevent secret leakage
+		return "", fmt.Errorf("failed to retrieve secret from bitwarden")
 	}
 	return strings.TrimSpace(string(output)), nil
 }
@@ -365,7 +367,8 @@ func resolveKeychain(key string) (string, error) {
 	cmd := exec.Command("security", "find-generic-password", "-s", "preflight", "-a", key, "-w")
 	output, err := cmd.Output()
 	if err != nil {
-		return "", err
+		// Redact error details to prevent secret leakage
+		return "", fmt.Errorf("failed to retrieve secret from keychain")
 	}
 	return strings.TrimSpace(string(output)), nil
 }
@@ -384,14 +387,15 @@ func resolveAge(key string) (string, error) {
 	keyPath := filepath.Join(home, ".preflight", "secrets", key+".age")
 
 	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
-		return "", fmt.Errorf("age-encrypted secret not found: %s", key)
+		return "", fmt.Errorf("age-encrypted secret not found")
 	}
 
 	identityPath := filepath.Join(home, ".age", "key.txt")
 	cmd := exec.Command("age", "-d", "-i", identityPath, keyPath)
 	output, err := cmd.Output()
 	if err != nil {
-		return "", err
+		// Redact error details to prevent secret leakage
+		return "", fmt.Errorf("failed to decrypt age secret")
 	}
 	return strings.TrimSpace(string(output)), nil
 }

@@ -122,14 +122,14 @@ func (m *Manager) Restore(ctx context.Context, snapshotSetID string) error {
 			continue
 		}
 
-		// Ensure parent directory exists
+		// Ensure parent directory exists (0700 for privacy)
 		dir := filepath.Dir(snapPath)
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
 			return err
 		}
 
-		// Restore file
-		if err := os.WriteFile(snapPath, content, 0o644); err != nil {
+		// Restore file (0600 for privacy - may contain sensitive content)
+		if err := os.WriteFile(snapPath, content, 0o600); err != nil {
 			return err
 		}
 	}
@@ -307,8 +307,8 @@ func (m *Manager) persistIndex(ctx context.Context, index *snapshotSetIndex) err
 		return nil
 	}
 
-	// Ensure directory exists
-	if err := os.MkdirAll(fileStore.basePath, 0o755); err != nil {
+	// Ensure directory exists (0700 for privacy - stores user file backups)
+	if err := os.MkdirAll(fileStore.basePath, 0o700); err != nil {
 		return err
 	}
 
@@ -320,5 +320,5 @@ func (m *Manager) persistIndex(ctx context.Context, index *snapshotSetIndex) err
 	}
 
 	m.index = index
-	return os.WriteFile(indexPath, data, 0o644)
+	return os.WriteFile(indexPath, data, 0o600)
 }

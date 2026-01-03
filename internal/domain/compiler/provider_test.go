@@ -3,10 +3,6 @@ package compiler
 import (
 	"errors"
 	"testing"
-	"time"
-
-	"github.com/felixgeelhaar/preflight/internal/domain/config"
-	"github.com/felixgeelhaar/preflight/internal/domain/lock"
 )
 
 // mockProvider is a test double for Provider interface.
@@ -30,6 +26,24 @@ func (m *mockProvider) Name() string {
 
 func (m *mockProvider) Compile(ctx CompileContext) ([]Step, error) {
 	return m.compileFn(ctx)
+}
+
+// mockVersionResolver is a test double for VersionResolver interface.
+type mockVersionResolver struct {
+	resolveFn func(provider, name, latestVersion string) Resolution
+}
+
+func (m *mockVersionResolver) Resolve(provider, name, latestVersion string) Resolution {
+	if m.resolveFn != nil {
+		return m.resolveFn(provider, name, latestVersion)
+	}
+	// Default: return latest version
+	return Resolution{
+		Provider: provider,
+		Name:     name,
+		Version:  latestVersion,
+		Source:   ResolutionSourceLatest,
+	}
 }
 
 func TestProvider_Name(t *testing.T) {
@@ -141,21 +155,6 @@ func TestCompileContext_Provenance(t *testing.T) {
 	}
 }
 
-func createTestMachineInfo(t *testing.T) lock.MachineInfo {
-	t.Helper()
-	info, err := lock.NewMachineInfo("darwin", "arm64", "macbook.local", time.Now())
-	if err != nil {
-		t.Fatalf("failed to create machine info: %v", err)
-	}
-	return info
-}
-
-func createTestResolver(t *testing.T, mode config.ReproducibilityMode) *lock.Resolver {
-	t.Helper()
-	lockfile := lock.NewLockfile(mode, createTestMachineInfo(t))
-	return lock.NewResolver(lockfile)
-}
-
 func TestCompileContext_Resolver_Nil(t *testing.T) {
 	ctx := NewCompileContext(nil)
 
@@ -165,7 +164,7 @@ func TestCompileContext_Resolver_Nil(t *testing.T) {
 }
 
 func TestCompileContext_WithResolver(t *testing.T) {
-	resolver := createTestResolver(t, config.ModeLocked)
+	resolver := &mockVersionResolver{}
 	ctx := NewCompileContext(nil).WithResolver(resolver)
 
 	if ctx.Resolver() != resolver {
@@ -175,7 +174,7 @@ func TestCompileContext_WithResolver(t *testing.T) {
 
 func TestCompileContext_WithResolver_PreservesOtherFields(t *testing.T) {
 	cfg := map[string]interface{}{"key": "value"}
-	resolver := createTestResolver(t, config.ModeLocked)
+	resolver := &mockVersionResolver{}
 
 	ctx := NewCompileContext(cfg).
 		WithProvenance("layers/base.yaml").
@@ -200,18 +199,25 @@ func TestCompileContext_ResolveVersion_NoResolver(t *testing.T) {
 	if resolution.Version != "14.1.0" {
 		t.Errorf("Version = %q, want %q", resolution.Version, "14.1.0")
 	}
-	if resolution.Source != lock.ResolutionSourceLatest {
-		t.Errorf("Source = %q, want %q", resolution.Source, lock.ResolutionSourceLatest)
+	if resolution.Source != ResolutionSourceLatest {
+		t.Errorf("Source = %q, want %q", resolution.Source, ResolutionSourceLatest)
 	}
 }
 
 func TestCompileContext_ResolveVersion_WithResolver_Locked(t *testing.T) {
-	resolver := createTestResolver(t, config.ModeLocked)
-
-	// Add a locked package
-	hash := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-	integrity, _ := lock.NewIntegrity("sha256", hash)
-	_ = resolver.Lock("brew", "ripgrep", "14.0.0", integrity)
+	resolver := &mockVersionResolver{
+		resolveFn: func(provider, name, _ string) Resolution {
+			// Simulate locked mode with locked version (ignores latestVersion)
+			return Resolution{
+				Provider:      provider,
+				Name:          name,
+				Version:       "14.0.0", // Locked version
+				Source:        ResolutionSourceLockfile,
+				Locked:        true,
+				LockedVersion: "14.0.0",
+			}
+		},
+	}
 
 	ctx := NewCompileContext(nil).WithResolver(resolver)
 	resolution := ctx.ResolveVersion("brew", "ripgrep", "14.1.0")
@@ -220,8 +226,8 @@ func TestCompileContext_ResolveVersion_WithResolver_Locked(t *testing.T) {
 	if resolution.Version != "14.0.0" {
 		t.Errorf("Version = %q, want %q", resolution.Version, "14.0.0")
 	}
-	if resolution.Source != lock.ResolutionSourceLockfile {
-		t.Errorf("Source = %q, want %q", resolution.Source, lock.ResolutionSourceLockfile)
+	if resolution.Source != ResolutionSourceLockfile {
+		t.Errorf("Source = %q, want %q", resolution.Source, ResolutionSourceLockfile)
 	}
 	if !resolution.Locked {
 		t.Error("Locked should be true")
@@ -229,12 +235,17 @@ func TestCompileContext_ResolveVersion_WithResolver_Locked(t *testing.T) {
 }
 
 func TestCompileContext_ResolveVersion_WithResolver_Intent(t *testing.T) {
-	resolver := createTestResolver(t, config.ModeIntent)
-
-	// Add a locked package
-	hash := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-	integrity, _ := lock.NewIntegrity("sha256", hash)
-	_ = resolver.Lock("brew", "ripgrep", "14.0.0", integrity)
+	resolver := &mockVersionResolver{
+		resolveFn: func(provider, name, latestVersion string) Resolution {
+			// Simulate intent mode - always use latest
+			return Resolution{
+				Provider: provider,
+				Name:     name,
+				Version:  latestVersion,
+				Source:   ResolutionSourceLatest,
+			}
+		},
+	}
 
 	ctx := NewCompileContext(nil).WithResolver(resolver)
 	resolution := ctx.ResolveVersion("brew", "ripgrep", "14.1.0")
@@ -243,7 +254,7 @@ func TestCompileContext_ResolveVersion_WithResolver_Intent(t *testing.T) {
 	if resolution.Version != "14.1.0" {
 		t.Errorf("Version = %q, want %q", resolution.Version, "14.1.0")
 	}
-	if resolution.Source != lock.ResolutionSourceLatest {
-		t.Errorf("Source = %q, want %q", resolution.Source, lock.ResolutionSourceLatest)
+	if resolution.Source != ResolutionSourceLatest {
+		t.Errorf("Source = %q, want %q", resolution.Source, ResolutionSourceLatest)
 	}
 }

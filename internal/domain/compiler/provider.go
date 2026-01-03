@@ -1,7 +1,5 @@
 package compiler
 
-import "github.com/felixgeelhaar/preflight/internal/domain/lock"
-
 // Provider compiles a section of configuration into executable steps.
 // Each provider handles a specific type of resource (brew, apt, files, etc.).
 type Provider interface {
@@ -18,7 +16,7 @@ type Provider interface {
 type CompileContext struct {
 	config     map[string]interface{}
 	provenance string
-	resolver   *lock.Resolver
+	resolver   VersionResolver
 	configRoot string // Root directory of preflight configuration
 	target     string // Current target name (e.g., "work", "personal")
 }
@@ -68,14 +66,14 @@ func (c CompileContext) WithProvenance(provenance string) CompileContext {
 	}
 }
 
-// Resolver returns the lock resolver for version resolution.
+// Resolver returns the version resolver for version resolution.
 // Returns nil if no resolver is set.
-func (c CompileContext) Resolver() *lock.Resolver {
+func (c CompileContext) Resolver() VersionResolver {
 	return c.resolver
 }
 
 // WithResolver returns a new CompileContext with the resolver set.
-func (c CompileContext) WithResolver(resolver *lock.Resolver) CompileContext {
+func (c CompileContext) WithResolver(resolver VersionResolver) CompileContext {
 	return CompileContext{
 		config:     c.config,
 		provenance: c.provenance,
@@ -119,13 +117,13 @@ func (c CompileContext) WithTarget(target string) CompileContext {
 
 // ResolveVersion resolves a package version using the lockfile.
 // If no resolver is set, returns the latest version unchanged.
-func (c CompileContext) ResolveVersion(provider, name, latestVersion string) lock.Resolution {
+func (c CompileContext) ResolveVersion(provider, name, latestVersion string) Resolution {
 	if c.resolver == nil {
-		return lock.Resolution{
+		return Resolution{
 			Provider: provider,
 			Name:     name,
 			Version:  latestVersion,
-			Source:   lock.ResolutionSourceLatest,
+			Source:   ResolutionSourceLatest,
 		}
 	}
 	return c.resolver.Resolve(provider, name, latestVersion)

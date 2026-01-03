@@ -455,3 +455,93 @@ func TestDotfilesResolver_IsDirectory_NonExistent(t *testing.T) {
 	// isDirectory should return false for non-existent paths
 	assert.False(t, resolver.isDirectory(filepath.Join(configRoot, "nonexistent")))
 }
+
+func TestDotfilesResolver_ResolveTerminalPath_WezTermXDG(t *testing.T) {
+	t.Parallel()
+
+	configRoot := t.TempDir()
+
+	// Create WezTerm config in XDG location
+	weztermDir := filepath.Join(configRoot, ".config", "wezterm")
+	require.NoError(t, os.MkdirAll(weztermDir, 0755))
+
+	resolver := NewDotfilesResolver(configRoot, "")
+
+	// Should resolve to .config/wezterm when it exists
+	result := resolver.legacyToHomeRelPath("terminal")
+	assert.Equal(t, ".config/wezterm", result)
+}
+
+func TestDotfilesResolver_ResolveTerminalPath_WezTermLegacy(t *testing.T) {
+	t.Parallel()
+
+	configRoot := t.TempDir()
+
+	// Create WezTerm config in legacy location (~/.wezterm.lua)
+	weztermFile := filepath.Join(configRoot, ".wezterm.lua")
+	require.NoError(t, os.WriteFile(weztermFile, []byte("return {}"), 0644))
+
+	resolver := NewDotfilesResolver(configRoot, "")
+
+	// Should resolve to .wezterm.lua when it exists and .config/wezterm doesn't
+	result := resolver.legacyToHomeRelPath("terminal")
+	assert.Equal(t, ".wezterm.lua", result)
+}
+
+func TestDotfilesResolver_ResolveTerminalPath_Alacritty(t *testing.T) {
+	t.Parallel()
+
+	configRoot := t.TempDir()
+
+	// Create Alacritty config
+	alacrittyDir := filepath.Join(configRoot, ".config", "alacritty")
+	require.NoError(t, os.MkdirAll(alacrittyDir, 0755))
+
+	resolver := NewDotfilesResolver(configRoot, "")
+
+	// Should resolve to .config/alacritty when it exists
+	result := resolver.legacyToHomeRelPath("terminal")
+	assert.Equal(t, ".config/alacritty", result)
+}
+
+func TestDotfilesResolver_ResolveTerminalPath_Ghostty(t *testing.T) {
+	t.Parallel()
+
+	configRoot := t.TempDir()
+
+	// Create Ghostty config
+	ghosttyDir := filepath.Join(configRoot, ".config", "ghostty")
+	require.NoError(t, os.MkdirAll(ghosttyDir, 0755))
+
+	resolver := NewDotfilesResolver(configRoot, "")
+
+	// Should resolve to .config/ghostty when it exists
+	result := resolver.legacyToHomeRelPath("terminal")
+	assert.Equal(t, ".config/ghostty", result)
+}
+
+func TestDotfilesResolver_ResolveTerminalPath_WithSubpath(t *testing.T) {
+	t.Parallel()
+
+	configRoot := t.TempDir()
+	resolver := NewDotfilesResolver(configRoot, "")
+
+	// Should handle legacy subpaths like "terminal/.wezterm.lua"
+	result := resolver.legacyToHomeRelPath("terminal/.wezterm.lua")
+	assert.Equal(t, ".wezterm.lua", result)
+
+	// Should handle "terminal/wezterm.lua" (file under terminal dir)
+	result = resolver.legacyToHomeRelPath("terminal/wezterm.lua")
+	assert.Equal(t, "wezterm.lua", result)
+}
+
+func TestDotfilesResolver_ResolveTerminalPath_Default(t *testing.T) {
+	t.Parallel()
+
+	configRoot := t.TempDir()
+	resolver := NewDotfilesResolver(configRoot, "")
+
+	// When no terminal config exists, default to .config/wezterm
+	result := resolver.legacyToHomeRelPath("terminal")
+	assert.Equal(t, ".config/wezterm", result)
+}

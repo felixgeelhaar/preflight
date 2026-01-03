@@ -80,9 +80,75 @@ func ApplyTargetSuffix(path, configRoot, target string) string {
 
 // IsPathWithinRoot validates that a path stays within the given root directory.
 // Returns false if the path escapes the root via ".." or other traversal.
+// This is a fast path check without symlink resolution - use IsPathWithinRootSecure
+// for security-critical operations.
 func IsPathWithinRoot(root, path string) bool {
 	cleanRoot := filepath.Clean(root)
 	cleanPath := filepath.Clean(path)
+
+	rel, err := filepath.Rel(cleanRoot, cleanPath)
+	if err != nil {
+		return false
+	}
+
+	return !strings.HasPrefix(rel, "..") && rel != ".."
+}
+
+// IsPathWithinRootSecure validates that a path stays within the given root directory,
+// resolving symlinks to prevent symlink attacks. This is the secure version that
+// should be used for any security-sensitive file operations.
+//
+// Returns false if:
+// - The path escapes the root via ".." or symlinks pointing outside
+// - The path contains symlinks that can't be resolved
+// - Either path doesn't exist (for full resolution)
+//
+// For paths that may not exist yet, use IsPathWithinRoot with additional validation.
+func IsPathWithinRootSecure(root, path string) bool {
+	// First, try to resolve symlinks in the root
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		// Root must exist and be resolvable
+		return false
+	}
+	cleanRoot := filepath.Clean(resolvedRoot)
+
+	// Try to resolve the full path
+	resolvedPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		// Path doesn't exist yet, check parent directories
+		// Walk up until we find an existing path
+		checkPath := filepath.Clean(path)
+		for {
+			parent := filepath.Dir(checkPath)
+			if parent == checkPath {
+				// Reached filesystem root without finding existing path
+				break
+			}
+
+			resolvedParent, err := filepath.EvalSymlinks(parent)
+			if err == nil {
+				// Parent exists, verify it's within root
+				cleanParent := filepath.Clean(resolvedParent)
+				rel, err := filepath.Rel(cleanRoot, cleanParent)
+				if err != nil {
+					return false
+				}
+				if strings.HasPrefix(rel, "..") || rel == ".." {
+					return false
+				}
+				// Parent is within root, now check remaining path components
+				// for any suspicious patterns
+				remaining := strings.TrimPrefix(path, parent)
+				return !strings.Contains(remaining, "..")
+			}
+			checkPath = parent
+		}
+		// No existing parent found, fall back to basic check
+		return IsPathWithinRoot(root, path)
+	}
+
+	cleanPath := filepath.Clean(resolvedPath)
 
 	rel, err := filepath.Rel(cleanRoot, cleanPath)
 	if err != nil {

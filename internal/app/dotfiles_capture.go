@@ -125,13 +125,25 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				"~/.config/nvim",
 			},
 			ExcludePaths: []string{
+				// Plugin managers (regenerated)
 				"lazy",
-				"lazy-lock.json", // Will be regenerated
+				"lazy-lock.json",
 				"pack",
+				"plugged",
+				// Git repository
 				".git",
+				// Swap and backup files
 				"*.swp",
 				"*.swo",
 				"*~",
+				"*.bak",
+				// Session and state files
+				"shada",
+				"*.shada",
+				"sessions",
+				// LSP and tool caches
+				".luarc.json",
+				"*.log",
 			},
 		},
 		{
@@ -147,10 +159,24 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				"~/.zsh",
 			},
 			ExcludePaths: []string{
+				// Compiled/cache files
 				".zcompdump*",
 				"*.zwc",
+				// History files (contain sensitive command history)
 				".zsh_history",
 				".zsh_sessions",
+				".bash_history",
+				".sh_history",
+				// Environment files with secrets
+				".env",
+				".env.*",
+				"*.env.local",
+				// Credential files
+				".netrc",
+				".npmrc",  // May contain npm tokens
+				".yarnrc", // May contain yarn tokens
+				".pypirc", // May contain PyPI tokens
+				".gem/credentials",
 			},
 		},
 		{
@@ -185,11 +211,26 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				"~/.ssh/config",
 			},
 			ExcludePaths: []string{
+				// Private keys (various formats and naming conventions)
 				"id_*",
 				"*.pem",
 				"*.key",
+				"*.p12",
+				"*.pfx",
+				"*_rsa",
+				"*_dsa",
+				"*_ecdsa",
+				"*_ed25519",
+				// SSH operational files
 				"known_hosts",
+				"known_hosts.old",
 				"authorized_keys",
+				"authorized_keys2",
+				// SSH agent sockets
+				"agent.*",
+				"ssh-agent.sock",
+				// AWS SSH keys
+				"*.pem.pub", // Some tools create these
 			},
 		},
 		{
@@ -200,8 +241,22 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				"~/.config/git",
 			},
 			ExcludePaths: []string{
+				// Credential files
 				"credentials",
-				".gitconfig.local", // May contain signing keys or secrets
+				"credentials.store",
+				".git-credentials",
+				// Local config with potential secrets
+				".gitconfig.local",
+				"config.local",
+				// GPG/signing related
+				"*.gpg",
+				"*.asc",
+				// GitHub/GitLab tokens
+				".github_token",
+				".gitlab_token",
+				"gh_token",
+				// SSH signing keys referenced in config
+				"allowed_signers",
 			},
 		},
 		{
@@ -225,8 +280,20 @@ func DefaultCaptureConfigs() []DotfilesCaptureConfig {
 				"~/.config/ghostty",
 			},
 			ExcludePaths: []string{
+				// Logs and caches
 				"*.log",
 				"cache",
+				"Cache",
+				// History files
+				"history",
+				"*.history",
+				"scrollback",
+				// Session state
+				"sessions",
+				"*.session",
+				// Socket files
+				"*.sock",
+				"*.socket",
 			},
 		},
 	}

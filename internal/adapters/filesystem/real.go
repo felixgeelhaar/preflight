@@ -4,6 +4,7 @@ package filesystem
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"os"
 
 	"github.com/felixgeelhaar/preflight/internal/ports"
@@ -19,12 +20,19 @@ func NewRealFileSystem() *RealFileSystem {
 
 // ReadFile reads a file and returns its contents.
 func (fs *RealFileSystem) ReadFile(path string) ([]byte, error) {
-	return os.ReadFile(path)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file %q: %w", path, err)
+	}
+	return data, nil
 }
 
 // WriteFile writes data to a file.
 func (fs *RealFileSystem) WriteFile(path string, data []byte, perm os.FileMode) error {
-	return os.WriteFile(path, data, perm)
+	if err := os.WriteFile(path, data, perm); err != nil {
+		return fmt.Errorf("failed to write file %q: %w", path, err)
+	}
+	return nil
 }
 
 // Exists checks if a file or directory exists.
@@ -51,29 +59,41 @@ func (fs *RealFileSystem) IsSymlink(path string) (bool, string) {
 
 // CreateSymlink creates a symbolic link.
 func (fs *RealFileSystem) CreateSymlink(target, link string) error {
-	return os.Symlink(target, link)
+	if err := os.Symlink(target, link); err != nil {
+		return fmt.Errorf("failed to create symlink %q -> %q: %w", link, target, err)
+	}
+	return nil
 }
 
 // Remove removes a file or empty directory.
 func (fs *RealFileSystem) Remove(path string) error {
-	return os.Remove(path)
+	if err := os.Remove(path); err != nil {
+		return fmt.Errorf("failed to remove %q: %w", path, err)
+	}
+	return nil
 }
 
 // MkdirAll creates a directory and all necessary parents.
 func (fs *RealFileSystem) MkdirAll(path string, perm os.FileMode) error {
-	return os.MkdirAll(path, perm)
+	if err := os.MkdirAll(path, perm); err != nil {
+		return fmt.Errorf("failed to create directory %q: %w", path, err)
+	}
+	return nil
 }
 
 // Rename renames (moves) a file.
 func (fs *RealFileSystem) Rename(oldPath, newPath string) error {
-	return os.Rename(oldPath, newPath)
+	if err := os.Rename(oldPath, newPath); err != nil {
+		return fmt.Errorf("failed to rename %q to %q: %w", oldPath, newPath, err)
+	}
+	return nil
 }
 
 // FileHash returns a SHA256 hash of a file's contents.
 func (fs *RealFileSystem) FileHash(path string) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to hash file %q: %w", path, err)
 	}
 	hash := sha256.Sum256(data)
 	return hex.EncodeToString(hash[:]), nil
@@ -92,23 +112,26 @@ func (fs *RealFileSystem) IsDir(path string) bool {
 func (fs *RealFileSystem) CopyFile(src, dest string) error {
 	data, err := os.ReadFile(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read source file %q: %w", src, err)
 	}
 
 	// Get source file permissions
 	info, err := os.Stat(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to stat source file %q: %w", src, err)
 	}
 
-	return os.WriteFile(dest, data, info.Mode())
+	if err := os.WriteFile(dest, data, info.Mode()); err != nil {
+		return fmt.Errorf("failed to write destination file %q: %w", dest, err)
+	}
+	return nil
 }
 
 // GetFileInfo returns metadata about a file.
 func (fs *RealFileSystem) GetFileInfo(path string) (ports.FileInfo, error) {
 	info, err := os.Stat(path)
 	if err != nil {
-		return ports.FileInfo{}, err
+		return ports.FileInfo{}, fmt.Errorf("failed to get file info for %q: %w", path, err)
 	}
 
 	return ports.FileInfo{

@@ -3,6 +3,7 @@
 package filesystem
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -116,18 +117,18 @@ func (fs *RealFileSystem) CreateJunction(target, link string) error {
 	// Ensure target is an absolute path
 	absTarget, err := filepath.Abs(target)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to resolve absolute path for junction target %q: %w", target, err)
 	}
 
 	// Create the directory for the junction
 	if err := os.MkdirAll(link, 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create junction directory %q: %w", link, err)
 	}
 
 	// Convert to UTF16
 	linkPtr, err := syscall.UTF16PtrFromString(link)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to convert junction link path %q to UTF16: %w", link, err)
 	}
 
 	// Open the directory
@@ -141,7 +142,7 @@ func (fs *RealFileSystem) CreateJunction(target, link string) error {
 		0,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open junction directory %q: %w", link, err)
 	}
 	defer syscall.CloseHandle(handle)
 
@@ -149,7 +150,7 @@ func (fs *RealFileSystem) CreateJunction(target, link string) error {
 	targetWithPrefix := `\??\` + absTarget
 	targetUTF16, err := syscall.UTF16FromString(targetWithPrefix)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to convert junction target path %q to UTF16: %w", target, err)
 	}
 
 	// Calculate buffer size
@@ -173,7 +174,7 @@ func (fs *RealFileSystem) CreateJunction(target, link string) error {
 
 	// Set the reparse point
 	var bytesReturned uint32
-	return syscall.DeviceIoControl(
+	if err := syscall.DeviceIoControl(
 		handle,
 		FSCTL_SET_REPARSE_POINT,
 		&buffer[0],
@@ -182,7 +183,10 @@ func (fs *RealFileSystem) CreateJunction(target, link string) error {
 		0,
 		&bytesReturned,
 		nil,
-	)
+	); err != nil {
+		return fmt.Errorf("failed to create junction %q -> %q: %w", link, target, err)
+	}
+	return nil
 }
 
 // CreateLink creates the appropriate link type based on the target.
@@ -192,7 +196,10 @@ func (fs *RealFileSystem) CreateLink(target, link string) error {
 	info, err := os.Stat(target)
 	if err != nil {
 		// If target doesn't exist, try symlink (it may be created later)
-		return os.Symlink(target, link)
+		if symErr := os.Symlink(target, link); symErr != nil {
+			return fmt.Errorf("failed to create symlink %q -> %q: %w", link, target, symErr)
+		}
+		return nil
 	}
 
 	if info.IsDir() {
@@ -201,5 +208,8 @@ func (fs *RealFileSystem) CreateLink(target, link string) error {
 	}
 
 	// Use symlink for files (may require admin privileges)
-	return os.Symlink(target, link)
+	if err := os.Symlink(target, link); err != nil {
+		return fmt.Errorf("failed to create symlink %q -> %q: %w", link, target, err)
+	}
+	return nil
 }
