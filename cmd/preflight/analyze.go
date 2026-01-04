@@ -588,7 +588,7 @@ func outputToolAnalysisJSON(result *security.ToolAnalysisResult, err error) {
 }
 
 // outputToolAnalysisText outputs tool analysis results as formatted text.
-func outputToolAnalysisText(result *security.ToolAnalysisResult, toolNames []string) {
+func outputToolAnalysisText(result *security.ToolAnalysisResult, _ []string) {
 	fmt.Println("Tool Configuration Analysis")
 	fmt.Println(strings.Repeat("═", 50))
 

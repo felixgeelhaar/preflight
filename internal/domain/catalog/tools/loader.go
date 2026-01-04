@@ -66,8 +66,8 @@ type KnowledgeBase interface {
 
 // knowledgeBase is the in-memory implementation of KnowledgeBase.
 type knowledgeBase struct {
-	tools          map[string]*Tool
-	byCategory     map[string][]*Tool
+	tools           map[string]*Tool
+	byCategory      map[string][]*Tool
 	supersededByMap map[string]string // tool -> superseding tool
 }
 

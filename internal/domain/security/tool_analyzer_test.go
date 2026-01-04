@@ -235,7 +235,7 @@ tools:
 
 	// Should have counts
 	assert.Equal(t, 4, result.ToolsAnalyzed)
-	assert.Greater(t, result.IssuesFound, 0)
+	assert.Positive(t, result.IssuesFound)
 
 	// Summary should include deprecation + redundancy
 	deprecations := findByType(result.Findings, FindingDeprecated)
@@ -352,6 +352,7 @@ func TestFindingSeverity_AllValues(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(string(tc.severity), func(t *testing.T) {
+			t.Parallel()
 			order := findingSeverityOrder(tc.severity)
 			assert.Equal(t, tc.order, order)
 		})

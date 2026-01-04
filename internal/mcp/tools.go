@@ -383,17 +383,17 @@ type ToolAnalyzeInput struct {
 
 // ToolAnalyzeOutput is the output for the preflight_analyze_tools tool.
 type ToolAnalyzeOutput struct {
-	ToolsAnalyzed  int                   `json:"tools_analyzed"`
-	IssuesFound    int                   `json:"issues_found"`
-	Consolidations int                   `json:"consolidations"`
-	Findings       []ToolAnalyzeFinding  `json:"findings,omitempty"`
-	Summary        *ToolAnalyzeSummary   `json:"summary,omitempty"`
+	ToolsAnalyzed  int                  `json:"tools_analyzed"`
+	IssuesFound    int                  `json:"issues_found"`
+	Consolidations int                  `json:"consolidations"`
+	Findings       []ToolAnalyzeFinding `json:"findings,omitempty"`
+	Summary        *ToolAnalyzeSummary  `json:"summary,omitempty"`
 }
 
 // ToolAnalyzeFinding represents a finding from tool analysis.
 type ToolAnalyzeFinding struct {
-	Type        string   `json:"type"`        // redundancy, deprecated, consolidation
-	Severity    string   `json:"severity"`    // info, warning, error
+	Type        string   `json:"type"`     // redundancy, deprecated, consolidation
+	Severity    string   `json:"severity"` // info, warning, error
 	Tools       []string `json:"tools"`
 	Message     string   `json:"message"`
 	Suggestion  string   `json:"suggestion,omitempty"`
@@ -1351,6 +1351,8 @@ func registerToolAnalyzeTool(srv *mcp.Server) {
 					redundancies++
 				case security.FindingConsolidation:
 					consolidations++
+				case security.FindingUnknown:
+					// Unknown tools do not need special counting
 				}
 			}
 

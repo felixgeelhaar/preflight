@@ -39,12 +39,12 @@ const (
 type ToolFinding struct {
 	Type        FindingType     `json:"type"`
 	Severity    FindingSeverity `json:"severity"`
-	Tools       []string    `json:"tools"`
-	Message     string      `json:"message"`
-	Suggestion  string      `json:"suggestion,omitempty"`
-	Replacement string      `json:"replacement,omitempty"`
-	Category    string      `json:"category,omitempty"`
-	Docs        string      `json:"docs,omitempty"`
+	Tools       []string        `json:"tools"`
+	Message     string          `json:"message"`
+	Suggestion  string          `json:"suggestion,omitempty"`
+	Replacement string          `json:"replacement,omitempty"`
+	Category    string          `json:"category,omitempty"`
+	Docs        string          `json:"docs,omitempty"`
 }
 
 // ToolAnalysisResult contains the results of tool analysis.
@@ -71,7 +71,7 @@ func NewToolAnalyzer(kb tools.KnowledgeBase) ToolAnalyzer {
 }
 
 // Analyze analyzes the given tools for issues.
-func (a *toolAnalyzer) Analyze(ctx context.Context, toolNames []string) (*ToolAnalysisResult, error) {
+func (a *toolAnalyzer) Analyze(_ context.Context, toolNames []string) (*ToolAnalysisResult, error) {
 	result := &ToolAnalysisResult{
 		Findings:      make([]ToolFinding, 0),
 		ToolsAnalyzed: len(toolNames),
