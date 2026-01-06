@@ -57,8 +57,8 @@ func TestBrewProvider_Compile_Taps(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Compile() error = %v", err)
 	}
-	if len(steps) != 2 {
-		t.Errorf("Compile() len = %d, want 2", len(steps))
+	if len(steps) != 3 {
+		t.Errorf("Compile() len = %d, want 3", len(steps))
 	}
 
 	// Verify step IDs
@@ -71,6 +71,9 @@ func TestBrewProvider_Compile_Taps(t *testing.T) {
 	}
 	if !ids["brew:tap:homebrew/core"] {
 		t.Error("Missing brew:tap:homebrew/core step")
+	}
+	if !ids[brewInstallStepID] {
+		t.Error("Missing brew:install step")
 	}
 }
 
@@ -87,8 +90,8 @@ func TestBrewProvider_Compile_Formulae(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Compile() error = %v", err)
 	}
-	if len(steps) != 2 {
-		t.Errorf("Compile() len = %d, want 2", len(steps))
+	if len(steps) != 3 {
+		t.Errorf("Compile() len = %d, want 3", len(steps))
 	}
 }
 
@@ -105,8 +108,8 @@ func TestBrewProvider_Compile_Casks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Compile() error = %v", err)
 	}
-	if len(steps) != 2 {
-		t.Errorf("Compile() len = %d, want 2", len(steps))
+	if len(steps) != 3 {
+		t.Errorf("Compile() len = %d, want 3", len(steps))
 	}
 }
 
@@ -125,8 +128,8 @@ func TestBrewProvider_Compile_Full(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Compile() error = %v", err)
 	}
-	if len(steps) != 3 {
-		t.Errorf("Compile() len = %d, want 3", len(steps))
+	if len(steps) != 4 {
+		t.Errorf("Compile() len = %d, want 4", len(steps))
 	}
 }
 
@@ -163,18 +166,21 @@ func TestBrewProvider_Compile_FormulaWithTap(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Compile() error = %v", err)
 	}
-	// Should have formula step only (tap as dependency is declared, not added as explicit step)
-	if len(steps) != 1 {
-		t.Errorf("Compile() len = %d, want 1", len(steps))
+	// Should include install + formula step (tap as dependency is declared, not added as explicit step)
+	if len(steps) != 2 {
+		t.Errorf("Compile() len = %d, want 2", len(steps))
 	}
 
 	// Verify formula has tap dependency
-	deps := steps[0].DependsOn()
-	if len(deps) != 1 {
-		t.Fatalf("DependsOn() len = %d, want 1", len(deps))
+	deps := steps[1].DependsOn()
+	if len(deps) != 2 {
+		t.Fatalf("DependsOn() len = %d, want 2", len(deps))
 	}
-	if deps[0].String() != "brew:tap:homebrew/core" {
-		t.Errorf("DependsOn()[0] = %q, want %q", deps[0].String(), "brew:tap:homebrew/core")
+	if deps[0].String() != brewInstallStepID {
+		t.Errorf("DependsOn()[0] = %q, want %q", deps[0].String(), brewInstallStepID)
+	}
+	if deps[1].String() != "brew:tap:homebrew/core" {
+		t.Errorf("DependsOn()[1] = %q, want %q", deps[1].String(), "brew:tap:homebrew/core")
 	}
 }
 
@@ -194,8 +200,11 @@ func TestBrewProvider_Compile_StepsOrder(t *testing.T) {
 		t.Fatalf("Compile() error = %v", err)
 	}
 
-	// Taps should come first
-	if steps[0].ID().String() != "brew:tap:homebrew/cask" {
-		t.Errorf("First step should be tap, got %s", steps[0].ID().String())
+	// Install should come first
+	if steps[0].ID().String() != brewInstallStepID {
+		t.Errorf("First step should be install, got %s", steps[0].ID().String())
+	}
+	if steps[1].ID().String() != "brew:tap:homebrew/cask" {
+		t.Errorf("Second step should be tap, got %s", steps[1].ID().String())
 	}
 }

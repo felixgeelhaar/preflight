@@ -53,11 +53,16 @@ func init() {
 	validateCmd.Flags().StringVar(&validateOrgPolicyFile, "org-policy", "", "Path to org policy YAML file (required/forbidden)")
 }
 
-func runValidate(_ *cobra.Command, _ []string) error {
+func runValidate(cmd *cobra.Command, _ []string) error {
 	ctx := context.Background()
 
 	// Create the application
 	preflight := app.New(os.Stdout)
+	if modeOverride, err := resolveModeOverride(cmd); err != nil {
+		return err
+	} else if modeOverride != nil {
+		preflight.WithMode(*modeOverride)
+	}
 
 	// Configure validation options
 	opts := app.ValidateOptions{

@@ -142,3 +142,37 @@ func ValidateGitRepoName(name string) error {
 
 	return nil
 }
+
+// ValidateGitRemoteName validates a git remote name.
+func ValidateGitRemoteName(name string) error {
+	if name == "" {
+		return fmt.Errorf("remote name cannot be empty")
+	}
+
+	if len(name) > 255 {
+		return fmt.Errorf("remote name too long (max 255 characters)")
+	}
+
+	// Check for null bytes first (specific error message)
+	if strings.ContainsRune(name, '\x00') {
+		return fmt.Errorf("remote name contains null byte")
+	}
+
+	// Check for dangerous characters
+	for _, char := range dangerousChars {
+		if strings.Contains(name, char) {
+			return fmt.Errorf("remote name contains invalid character: %q", char)
+		}
+	}
+
+	if !gitBranchPattern.MatchString(name) {
+		return fmt.Errorf("invalid remote name format")
+	}
+
+	// Prevent path traversal in remote names
+	if strings.Contains(name, "..") {
+		return fmt.Errorf("remote name cannot contain '..'")
+	}
+
+	return nil
+}

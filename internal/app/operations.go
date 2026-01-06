@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
 	"github.com/felixgeelhaar/preflight/internal/domain/lock"
+	"github.com/felixgeelhaar/preflight/internal/domain/platform"
 	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/provider/nvim"
 	"github.com/felixgeelhaar/preflight/internal/templates"
@@ -42,7 +44,7 @@ func (p *Preflight) Capture(ctx context.Context, opts CaptureOptions) (*CaptureF
 	// Determine which providers to capture
 	providers := opts.Providers
 	if len(providers) == 0 {
-		providers = []string{"brew", "git", "ssh", "shell", "nvim", "vscode", "runtime", "npm", "go", "pip", "gem", "cargo"}
+		providers = defaultCaptureProviders()
 	}
 
 	for _, provider := range providers {
@@ -58,6 +60,38 @@ func (p *Preflight) Capture(ctx context.Context, opts CaptureOptions) (*CaptureF
 	}
 
 	return findings, nil
+}
+
+func defaultCaptureProviders() []string {
+	common := []string{
+		"git",
+		"ssh",
+		"shell",
+		"nvim",
+		"vscode",
+		"runtime",
+		"npm",
+		"go",
+		"pip",
+		"gem",
+		"cargo",
+	}
+
+	plat, err := platform.Detect()
+	if err != nil || plat == nil {
+		return append([]string{"brew", "apt", "winget", "chocolatey", "scoop"}, common...)
+	}
+
+	switch plat.OS() {
+	case platform.OSDarwin:
+		return append([]string{"brew"}, common...)
+	case platform.OSLinux:
+		return append([]string{"apt"}, common...)
+	case platform.OSWindows:
+		return append([]string{"winget", "chocolatey", "scoop"}, common...)
+	default:
+		return append([]string{"brew", "apt", "winget", "chocolatey", "scoop"}, common...)
+	}
 }
 
 func (p *Preflight) captureProvider(ctx context.Context, provider, homeDir string, includeSecrets bool) ([]CapturedItem, error) {
@@ -159,6 +193,7 @@ func (p *Preflight) captureGitConfig(homeDir string, capturedAt time.Time) []Cap
 		// Read key config values
 		keys := []string{"user.name", "user.email", "core.editor", "init.defaultBranch"}
 		for _, key := range keys {
+			// #nosec G204 -- key is from a fixed allowlist.
 			cmd := exec.Command("git", "config", "--global", key)
 			output, err := cmd.Output()
 			if err == nil {
@@ -216,6 +251,16 @@ func (p *Preflight) captureShellConfig(homeDir string, capturedAt time.Time) []C
 func (p *Preflight) captureNvimConfig(homeDir string, capturedAt time.Time) []CapturedItem {
 	var items []CapturedItem
 
+	if version := captureCommandVersion("nvim", "--version"); version != "" {
+		items = append(items, CapturedItem{
+			Provider:   "nvim",
+			Name:       "version",
+			Value:      version,
+			Source:     "nvim --version",
+			CapturedAt: capturedAt,
+		})
+	}
+
 	// Check for Neovim configuration directory
 	nvimConfigDir := filepath.Join(homeDir, ".config", "nvim")
 	if info, err := os.Stat(nvimConfigDir); err == nil && info.IsDir() {
@@ -268,16 +313,27 @@ func (p *Preflight) captureNvimConfig(homeDir string, capturedAt time.Time) []Ca
 }
 
 func (p *Preflight) captureVSCodeExtensions(_ context.Context, capturedAt time.Time) []CapturedItem {
+	var items []CapturedItem
+
+	if version := captureCommandVersion("code", "--version"); version != "" {
+		items = append(items, CapturedItem{
+			Provider:   "vscode",
+			Name:       "version",
+			Value:      version,
+			Source:     "code --version",
+			CapturedAt: capturedAt,
+		})
+	}
+
 	// Try to list installed extensions
 	cmd := exec.Command("code", "--list-extensions")
 	output, err := cmd.Output()
 	if err != nil {
 		// VS Code not installed or command failed
-		return nil
+		return items
 	}
 
 	extensions := strings.Split(strings.TrimSpace(string(output)), "\n")
-	items := make([]CapturedItem, 0, len(extensions))
 	for _, ext := range extensions {
 		if ext == "" {
 			continue
@@ -297,9 +353,17 @@ func (p *Preflight) captureVSCodeExtensions(_ context.Context, capturedAt time.T
 func (p *Preflight) captureRuntimeVersions(_ context.Context, capturedAt time.Time) []CapturedItem {
 	var items []CapturedItem
 
+	items = append(items, p.captureRuntimeManagerVersions(capturedAt)...)
+
 	// Try mise (formerly rtx) first
-	if miseItems := p.captureMiseVersions(capturedAt); len(miseItems) > 0 {
+	if miseItems := p.captureMiseVersions("mise", capturedAt); len(miseItems) > 0 {
 		items = append(items, miseItems...)
+		return items
+	}
+
+	// Try rtx for older setups
+	if rtxItems := p.captureMiseVersions("rtx", capturedAt); len(rtxItems) > 0 {
+		items = append(items, rtxItems...)
 		return items
 	}
 
@@ -311,11 +375,47 @@ func (p *Preflight) captureRuntimeVersions(_ context.Context, capturedAt time.Ti
 	return items
 }
 
-func (p *Preflight) captureMiseVersions(capturedAt time.Time) []CapturedItem {
+func (p *Preflight) captureRuntimeManagerVersions(capturedAt time.Time) []CapturedItem {
+	var items []CapturedItem
+
+	if version := captureCommandVersion("mise", "--version"); version != "" {
+		items = append(items, CapturedItem{
+			Provider:   "runtime",
+			Name:       "mise",
+			Value:      version,
+			Source:     "mise --version",
+			CapturedAt: capturedAt,
+		})
+	}
+
+	if version := captureCommandVersion("rtx", "--version"); version != "" {
+		items = append(items, CapturedItem{
+			Provider:   "runtime",
+			Name:       "rtx",
+			Value:      version,
+			Source:     "rtx --version",
+			CapturedAt: capturedAt,
+		})
+	}
+
+	if version := captureCommandVersion("asdf", "--version"); version != "" {
+		items = append(items, CapturedItem{
+			Provider:   "runtime",
+			Name:       "asdf",
+			Value:      version,
+			Source:     "asdf --version",
+			CapturedAt: capturedAt,
+		})
+	}
+
+	return items
+}
+
+func (p *Preflight) captureMiseVersions(commandName string, capturedAt time.Time) []CapturedItem {
 	var items []CapturedItem
 
 	// Try 'mise list' command
-	cmd := exec.Command("mise", "list", "--current")
+	cmd := exec.Command(commandName, "list", "--current")
 	output, err := cmd.Output()
 	if err != nil {
 		return nil
@@ -333,7 +433,7 @@ func (p *Preflight) captureMiseVersions(capturedAt time.Time) []CapturedItem {
 				Provider:   "runtime",
 				Name:       fields[0],
 				Value:      fields[1],
-				Source:     "mise list",
+				Source:     fmt.Sprintf("%s list", commandName),
 				CapturedAt: capturedAt,
 			})
 		}
@@ -371,6 +471,42 @@ func (p *Preflight) captureAsdfVersions(capturedAt time.Time) []CapturedItem {
 	}
 
 	return items
+}
+
+func captureCommandVersion(command string, args ...string) string {
+	output, err := exec.Command(command, args...).Output()
+	if err != nil {
+		return ""
+	}
+	return parseVersionOutput(output)
+}
+
+func parseVersionOutput(output []byte) string {
+	line := strings.TrimSpace(string(output))
+	if line == "" {
+		return ""
+	}
+
+	firstLine := strings.SplitN(line, "\n", 2)[0]
+	for _, field := range strings.Fields(firstLine) {
+		cleaned := strings.Trim(field, ",;()")
+		cleaned = strings.TrimPrefix(cleaned, "v")
+		cleaned = strings.TrimPrefix(cleaned, "V")
+		if containsDigit(cleaned) {
+			return cleaned
+		}
+	}
+
+	return ""
+}
+
+func containsDigit(value string) bool {
+	for _, r := range value {
+		if r >= '0' && r <= '9' {
+			return true
+		}
+	}
+	return false
 }
 
 // captureChocolateyPackages captures installed Chocolatey packages (Windows).
@@ -1055,24 +1191,65 @@ func (p *Preflight) LockUpdate(ctx context.Context, configPath string) error {
 		return fmt.Errorf("lockfile repository not configured")
 	}
 
-	// Load current lockfile or create new one
-	lockfile, err := p.lockRepo.Load(ctx, lockPath)
+	target, err := selectLockTarget(configPath)
 	if err != nil {
-		// Create new lockfile if it doesn't exist
-		machineInfo := lock.MachineInfoFromSystem()
-		lockfile = lock.NewLockfile(config.ModeIntent, machineInfo)
+		return err
 	}
 
-	// Update mode to allow updates
-	lockfile = lockfile.WithMode(config.ModeIntent)
+	cfg, err := p.loadConfig(configPath, target)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
 
-	// Save the updated lockfile
-	if err := p.lockRepo.Save(ctx, lockPath, lockfile); err != nil {
-		return fmt.Errorf("failed to save lockfile: %w", err)
+	resolver := versionResolverAdapter{
+		resolver: lock.NewResolver(lock.NewLockfile(config.ModeIntent, lock.MachineInfoFromSystem())),
+	}
+
+	configRoot := filepath.Dir(configPath)
+	compileCtx := compiler.NewCompileContext(cfg).
+		WithResolver(resolver).
+		WithConfigRoot(configRoot).
+		WithTarget(target)
+
+	graph, err := p.compiler.CompileWithContext(compileCtx)
+	if err != nil {
+		return fmt.Errorf("failed to compile: %w", err)
+	}
+
+	plan, err := p.planner.Plan(ctx, graph)
+	if err != nil {
+		return fmt.Errorf("failed to plan: %w", err)
+	}
+
+	if err := p.UpdateLockFromPlan(ctx, configPath, plan); err != nil {
+		return fmt.Errorf("failed to update lockfile: %w", err)
 	}
 
 	p.printf("Lockfile updated: %s\n", lockPath)
 	return nil
+}
+
+func selectLockTarget(configPath string) (string, error) {
+	loader := config.NewLoader()
+	manifest, err := loader.LoadManifest(configPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to load manifest: %w", err)
+	}
+
+	if _, ok := manifest.Targets["default"]; ok {
+		return "default", nil
+	}
+
+	targets := make([]string, 0, len(manifest.Targets))
+	for name := range manifest.Targets {
+		targets = append(targets, name)
+	}
+	sort.Strings(targets)
+	if len(targets) == 0 {
+		return "", fmt.Errorf("no targets defined in manifest")
+	}
+
+	return targets[0], nil
 }
 
 // LockFreeze freezes the lockfile to prevent version changes.
@@ -1125,6 +1302,7 @@ func (p *Preflight) RepoInit(ctx context.Context, opts RepoOptions) error {
 	}
 
 	// Initialize git repository
+	// #nosec G204 -- opts.Path validated by validation.ValidateGitPath.
 	cmd := exec.CommandContext(ctx, "git", "init", opts.Path)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to initialize repository: %w", err)
@@ -1132,6 +1310,7 @@ func (p *Preflight) RepoInit(ctx context.Context, opts RepoOptions) error {
 
 	// Set up remote if provided
 	if opts.Remote != "" {
+		// #nosec G204 -- opts.Remote validated by validation.ValidateGitRemoteURL.
 		cmd = exec.CommandContext(ctx, "git", "-C", opts.Path, "remote", "add", "origin", opts.Remote)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to add remote: %w", err)
@@ -1139,6 +1318,7 @@ func (p *Preflight) RepoInit(ctx context.Context, opts RepoOptions) error {
 	}
 
 	// Create initial branch
+	// #nosec G204 -- opts.Branch validated by validation.ValidateGitBranch.
 	cmd = exec.CommandContext(ctx, "git", "-C", opts.Path, "checkout", "-b", opts.Branch)
 	_ = cmd.Run() // Ignore error if branch already exists
 
@@ -1185,6 +1365,7 @@ func (p *Preflight) RepoInitGitHub(ctx context.Context, opts GitHubRepoOptions) 
 	gitignorePath := filepath.Join(opts.Path, ".gitignore")
 	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
 		p.printf("Creating .gitignore...\n")
+		// #nosec G306 -- .gitignore is intended to be world-readable.
 		if err := os.WriteFile(gitignorePath, []byte(templates.GitignoreTemplate), 0o644); err != nil {
 			return fmt.Errorf("failed to create .gitignore: %w", err)
 		}
@@ -1202,6 +1383,7 @@ func (p *Preflight) RepoInitGitHub(ctx context.Context, opts GitHubRepoOptions) 
 		if err != nil {
 			return fmt.Errorf("failed to generate README: %w", err)
 		}
+		// #nosec G306 -- README is intended to be world-readable.
 		if err := os.WriteFile(readmePath, []byte(readme), 0o644); err != nil {
 			return fmt.Errorf("failed to create README.md: %w", err)
 		}
@@ -1211,23 +1393,27 @@ func (p *Preflight) RepoInitGitHub(ctx context.Context, opts GitHubRepoOptions) 
 	gitDir := filepath.Join(opts.Path, ".git")
 	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
 		p.printf("Initializing git repository...\n")
+		// #nosec G204 -- opts.Path validated by validation.ValidateGitPath.
 		cmd := exec.CommandContext(ctx, "git", "init", opts.Path)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to initialize git: %w", err)
 		}
 
 		// Create initial branch
+		// #nosec G204 -- opts.Branch validated by validation.ValidateGitBranch.
 		cmd = exec.CommandContext(ctx, "git", "-C", opts.Path, "checkout", "-b", opts.Branch)
 		_ = cmd.Run()
 	}
 
 	// Step 5: Stage and commit
 	p.printf("Creating initial commit...\n")
+	// #nosec G204 -- opts.Path validated by validation.ValidateGitPath.
 	cmd := exec.CommandContext(ctx, "git", "-C", opts.Path, "add", "-A")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to stage files: %w", err)
 	}
 
+	// #nosec G204 -- opts.Path validated by validation.ValidateGitPath.
 	cmd = exec.CommandContext(ctx, "git", "-C", opts.Path, "commit", "-m", "Initial preflight configuration")
 	_ = cmd.Run() // Ignore if nothing to commit
 
@@ -1250,6 +1436,7 @@ func (p *Preflight) RepoInitGitHub(ctx context.Context, opts GitHubRepoOptions) 
 
 	// Push to remote
 	p.printf("Pushing to GitHub...\n")
+	// #nosec G204 -- opts.Path and opts.Branch validated by validation.ValidateGitPath/ValidateGitBranch.
 	cmd = exec.CommandContext(ctx, "git", "-C", opts.Path, "push", "-u", "origin", opts.Branch)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to push to GitHub: %s", output)
@@ -1499,6 +1686,7 @@ func (p *Preflight) RepoClone(ctx context.Context, opts CloneOptions) (*CloneRes
 
 	// Clone the repository
 	p.printf("Cloning %s...\n", opts.URL)
+	// #nosec G204 -- opts.URL and destPath validated before use.
 	cmd := exec.CommandContext(ctx, "git", "clone", opts.URL, destPath)
 	cmd.Stdout = p.out
 	cmd.Stderr = p.out
@@ -1536,14 +1724,36 @@ func (p *Preflight) RepoClone(ctx context.Context, opts CloneOptions) (*CloneRes
 
 		// Create plan
 		target := opts.Target
+		if strings.TrimSpace(target) == "" {
+			target = "default"
+		}
 		plan, err := p.Plan(ctx, configPath, target)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create plan: %w", err)
 		}
 
 		// Show plan summary
-		entries := plan.Entries()
-		p.printf("Plan: %d steps to apply\n", len(entries))
+		summary := plan.Summary()
+		p.printf("Plan: %d steps to apply\n", summary.NeedsApply)
+
+		if RequiresBootstrapConfirmation(plan) && !opts.AutoConfirm && !opts.AllowBootstrap {
+			steps := BootstrapSteps(plan)
+			p.printf("\nBootstrap steps require confirmation:\n")
+			for _, step := range steps {
+				p.printf("  - %s\n", step)
+			}
+			p.printf("Proceed with bootstrapping? [y/N]: ")
+			var response string
+			if _, err := fmt.Scanln(&response); err != nil {
+				p.printf("\nSkipping apply. Run 'preflight apply' when ready.\n")
+				return result, nil
+			}
+			response = strings.ToLower(strings.TrimSpace(response))
+			if response != "y" && response != "yes" {
+				p.printf("\nSkipping apply. Run 'preflight apply' when ready.\n")
+				return result, nil
+			}
+		}
 
 		// Apply configuration
 		stepResults, err := p.Apply(ctx, plan, false)

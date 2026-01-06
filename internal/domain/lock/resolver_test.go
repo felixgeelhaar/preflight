@@ -69,12 +69,13 @@ func TestResolver_Resolve_Locked_NoLock(t *testing.T) {
 
 	resolver := createTestResolver(t, config.ModeLocked)
 
-	// No lock exists, use latest and suggest locking
+	// Locked mode fails if no lock exists
 	resolution := resolver.Resolve("brew", "ripgrep", "14.1.0")
 
-	assert.Equal(t, "14.1.0", resolution.Version)
-	assert.Equal(t, ResolutionSourceLatest, resolution.Source)
-	assert.False(t, resolution.Locked)
+	assert.Empty(t, resolution.Version)
+	assert.Equal(t, ResolutionSourceNone, resolution.Source)
+	assert.True(t, resolution.Failed)
+	assert.ErrorIs(t, resolution.Error, ErrVersionNotLocked)
 }
 
 func TestResolver_Resolve_Locked_WithLock(t *testing.T) {
@@ -114,13 +115,15 @@ func TestResolver_Resolve_Frozen_VersionMismatch(t *testing.T) {
 	pkg := createTestPackageLock(t, "brew", "ripgrep", "14.0.0")
 	_ = resolver.lockfile.AddPackage(pkg)
 
-	// Frozen mode fails if latest differs from lock
+	// Frozen mode fails if latest differs from lock (when latest is known)
 	resolution := resolver.Resolve("brew", "ripgrep", "14.1.0")
 
 	assert.Equal(t, "14.0.0", resolution.Version) // Still returns locked version
 	assert.Equal(t, ResolutionSourceLockfile, resolution.Source)
 	assert.True(t, resolution.Locked)
 	assert.True(t, resolution.Drifted) // Marks as drifted
+	assert.True(t, resolution.Failed)
+	assert.ErrorIs(t, resolution.Error, ErrVersionDrifted)
 	assert.Equal(t, "14.1.0", resolution.AvailableVersion)
 }
 

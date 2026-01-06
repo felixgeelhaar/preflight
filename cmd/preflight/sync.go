@@ -13,6 +13,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/domain/lock"
 	"github.com/felixgeelhaar/preflight/internal/domain/sync"
+	"github.com/felixgeelhaar/preflight/internal/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -66,13 +67,22 @@ func init() {
 	syncCmd.Flags().BoolVar(&syncForce, "force", false, "Force sync even with uncommitted changes")
 }
 
-func runSync(_ *cobra.Command, _ []string) error {
+func runSync(cmd *cobra.Command, _ []string) error {
 	ctx := context.Background()
 
 	// Find repository root
 	repoRoot, err := findRepoRoot()
 	if err != nil {
 		return fmt.Errorf("not in a git repository: %w", err)
+	}
+
+	if err := validation.ValidateGitRemoteName(syncRemote); err != nil {
+		return fmt.Errorf("invalid remote name: %w", err)
+	}
+	if syncBranch != "" {
+		if err := validation.ValidateGitBranch(syncBranch); err != nil {
+			return fmt.Errorf("invalid branch: %w", err)
+		}
 	}
 
 	// Check for uncommitted changes
@@ -104,6 +114,9 @@ func runSync(_ *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to get current branch: %w", err)
 		}
+	}
+	if err := validation.ValidateGitBranch(branch); err != nil {
+		return fmt.Errorf("invalid current branch: %w", err)
 	}
 
 	// Step 1.5: Check for lockfile conflicts
@@ -152,6 +165,11 @@ func runSync(_ *cobra.Command, _ []string) error {
 	// Step 3: Plan changes
 	fmt.Println("3. Planning changes...")
 	preflight := app.New(os.Stdout)
+	if modeOverride, err := resolveModeOverride(cmd); err != nil {
+		return err
+	} else if modeOverride != nil {
+		preflight.WithMode(*modeOverride)
+	}
 
 	configPath := filepath.Join(repoRoot, syncConfigPath)
 	plan, err := preflight.Plan(ctx, configPath, syncTarget)
@@ -175,6 +193,12 @@ func runSync(_ *cobra.Command, _ []string) error {
 			fmt.Println("4. Would apply changes (dry-run mode)")
 		} else {
 			fmt.Println("4. Applying changes...")
+			if app.RequiresBootstrapConfirmation(plan) {
+				steps := app.BootstrapSteps(plan)
+				if !confirmBootstrap(steps) {
+					return fmt.Errorf("aborted bootstrap steps")
+				}
+			}
 			if _, err := preflight.Apply(ctx, plan, false); err != nil {
 				return fmt.Errorf("failed to apply: %w", err)
 			}
@@ -222,6 +246,7 @@ func hasUncommittedChanges(repoRoot string) (bool, error) {
 }
 
 func getCurrentBranch(repoRoot string) (string, error) {
+	// #nosec G204 -- repoRoot is derived from git and validated by caller.
 	cmd := exec.Command("git", "-C", repoRoot, "rev-parse", "--abbrev-ref", "HEAD")
 	output, err := cmd.Output()
 	if err != nil {
@@ -231,6 +256,7 @@ func getCurrentBranch(repoRoot string) (string, error) {
 }
 
 func gitFetch(repoRoot, remote string) error {
+	// #nosec G204 -- repoRoot and remote are validated by caller.
 	cmd := exec.Command("git", "-C", repoRoot, "fetch", remote)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -239,6 +265,7 @@ func gitFetch(repoRoot, remote string) error {
 
 func getCommitDiff(repoRoot, remote, branch string) (behind, ahead int, err error) {
 	// Get behind count
+	// #nosec G204 -- repoRoot, remote, and branch are validated by caller.
 	cmd := exec.Command("git", "-C", repoRoot, "rev-list", "--count", fmt.Sprintf("HEAD..%s/%s", remote, branch))
 	output, err := cmd.Output()
 	if err != nil {
@@ -247,6 +274,7 @@ func getCommitDiff(repoRoot, remote, branch string) (behind, ahead int, err erro
 	_, _ = fmt.Sscanf(strings.TrimSpace(string(output)), "%d", &behind)
 
 	// Get ahead count
+	// #nosec G204 -- repoRoot, remote, and branch are validated by caller.
 	cmd = exec.Command("git", "-C", repoRoot, "rev-list", "--count", fmt.Sprintf("%s/%s..HEAD", remote, branch))
 	output, err = cmd.Output()
 	if err != nil {
@@ -258,6 +286,7 @@ func getCommitDiff(repoRoot, remote, branch string) (behind, ahead int, err erro
 }
 
 func gitPull(repoRoot, remote, branch string) error {
+	// #nosec G204 -- repoRoot, remote, and branch are validated by caller.
 	cmd := exec.Command("git", "-C", repoRoot, "pull", remote, branch)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -265,6 +294,7 @@ func gitPull(repoRoot, remote, branch string) error {
 }
 
 func gitPush(repoRoot, remote, branch string) error {
+	// #nosec G204 -- repoRoot, remote, and branch are validated by caller.
 	cmd := exec.Command("git", "-C", repoRoot, "push", remote, branch)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

@@ -63,12 +63,13 @@ func TestScoopProvider_Compile_Buckets(t *testing.T) {
 	steps, err := provider.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 2)
+	require.Len(t, steps, 3)
 
 	ids := make(map[string]bool)
 	for _, s := range steps {
 		ids[s.ID().String()] = true
 	}
+	assert.True(t, ids[scoopInstallStepID])
 	assert.True(t, ids["scoop:bucket:extras"])
 	assert.True(t, ids["scoop:bucket:versions"])
 }
@@ -88,7 +89,7 @@ func TestScoopProvider_Compile_Packages(t *testing.T) {
 	steps, err := provider.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 2)
+	require.Len(t, steps, 3)
 }
 
 func TestScoopProvider_Compile_Full(t *testing.T) {
@@ -107,10 +108,10 @@ func TestScoopProvider_Compile_Full(t *testing.T) {
 	steps, err := provider.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 3)
+	require.Len(t, steps, 4)
 
-	// First step should be bucket
-	assert.Equal(t, "scoop:bucket:extras", steps[0].ID().String())
+	// First step should be install
+	assert.Equal(t, scoopInstallStepID, steps[0].ID().String())
 }
 
 func TestScoopProvider_Compile_InvalidConfig(t *testing.T) {
@@ -163,7 +164,7 @@ func TestScoopProvider_Compile_WorksOnWSL(t *testing.T) {
 	steps, err := provider.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 1)
+	require.Len(t, steps, 2)
 }
 
 func TestScoopProvider_Compile_WorksWithNilPlatform(t *testing.T) {
@@ -180,7 +181,7 @@ func TestScoopProvider_Compile_WorksWithNilPlatform(t *testing.T) {
 	steps, err := provider.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 1)
+	require.Len(t, steps, 2)
 }
 
 func TestScoopProvider_Compile_PackageWithBucket(t *testing.T) {
@@ -203,10 +204,11 @@ func TestScoopProvider_Compile_PackageWithBucket(t *testing.T) {
 	steps, err := provider.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 1)
+	require.Len(t, steps, 2)
 
 	// Package should depend on bucket
-	deps := steps[0].DependsOn()
-	require.Len(t, deps, 1)
-	assert.Equal(t, "scoop:bucket:extras", deps[0].String())
+	deps := steps[1].DependsOn()
+	require.Len(t, deps, 2)
+	assert.Equal(t, scoopInstallStepID, deps[0].String())
+	assert.Equal(t, "scoop:bucket:extras", deps[1].String())
 }

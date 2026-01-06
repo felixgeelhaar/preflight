@@ -221,7 +221,7 @@ Providers compile config sections into executable steps:
 ### 6.3 Plan → Apply
 
 - `preflight plan` shows actions, diffs, and explanations
-- `preflight apply` executes deterministically; prompts unless `--yes`
+- `preflight apply` executes deterministically; prompts unless `--yes` (including bootstrap)
 - Updates lock based on mode and flags
 
 ### 6.4 Doctor / Drift

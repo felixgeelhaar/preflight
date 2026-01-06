@@ -1,10 +1,13 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/catalog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTrustCmd_Exists(t *testing.T) {
@@ -234,6 +237,60 @@ func TestIsValidOpenPGPPacket(t *testing.T) {
 			assert.Equal(t, tt.expect, result)
 		})
 	}
+}
+
+func TestRunTrustList_EmptyStore(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	output := captureStdout(t, func() {
+		err := runTrustList(nil, nil)
+		require.NoError(t, err)
+	})
+
+	assert.Contains(t, output, "No trusted keys.")
+}
+
+func TestRunTrustAddShowRemove(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	keyFile := filepath.Join(tmpDir, "testkey.pub")
+	keyData := []byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 test@local")
+	require.NoError(t, os.WriteFile(keyFile, keyData, 0o600))
+
+	originalName := trustKeyName
+	originalLevel := trustKeyLevel
+	originalType := trustKeyType
+	originalEmail := trustEmail
+	originalForce := trustForce
+	defer func() {
+		trustKeyName = originalName
+		trustKeyLevel = originalLevel
+		trustKeyType = originalType
+		trustEmail = originalEmail
+		trustForce = originalForce
+	}()
+
+	trustKeyName = "Test Publisher"
+	trustKeyLevel = "verified"
+	trustKeyType = ""
+	trustEmail = "test@example.com"
+	trustForce = true
+
+	err := runTrustAdd(nil, []string{keyFile})
+	require.NoError(t, err)
+
+	output := captureStdout(t, func() {
+		showErr := runTrustShow(nil, []string{trustKeyName})
+		require.NoError(t, showErr)
+	})
+	assert.Contains(t, output, "Key ID:")
+	assert.Contains(t, output, "Test Publisher")
+	assert.Contains(t, output, "Trust Level: verified")
+
+	removeErr := runTrustRemove(nil, []string{trustKeyName})
+	require.NoError(t, removeErr)
 }
 
 func TestTrustListCmd_HasAliases(t *testing.T) {

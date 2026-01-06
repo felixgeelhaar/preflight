@@ -34,11 +34,16 @@ func init() {
 	planCmd.Flags().StringVarP(&planTarget, "target", "t", "default", "Target to plan")
 }
 
-func runPlan(_ *cobra.Command, _ []string) error {
+func runPlan(cmd *cobra.Command, _ []string) error {
 	ctx := context.Background()
 
 	// Create the application
 	preflight := app.New(os.Stdout)
+	if modeOverride, err := resolveModeOverride(cmd); err != nil {
+		return err
+	} else if modeOverride != nil {
+		preflight.WithMode(*modeOverride)
+	}
 
 	// Create the plan
 	plan, err := preflight.Plan(ctx, planConfigPath, planTarget)

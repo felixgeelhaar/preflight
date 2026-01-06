@@ -66,13 +66,14 @@ func TestWingetProvider_Compile_Packages(t *testing.T) {
 	steps, err := provider.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 2)
+	require.Len(t, steps, 3)
 
 	// Verify step IDs
 	ids := make(map[string]bool)
 	for _, s := range steps {
 		ids[s.ID().String()] = true
 	}
+	assert.True(t, ids[wingetReadyStepID])
 	assert.True(t, ids["winget:package:Microsoft.VisualStudioCode"])
 	assert.True(t, ids["winget:package:Git.Git"])
 }
@@ -97,7 +98,7 @@ func TestWingetProvider_Compile_PackagesWithVersion(t *testing.T) {
 	steps, err := provider.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 1)
+	require.Len(t, steps, 2)
 }
 
 func TestWingetProvider_Compile_InvalidConfig(t *testing.T) {
@@ -150,7 +151,7 @@ func TestWingetProvider_Compile_WorksOnWSL(t *testing.T) {
 	steps, err := provider.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 1)
+	require.Len(t, steps, 2)
 }
 
 func TestWingetProvider_Compile_WorksWithNilPlatform(t *testing.T) {
@@ -167,5 +168,5 @@ func TestWingetProvider_Compile_WorksWithNilPlatform(t *testing.T) {
 	steps, err := provider.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 1)
+	require.Len(t, steps, 2)
 }

@@ -19,6 +19,8 @@ func TestApplyCmd_FlagDefaults(t *testing.T) {
 		{"config default", "config", "preflight.yaml"},
 		{"target default", "target", "default"},
 		{"dry-run default", "dry-run", "false"},
+		{"update-lock default", "update-lock", "false"},
+		{"rollback-on-error default", "rollback-on-error", "false"},
 	}
 
 	for _, tt := range tests {

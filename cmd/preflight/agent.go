@@ -156,6 +156,9 @@ func init() {
 }
 
 func runAgentStart(_ *cobra.Command, _ []string) error {
+	if err := requireExperimental("agent"); err != nil {
+		return err
+	}
 	client := ipc.NewClient(ipc.ClientConfig{})
 
 	// Check if already running
@@ -208,6 +211,9 @@ func runAgentStart(_ *cobra.Command, _ []string) error {
 }
 
 func runAgentStop(_ *cobra.Command, _ []string) error {
+	if err := requireExperimental("agent"); err != nil {
+		return err
+	}
 	client := ipc.NewClient(ipc.ClientConfig{})
 
 	if !client.IsAgentRunning() {
@@ -237,6 +243,9 @@ func runAgentStop(_ *cobra.Command, _ []string) error {
 }
 
 func runAgentStatus(_ *cobra.Command, _ []string) error {
+	if err := requireExperimental("agent"); err != nil {
+		return err
+	}
 	client := ipc.NewClient(ipc.ClientConfig{})
 
 	if agentStatusWatch {
@@ -355,6 +364,15 @@ func runAgentStatusWatch(client *ipc.Client) error {
 }
 
 func runAgentInstall(_ *cobra.Command, _ []string) error {
+	if err := requireExperimental("agent"); err != nil {
+		return err
+	}
+	if _, err := agent.ParseSchedule(agentSchedule); err != nil {
+		return fmt.Errorf("invalid schedule: %w", err)
+	}
+	if _, err := agent.ParseRemediationPolicy(agentRemediation); err != nil {
+		return fmt.Errorf("invalid remediation policy: %w", err)
+	}
 	switch runtime.GOOS {
 	case "darwin":
 		return installLaunchAgent()
@@ -366,6 +384,9 @@ func runAgentInstall(_ *cobra.Command, _ []string) error {
 }
 
 func runAgentUninstall(_ *cobra.Command, _ []string) error {
+	if err := requireExperimental("agent"); err != nil {
+		return err
+	}
 	switch runtime.GOOS {
 	case "darwin":
 		return uninstallLaunchAgent()
@@ -377,6 +398,9 @@ func runAgentUninstall(_ *cobra.Command, _ []string) error {
 }
 
 func runAgentApprove(_ *cobra.Command, args []string) error {
+	if err := requireExperimental("agent"); err != nil {
+		return err
+	}
 	requestID := args[0]
 
 	client := ipc.NewClient(ipc.ClientConfig{})
@@ -478,16 +502,19 @@ func installLaunchAgent() error {
 
 	// Ensure LaunchAgents directory exists
 	launchAgentsDir := home + "/Library/LaunchAgents"
+	// #nosec G301 -- LaunchAgents must be readable by launchctl.
 	if err := os.MkdirAll(launchAgentsDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create LaunchAgents directory: %w", err)
 	}
 
 	// Write plist file
+	// #nosec G306 -- LaunchAgent plist must be readable by launchctl.
 	if err := os.WriteFile(plistPath, []byte(plistContent), 0o644); err != nil {
 		return fmt.Errorf("failed to write plist: %w", err)
 	}
 
 	// Load the agent
+	// #nosec G204 -- plistPath is constructed from the user's home directory.
 	cmd := exec.Command("launchctl", "load", plistPath)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to load LaunchAgent: %w", err)
@@ -513,8 +540,8 @@ func uninstallLaunchAgent() error {
 	}
 
 	// Unload the agent
-	cmd := exec.Command("launchctl", "unload", plistPath)
-	_ = cmd.Run() // Ignore error if not loaded
+	cmd := exec.Command("launchctl", "unload", plistPath) // #nosec G204 -- plist path is deterministic and under user's control
+	_ = cmd.Run()                                         // Ignore error if not loaded
 
 	// Remove plist
 	if err := os.Remove(plistPath); err != nil {
@@ -558,11 +585,13 @@ WantedBy=default.target
 `, execPath, agentSchedule, agentRemediation)
 
 	// Ensure service directory exists
+	// #nosec G301 -- systemd user services must be readable by systemd.
 	if err := os.MkdirAll(serviceDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create systemd directory: %w", err)
 	}
 
 	// Write service file
+	// #nosec G306 -- systemd service files must be readable by systemd.
 	if err := os.WriteFile(servicePath, []byte(serviceContent), 0o644); err != nil {
 		return fmt.Errorf("failed to write service file: %w", err)
 	}
@@ -575,6 +604,7 @@ WantedBy=default.target
 	}
 
 	for _, cmdArgs := range cmds {
+		// #nosec G204 -- command arguments are static and controlled.
 		cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to run %v: %w", cmdArgs, err)
@@ -607,6 +637,7 @@ func uninstallSystemdService() error {
 	}
 
 	for _, cmdArgs := range cmds {
+		// #nosec G204 -- command arguments are static and controlled.
 		cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 		_ = cmd.Run() // Ignore errors
 	}
@@ -617,6 +648,7 @@ func uninstallSystemdService() error {
 	}
 
 	// Reload systemd
+	// #nosec G204 -- command arguments are static and controlled.
 	cmd := exec.Command("systemctl", "--user", "daemon-reload")
 	_ = cmd.Run()
 

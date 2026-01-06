@@ -85,7 +85,7 @@ func TestProvider_Compile_WorksOnWindows(t *testing.T) {
 	steps, err := p.Compile(ctx)
 
 	require.NoError(t, err)
-	assert.Len(t, steps, 2)
+	assert.Len(t, steps, 3)
 }
 
 func TestProvider_Compile_WorksOnWSL(t *testing.T) {
@@ -103,7 +103,7 @@ func TestProvider_Compile_WorksOnWSL(t *testing.T) {
 	steps, err := p.Compile(ctx)
 
 	require.NoError(t, err)
-	assert.Len(t, steps, 1, "Should work on WSL")
+	assert.Len(t, steps, 2, "Should work on WSL")
 }
 
 func TestProvider_Compile_Packages(t *testing.T) {
@@ -127,11 +127,12 @@ func TestProvider_Compile_Packages(t *testing.T) {
 	steps, err := p.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 2)
+	require.Len(t, steps, 3)
 
 	// Verify step IDs
-	assert.Equal(t, compiler.MustNewStepID("chocolatey:package:git"), steps[0].ID())
-	assert.Equal(t, compiler.MustNewStepID("chocolatey:package:nodejs"), steps[1].ID())
+	assert.Equal(t, compiler.MustNewStepID(chocoInstallStepID), steps[0].ID())
+	assert.Equal(t, compiler.MustNewStepID("chocolatey:package:git"), steps[1].ID())
+	assert.Equal(t, compiler.MustNewStepID("chocolatey:package:nodejs"), steps[2].ID())
 }
 
 func TestProvider_Compile_Sources(t *testing.T) {
@@ -154,10 +155,11 @@ func TestProvider_Compile_Sources(t *testing.T) {
 	steps, err := p.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 1)
+	require.Len(t, steps, 2)
 
 	// Verify step ID
-	assert.Equal(t, compiler.MustNewStepID("chocolatey:source:internal"), steps[0].ID())
+	assert.Equal(t, compiler.MustNewStepID(chocoInstallStepID), steps[0].ID())
+	assert.Equal(t, compiler.MustNewStepID("chocolatey:source:internal"), steps[1].ID())
 }
 
 func TestProvider_Compile_SourcesAndPackages(t *testing.T) {
@@ -184,12 +186,13 @@ func TestProvider_Compile_SourcesAndPackages(t *testing.T) {
 	steps, err := p.Compile(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, steps, 3)
+	require.Len(t, steps, 4)
 
 	// Sources should come before packages
-	assert.Equal(t, compiler.MustNewStepID("chocolatey:source:internal"), steps[0].ID())
-	assert.Equal(t, compiler.MustNewStepID("chocolatey:package:git"), steps[1].ID())
-	assert.Equal(t, compiler.MustNewStepID("chocolatey:package:nodejs"), steps[2].ID())
+	assert.Equal(t, compiler.MustNewStepID(chocoInstallStepID), steps[0].ID())
+	assert.Equal(t, compiler.MustNewStepID("chocolatey:source:internal"), steps[1].ID())
+	assert.Equal(t, compiler.MustNewStepID("chocolatey:package:git"), steps[2].ID())
+	assert.Equal(t, compiler.MustNewStepID("chocolatey:package:nodejs"), steps[3].ID())
 }
 
 func TestProvider_Compile_InvalidConfig(t *testing.T) {
@@ -225,7 +228,7 @@ func TestProvider_Compile_NilPlatform(t *testing.T) {
 
 	// With nil platform, should proceed (for testing purposes)
 	require.NoError(t, err)
-	assert.Len(t, steps, 1)
+	assert.Len(t, steps, 2)
 }
 
 func TestProvider_ImplementsInterface(t *testing.T) {

@@ -119,7 +119,7 @@ func TestPackageStep_Check_Installed(t *testing.T) {
 		ExitCode: 0,
 	})
 
-	step := NewPackageStep(Package{Name: "black"}, runner)
+	step := NewPackageStep(Package{Name: "black"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(runCtx)
@@ -138,7 +138,7 @@ func TestPackageStep_Check_NotInstalled(t *testing.T) {
 		ExitCode: 1,
 	})
 
-	step := NewPackageStep(Package{Name: "black"}, runner)
+	step := NewPackageStep(Package{Name: "black"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(runCtx)
@@ -157,7 +157,7 @@ func TestPackageStep_Apply(t *testing.T) {
 		ExitCode: 0,
 	})
 
-	step := NewPackageStep(Package{Name: "black"}, runner)
+	step := NewPackageStep(Package{Name: "black"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(runCtx)
@@ -173,7 +173,7 @@ func TestPackageStep_Apply_WithVersion(t *testing.T) {
 		ExitCode: 0,
 	})
 
-	step := NewPackageStep(Package{Name: "black", Version: "23.1.0"}, runner)
+	step := NewPackageStep(Package{Name: "black", Version: "23.1.0"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(runCtx)
@@ -183,7 +183,7 @@ func TestPackageStep_Apply_WithVersion(t *testing.T) {
 }
 
 func TestPackageStep_Plan(t *testing.T) {
-	step := NewPackageStep(Package{Name: "black", Version: "23.1.0"}, nil)
+	step := NewPackageStep(Package{Name: "black", Version: "23.1.0"}, nil, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	diff, err := step.Plan(runCtx)
@@ -205,7 +205,7 @@ func TestPackageStep_Plan(t *testing.T) {
 }
 
 func TestPackageStep_Explain(t *testing.T) {
-	step := NewPackageStep(Package{Name: "black", Version: "23.1.0"}, nil)
+	step := NewPackageStep(Package{Name: "black", Version: "23.1.0"}, nil, nil)
 	explainCtx := compiler.NewExplainContext()
 
 	explanation := step.Explain(explainCtx)

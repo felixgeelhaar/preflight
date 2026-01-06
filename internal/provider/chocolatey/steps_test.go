@@ -18,7 +18,7 @@ func TestPackageStep_ID(t *testing.T) {
 	t.Parallel()
 
 	pkg := Package{Name: "git"}
-	step := NewPackageStep(pkg, nil, nil)
+	step := NewPackageStep(pkg, nil, nil, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 
 	assert.Equal(t, "chocolatey:package:git", step.ID().String())
 }
@@ -27,9 +27,9 @@ func TestPackageStep_DependsOn(t *testing.T) {
 	t.Parallel()
 
 	pkg := Package{Name: "git"}
-	step := NewPackageStep(pkg, nil, nil)
+	step := NewPackageStep(pkg, nil, nil, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 
-	assert.Empty(t, step.DependsOn())
+	assert.Equal(t, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)}, step.DependsOn())
 }
 
 func TestPackageStep_Check_Satisfied(t *testing.T) {
@@ -43,7 +43,7 @@ func TestPackageStep_Check_Satisfied(t *testing.T) {
 
 	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
 	pkg := Package{Name: "git"}
-	step := NewPackageStep(pkg, runner, plat)
+	step := NewPackageStep(pkg, runner, plat, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -62,7 +62,7 @@ func TestPackageStep_Check_NeedsApply(t *testing.T) {
 
 	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
 	pkg := Package{Name: "git"}
-	step := NewPackageStep(pkg, runner, plat)
+	step := NewPackageStep(pkg, runner, plat, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -81,7 +81,7 @@ func TestPackageStep_Check_WSL(t *testing.T) {
 
 	plat := platform.NewWSL(platform.EnvWSL2, "Ubuntu", "/mnt/c")
 	pkg := Package{Name: "git"}
-	step := NewPackageStep(pkg, runner, plat)
+	step := NewPackageStep(pkg, runner, plat, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 	ctx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(ctx)
@@ -112,7 +112,7 @@ func TestPackageStep_Plan(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			step := NewPackageStep(tc.pkg, nil, nil)
+			step := NewPackageStep(tc.pkg, nil, nil, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 			ctx := compiler.NewRunContext(context.Background())
 
 			diff, err := step.Plan(ctx)
@@ -135,7 +135,7 @@ func TestPackageStep_Apply(t *testing.T) {
 
 	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
 	pkg := Package{Name: "git"}
-	step := NewPackageStep(pkg, runner, plat)
+	step := NewPackageStep(pkg, runner, plat, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -153,7 +153,7 @@ func TestPackageStep_Apply_WithVersion(t *testing.T) {
 
 	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
 	pkg := Package{Name: "git", Version: "2.40.0"}
-	step := NewPackageStep(pkg, runner, plat)
+	step := NewPackageStep(pkg, runner, plat, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -171,7 +171,7 @@ func TestPackageStep_Apply_WithSource(t *testing.T) {
 
 	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
 	pkg := Package{Name: "git", Source: "internal"}
-	step := NewPackageStep(pkg, runner, plat)
+	step := NewPackageStep(pkg, runner, plat, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -193,7 +193,7 @@ func TestPackageStep_Apply_WithPin(t *testing.T) {
 
 	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
 	pkg := Package{Name: "git", Pin: true}
-	step := NewPackageStep(pkg, runner, plat)
+	step := NewPackageStep(pkg, runner, plat, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -211,7 +211,7 @@ func TestPackageStep_Apply_Failed(t *testing.T) {
 
 	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
 	pkg := Package{Name: "nonexistent"}
-	step := NewPackageStep(pkg, runner, plat)
+	step := NewPackageStep(pkg, runner, plat, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -226,7 +226,7 @@ func TestPackageStep_Apply_InvalidName(t *testing.T) {
 	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
 	// Package name with slash is invalid for chocolatey (valid for step ID but not choco)
 	pkg := Package{Name: "git/malicious"}
-	step := NewPackageStep(pkg, runner, plat)
+	step := NewPackageStep(pkg, runner, plat, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 	ctx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(ctx)
@@ -239,7 +239,7 @@ func TestPackageStep_Explain(t *testing.T) {
 
 	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
 	pkg := Package{Name: "git", Version: "2.40.0", Source: "internal", Pin: true}
-	step := NewPackageStep(pkg, nil, plat)
+	step := NewPackageStep(pkg, nil, plat, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 	ctx := compiler.NewExplainContext()
 
 	exp := step.Explain(ctx)
@@ -255,7 +255,7 @@ func TestPackageStep_Explain_WSL(t *testing.T) {
 
 	plat := platform.NewWSL(platform.EnvWSL2, "Ubuntu", "/mnt/c")
 	pkg := Package{Name: "git"}
-	step := NewPackageStep(pkg, nil, plat)
+	step := NewPackageStep(pkg, nil, plat, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)})
 	ctx := compiler.NewExplainContext()
 
 	exp := step.Explain(ctx)
@@ -282,6 +282,15 @@ func TestSourceStep_ID(t *testing.T) {
 	step := NewSourceStep(source, nil, nil)
 
 	assert.Equal(t, "chocolatey:source:internal", step.ID().String())
+}
+
+func TestSourceStep_DependsOn(t *testing.T) {
+	t.Parallel()
+
+	source := Source{Name: "internal", URL: "https://nuget.internal.com/"}
+	step := NewSourceStep(source, nil, nil)
+
+	assert.Equal(t, []compiler.StepID{compiler.MustNewStepID(chocoInstallStepID)}, step.DependsOn())
 }
 
 func TestSourceStep_Check_Satisfied(t *testing.T) {

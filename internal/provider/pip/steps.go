@@ -6,6 +6,7 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/provider/commandutil"
 	"github.com/felixgeelhaar/preflight/internal/validation"
 )
 
@@ -14,15 +15,17 @@ type PackageStep struct {
 	pkg    Package
 	id     compiler.StepID
 	runner ports.CommandRunner
+	deps   []compiler.StepID
 }
 
 // NewPackageStep creates a new PackageStep.
-func NewPackageStep(pkg Package, runner ports.CommandRunner) *PackageStep {
+func NewPackageStep(pkg Package, runner ports.CommandRunner, deps []compiler.StepID) *PackageStep {
 	id := compiler.MustNewStepID("pip:package:" + pkg.Name)
 	return &PackageStep{
 		pkg:    pkg,
 		id:     id,
 		runner: runner,
+		deps:   deps,
 	}
 }
 
@@ -33,7 +36,7 @@ func (s *PackageStep) ID() compiler.StepID {
 
 // DependsOn returns the step dependencies.
 func (s *PackageStep) DependsOn() []compiler.StepID {
-	return nil
+	return s.deps
 }
 
 // Check determines if the package is already installed.
@@ -41,9 +44,19 @@ func (s *PackageStep) Check(ctx compiler.RunContext) (compiler.StepStatus, error
 	// Try pip show to check if package is installed
 	result, err := s.runner.Run(ctx.Context(), "pip", "show", s.pkg.Name)
 	if err != nil {
-		// Try pip3 as fallback
-		result, err = s.runner.Run(ctx.Context(), "pip3", "show", s.pkg.Name)
-		if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			// Try pip3 as fallback
+			result, err = s.runner.Run(ctx.Context(), "pip3", "show", s.pkg.Name)
+			if err != nil {
+				if commandutil.IsCommandNotFound(err) {
+					if len(s.deps) == 0 {
+						return compiler.StatusUnknown, fmt.Errorf("pip not found in PATH and no Python installer configured")
+					}
+					return compiler.StatusNeedsApply, nil
+				}
+				return compiler.StatusUnknown, err
+			}
+		} else {
 			return compiler.StatusUnknown, err
 		}
 	}
@@ -74,9 +87,16 @@ func (s *PackageStep) Apply(ctx compiler.RunContext) error {
 	// Install to user directory with --user flag
 	result, err := s.runner.Run(ctx.Context(), "pip", "install", "--user", s.pkg.FullName())
 	if err != nil {
-		// Try pip3 as fallback
-		result, err = s.runner.Run(ctx.Context(), "pip3", "install", "--user", s.pkg.FullName())
-		if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			// Try pip3 as fallback
+			result, err = s.runner.Run(ctx.Context(), "pip3", "install", "--user", s.pkg.FullName())
+			if err != nil {
+				if commandutil.IsCommandNotFound(err) {
+					return fmt.Errorf("pip not found in PATH; install Python first")
+				}
+				return err
+			}
+		} else {
 			return err
 		}
 	}
@@ -106,4 +126,42 @@ func (s *PackageStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 		"- Requires Python to be installed",
 		"- May conflict with system Python packages",
 	})
+}
+
+// LockInfo returns lockfile information for this package.
+func (s *PackageStep) LockInfo() (compiler.LockInfo, bool) {
+	return compiler.LockInfo{
+		Provider: "pip",
+		Name:     s.pkg.Name,
+		Version:  s.pkg.Version,
+	}, true
+}
+
+// InstalledVersion returns the installed pip package version if available.
+func (s *PackageStep) InstalledVersion(ctx compiler.RunContext) (string, bool, error) {
+	result, err := s.runner.Run(ctx.Context(), "pip", "show", s.pkg.Name)
+	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			result, err = s.runner.Run(ctx.Context(), "pip3", "show", s.pkg.Name)
+			if err != nil {
+				if commandutil.IsCommandNotFound(err) {
+					return "", false, nil
+				}
+				return "", false, err
+			}
+		} else {
+			return "", false, err
+		}
+	}
+
+	for _, line := range strings.Split(result.Stdout, "\n") {
+		if strings.HasPrefix(line, "Version:") {
+			version := strings.TrimSpace(strings.TrimPrefix(line, "Version:"))
+			if version != "" {
+				return version, true, nil
+			}
+		}
+	}
+
+	return "", false, nil
 }

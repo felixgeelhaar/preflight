@@ -37,8 +37,13 @@ func (c *Compiler) Providers() []Provider {
 // - Dependencies are missing
 // - Cyclic dependencies are detected
 func (c *Compiler) Compile(config map[string]interface{}) (*StepGraph, error) {
+	return c.CompileWithContext(NewCompileContext(config))
+}
+
+// CompileWithContext transforms configuration into a validated StepGraph using
+// the provided compilation context.
+func (c *Compiler) CompileWithContext(ctx CompileContext) (*StepGraph, error) {
 	graph := NewStepGraph()
-	ctx := NewCompileContext(config)
 
 	// Compile each provider
 	for _, provider := range c.providers {

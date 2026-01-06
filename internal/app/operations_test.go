@@ -234,6 +234,66 @@ targets:
 	assert.False(t, result.Applied, "should not apply when Apply=false")
 }
 
+func TestRepoClone_ApplyDefaultsTarget(t *testing.T) {
+	t.Parallel()
+
+	sourceDir := t.TempDir()
+
+	cmd := newGitCommand("init", "--bare", "--initial-branch=main", sourceDir)
+	require.NoError(t, cmd.Run())
+
+	workDir := t.TempDir()
+	workRepoPath := filepath.Join(workDir, "work")
+
+	cmd = newGitCommand("clone", sourceDir, workRepoPath)
+	require.NoError(t, cmd.Run())
+
+	preflightConfig := `version: "1"
+targets:
+  default: []
+`
+	require.NoError(t, os.WriteFile(filepath.Join(workRepoPath, "preflight.yaml"), []byte(preflightConfig), 0o644))
+
+	cmd = newGitCommand("-C", workRepoPath, "add", ".")
+	require.NoError(t, cmd.Run())
+
+	cmd = newGitCommand("-C", workRepoPath, "config", "user.email", "test@test.com")
+	require.NoError(t, cmd.Run())
+
+	cmd = newGitCommand("-C", workRepoPath, "config", "user.name", "Test")
+	require.NoError(t, cmd.Run())
+
+	cmd = newGitCommand("-C", workRepoPath, "checkout", "-b", "main")
+	_ = cmd.Run()
+
+	cmd = newGitCommand("-C", workRepoPath, "commit", "-m", "Initial commit")
+	require.NoError(t, cmd.Run())
+
+	cmd = newGitCommand("-C", workRepoPath, "push", "-u", "origin", "main")
+	require.NoError(t, cmd.Run())
+
+	cloneDir := t.TempDir()
+	destPath := filepath.Join(cloneDir, "cloned")
+
+	p := New(os.Stdout)
+	ctx := context.Background()
+
+	opts := CloneOptions{
+		URL:         sourceDir,
+		Path:        destPath,
+		Apply:       true,
+		AutoConfirm: true,
+	}
+
+	result, err := p.RepoClone(ctx, opts)
+	require.NoError(t, err)
+	assert.Equal(t, destPath, result.Path)
+	assert.True(t, result.ConfigFound, "should find preflight.yaml")
+	assert.True(t, result.Applied, "should apply when Apply=true")
+	require.NotNil(t, result.ApplyResult)
+	assert.Equal(t, 0, result.ApplyResult.Failed)
+}
+
 func TestRepoClone_DefaultPath(t *testing.T) {
 	// NOTE: Cannot use t.Parallel() because os.Chdir affects all goroutines
 	// and causes race conditions with other parallel tests.
@@ -835,7 +895,7 @@ func TestCaptureNvimConfig_WithLazyLock(t *testing.T) {
 	findings, err := p.Capture(ctx, opts)
 
 	require.NoError(t, err)
-	assert.Len(t, findings.Items, 2) // config dir and lazy-lock.json
+	assert.Len(t, findings.Items, 3) // version, config dir, and lazy-lock.json
 }
 
 func TestCaptureNvimConfig_WithPacker(t *testing.T) {
@@ -860,7 +920,7 @@ func TestCaptureNvimConfig_WithPacker(t *testing.T) {
 	findings, err := p.Capture(ctx, opts)
 
 	require.NoError(t, err)
-	assert.Len(t, findings.Items, 2) // config dir and packer_compiled.lua
+	assert.Len(t, findings.Items, 3) // version, config dir, and packer_compiled.lua
 }
 
 func TestCaptureNvimConfig_WithVimrc(t *testing.T) {
@@ -882,8 +942,8 @@ func TestCaptureNvimConfig_WithVimrc(t *testing.T) {
 	findings, err := p.Capture(ctx, opts)
 
 	require.NoError(t, err)
-	assert.Len(t, findings.Items, 1)
-	assert.Equal(t, ".vimrc", findings.Items[0].Name)
+	assert.Len(t, findings.Items, 2) // version and .vimrc
+	assert.Equal(t, ".vimrc", findings.Items[1].Name)
 }
 
 func TestCaptureRuntimeVersions_NoTools(t *testing.T) {
@@ -910,7 +970,10 @@ func TestLockUpdate_NewLockfile(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "preflight.yaml")
-	require.NoError(t, os.WriteFile(configPath, []byte("version: \"1\"\n"), 0o644))
+	require.NoError(t, os.Mkdir(filepath.Join(tmpDir, "layers"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "layers", "base.yaml"), []byte("name: base\n"), 0o644))
+	manifest := []byte("targets:\n  default:\n    - base\n")
+	require.NoError(t, os.WriteFile(configPath, manifest, 0o644))
 
 	var output strings.Builder
 	p := New(&output)
@@ -921,6 +984,27 @@ func TestLockUpdate_NewLockfile(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, output.String(), "Lockfile updated")
 	// Verify lockfile was created
+	lockPath := filepath.Join(tmpDir, "preflight.lock")
+	assert.FileExists(t, lockPath)
+}
+
+func TestLockUpdate_SelectsSortedTargetWhenDefaultMissing(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "preflight.yaml")
+	require.NoError(t, os.Mkdir(filepath.Join(tmpDir, "layers"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "layers", "alpha.yaml"), []byte("name: alpha\n"), 0o644))
+	manifest := []byte("targets:\n  beta:\n    - beta\n  alpha:\n    - alpha\n")
+	require.NoError(t, os.WriteFile(configPath, manifest, 0o644))
+
+	var output strings.Builder
+	p := New(&output)
+	ctx := context.Background()
+
+	err := p.LockUpdate(ctx, configPath)
+
+	require.NoError(t, err)
 	lockPath := filepath.Join(tmpDir, "preflight.lock")
 	assert.FileExists(t, lockPath)
 }
@@ -947,7 +1031,10 @@ func TestLockFreeze_Success(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "preflight.yaml")
-	require.NoError(t, os.WriteFile(configPath, []byte("version: \"1\"\n"), 0o644))
+	require.NoError(t, os.Mkdir(filepath.Join(tmpDir, "layers"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "layers", "base.yaml"), []byte("name: base\n"), 0o644))
+	manifest := []byte("targets:\n  default:\n    - base\n")
+	require.NoError(t, os.WriteFile(configPath, manifest, 0o644))
 
 	// First create a lockfile
 	var output strings.Builder

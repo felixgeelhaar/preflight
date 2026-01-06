@@ -2,7 +2,9 @@ package gem
 
 import (
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
+	tooldeps "github.com/felixgeelhaar/preflight/internal/domain/deps"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/provider/versionutil"
 )
 
 // Provider implements the compiler.Provider interface for RubyGems.
@@ -33,9 +35,15 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 	}
 
 	steps := make([]compiler.Step, 0, len(cfg.Gems))
+	deps := tooldeps.ResolveToolDeps(ctx, nil, tooldeps.ToolRuby)
 
 	for _, g := range cfg.Gems {
-		steps = append(steps, NewStep(g, p.runner))
+		version, err := versionutil.ResolvePackageVersion(ctx, "gem", g.Name, g.Version)
+		if err != nil {
+			return nil, err
+		}
+		g.Version = version
+		steps = append(steps, NewStep(g, p.runner, deps))
 	}
 
 	return steps, nil

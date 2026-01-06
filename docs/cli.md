@@ -30,12 +30,13 @@ version Show version information
 Global Flags:
 --config <path> Path to config (default: ./preflight.yaml)
 --target <name> Target/profile to apply (e.g. work, personal)
---mode <mode> intent | locked | frozen (default: locked)
+--mode <mode> intent | locked | frozen (default: intent)
 --no-ai Disable AI guidance
 --ai-provider <name> openai | anthropic | ollama | none
 --dry-run Never modify the system
 --verbose Show detailed execution output
---yes Skip confirmation prompts
+--yes Skip confirmation prompts (including bootstrap)
+--allow-bootstrap Skip confirmation for bootstrap steps
 
 ## Run 'preflight <command> --help' for details.
 
@@ -129,11 +130,11 @@ preflight apply [flags]
 
 Description:
 Applies the plan deterministically.
-Requires confirmation unless --yes is used.
+Requires confirmation unless --yes is used (including bootstrap).
 
 Flags:
 --target <name> Profile/target to apply
---yes Skip confirmation
+--yes Skip confirmation (including bootstrap)
 --update-lock Update lockfile after apply
 --rollback-on-error Attempt rollback on failure
 

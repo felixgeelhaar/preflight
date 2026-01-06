@@ -107,6 +107,7 @@ func TestFleetInventoryFile_ToInventory_InvalidGroup(t *testing.T) {
 
 //nolint:tparallel // Test modifies global state (flags and os.Stdout)
 func TestFleetCmd_List(t *testing.T) {
+	t.Setenv(experimentalEnvVar, "1")
 	// Create temp inventory file
 	tmpDir := t.TempDir()
 	invPath := filepath.Join(tmpDir, "fleet.yaml")
@@ -159,6 +160,7 @@ hosts:
 
 //nolint:tparallel // Test modifies global state (flags and os.Stdout)
 func TestFleetCmd_List_JSON(t *testing.T) {
+	t.Setenv(experimentalEnvVar, "1")
 	tmpDir := t.TempDir()
 	invPath := filepath.Join(tmpDir, "fleet.yaml")
 
@@ -204,6 +206,7 @@ hosts:
 
 //nolint:tparallel // Test modifies global state (flags and os.Stdout)
 func TestFleetCmd_Status(t *testing.T) {
+	t.Setenv(experimentalEnvVar, "1")
 	tmpDir := t.TempDir()
 	invPath := filepath.Join(tmpDir, "fleet.yaml")
 
@@ -251,6 +254,7 @@ groups:
 
 //nolint:tparallel // Test modifies global state (flags)
 func TestFleetCmd_MissingInventory(t *testing.T) {
+	t.Setenv(experimentalEnvVar, "1")
 	origInventoryFile := fleetInventoryFile
 	defer func() {
 		fleetInventoryFile = origInventoryFile

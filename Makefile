@@ -39,7 +39,7 @@ coverage:
 ## coverage-check: Check coverage meets threshold (requires coverctl)
 coverage-check:
 	$(GOTEST) -coverprofile=coverage.out ./...
-	coverctl check --threshold 80
+	coverctl check --fail-under 80
 
 ## lint: Run linter
 lint:

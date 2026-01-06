@@ -27,6 +27,8 @@ var (
 	applyConfigPath string
 	applyTarget     string
 	applyDryRun     bool
+	applyUpdateLock bool
+	applyRollback   bool
 )
 
 func init() {
@@ -35,13 +37,23 @@ func init() {
 	applyCmd.Flags().StringVarP(&applyConfigPath, "config", "c", "preflight.yaml", "Path to preflight.yaml")
 	applyCmd.Flags().StringVarP(&applyTarget, "target", "t", "default", "Target to apply")
 	applyCmd.Flags().BoolVar(&applyDryRun, "dry-run", false, "Show what would be done without making changes")
+	applyCmd.Flags().BoolVar(&applyUpdateLock, "update-lock", false, "Update lockfile after apply")
+	applyCmd.Flags().BoolVar(&applyRollback, "rollback-on-error", false, "Attempt rollback when a step fails")
 }
 
-func runApply(_ *cobra.Command, _ []string) error {
+func runApply(cmd *cobra.Command, _ []string) error {
 	ctx := context.Background()
 
 	// Create the application
 	preflight := app.New(os.Stdout)
+	if modeOverride, err := resolveModeOverride(cmd); err != nil {
+		return err
+	} else if modeOverride != nil {
+		preflight.WithMode(*modeOverride)
+	}
+	if applyRollback {
+		preflight.WithRollbackOnFailure(true)
+	}
 
 	// Create the plan
 	plan, err := preflight.Plan(ctx, applyConfigPath, applyTarget)
@@ -62,6 +74,13 @@ func runApply(_ *cobra.Command, _ []string) error {
 		return nil
 	}
 
+	if app.RequiresBootstrapConfirmation(plan) {
+		steps := app.BootstrapSteps(plan)
+		if !confirmBootstrap(steps) {
+			return fmt.Errorf("aborted bootstrap steps")
+		}
+	}
+
 	fmt.Println("\nApplying changes...")
 
 	// Execute the plan
@@ -77,6 +96,12 @@ func runApply(_ *cobra.Command, _ []string) error {
 	for i := range results {
 		if results[i].Error() != nil {
 			return fmt.Errorf("some steps failed")
+		}
+	}
+
+	if applyUpdateLock {
+		if err := preflight.UpdateLockFromPlan(ctx, applyConfigPath, plan); err != nil {
+			return fmt.Errorf("update lockfile failed: %w", err)
 		}
 	}
 

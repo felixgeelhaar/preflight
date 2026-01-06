@@ -281,6 +281,9 @@ func selectHosts(inv *fleet.Inventory) ([]*fleet.Host, error) {
 }
 
 func runFleetList(_ *cobra.Command, _ []string) error {
+	if err := requireExperimental("fleet"); err != nil {
+		return err
+	}
 	inv, err := loadFleetInventory()
 	if err != nil {
 		return err
@@ -332,6 +335,9 @@ func printHostsJSON(hosts []*fleet.Host) error {
 }
 
 func runFleetPing(_ *cobra.Command, _ []string) error {
+	if err := requireExperimental("fleet"); err != nil {
+		return err
+	}
 	inv, err := loadFleetInventory()
 	if err != nil {
 		return err
@@ -383,6 +389,9 @@ func runFleetPing(_ *cobra.Command, _ []string) error {
 }
 
 func runFleetPlan(_ *cobra.Command, _ []string) error {
+	if err := requireExperimental("fleet"); err != nil {
+		return err
+	}
 	inv, err := loadFleetInventory()
 	if err != nil {
 		return err
@@ -453,6 +462,9 @@ func runFleetPlan(_ *cobra.Command, _ []string) error {
 }
 
 func runFleetApply(_ *cobra.Command, _ []string) error {
+	if err := requireExperimental("fleet"); err != nil {
+		return err
+	}
 	inv, err := loadFleetInventory()
 	if err != nil {
 		return err
@@ -550,6 +562,9 @@ func runFleetApply(_ *cobra.Command, _ []string) error {
 }
 
 func runFleetStatus(_ *cobra.Command, _ []string) error {
+	if err := requireExperimental("fleet"); err != nil {
+		return err
+	}
 	inv, err := loadFleetInventory()
 	if err != nil {
 		return err

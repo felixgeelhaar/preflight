@@ -398,6 +398,9 @@ func runCatalogRemove(_ *cobra.Command, args []string) error {
 
 func runCatalogVerify(_ *cobra.Command, args []string) error {
 	ctx := context.Background()
+	if catalogVerifySigs {
+		return fmt.Errorf("--signatures is not supported yet; omit the flag to verify hashes only")
+	}
 
 	// Setup audit service for logging verification results
 	auditSvc := getCatalogAuditService()

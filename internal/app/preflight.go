@@ -3,8 +3,12 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/adapters/command"
 	"github.com/felixgeelhaar/preflight/internal/adapters/filesystem"
@@ -16,8 +20,10 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/platform"
 	"github.com/felixgeelhaar/preflight/internal/domain/policy"
 	"github.com/felixgeelhaar/preflight/internal/provider/apt"
+	"github.com/felixgeelhaar/preflight/internal/provider/bootstrap"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
 	"github.com/felixgeelhaar/preflight/internal/provider/cargo"
+	"github.com/felixgeelhaar/preflight/internal/provider/chocolatey"
 	"github.com/felixgeelhaar/preflight/internal/provider/files"
 	"github.com/felixgeelhaar/preflight/internal/provider/gem"
 	"github.com/felixgeelhaar/preflight/internal/provider/git"
@@ -26,18 +32,23 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/provider/nvim"
 	"github.com/felixgeelhaar/preflight/internal/provider/pip"
 	"github.com/felixgeelhaar/preflight/internal/provider/runtime"
+	"github.com/felixgeelhaar/preflight/internal/provider/scoop"
 	"github.com/felixgeelhaar/preflight/internal/provider/shell"
 	"github.com/felixgeelhaar/preflight/internal/provider/ssh"
 	"github.com/felixgeelhaar/preflight/internal/provider/vscode"
+	"github.com/felixgeelhaar/preflight/internal/provider/winget"
 )
 
 // Preflight is the main application orchestrator.
 type Preflight struct {
-	compiler *compiler.Compiler
-	planner  *execution.Planner
-	executor *execution.Executor
-	lockRepo lock.Repository
-	out      io.Writer
+	compiler          *compiler.Compiler
+	planner           *execution.Planner
+	executor          *execution.Executor
+	lockRepo          lock.Repository
+	mode              config.ReproducibilityMode
+	modeSet           bool
+	rollbackOnFailure bool
+	out               io.Writer
 }
 
 // New creates a new Preflight application.
@@ -51,9 +62,11 @@ func New(out io.Writer) *Preflight {
 
 	// Create compiler with providers
 	comp := compiler.NewCompiler()
+	comp.RegisterProvider(bootstrap.NewProvider(cmdRunner, plat))
 	comp.RegisterProvider(apt.NewProvider(cmdRunner))
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 	comp.RegisterProvider(cargo.NewProvider(cmdRunner))
+	comp.RegisterProvider(chocolatey.NewProvider(cmdRunner, plat))
 	comp.RegisterProvider(files.NewProvider(fs))
 	comp.RegisterProvider(gem.NewProvider(cmdRunner))
 	comp.RegisterProvider(git.NewProvider(fs))
@@ -62,9 +75,11 @@ func New(out io.Writer) *Preflight {
 	comp.RegisterProvider(nvim.NewProvider(fs, cmdRunner))
 	comp.RegisterProvider(pip.NewProvider(cmdRunner))
 	comp.RegisterProvider(runtime.NewProvider(fs))
+	comp.RegisterProvider(scoop.NewProvider(cmdRunner, plat))
 	comp.RegisterProvider(shell.NewProvider(fs))
 	comp.RegisterProvider(ssh.NewProvider(fs))
 	comp.RegisterProvider(vscode.NewProvider(fs, cmdRunner, plat))
+	comp.RegisterProvider(winget.NewProvider(cmdRunner, plat))
 
 	return &Preflight{
 		compiler: comp,
@@ -75,6 +90,19 @@ func New(out io.Writer) *Preflight {
 	}
 }
 
+// WithMode sets a reproducibility mode override for planning and applying.
+func (p *Preflight) WithMode(mode config.ReproducibilityMode) *Preflight {
+	p.mode = mode
+	p.modeSet = true
+	return p
+}
+
+// WithRollbackOnFailure enables rollback on failed apply.
+func (p *Preflight) WithRollbackOnFailure(enabled bool) *Preflight {
+	p.rollbackOnFailure = enabled
+	return p
+}
+
 // WithLockRepo sets the lock repository for lockfile operations.
 func (p *Preflight) WithLockRepo(repo lock.Repository) *Preflight {
 	p.lockRepo = repo
@@ -83,6 +111,16 @@ func (p *Preflight) WithLockRepo(repo lock.Repository) *Preflight {
 
 // Plan loads configuration and creates an execution plan.
 func (p *Preflight) Plan(ctx context.Context, configPath, target string) (*execution.Plan, error) {
+	mode, err := p.resolveMode(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	resolver, err := p.buildResolver(ctx, configPath, mode)
+	if err != nil {
+		return nil, err
+	}
+
 	// Load configuration
 	cfg, err := p.loadConfig(configPath, target)
 	if err != nil {
@@ -90,7 +128,12 @@ func (p *Preflight) Plan(ctx context.Context, configPath, target string) (*execu
 	}
 
 	// Compile to step graph
-	graph, err := p.compiler.Compile(cfg)
+	configRoot := filepath.Dir(configPath)
+	compileCtx := compiler.NewCompileContext(cfg).
+		WithResolver(resolver).
+		WithConfigRoot(configRoot).
+		WithTarget(target)
+	graph, err := p.compiler.CompileWithContext(compileCtx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile: %w", err)
 	}
@@ -106,8 +149,102 @@ func (p *Preflight) Plan(ctx context.Context, configPath, target string) (*execu
 
 // Apply executes the plan.
 func (p *Preflight) Apply(ctx context.Context, plan *execution.Plan, dryRun bool) ([]execution.StepResult, error) {
-	executor := p.executor.WithDryRun(dryRun)
+	executor := p.executor.WithDryRun(dryRun).WithRollbackOnFailure(p.rollbackOnFailure)
 	return executor.Execute(ctx, plan)
+}
+
+// UpdateLockFromPlan updates the lockfile based on lockable steps in the plan.
+func (p *Preflight) UpdateLockFromPlan(ctx context.Context, configPath string, plan *execution.Plan) error {
+	if plan == nil {
+		return fmt.Errorf("plan is required to update lockfile")
+	}
+
+	mode, err := p.resolveMode(configPath)
+	if err != nil {
+		return err
+	}
+
+	lockPath := strings.TrimSuffix(configPath, filepath.Ext(configPath)) + ".lock"
+	if p.lockRepo == nil {
+		return fmt.Errorf("lockfile repository not configured")
+	}
+
+	lockfile, err := p.lockRepo.Load(ctx, lockPath)
+	if err != nil {
+		if errors.Is(err, lock.ErrLockfileNotFound) {
+			lockfile = lock.NewLockfile(mode, lock.MachineInfoFromSystem())
+		} else {
+			return fmt.Errorf("failed to load lockfile: %w", err)
+		}
+	}
+
+	lockfile = lockfile.WithMode(mode)
+
+	lockedKeys := make(map[string]struct{})
+	lockedProviders := make(map[string]struct{})
+	runCtx := compiler.NewRunContext(ctx)
+	for _, entry := range plan.Entries() {
+		lockable, ok := entry.Step().(compiler.LockableStep)
+		if !ok {
+			continue
+		}
+		info, ok := lockable.LockInfo()
+		if !ok {
+			continue
+		}
+
+		provider := strings.TrimSpace(info.Provider)
+		name := strings.TrimSpace(info.Name)
+		version := strings.TrimSpace(info.Version)
+		if provider == "" || name == "" {
+			continue
+		}
+		if version == "" || version == "latest" {
+			if versioned, ok := entry.Step().(compiler.VersionedStep); ok {
+				installed, ok, err := versioned.InstalledVersion(runCtx)
+				if err != nil {
+					return fmt.Errorf("failed to resolve installed version for %s:%s: %w", provider, name, err)
+				}
+				installed = strings.TrimSpace(installed)
+				if ok && installed != "" {
+					version = installed
+				}
+			}
+		}
+		if version == "" {
+			version = "latest"
+		}
+
+		integrity := lock.IntegrityFromData(lock.AlgorithmSHA256, []byte(provider+":"+name+"@"+version))
+		pkg, err := lock.NewPackageLock(provider, name, version, integrity, time.Now())
+		if err != nil {
+			return fmt.Errorf("failed to lock %s:%s: %w", provider, name, err)
+		}
+		if err := lockfile.SetPackage(pkg); err != nil {
+			return fmt.Errorf("failed to update lockfile: %w", err)
+		}
+
+		key := provider + ":" + name
+		lockedKeys[key] = struct{}{}
+		lockedProviders[provider] = struct{}{}
+	}
+
+	for key, pkg := range lockfile.Packages() {
+		if _, ok := lockedProviders[pkg.Provider()]; !ok {
+			continue
+		}
+		if _, ok := lockedKeys[key]; ok {
+			continue
+		}
+		lockfile.RemovePackage(pkg.Provider(), pkg.Name())
+	}
+
+	if err := p.lockRepo.Save(ctx, lockPath, lockfile); err != nil {
+		return fmt.Errorf("failed to save lockfile: %w", err)
+	}
+
+	p.printf("Lockfile updated: %s\n", lockPath)
+	return nil
 }
 
 // LoadMergedConfig loads and merges configuration, returning the raw map.
@@ -175,7 +312,12 @@ func (p *Preflight) PrintPlan(plan *execution.Plan) {
 			status = "+"
 		}
 
-		p.printf("  %s %s\n", status, entry.Step().ID().String())
+		stepID := entry.Step().ID().String()
+		if entry.Status() == compiler.StatusNeedsApply && IsBootstrapStep(stepID) {
+			p.printf("  %s %s (bootstrap)\n", status, stepID)
+		} else {
+			p.printf("  %s %s\n", status, stepID)
+		}
 
 		diff := entry.Diff()
 		if !diff.IsEmpty() {
@@ -244,6 +386,16 @@ func (p *Preflight) Validate(ctx context.Context, configPath, targetName string)
 func (p *Preflight) ValidateWithOptions(ctx context.Context, configPath, targetName string, opts ValidateOptions) (*ValidationResult, error) {
 	result := &ValidationResult{}
 
+	mode, err := p.resolveMode(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	resolver, err := p.buildResolver(ctx, configPath, mode)
+	if err != nil {
+		return nil, err
+	}
+
 	// Load configuration
 	cfg, err := p.loadConfig(configPath, targetName)
 	if err != nil {
@@ -255,7 +407,12 @@ func (p *Preflight) ValidateWithOptions(ctx context.Context, configPath, targetN
 	result.Info = append(result.Info, fmt.Sprintf("Target: %s", targetName))
 
 	// Try to compile - this validates providers and dependencies
-	graph, err := p.compiler.Compile(cfg)
+	configRoot := filepath.Dir(configPath)
+	compileCtx := compiler.NewCompileContext(cfg).
+		WithResolver(resolver).
+		WithConfigRoot(configRoot).
+		WithTarget(targetName)
+	graph, err := p.compiler.CompileWithContext(compileCtx)
 	if err != nil {
 		result.Errors = append(result.Errors, fmt.Sprintf("Compilation failed: %v", err))
 		return result, nil
@@ -329,6 +486,76 @@ func (p *Preflight) loadConfig(configPath, targetName string) (map[string]interf
 	}
 
 	return merged.Raw(), nil
+}
+
+func (p *Preflight) resolveMode(configPath string) (config.ReproducibilityMode, error) {
+	loader := config.NewLoader()
+	manifest, err := loader.LoadManifest(configPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to load manifest: %w", err)
+	}
+
+	mode := manifest.Defaults.Mode
+	if mode == "" {
+		mode = config.ModeIntent
+	}
+	if p.modeSet {
+		mode = p.mode
+	}
+
+	switch mode {
+	case config.ModeIntent, config.ModeLocked, config.ModeFrozen:
+		return mode, nil
+	default:
+		return "", fmt.Errorf("invalid reproducibility mode: %s", mode)
+	}
+}
+
+func (p *Preflight) buildResolver(ctx context.Context, configPath string, mode config.ReproducibilityMode) (compiler.VersionResolver, error) {
+	lockPath := strings.TrimSuffix(configPath, filepath.Ext(configPath)) + ".lock"
+	if p.lockRepo == nil {
+		if mode == config.ModeIntent {
+			lockfile := lock.NewLockfile(mode, lock.MachineInfoFromSystem())
+			return versionResolverAdapter{resolver: lock.NewResolver(lockfile)}, nil
+		}
+		return nil, fmt.Errorf("lockfile repository not configured")
+	}
+
+	lockfile, err := p.lockRepo.Load(ctx, lockPath)
+	if err != nil {
+		if errors.Is(err, lock.ErrLockfileNotFound) {
+			if mode != config.ModeIntent {
+				return nil, fmt.Errorf("lockfile not found: %s (run 'preflight lock update')", lockPath)
+			}
+			lockfile = lock.NewLockfile(mode, lock.MachineInfoFromSystem())
+		} else {
+			return nil, fmt.Errorf("failed to load lockfile: %w", err)
+		}
+	}
+
+	lockfile = lockfile.WithMode(mode)
+	return versionResolverAdapter{resolver: lock.NewResolver(lockfile)}, nil
+}
+
+type versionResolverAdapter struct {
+	resolver *lock.Resolver
+}
+
+func (a versionResolverAdapter) Resolve(provider, name, latestVersion string) compiler.Resolution {
+	res := a.resolver.Resolve(provider, name, latestVersion)
+	return compiler.Resolution{
+		Provider:         res.Provider,
+		Name:             res.Name,
+		Version:          res.Version,
+		Source:           compiler.ResolutionSource(res.Source),
+		Locked:           res.Locked,
+		LockedVersion:    res.LockedVersion,
+		AvailableVersion: res.AvailableVersion,
+		Drifted:          res.Drifted,
+		Updated:          res.Updated,
+		Failed:           res.Failed,
+		Error:            res.Error,
+	}
 }
 
 // validatePolicies checks compiled steps against policy constraints.

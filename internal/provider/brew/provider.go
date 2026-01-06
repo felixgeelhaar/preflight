@@ -32,7 +32,12 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 		return nil, err
 	}
 
+	if len(cfg.Taps) == 0 && len(cfg.Formulae) == 0 && len(cfg.Casks) == 0 {
+		return nil, nil
+	}
+
 	steps := make([]compiler.Step, 0)
+	steps = append(steps, NewInstallStep(p.runner))
 
 	// Add tap steps first (they have no dependencies on other brew steps)
 	for _, tap := range cfg.Taps {

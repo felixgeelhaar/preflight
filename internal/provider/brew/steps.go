@@ -2,12 +2,74 @@ package brew
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/provider/commandutil"
 	"github.com/felixgeelhaar/preflight/internal/validation"
 )
+
+const brewInstallStepID = "brew:install"
+
+// InstallStep ensures Homebrew is installed.
+type InstallStep struct {
+	id     compiler.StepID
+	runner ports.CommandRunner
+}
+
+// NewInstallStep creates a new InstallStep.
+func NewInstallStep(runner ports.CommandRunner) *InstallStep {
+	return &InstallStep{
+		id:     compiler.MustNewStepID(brewInstallStepID),
+		runner: runner,
+	}
+}
+
+// ID returns the step identifier.
+func (s *InstallStep) ID() compiler.StepID {
+	return s.id
+}
+
+// DependsOn returns the step dependencies.
+func (s *InstallStep) DependsOn() []compiler.StepID {
+	return nil
+}
+
+// Check determines if Homebrew is installed.
+func (s *InstallStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
+	if _, err := exec.LookPath("brew"); err == nil {
+		return compiler.StatusSatisfied, nil
+	}
+	return compiler.StatusNeedsApply, nil
+}
+
+// Plan returns the diff for this step.
+func (s *InstallStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
+	return compiler.NewDiff(compiler.DiffTypeAdd, "brew", "install", "", "latest"), nil
+}
+
+// Apply installs Homebrew using the official install script.
+func (s *InstallStep) Apply(ctx compiler.RunContext) error {
+	result, err := s.runner.Run(ctx.Context(), "/bin/bash", "-c", "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | /bin/bash")
+	if err != nil {
+		return err
+	}
+	if !result.Success() {
+		return fmt.Errorf("homebrew install failed: %s", result.Stderr)
+	}
+	return nil
+}
+
+// Explain provides a human-readable explanation.
+func (s *InstallStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
+	return compiler.NewExplanation(
+		"Install Homebrew",
+		"Installs Homebrew to enable package management on this system.",
+		[]string{"https://brew.sh/"},
+	)
+}
 
 // TapStep represents a Homebrew tap installation step.
 type TapStep struct {
@@ -33,13 +95,16 @@ func (s *TapStep) ID() compiler.StepID {
 
 // DependsOn returns the step dependencies.
 func (s *TapStep) DependsOn() []compiler.StepID {
-	return nil
+	return []compiler.StepID{compiler.MustNewStepID(brewInstallStepID)}
 }
 
 // Check determines if the tap is already installed.
 func (s *TapStep) Check(ctx compiler.RunContext) (compiler.StepStatus, error) {
 	result, err := s.runner.Run(ctx.Context(), "brew", "tap")
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return compiler.StatusNeedsApply, nil
+		}
 		return compiler.StatusUnknown, err
 	}
 	if !result.Success() {
@@ -69,6 +134,9 @@ func (s *TapStep) Apply(ctx compiler.RunContext) error {
 
 	result, err := s.runner.Run(ctx.Context(), "brew", "tap", s.tap)
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return fmt.Errorf("brew not found in PATH; install Homebrew first")
+		}
 		return err
 	}
 	if !result.Success() {
@@ -117,17 +185,21 @@ func (s *FormulaStep) ID() compiler.StepID {
 
 // DependsOn returns the step dependencies.
 func (s *FormulaStep) DependsOn() []compiler.StepID {
+	deps := []compiler.StepID{compiler.MustNewStepID(brewInstallStepID)}
 	if s.formula.Tap != "" {
 		tapID := compiler.MustNewStepID("brew:tap:" + s.formula.Tap)
-		return []compiler.StepID{tapID}
+		deps = append(deps, tapID)
 	}
-	return nil
+	return deps
 }
 
 // Check determines if the formula is already installed.
 func (s *FormulaStep) Check(ctx compiler.RunContext) (compiler.StepStatus, error) {
 	result, err := s.runner.Run(ctx.Context(), "brew", "list", "--formula")
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return compiler.StatusNeedsApply, nil
+		}
 		return compiler.StatusUnknown, err
 	}
 	if !result.Success() {
@@ -167,6 +239,9 @@ func (s *FormulaStep) Apply(ctx compiler.RunContext) error {
 
 	result, err := s.runner.Run(ctx.Context(), "brew", args...)
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return fmt.Errorf("brew not found in PATH; install Homebrew first")
+		}
 		return err
 	}
 	if !result.Success() {
@@ -195,6 +270,25 @@ func (s *FormulaStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 	})
 }
 
+// InstalledVersion returns the installed formula version if available.
+func (s *FormulaStep) InstalledVersion(ctx compiler.RunContext) (string, bool, error) {
+	result, err := s.runner.Run(ctx.Context(), "brew", "list", "--versions", s.formula.Name)
+	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+	if !result.Success() {
+		return "", false, nil
+	}
+	fields := strings.Fields(result.Stdout)
+	if len(fields) < 2 {
+		return "", false, nil
+	}
+	return fields[1], true, nil
+}
+
 // CaskStep represents a Homebrew cask installation step.
 type CaskStep struct {
 	cask   Cask
@@ -219,17 +313,21 @@ func (s *CaskStep) ID() compiler.StepID {
 
 // DependsOn returns the step dependencies.
 func (s *CaskStep) DependsOn() []compiler.StepID {
+	deps := []compiler.StepID{compiler.MustNewStepID(brewInstallStepID)}
 	if s.cask.Tap != "" {
 		tapID := compiler.MustNewStepID("brew:tap:" + s.cask.Tap)
-		return []compiler.StepID{tapID}
+		deps = append(deps, tapID)
 	}
-	return nil
+	return deps
 }
 
 // Check determines if the cask is already installed.
 func (s *CaskStep) Check(ctx compiler.RunContext) (compiler.StepStatus, error) {
 	result, err := s.runner.Run(ctx.Context(), "brew", "list", "--cask")
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return compiler.StatusNeedsApply, nil
+		}
 		return compiler.StatusUnknown, err
 	}
 	if !result.Success() {
@@ -259,6 +357,9 @@ func (s *CaskStep) Apply(ctx compiler.RunContext) error {
 
 	result, err := s.runner.Run(ctx.Context(), "brew", "install", "--cask", s.cask.Name)
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return fmt.Errorf("brew not found in PATH; install Homebrew first")
+		}
 		return err
 	}
 	if !result.Success() {
@@ -281,4 +382,23 @@ func (s *CaskStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 		"+ Reproducible installation across machines",
 		"- May require admin password for /Applications",
 	})
+}
+
+// InstalledVersion returns the installed cask version if available.
+func (s *CaskStep) InstalledVersion(ctx compiler.RunContext) (string, bool, error) {
+	result, err := s.runner.Run(ctx.Context(), "brew", "list", "--cask", "--versions", s.cask.Name)
+	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+	if !result.Success() {
+		return "", false, nil
+	}
+	fields := strings.Fields(result.Stdout)
+	if len(fields) < 2 {
+		return "", false, nil
+	}
+	return fields[1], true, nil
 }

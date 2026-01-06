@@ -150,6 +150,12 @@ shell:
 | `preflight tour` | Interactive guided walkthroughs |
 | `preflight version` | Show version information |
 
+## Prompts
+
+By default, Preflight asks for confirmation before applying changes. Use `--yes`
+to skip prompts, including package manager bootstrap steps, or `--allow-bootstrap`
+to skip only bootstrap confirmations.
+
 ## Architecture
 
 Preflight is built with Domain-Driven Design principles:

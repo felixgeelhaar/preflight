@@ -31,7 +31,7 @@ func TestBucketStep_DependsOn(t *testing.T) {
 
 	deps := step.DependsOn()
 
-	assert.Empty(t, deps)
+	assert.Equal(t, []compiler.StepID{compiler.MustNewStepID(scoopInstallStepID)}, deps)
 }
 
 func TestBucketStep_Check_AlreadyAdded(t *testing.T) {
@@ -245,7 +245,7 @@ func TestPackageStep_DependsOn_NoBucket(t *testing.T) {
 
 	deps := step.DependsOn()
 
-	assert.Empty(t, deps)
+	assert.Equal(t, []compiler.StepID{compiler.MustNewStepID(scoopInstallStepID)}, deps)
 }
 
 func TestPackageStep_DependsOn_WithBucket(t *testing.T) {
@@ -256,8 +256,9 @@ func TestPackageStep_DependsOn_WithBucket(t *testing.T) {
 
 	deps := step.DependsOn()
 
-	require.Len(t, deps, 1)
-	assert.Equal(t, "scoop:bucket:extras", deps[0].String())
+	require.Len(t, deps, 2)
+	assert.Equal(t, scoopInstallStepID, deps[0].String())
+	assert.Equal(t, "scoop:bucket:extras", deps[1].String())
 }
 
 func TestPackageStep_Check_Installed(t *testing.T) {

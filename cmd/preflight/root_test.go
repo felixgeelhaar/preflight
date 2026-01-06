@@ -63,6 +63,12 @@ func TestRootCommand_HasPersistentFlags(t *testing.T) {
 		require.NotNil(t, flag)
 		assert.Equal(t, "false", flag.DefValue)
 	})
+
+	t.Run("allow-bootstrap flag exists", func(t *testing.T) {
+		flag := flags.Lookup("allow-bootstrap")
+		require.NotNil(t, flag)
+		assert.Equal(t, "false", flag.DefValue)
+	})
 }
 
 func TestRootCommand_HasVersionSubcommand(t *testing.T) {
@@ -175,7 +181,7 @@ func TestCompletionCommand_UseAndShort(t *testing.T) {
 
 func TestCompletionCommand_ValidArgs(t *testing.T) {
 	expected := []string{"bash", "zsh", "fish", "powershell"}
-	assert.Equal(t, expected, completionCmd.ValidArgs)
+	assert.ElementsMatch(t, expected, completionCmd.ValidArgs)
 }
 
 func TestRootCommand_HasAllSubcommands(t *testing.T) {
@@ -281,6 +287,13 @@ func TestInitCommand_HasFlags(t *testing.T) {
 		require.NotNil(t, flag)
 		assert.Equal(t, "false", flag.DefValue)
 		assert.Equal(t, "y", flag.Shorthand)
+	})
+
+	t.Run("allow-bootstrap flag exists", func(t *testing.T) {
+		flag := initCmd.InheritedFlags().Lookup("allow-bootstrap")
+		require.NotNil(t, flag)
+		assert.Equal(t, "false", flag.DefValue)
+		assert.Empty(t, flag.Shorthand)
 	})
 }
 

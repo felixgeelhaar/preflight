@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -85,20 +86,56 @@ func runWatch(cmd *cobra.Command, _ []string) error {
 		cancel()
 	}()
 
+	preflight := app.New(os.Stdout)
+	if modeOverride, err := resolveModeOverride(cmd); err != nil {
+		return err
+	} else if modeOverride != nil {
+		preflight.WithMode(*modeOverride)
+	}
+	configFile = filepath.Join(configDir, configFile)
+
 	// Create apply function
-	applyFn := func(_ context.Context) error {
-		// In a real implementation, this would call the apply logic
-		// For now, we'll use the existing apply infrastructure
+	applyFn := func(ctx context.Context) error {
 		target := "default"
 
-		if watchDryRun {
-			fmt.Printf("   [dry-run] Would apply target: %s\n", target)
+		plan, err := preflight.Plan(ctx, configFile, target)
+		if err != nil {
+			return fmt.Errorf("plan failed: %w", err)
+		}
+
+		preflight.PrintPlan(plan)
+
+		if !plan.HasChanges() {
 			return nil
 		}
 
-		// Call the actual apply logic here
-		// This would be: return runApply(ctx, target)
-		fmt.Printf("   Applying target: %s\n", target)
+		if watchDryRun {
+			fmt.Println("\n[Dry run - no changes made]")
+			return nil
+		}
+
+		if app.RequiresBootstrapConfirmation(plan) {
+			steps := app.BootstrapSteps(plan)
+			if !confirmBootstrap(steps) {
+				return fmt.Errorf("aborted bootstrap steps")
+			}
+		}
+
+		fmt.Println("\nApplying changes...")
+
+		results, err := preflight.Apply(ctx, plan, false)
+		if err != nil {
+			return fmt.Errorf("apply failed: %w", err)
+		}
+
+		preflight.PrintResults(results)
+
+		for i := range results {
+			if results[i].Error() != nil {
+				return fmt.Errorf("some steps failed")
+			}
+		}
+
 		return nil
 	}
 

@@ -179,7 +179,8 @@ func loadLayerInfos(paths []string) ([]advisor.LayerInfo, error) {
 			return nil, err
 		}
 
-		data, err := os.ReadFile(path)
+		// #nosec G304 -- layer path is validated by ValidateLayerPath.
+		data, err := readLayerFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read %s: %w", path, err)
 		}
@@ -559,6 +560,12 @@ func extractAllTools(layerPaths []string) ([]string, error) {
 	}
 
 	return result, nil
+}
+
+// readLayerFile loads a layer file after path validation.
+func readLayerFile(path string) ([]byte, error) {
+	// #nosec G304 -- layer paths are validated before being passed to this helper.
+	return os.ReadFile(path)
 }
 
 // outputToolAnalysisJSON outputs tool analysis results as JSON.

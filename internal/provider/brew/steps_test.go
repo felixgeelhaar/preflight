@@ -20,8 +20,11 @@ func TestTapStep_ID(t *testing.T) {
 func TestTapStep_DependsOn(t *testing.T) {
 	step := NewTapStep("homebrew/cask", nil)
 	deps := step.DependsOn()
-	if len(deps) != 0 {
-		t.Errorf("DependsOn() len = %d, want 0", len(deps))
+	if len(deps) != 1 {
+		t.Errorf("DependsOn() len = %d, want 1", len(deps))
+	}
+	if deps[0].String() != brewInstallStepID {
+		t.Errorf("DependsOn()[0] = %q, want %q", deps[0].String(), brewInstallStepID)
 	}
 }
 
@@ -140,11 +143,14 @@ func TestFormulaStep_DependsOn_WithTap(t *testing.T) {
 	formula := Formula{Name: "neovim", Tap: "homebrew/core"}
 	step := NewFormulaStep(formula, nil)
 	deps := step.DependsOn()
-	if len(deps) != 1 {
-		t.Fatalf("DependsOn() len = %d, want 1", len(deps))
+	if len(deps) != 2 {
+		t.Fatalf("DependsOn() len = %d, want 2", len(deps))
 	}
-	if deps[0].String() != "brew:tap:homebrew/core" {
-		t.Errorf("DependsOn()[0] = %q, want %q", deps[0].String(), "brew:tap:homebrew/core")
+	if deps[0].String() != brewInstallStepID {
+		t.Errorf("DependsOn()[0] = %q, want %q", deps[0].String(), brewInstallStepID)
+	}
+	if deps[1].String() != "brew:tap:homebrew/core" {
+		t.Errorf("DependsOn()[1] = %q, want %q", deps[1].String(), "brew:tap:homebrew/core")
 	}
 }
 
@@ -294,11 +300,14 @@ func TestCaskStep_DependsOn_WithTap(t *testing.T) {
 	cask := Cask{Name: "font-fira-code", Tap: "homebrew/cask-fonts"}
 	step := NewCaskStep(cask, nil)
 	deps := step.DependsOn()
-	if len(deps) != 1 {
-		t.Fatalf("DependsOn() len = %d, want 1", len(deps))
+	if len(deps) != 2 {
+		t.Fatalf("DependsOn() len = %d, want 2", len(deps))
 	}
-	if deps[0].String() != "brew:tap:homebrew/cask-fonts" {
-		t.Errorf("DependsOn()[0] = %q, want %q", deps[0].String(), "brew:tap:homebrew/cask-fonts")
+	if deps[0].String() != brewInstallStepID {
+		t.Errorf("DependsOn()[0] = %q, want %q", deps[0].String(), brewInstallStepID)
+	}
+	if deps[1].String() != "brew:tap:homebrew/cask-fonts" {
+		t.Errorf("DependsOn()[1] = %q, want %q", deps[1].String(), "brew:tap:homebrew/cask-fonts")
 	}
 }
 
@@ -306,8 +315,11 @@ func TestCaskStep_DependsOn_NoTap(t *testing.T) {
 	cask := Cask{Name: "docker"}
 	step := NewCaskStep(cask, nil)
 	deps := step.DependsOn()
-	if len(deps) != 0 {
-		t.Errorf("DependsOn() len = %d, want 0", len(deps))
+	if len(deps) != 1 {
+		t.Errorf("DependsOn() len = %d, want 1", len(deps))
+	}
+	if deps[0].String() != brewInstallStepID {
+		t.Errorf("DependsOn()[0] = %q, want %q", deps[0].String(), brewInstallStepID)
 	}
 }
 
@@ -315,8 +327,11 @@ func TestFormulaStep_DependsOn_NoTap(t *testing.T) {
 	formula := Formula{Name: "git"}
 	step := NewFormulaStep(formula, nil)
 	deps := step.DependsOn()
-	if len(deps) != 0 {
-		t.Errorf("DependsOn() len = %d, want 0", len(deps))
+	if len(deps) != 1 {
+		t.Errorf("DependsOn() len = %d, want 1", len(deps))
+	}
+	if deps[0].String() != brewInstallStepID {
+		t.Errorf("DependsOn()[0] = %q, want %q", deps[0].String(), brewInstallStepID)
 	}
 }
 

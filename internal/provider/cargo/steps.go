@@ -6,6 +6,7 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/provider/commandutil"
 	"github.com/felixgeelhaar/preflight/internal/validation"
 )
 
@@ -14,15 +15,17 @@ type CrateStep struct {
 	crate  Crate
 	id     compiler.StepID
 	runner ports.CommandRunner
+	deps   []compiler.StepID
 }
 
 // NewCrateStep creates a new CrateStep.
-func NewCrateStep(crate Crate, runner ports.CommandRunner) *CrateStep {
+func NewCrateStep(crate Crate, runner ports.CommandRunner, deps []compiler.StepID) *CrateStep {
 	id := compiler.MustNewStepID("cargo:crate:" + crate.Name)
 	return &CrateStep{
 		crate:  crate,
 		id:     id,
 		runner: runner,
+		deps:   deps,
 	}
 }
 
@@ -33,7 +36,7 @@ func (s *CrateStep) ID() compiler.StepID {
 
 // DependsOn returns the step dependencies.
 func (s *CrateStep) DependsOn() []compiler.StepID {
-	return nil
+	return s.deps
 }
 
 // Check determines if the crate is already installed.
@@ -41,6 +44,12 @@ func (s *CrateStep) Check(ctx compiler.RunContext) (compiler.StepStatus, error) 
 	// Use cargo install --list to check installed crates
 	result, err := s.runner.Run(ctx.Context(), "cargo", "install", "--list")
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			if len(s.deps) == 0 {
+				return compiler.StatusUnknown, fmt.Errorf("cargo not found in PATH and no Rust toolchain installer configured")
+			}
+			return compiler.StatusNeedsApply, nil
+		}
 		return compiler.StatusUnknown, err
 	}
 	if !result.Success() {
@@ -82,6 +91,9 @@ func (s *CrateStep) Apply(ctx compiler.RunContext) error {
 
 	result, err := s.runner.Run(ctx.Context(), "cargo", args...)
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return fmt.Errorf("cargo not found in PATH; install the Rust toolchain first")
+		}
 		return err
 	}
 	if !result.Success() {
@@ -110,4 +122,44 @@ func (s *CrateStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 		"- Requires Rust toolchain to be installed",
 		"- Compilation can be slow for large crates",
 	})
+}
+
+// LockInfo returns lockfile information for this crate.
+func (s *CrateStep) LockInfo() (compiler.LockInfo, bool) {
+	return compiler.LockInfo{
+		Provider: "cargo",
+		Name:     s.crate.Name,
+		Version:  s.crate.Version,
+	}, true
+}
+
+// InstalledVersion returns the installed crate version if available.
+func (s *CrateStep) InstalledVersion(ctx compiler.RunContext) (string, bool, error) {
+	result, err := s.runner.Run(ctx.Context(), "cargo", "install", "--list")
+	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+	if !result.Success() {
+		return "", false, nil
+	}
+
+	prefix := s.crate.Name + " "
+	for _, line := range strings.Split(result.Stdout, "\n") {
+		if !strings.HasPrefix(line, prefix) {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		version := strings.TrimPrefix(fields[1], "v")
+		if version != "" {
+			return version, true, nil
+		}
+	}
+
+	return "", false, nil
 }

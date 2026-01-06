@@ -27,7 +27,7 @@ func TestPPAStep_DependsOn(t *testing.T) {
 	runner := mocks.NewCommandRunner()
 	step := apt.NewPPAStep("ppa:git-core/ppa", runner)
 
-	assert.Empty(t, step.DependsOn())
+	assert.Equal(t, []compiler.StepID{compiler.MustNewStepID("apt:ready")}, step.DependsOn())
 }
 
 func TestPPAStep_Check_NotAdded(t *testing.T) {
@@ -103,7 +103,7 @@ func TestPackageStep_DependsOn(t *testing.T) {
 	pkg := apt.Package{Name: "git"}
 	step := apt.NewPackageStep(pkg, runner)
 
-	assert.Empty(t, step.DependsOn())
+	assert.Equal(t, []compiler.StepID{compiler.MustNewStepID("apt:update")}, step.DependsOn())
 }
 
 func TestPackageStep_Check_NotInstalled(t *testing.T) {

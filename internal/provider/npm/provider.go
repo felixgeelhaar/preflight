@@ -2,7 +2,9 @@ package npm
 
 import (
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
+	tooldeps "github.com/felixgeelhaar/preflight/internal/domain/deps"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/provider/versionutil"
 )
 
 // Provider implements the compiler.Provider interface for npm.
@@ -33,9 +35,15 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 	}
 
 	steps := make([]compiler.Step, 0, len(cfg.Packages))
+	deps := tooldeps.ResolveToolDeps(ctx, nil, tooldeps.ToolNode)
 
 	for _, pkg := range cfg.Packages {
-		steps = append(steps, NewPackageStep(pkg, p.runner))
+		version, err := versionutil.ResolvePackageVersion(ctx, "npm", pkg.Name, pkg.Version)
+		if err != nil {
+			return nil, err
+		}
+		pkg.Version = version
+		steps = append(steps, NewPackageStep(pkg, p.runner, deps))
 	}
 
 	return steps, nil

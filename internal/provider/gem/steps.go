@@ -6,6 +6,7 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/provider/commandutil"
 	"github.com/felixgeelhaar/preflight/internal/validation"
 )
 
@@ -14,15 +15,17 @@ type Step struct {
 	gem    Gem
 	id     compiler.StepID
 	runner ports.CommandRunner
+	deps   []compiler.StepID
 }
 
 // NewStep creates a new gem Step.
-func NewStep(gem Gem, runner ports.CommandRunner) *Step {
+func NewStep(gem Gem, runner ports.CommandRunner, deps []compiler.StepID) *Step {
 	id := compiler.MustNewStepID("gem:gem:" + gem.Name)
 	return &Step{
 		gem:    gem,
 		id:     id,
 		runner: runner,
+		deps:   deps,
 	}
 }
 
@@ -33,7 +36,7 @@ func (s *Step) ID() compiler.StepID {
 
 // DependsOn returns the step dependencies.
 func (s *Step) DependsOn() []compiler.StepID {
-	return nil
+	return s.deps
 }
 
 // Check determines if the gem is already installed.
@@ -41,6 +44,12 @@ func (s *Step) Check(ctx compiler.RunContext) (compiler.StepStatus, error) {
 	// Use gem list -i to check if gem is installed
 	result, err := s.runner.Run(ctx.Context(), "gem", "list", "-i", s.gem.Name)
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			if len(s.deps) == 0 {
+				return compiler.StatusUnknown, fmt.Errorf("gem not found in PATH and no Ruby installer configured")
+			}
+			return compiler.StatusNeedsApply, nil
+		}
 		return compiler.StatusUnknown, err
 	}
 
@@ -74,6 +83,9 @@ func (s *Step) Apply(ctx compiler.RunContext) error {
 
 	result, err := s.runner.Run(ctx.Context(), "gem", args...)
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return fmt.Errorf("gem not found in PATH; install Ruby first")
+		}
 		return err
 	}
 	if !result.Success() {
@@ -102,4 +114,45 @@ func (s *Step) Explain(_ compiler.ExplainContext) compiler.Explanation {
 		"- Requires Ruby to be installed",
 		"- May conflict with bundled gems in Ruby projects",
 	})
+}
+
+// LockInfo returns lockfile information for this gem.
+func (s *Step) LockInfo() (compiler.LockInfo, bool) {
+	return compiler.LockInfo{
+		Provider: "gem",
+		Name:     s.gem.Name,
+		Version:  s.gem.Version,
+	}, true
+}
+
+// InstalledVersion returns the installed gem version if available.
+func (s *Step) InstalledVersion(ctx compiler.RunContext) (string, bool, error) {
+	result, err := s.runner.Run(ctx.Context(), "gem", "list", s.gem.Name, "--exact")
+	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+	if !result.Success() {
+		return "", false, nil
+	}
+	line := strings.TrimSpace(result.Stdout)
+	if line == "" {
+		return "", false, nil
+	}
+	open := strings.Index(line, "(")
+	close := strings.Index(line, ")")
+	if open == -1 || close == -1 || close <= open+1 {
+		return "", false, nil
+	}
+	versions := strings.Split(line[open+1:close], ",")
+	if len(versions) == 0 {
+		return "", false, nil
+	}
+	version := strings.TrimSpace(versions[0])
+	if version == "" {
+		return "", false, nil
+	}
+	return version, true, nil
 }

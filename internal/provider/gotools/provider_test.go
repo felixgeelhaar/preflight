@@ -108,7 +108,7 @@ func TestToolStep_Check_Installed(t *testing.T) {
 	}
 
 	runner := mocks.NewCommandRunner()
-	step := NewToolStep(Tool{Module: "golang.org/x/tools/gopls", Version: "latest"}, runner)
+	step := NewToolStep(Tool{Module: "golang.org/x/tools/gopls", Version: "latest"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(runCtx)
@@ -126,7 +126,7 @@ func TestToolStep_Check_NotInstalled(t *testing.T) {
 	t.Setenv("GOBIN", tempDir)
 
 	runner := mocks.NewCommandRunner()
-	step := NewToolStep(Tool{Module: "golang.org/x/tools/gopls", Version: "latest"}, runner)
+	step := NewToolStep(Tool{Module: "golang.org/x/tools/gopls", Version: "latest"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(runCtx)
@@ -144,7 +144,7 @@ func TestToolStep_Apply(t *testing.T) {
 		ExitCode: 0,
 	})
 
-	step := NewToolStep(Tool{Module: "golang.org/x/tools/gopls", Version: "latest"}, runner)
+	step := NewToolStep(Tool{Module: "golang.org/x/tools/gopls", Version: "latest"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(runCtx)
@@ -154,7 +154,7 @@ func TestToolStep_Apply(t *testing.T) {
 }
 
 func TestToolStep_Plan(t *testing.T) {
-	step := NewToolStep(Tool{Module: "golang.org/x/tools/gopls", Version: "latest"}, nil)
+	step := NewToolStep(Tool{Module: "golang.org/x/tools/gopls", Version: "latest"}, nil, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	diff, err := step.Plan(runCtx)
@@ -176,7 +176,7 @@ func TestToolStep_Plan(t *testing.T) {
 }
 
 func TestToolStep_Explain(t *testing.T) {
-	step := NewToolStep(Tool{Module: "golang.org/x/tools/gopls", Version: "latest"}, nil)
+	step := NewToolStep(Tool{Module: "golang.org/x/tools/gopls", Version: "latest"}, nil, nil)
 	explainCtx := compiler.NewExplainContext()
 
 	explanation := step.Explain(explainCtx)

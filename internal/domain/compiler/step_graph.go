@@ -3,6 +3,7 @@ package compiler
 import (
 	"errors"
 	"fmt"
+	"sort"
 )
 
 // Errors for StepGraph operations.
@@ -135,6 +136,7 @@ func (g *StepGraph) TopologicalSort() ([]Step, error) {
 			queue = append(queue, id)
 		}
 	}
+	sort.Strings(queue)
 
 	sorted := make([]Step, 0, len(g.steps))
 
@@ -151,7 +153,7 @@ func (g *StepGraph) TopologicalSort() ([]Step, error) {
 			}
 			inDegree[dependentID]--
 			if inDegree[dependentID] == 0 {
-				queue = append(queue, dependentID)
+				queue = insertSorted(queue, front+1, dependentID)
 			}
 		}
 	}
@@ -162,4 +164,18 @@ func (g *StepGraph) TopologicalSort() ([]Step, error) {
 	}
 
 	return sorted, nil
+}
+
+func insertSorted(queue []string, start int, id string) []string {
+	if start < 0 || start > len(queue) {
+		return append(queue, id)
+	}
+	pos := sort.Search(len(queue)-start, func(i int) bool {
+		return queue[start+i] >= id
+	})
+	insertAt := start + pos
+	queue = append(queue, "")
+	copy(queue[insertAt+1:], queue[insertAt:])
+	queue[insertAt] = id
+	return queue
 }

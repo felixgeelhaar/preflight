@@ -666,6 +666,8 @@ type CloneOptions struct {
 	Apply bool
 	// AutoConfirm skips confirmation prompts
 	AutoConfirm bool
+	// AllowBootstrap skips bootstrap confirmation prompts
+	AllowBootstrap bool
 	// Target is the target configuration to apply
 	Target string
 }

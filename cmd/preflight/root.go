@@ -12,12 +12,13 @@ import (
 
 var (
 	// Global flags
-	cfgFile    string
-	verbose    bool
-	noAI       bool
-	aiProvider string
-	mode       string
-	yesFlag    bool
+	cfgFile            string
+	verbose            bool
+	noAI               bool
+	aiProvider         string
+	mode               string
+	yesFlag            bool
+	allowBootstrapFlag bool
 )
 
 var rootCmd = &cobra.Command{
@@ -45,6 +46,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&aiProvider, "ai-provider", "", "AI provider (openai, anthropic, ollama)")
 	rootCmd.PersistentFlags().StringVar(&mode, "mode", "intent", "reproducibility mode (intent, locked, frozen)")
 	rootCmd.PersistentFlags().BoolVarP(&yesFlag, "yes", "y", false, "auto-confirm all prompts")
+	rootCmd.PersistentFlags().BoolVar(&allowBootstrapFlag, "allow-bootstrap", false, "allow package manager bootstrapping without extra prompt")
 
 	// Register flag completions
 	registerFlagCompletions()

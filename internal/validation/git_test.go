@@ -103,6 +103,44 @@ func TestValidateGitRemoteURL(t *testing.T) {
 	}
 }
 
+func TestValidateGitRemoteName(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		remote  string
+		wantErr bool
+		errMsg  string
+	}{
+		// Valid cases
+		{"simple", "origin", false, ""},
+		{"with dash", "upstream-1", false, ""},
+		{"with slash", "forks/dev", false, ""},
+		{"with dot", "origin.dev", false, ""},
+
+		// Invalid cases
+		{"empty", "", true, "cannot be empty"},
+		{"path traversal", "../origin", true, "cannot contain"},
+		{"semicolon injection", "origin; rm -rf /", true, "invalid character"},
+		{"too long", strings.Repeat("a", 256), true, "too long"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateGitRemoteName(tt.remote)
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestValidateGitPath(t *testing.T) {
 	t.Parallel()
 

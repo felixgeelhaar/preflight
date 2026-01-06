@@ -253,7 +253,7 @@ func runRepoPull(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func runRepoClone(_ *cobra.Command, args []string) error {
+func runRepoClone(cmd *cobra.Command, args []string) error {
 	url := args[0]
 	path := ""
 	if len(args) > 1 {
@@ -262,13 +262,19 @@ func runRepoClone(_ *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 	preflight := app.New(os.Stdout)
+	if modeOverride, err := resolveModeOverride(cmd); err != nil {
+		return err
+	} else if modeOverride != nil {
+		preflight.WithMode(*modeOverride)
+	}
 
 	opts := app.CloneOptions{
-		URL:         url,
-		Path:        path,
-		Apply:       repoApply,
-		AutoConfirm: repoAutoConfirm,
-		Target:      repoTarget,
+		URL:            url,
+		Path:           path,
+		Apply:          repoApply,
+		AutoConfirm:    repoAutoConfirm,
+		AllowBootstrap: allowBootstrapFlag,
+		Target:         repoTarget,
 	}
 
 	result, err := preflight.RepoClone(ctx, opts)

@@ -47,7 +47,7 @@ func TestProvider_Compile_WithPackages(t *testing.T) {
 	steps, err := p.Compile(ctx)
 
 	require.NoError(t, err)
-	assert.Len(t, steps, 2)
+	assert.Len(t, steps, 4)
 }
 
 func TestProvider_Compile_WithPPAs(t *testing.T) {
@@ -65,7 +65,7 @@ func TestProvider_Compile_WithPPAs(t *testing.T) {
 	steps, err := p.Compile(ctx)
 
 	require.NoError(t, err)
-	assert.Len(t, steps, 1)
+	assert.Len(t, steps, 3)
 }
 
 func TestProvider_Compile_Full(t *testing.T) {
@@ -84,6 +84,6 @@ func TestProvider_Compile_Full(t *testing.T) {
 	steps, err := p.Compile(ctx)
 
 	require.NoError(t, err)
-	// 1 PPA + 2 packages = 3 steps
-	assert.Len(t, steps, 3)
+	// ready + update + 1 PPA + 2 packages = 5 steps
+	assert.Len(t, steps, 5)
 }

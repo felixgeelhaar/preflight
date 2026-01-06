@@ -3,10 +3,13 @@ package gotools
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/provider/commandutil"
 	"github.com/felixgeelhaar/preflight/internal/validation"
 )
 
@@ -15,15 +18,17 @@ type ToolStep struct {
 	tool   Tool
 	id     compiler.StepID
 	runner ports.CommandRunner
+	deps   []compiler.StepID
 }
 
 // NewToolStep creates a new ToolStep.
-func NewToolStep(tool Tool, runner ports.CommandRunner) *ToolStep {
+func NewToolStep(tool Tool, runner ports.CommandRunner, deps []compiler.StepID) *ToolStep {
 	id := compiler.MustNewStepID("go:tool:" + tool.BinaryName())
 	return &ToolStep{
 		tool:   tool,
 		id:     id,
 		runner: runner,
+		deps:   deps,
 	}
 }
 
@@ -34,7 +39,7 @@ func (s *ToolStep) ID() compiler.StepID {
 
 // DependsOn returns the step dependencies.
 func (s *ToolStep) DependsOn() []compiler.StepID {
-	return nil
+	return s.deps
 }
 
 // getGoBin returns the Go bin directory.
@@ -57,6 +62,11 @@ func (s *ToolStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
 	if _, err := os.Stat(binaryPath); err == nil {
 		return compiler.StatusSatisfied, nil
 	}
+	if len(s.deps) == 0 {
+		if _, err := exec.LookPath("go"); err != nil {
+			return compiler.StatusUnknown, fmt.Errorf("go not found in PATH and no Go installer configured")
+		}
+	}
 	return compiler.StatusNeedsApply, nil
 }
 
@@ -78,6 +88,9 @@ func (s *ToolStep) Apply(ctx compiler.RunContext) error {
 
 	result, err := s.runner.Run(ctx.Context(), "go", "install", s.tool.FullName())
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return fmt.Errorf("go not found in PATH; install Go first")
+		}
 		return err
 	}
 	if !result.Success() {
@@ -106,4 +119,44 @@ func (s *ToolStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 		"- Requires Go to be installed",
 		"- Each tool is compiled from source",
 	})
+}
+
+// LockInfo returns lockfile information for this tool.
+func (s *ToolStep) LockInfo() (compiler.LockInfo, bool) {
+	return compiler.LockInfo{
+		Provider: "go",
+		Name:     s.tool.Module,
+		Version:  s.tool.Version,
+	}, true
+}
+
+// InstalledVersion returns the installed Go tool version if available.
+func (s *ToolStep) InstalledVersion(ctx compiler.RunContext) (string, bool, error) {
+	binaryPath := filepath.Join(getGoBin(), s.tool.BinaryName())
+	if _, err := os.Stat(binaryPath); err != nil {
+		return "", false, nil
+	}
+
+	result, err := s.runner.Run(ctx.Context(), "go", "version", "-m", binaryPath)
+	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+	if !result.Success() {
+		return "", false, nil
+	}
+
+	for _, line := range strings.Split(result.Stdout, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) >= 3 && fields[0] == "mod" {
+			version := strings.TrimSpace(fields[2])
+			if version != "" {
+				return version, true, nil
+			}
+		}
+	}
+
+	return "", false, nil
 }

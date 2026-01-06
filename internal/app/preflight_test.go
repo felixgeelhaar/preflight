@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
 	"github.com/felixgeelhaar/preflight/internal/domain/lock"
+	"github.com/stretchr/testify/require"
 )
 
 // skipIfNoHomebrew skips the test if Homebrew is not available.
@@ -632,9 +634,9 @@ func TestPreflight_Capture_DefaultProviders(t *testing.T) {
 		t.Fatalf("Capture() error = %v", err)
 	}
 
-	// Should have default providers (brew, git, ssh, shell, nvim, vscode, runtime, npm, go, pip, gem, cargo)
-	if len(findings.Providers) != 12 {
-		t.Errorf("expected 12 default providers, got %d: %v", len(findings.Providers), findings.Providers)
+	expectedProviders := defaultCaptureProviders()
+	if len(findings.Providers) != len(expectedProviders) {
+		t.Errorf("expected %d default providers, got %d: %v", len(expectedProviders), len(findings.Providers), findings.Providers)
 	}
 }
 
@@ -760,20 +762,15 @@ func TestPreflight_Capture_NvimConfig(t *testing.T) {
 		t.Fatalf("Capture() error = %v", err)
 	}
 
-	// Nvim provider should have captured config and lazy-lock.json
+	// Nvim provider should have captured config and lazy-lock.json (plus optional version)
 	byProvider := findings.ItemsByProvider()
-	if len(byProvider["nvim"]) != 2 {
-		t.Errorf("expected 2 nvim items, got %d: %v", len(byProvider["nvim"]), byProvider["nvim"])
-	}
-
-	// Check that both config and lazy-lock.json were captured
 	foundConfig := false
 	foundLazyLock := false
 	for _, item := range byProvider["nvim"] {
-		if item.Name == "config" {
+		switch item.Name {
+		case "config":
 			foundConfig = true
-		}
-		if item.Name == "lazy-lock.json" {
+		case "lazy-lock.json":
 			foundLazyLock = true
 		}
 	}
@@ -807,13 +804,16 @@ func TestPreflight_Capture_NvimWithVimrc(t *testing.T) {
 		t.Fatalf("Capture() error = %v", err)
 	}
 
-	// Should have captured .vimrc
+	// Should have captured .vimrc (plus optional version)
 	byProvider := findings.ItemsByProvider()
-	if len(byProvider["nvim"]) != 1 {
-		t.Errorf("expected 1 nvim item, got %d", len(byProvider["nvim"]))
+	foundVimrc := false
+	for _, item := range byProvider["nvim"] {
+		if item.Name == ".vimrc" {
+			foundVimrc = true
+		}
 	}
-	if byProvider["nvim"][0].Name != ".vimrc" {
-		t.Errorf("expected .vimrc item, got %s", byProvider["nvim"][0].Name)
+	if !foundVimrc {
+		t.Errorf("expected .vimrc item, got %v", byProvider["nvim"])
 	}
 }
 
@@ -1083,13 +1083,17 @@ type mockLockRepoWithData struct {
 	loadErr      error
 	saveErr      error
 	existsResult bool
+	savedPath    string
+	savedLock    *lock.Lockfile
 }
 
 func (m *mockLockRepoWithData) Load(_ context.Context, _ string) (*lock.Lockfile, error) {
 	return m.lockfile, m.loadErr
 }
 
-func (m *mockLockRepoWithData) Save(_ context.Context, _ string, _ *lock.Lockfile) error {
+func (m *mockLockRepoWithData) Save(_ context.Context, path string, lf *lock.Lockfile) error {
+	m.savedPath = path
+	m.savedLock = lf
 	return m.saveErr
 }
 
@@ -1101,16 +1105,23 @@ func TestPreflight_LockUpdate_WithRepo(t *testing.T) {
 	var buf bytes.Buffer
 	pf := New(&buf)
 
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "preflight.yaml")
+	manifest := []byte("targets:\n  default:\n    - base\n")
+	require.NoError(t, os.WriteFile(configPath, manifest, 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "layers"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "layers", "base.yaml"), []byte("name: base\n"), 0o644))
+
 	// Use mock that returns nil lockfile (will create new one)
 	mockRepo := &mockLockRepoWithData{
 		lockfile:     nil,
-		loadErr:      os.ErrNotExist, // Simulate missing lockfile
+		loadErr:      lock.ErrLockfileNotFound, // Simulate missing lockfile
 		existsResult: false,
 	}
 	pf.WithLockRepo(mockRepo)
 
 	ctx := context.Background()
-	err := pf.LockUpdate(ctx, "/tmp/config.yaml")
+	err := pf.LockUpdate(ctx, configPath)
 	if err != nil {
 		t.Errorf("LockUpdate() error = %v", err)
 	}
@@ -1143,6 +1154,119 @@ func TestPreflight_LockFreeze_WithRepo(t *testing.T) {
 	if !strings.Contains(output, "Lockfile frozen") {
 		t.Errorf("expected 'Lockfile frozen' message, got: %s", output)
 	}
+}
+
+func TestPreflight_UpdateLockFromPlan_NoLockRepo(t *testing.T) {
+	var buf bytes.Buffer
+	pf := New(&buf)
+	pf.WithLockRepo(nil)
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "preflight.yaml")
+	manifest := []byte("targets:\n  default:\n    - base\n")
+	require.NoError(t, os.WriteFile(configPath, manifest, 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "layers"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "layers", "base.yaml"), []byte("name: base\n"), 0o644))
+
+	ctx := context.Background()
+	plan := execution.NewExecutionPlan()
+	err := pf.UpdateLockFromPlan(ctx, configPath, plan)
+	if err == nil {
+		t.Error("UpdateLockFromPlan() should fail without lock repo")
+	}
+	if !strings.Contains(err.Error(), "lockfile repository not configured") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+type lockInfoStep struct {
+	id   compiler.StepID
+	info compiler.LockInfo
+}
+
+func newLockInfoStep(provider, name, version string) *lockInfoStep {
+	id := compiler.MustNewStepID(provider + ":package:" + name)
+	return &lockInfoStep{
+		id: id,
+		info: compiler.LockInfo{
+			Provider: provider,
+			Name:     name,
+			Version:  version,
+		},
+	}
+}
+
+func (s *lockInfoStep) ID() compiler.StepID { return s.id }
+func (s *lockInfoStep) DependsOn() []compiler.StepID {
+	return nil
+}
+func (s *lockInfoStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
+	return compiler.StatusNeedsApply, nil
+}
+func (s *lockInfoStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
+	return compiler.NewDiff(compiler.DiffTypeAdd, "lock", s.info.Name, "", s.info.Version), nil
+}
+func (s *lockInfoStep) Apply(_ compiler.RunContext) error { return nil }
+func (s *lockInfoStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
+	return compiler.NewExplanation("Lock", "Lock", nil)
+}
+func (s *lockInfoStep) LockInfo() (compiler.LockInfo, bool) { return s.info, true }
+
+func TestPreflight_UpdateLockFromPlan(t *testing.T) {
+	var buf bytes.Buffer
+	pf := New(&buf)
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "preflight.yaml")
+	manifest := []byte("targets:\n  default:\n    - base\n")
+	require.NoError(t, os.WriteFile(configPath, manifest, 0o644))
+
+	existing := lock.NewLockfile(config.ModeIntent, lock.MachineInfo{})
+	integrity := lock.IntegrityFromData(lock.AlgorithmSHA256, []byte("seed"))
+	require.NoError(t, existing.SetPackage(mustPackageLock(t, "npm", "oldpkg", "0.1.0", integrity)))
+	require.NoError(t, existing.SetPackage(mustPackageLock(t, "pip", "requests", "1.0.0", integrity)))
+	require.NoError(t, existing.SetPackage(mustPackageLock(t, "brew", "git", "2.0.0", integrity)))
+
+	mockRepo := &mockLockRepoWithData{
+		lockfile:     existing,
+		existsResult: true,
+	}
+	pf.WithLockRepo(mockRepo)
+
+	plan := execution.NewExecutionPlan()
+	plan.Add(execution.NewPlanEntry(newLockInfoStep("npm", "eslint", "1.0.0"), compiler.StatusNeedsApply, compiler.Diff{}))
+	plan.Add(execution.NewPlanEntry(newLockInfoStep("npm", "prettier", ""), compiler.StatusNeedsApply, compiler.Diff{}))
+	plan.Add(execution.NewPlanEntry(newLockInfoStep("pip", "requests", "2.0.0"), compiler.StatusNeedsApply, compiler.Diff{}))
+
+	ctx := context.Background()
+	err := pf.UpdateLockFromPlan(ctx, configPath, plan)
+	require.NoError(t, err)
+
+	updated := mockRepo.savedLock
+	require.NotNil(t, updated)
+
+	if pkg, ok := updated.GetPackage("npm", "eslint"); !ok || pkg.Version() != "1.0.0" {
+		t.Errorf("expected npm:eslint@1.0.0, got %+v (ok=%v)", pkg, ok)
+	}
+	if pkg, ok := updated.GetPackage("npm", "prettier"); !ok || pkg.Version() != "latest" {
+		t.Errorf("expected npm:prettier@latest, got %+v (ok=%v)", pkg, ok)
+	}
+	if pkg, ok := updated.GetPackage("pip", "requests"); !ok || pkg.Version() != "2.0.0" {
+		t.Errorf("expected pip:requests@2.0.0, got %+v (ok=%v)", pkg, ok)
+	}
+	if updated.HasPackage("npm", "oldpkg") {
+		t.Error("expected npm:oldpkg to be removed")
+	}
+	if !updated.HasPackage("brew", "git") {
+		t.Error("expected brew:git to remain")
+	}
+}
+
+func mustPackageLock(t *testing.T, provider, name, version string, integrity lock.Integrity) lock.PackageLock {
+	t.Helper()
+	pkg, err := lock.NewPackageLock(provider, name, version, integrity, time.Now())
+	require.NoError(t, err)
+	return pkg
 }
 
 func TestPreflight_LockFreeze_NotFound(t *testing.T) {

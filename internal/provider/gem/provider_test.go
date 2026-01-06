@@ -119,7 +119,7 @@ func TestStep_Check_Installed(t *testing.T) {
 		ExitCode: 0,
 	})
 
-	step := NewStep(Gem{Name: "rails"}, runner)
+	step := NewStep(Gem{Name: "rails"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(runCtx)
@@ -138,7 +138,7 @@ func TestStep_Check_NotInstalled(t *testing.T) {
 		ExitCode: 1,
 	})
 
-	step := NewStep(Gem{Name: "rails"}, runner)
+	step := NewStep(Gem{Name: "rails"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(runCtx)
@@ -157,7 +157,7 @@ func TestStep_Apply(t *testing.T) {
 		ExitCode: 0,
 	})
 
-	step := NewStep(Gem{Name: "rails"}, runner)
+	step := NewStep(Gem{Name: "rails"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(runCtx)
@@ -173,7 +173,7 @@ func TestStep_Apply_WithVersion(t *testing.T) {
 		ExitCode: 0,
 	})
 
-	step := NewStep(Gem{Name: "bundler", Version: "2.4.0"}, runner)
+	step := NewStep(Gem{Name: "bundler", Version: "2.4.0"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(runCtx)
@@ -183,7 +183,7 @@ func TestStep_Apply_WithVersion(t *testing.T) {
 }
 
 func TestStep_Plan(t *testing.T) {
-	step := NewStep(Gem{Name: "rails", Version: "7.0.0"}, nil)
+	step := NewStep(Gem{Name: "rails", Version: "7.0.0"}, nil, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	diff, err := step.Plan(runCtx)
@@ -205,7 +205,7 @@ func TestStep_Plan(t *testing.T) {
 }
 
 func TestStep_Explain(t *testing.T) {
-	step := NewStep(Gem{Name: "rails", Version: "7.0.0"}, nil)
+	step := NewStep(Gem{Name: "rails", Version: "7.0.0"}, nil, nil)
 	explainCtx := compiler.NewExplainContext()
 
 	explanation := step.Explain(explainCtx)

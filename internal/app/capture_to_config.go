@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/felixgeelhaar/preflight/internal/validation"
 	"gopkg.in/yaml.v3"
 )
 
@@ -67,12 +68,14 @@ func (g *CaptureConfigGenerator) GenerateFromCaptureWithContext(ctx context.Cont
 	}
 
 	// Ensure target directory exists
+	// #nosec G301 -- target directory is scoped to preflight capture output
 	if err := os.MkdirAll(g.targetDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create target directory: %w", err)
 	}
 
 	// Ensure layers directory exists
 	layersDir := filepath.Join(g.targetDir, "layers")
+	// #nosec G301 -- layers directory is nested inside capture output
 	if err := os.MkdirAll(layersDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create layers directory: %w", err)
 	}
@@ -239,10 +242,7 @@ func (g *CaptureConfigGenerator) addProviderConfigToLayer(layer *captureLayerYAM
 	case "shell":
 		layer.Shell = g.generateShellFromCapture(items)
 	case "vscode":
-		extensions := make([]string, 0, len(items))
-		for _, item := range items {
-			extensions = append(extensions, item.Name)
-		}
+		extensions := vscodeExtensionsFromCapture(items)
 		layer.VSCode = &captureVSCodeYAML{
 			Extensions: extensions,
 		}
@@ -384,6 +384,7 @@ func (g *CaptureConfigGenerator) writeLayerFile(name string, layer *captureLayer
 	}
 
 	layerPath := filepath.Join(g.targetDir, "layers", name+".yaml")
+	// #nosec G306 -- generated config files are intended to be user-readable.
 	return os.WriteFile(layerPath, []byte(content), 0o644)
 }
 
@@ -490,6 +491,7 @@ func (g *CaptureConfigGenerator) generateBrewProviderLayer(name string, formulae
 	}
 
 	layerPath := filepath.Join(g.targetDir, "layers", name+".yaml")
+	// #nosec G306 -- generated config files are intended to be user-readable.
 	return os.WriteFile(layerPath, data, 0o644)
 }
 
@@ -506,10 +508,7 @@ func (g *CaptureConfigGenerator) generateProviderLayerIfSupported(name, provider
 	case "shell":
 		layer.Shell = g.generateShellFromCapture(items)
 	case "vscode":
-		extensions := make([]string, 0, len(items))
-		for _, item := range items {
-			extensions = append(extensions, item.Name)
-		}
+		extensions := vscodeExtensionsFromCapture(items)
 		layer.VSCode = &captureVSCodeYAML{
 			Extensions: extensions,
 		}
@@ -549,6 +548,7 @@ func (g *CaptureConfigGenerator) generateProviderLayerIfSupported(name, provider
 	}
 
 	layerPath := filepath.Join(g.targetDir, "layers", name+".yaml")
+	// #nosec G306 -- generated config files are intended to be user-readable.
 	if err := os.WriteFile(layerPath, data, 0o644); err != nil {
 		return false, err
 	}
@@ -573,6 +573,7 @@ func (g *CaptureConfigGenerator) generateManifest(target string, layers []string
 	}
 
 	manifestPath := filepath.Join(g.targetDir, "preflight.yaml")
+	// #nosec G306 -- generated config files are intended to be user-readable.
 	return os.WriteFile(manifestPath, data, 0o644)
 }
 
@@ -682,6 +683,7 @@ func (g *CaptureConfigGenerator) generateLayerFromCapture(findings *CaptureFindi
 	}
 
 	layerPath := filepath.Join(g.targetDir, "layers", "captured.yaml")
+	// #nosec G306 -- generated config files are intended to be user-readable.
 	return os.WriteFile(layerPath, data, 0o644)
 }
 
@@ -766,6 +768,9 @@ func (g *CaptureConfigGenerator) generateRuntimeFromCapture(items []CapturedItem
 	}
 
 	for _, item := range items {
+		if isRuntimeManagerVersionItem(item) {
+			continue
+		}
 		version := ""
 		if s, ok := item.Value.(string); ok {
 			version = s
@@ -781,6 +786,26 @@ func (g *CaptureConfigGenerator) generateRuntimeFromCapture(items []CapturedItem
 	}
 
 	return runtime
+}
+
+func vscodeExtensionsFromCapture(items []CapturedItem) []string {
+	extensions := make([]string, 0, len(items))
+	for _, item := range items {
+		if item.Source == "code --version" {
+			continue
+		}
+		extensions = append(extensions, item.Name)
+	}
+	return extensions
+}
+
+func isRuntimeManagerVersionItem(item CapturedItem) bool {
+	switch item.Source {
+	case "mise --version", "rtx --version", "asdf --version":
+		return true
+	default:
+		return false
+	}
 }
 
 // addNpmPackagesToLayer adds npm packages to a layer's packages section.
@@ -962,6 +987,10 @@ func (g *CaptureConfigGenerator) generateNvimFromCapture(items []CapturedItem) *
 
 // detectNvimPreset checks for known distribution markers.
 func detectNvimPreset(configPath string) string {
+	if !isPathWithinHome(configPath) {
+		return "custom"
+	}
+
 	// Check for LazyVim
 	lazyVimMarker := filepath.Join(configPath, "lazyvim.json")
 	if _, err := os.Stat(lazyVimMarker); err == nil {
@@ -970,6 +999,7 @@ func detectNvimPreset(configPath string) string {
 
 	// Check for LazyVim in lazy-lock.json
 	lazyLock := filepath.Join(configPath, "lazy-lock.json")
+	// #nosec G304 -- configPath is restricted to user home and validated.
 	if data, err := os.ReadFile(lazyLock); err == nil {
 		if strings.Contains(string(data), "LazyVim") {
 			return "lazyvim"
@@ -1001,6 +1031,10 @@ func detectNvimPreset(configPath string) string {
 
 // detectPluginManager checks what plugin manager is used.
 func detectPluginManager(configPath string) string {
+	if !isPathWithinHome(configPath) {
+		return ""
+	}
+
 	// Check for lazy.nvim
 	lazyLock := filepath.Join(configPath, "lazy-lock.json")
 	if _, err := os.Stat(lazyLock); err == nil {
@@ -1015,6 +1049,7 @@ func detectPluginManager(configPath string) string {
 
 	// Check in init.lua for plugin manager references
 	initLua := filepath.Join(configPath, "init.lua")
+	// #nosec G304 -- configPath is restricted to user home and validated.
 	if data, err := os.ReadFile(initLua); err == nil {
 		content := string(data)
 		if strings.Contains(content, "lazy.nvim") || strings.Contains(content, "folke/lazy") {
@@ -1033,6 +1068,10 @@ func detectPluginManager(configPath string) string {
 
 // countLazyPlugins counts plugins in lazy-lock.json.
 func countLazyPlugins(lockPath string) int {
+	if !isPathWithinHome(lockPath) {
+		return 0
+	}
+	// #nosec G304 -- lockPath is restricted to user home and validated.
 	data, err := os.ReadFile(lockPath)
 	if err != nil {
 		return 0
@@ -1065,10 +1104,12 @@ func (g *CaptureConfigGenerator) generateSSHFromCapture(items []CapturedItem) *c
 	for _, item := range items {
 		if item.Name == "config" {
 			if configPath, ok := item.Value.(string); ok {
-				ssh.ConfigPath = configPath
-				hosts, defaults := parseSSHConfig(configPath)
-				ssh.Hosts = hosts
-				ssh.Defaults = defaults
+				if isPathWithinHome(configPath) {
+					ssh.ConfigPath = configPath
+					hosts, defaults := parseSSHConfig(configPath)
+					ssh.Hosts = hosts
+					ssh.Defaults = defaults
+				}
 			}
 		}
 	}
@@ -1088,6 +1129,10 @@ func (g *CaptureConfigGenerator) generateSSHFromCapture(items []CapturedItem) *c
 
 // parseSSHConfig parses ~/.ssh/config into hosts and defaults.
 func parseSSHConfig(configPath string) ([]captureSSHHostYAML, *captureSSHDefaults) {
+	if !isPathWithinHome(configPath) {
+		return nil, nil
+	}
+	// #nosec G304 -- configPath is restricted to user home and validated.
 	file, err := os.Open(configPath)
 	if err != nil {
 		return nil, nil
@@ -1185,6 +1230,9 @@ func parseSSHConfig(configPath string) ([]captureSSHHostYAML, *captureSSHDefault
 
 // detectSSHKeys finds SSH key files in the .ssh directory.
 func detectSSHKeys(sshDir string) []captureSSHKeyYAML {
+	if !isPathWithinHome(sshDir) {
+		return nil
+	}
 	entries, err := os.ReadDir(sshDir)
 	if err != nil {
 		return nil
@@ -1243,6 +1291,10 @@ func detectSSHKeys(sshDir string) []captureSSHKeyYAML {
 
 // looksLikePrivateKey checks if a file appears to be an SSH private key.
 func looksLikePrivateKey(path string) bool {
+	if !isPathWithinHome(path) {
+		return false
+	}
+	// #nosec G304 -- path is restricted to user home and validated.
 	file, err := os.Open(path)
 	if err != nil {
 		return false
@@ -1260,6 +1312,10 @@ func looksLikePrivateKey(path string) bool {
 
 // detectKeyType determines the type of SSH key.
 func detectKeyType(path string) string {
+	if !isPathWithinHome(path) {
+		return ""
+	}
+	// #nosec G304 -- path is restricted to user home and validated.
 	file, err := os.Open(path)
 	if err != nil {
 		return ""
@@ -1273,7 +1329,9 @@ func detectKeyType(path string) string {
 		case strings.Contains(line, "OPENSSH"):
 			// Modern OpenSSH format - check public key for type
 			pubKeyPath := path + ".pub"
-			if data, err := os.ReadFile(pubKeyPath); err == nil {
+			// #nosec G304 -- pubKeyPath is within validated home path.
+			// #nosec G304 -- public key file under user home directory
+			if data, err := readCaptureFile(pubKeyPath); err == nil {
 				content := string(data)
 				if strings.HasPrefix(content, "ssh-ed25519") {
 					return "ed25519"
@@ -1299,12 +1357,43 @@ func detectKeyType(path string) string {
 
 // keyHasPassphrase checks if a private key is encrypted.
 func keyHasPassphrase(path string) bool {
+	if !isPathWithinHome(path) {
+		return false
+	}
+	// #nosec G304 -- path is restricted to user home and validated.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return false
 	}
 	content := string(data)
 	return strings.Contains(content, "ENCRYPTED")
+}
+
+func isPathWithinHome(path string) bool {
+	if err := validation.ValidatePath(path); err != nil {
+		return false
+	}
+
+	roots := make([]string, 0, 2)
+	if home, err := os.UserHomeDir(); err == nil {
+		roots = append(roots, home)
+	}
+	if temp := os.TempDir(); temp != "" {
+		roots = append(roots, temp)
+	}
+
+	for _, base := range roots {
+		if validation.ValidatePathWithBase(path, base) == nil {
+			return true
+		}
+	}
+
+	return len(roots) == 0
+}
+
+func readCaptureFile(path string) ([]byte, error) {
+	// #nosec G304 -- restricted paths under user home / temp directories
+	return os.ReadFile(path)
 }
 
 // YAML structure types for marshaling

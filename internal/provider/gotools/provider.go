@@ -2,7 +2,9 @@ package gotools
 
 import (
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
+	tooldeps "github.com/felixgeelhaar/preflight/internal/domain/deps"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/provider/versionutil"
 )
 
 // Provider implements the compiler.Provider interface for Go tools.
@@ -33,9 +35,15 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 	}
 
 	steps := make([]compiler.Step, 0, len(cfg.Tools))
+	deps := tooldeps.ResolveToolDeps(ctx, nil, tooldeps.ToolGo)
 
 	for _, tool := range cfg.Tools {
-		steps = append(steps, NewToolStep(tool, p.runner))
+		version, err := versionutil.ResolvePackageVersion(ctx, "go", tool.Module, tool.Version)
+		if err != nil {
+			return nil, err
+		}
+		tool.Version = version
+		steps = append(steps, NewToolStep(tool, p.runner, deps))
 	}
 
 	return steps, nil

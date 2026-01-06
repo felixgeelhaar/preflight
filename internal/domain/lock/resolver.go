@@ -11,6 +11,7 @@ import (
 // Resolver errors.
 var (
 	ErrVersionNotLocked = errors.New("version not locked")
+	ErrVersionDrifted   = errors.New("locked version differs from available")
 )
 
 // ResolutionSource indicates where a version resolution came from.
@@ -118,10 +119,10 @@ func (r *Resolver) Resolve(provider, name, latestVersion string) Resolution {
 			res.Source = ResolutionSourceLockfile
 			res.Locked = true
 		} else {
-			// No lock, use latest
-			res.Version = latestVersion
-			res.Source = ResolutionSourceLatest
-			res.Locked = false
+			// Locked mode requires a lock entry
+			res.Failed = true
+			res.Error = fmt.Errorf("%w: %s:%s", ErrVersionNotLocked, provider, name)
+			res.Source = ResolutionSourceNone
 		}
 
 	case config.ModeFrozen:
@@ -135,8 +136,10 @@ func (r *Resolver) Resolve(provider, name, latestVersion string) Resolution {
 			res.Version = locked.Version()
 			res.Source = ResolutionSourceLockfile
 			res.Locked = true
-			if locked.Version() != latestVersion {
+			if latestVersion != "" && latestVersion != "latest" && locked.Version() != latestVersion {
 				res.Drifted = true
+				res.Failed = true
+				res.Error = fmt.Errorf("%w: %s:%s locked %s != %s", ErrVersionDrifted, provider, name, locked.Version(), latestVersion)
 			}
 		}
 	}

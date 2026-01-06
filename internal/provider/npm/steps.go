@@ -3,9 +3,11 @@ package npm
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
+	"github.com/felixgeelhaar/preflight/internal/provider/commandutil"
 	"github.com/felixgeelhaar/preflight/internal/validation"
 )
 
@@ -14,6 +16,7 @@ type PackageStep struct {
 	pkg    Package
 	id     compiler.StepID
 	runner ports.CommandRunner
+	deps   []compiler.StepID
 }
 
 // sanitizeStepID converts a package name to a valid step ID component.
@@ -26,12 +29,13 @@ func sanitizeStepID(name string) string {
 }
 
 // NewPackageStep creates a new PackageStep.
-func NewPackageStep(pkg Package, runner ports.CommandRunner) *PackageStep {
+func NewPackageStep(pkg Package, runner ports.CommandRunner, deps []compiler.StepID) *PackageStep {
 	id := compiler.MustNewStepID("npm:package:" + sanitizeStepID(pkg.Name))
 	return &PackageStep{
 		pkg:    pkg,
 		id:     id,
 		runner: runner,
+		deps:   deps,
 	}
 }
 
@@ -42,13 +46,19 @@ func (s *PackageStep) ID() compiler.StepID {
 
 // DependsOn returns the step dependencies.
 func (s *PackageStep) DependsOn() []compiler.StepID {
-	return nil
+	return s.deps
 }
 
 // Check determines if the package is already installed globally.
 func (s *PackageStep) Check(ctx compiler.RunContext) (compiler.StepStatus, error) {
 	result, err := s.runner.Run(ctx.Context(), "npm", "list", "-g", "--depth=0", "--json")
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			if len(s.deps) == 0 {
+				return compiler.StatusUnknown, fmt.Errorf("npm not found in PATH and no Node.js installer configured")
+			}
+			return compiler.StatusNeedsApply, nil
+		}
 		return compiler.StatusUnknown, err
 	}
 	// npm list returns exit code 1 when no packages match, but still outputs JSON
@@ -88,6 +98,9 @@ func (s *PackageStep) Apply(ctx compiler.RunContext) error {
 
 	result, err := s.runner.Run(ctx.Context(), "npm", "install", "-g", s.pkg.FullName())
 	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return fmt.Errorf("npm not found in PATH; install Node.js first")
+		}
 		return err
 	}
 	if !result.Success() {
@@ -115,4 +128,39 @@ func (s *PackageStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 		"- Global packages can have version conflicts",
 		"- Requires Node.js to be installed",
 	})
+}
+
+// LockInfo returns lockfile information for this package.
+func (s *PackageStep) LockInfo() (compiler.LockInfo, bool) {
+	return compiler.LockInfo{
+		Provider: "npm",
+		Name:     s.pkg.Name,
+		Version:  s.pkg.Version,
+	}, true
+}
+
+// InstalledVersion returns the installed npm package version if available.
+func (s *PackageStep) InstalledVersion(ctx compiler.RunContext) (string, bool, error) {
+	result, err := s.runner.Run(ctx.Context(), "npm", "list", "-g", "--depth=0", "--json")
+	if err != nil {
+		if commandutil.IsCommandNotFound(err) {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+
+	var npmList struct {
+		Dependencies map[string]struct {
+			Version string `json:"version"`
+		} `json:"dependencies"`
+	}
+	if err := json.Unmarshal([]byte(result.Stdout), &npmList); err != nil {
+		return "", false, fmt.Errorf("failed to parse npm list output: %w", err)
+	}
+
+	if dep, found := npmList.Dependencies[s.pkg.Name]; found {
+		return strings.TrimSpace(dep.Version), true, nil
+	}
+
+	return "", false, nil
 }

@@ -29,7 +29,7 @@ func TestPackageStep_DependsOn(t *testing.T) {
 
 	deps := step.DependsOn()
 
-	assert.Empty(t, deps)
+	assert.Equal(t, []compiler.StepID{compiler.MustNewStepID(wingetReadyStepID)}, deps)
 }
 
 func TestPackageStep_Check_Installed(t *testing.T) {

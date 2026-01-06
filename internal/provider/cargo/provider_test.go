@@ -2,12 +2,21 @@ package cargo
 
 import (
 	"context"
+	"os/exec"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
 )
+
+type errRunner struct {
+	err error
+}
+
+func (r errRunner) Run(_ context.Context, _ string, _ ...string) (ports.CommandResult, error) {
+	return ports.CommandResult{}, r.err
+}
 
 func TestProvider_Name(t *testing.T) {
 	provider := NewProvider(nil)
@@ -119,7 +128,7 @@ func TestCrateStep_Check_Installed(t *testing.T) {
 		ExitCode: 0,
 	})
 
-	step := NewCrateStep(Crate{Name: "ripgrep"}, runner)
+	step := NewCrateStep(Crate{Name: "ripgrep"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(runCtx)
@@ -138,7 +147,7 @@ func TestCrateStep_Check_NotInstalled(t *testing.T) {
 		ExitCode: 0,
 	})
 
-	step := NewCrateStep(Crate{Name: "ripgrep"}, runner)
+	step := NewCrateStep(Crate{Name: "ripgrep"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	status, err := step.Check(runCtx)
@@ -150,6 +159,21 @@ func TestCrateStep_Check_NotInstalled(t *testing.T) {
 	}
 }
 
+func TestCrateStep_Check_CargoMissing(t *testing.T) {
+	runner := errRunner{err: &exec.Error{Name: "cargo", Err: exec.ErrNotFound}}
+
+	step := NewCrateStep(Crate{Name: "ripgrep"}, runner, nil)
+	runCtx := compiler.NewRunContext(context.Background())
+
+	status, err := step.Check(runCtx)
+	if err == nil {
+		t.Fatalf("Check() error = nil, want error")
+	}
+	if status != compiler.StatusUnknown {
+		t.Errorf("Check() = %v, want %v", status, compiler.StatusUnknown)
+	}
+}
+
 func TestCrateStep_Apply(t *testing.T) {
 	runner := mocks.NewCommandRunner()
 	runner.AddResult("cargo", []string{"install", "ripgrep"}, ports.CommandResult{
@@ -157,7 +181,7 @@ func TestCrateStep_Apply(t *testing.T) {
 		ExitCode: 0,
 	})
 
-	step := NewCrateStep(Crate{Name: "ripgrep"}, runner)
+	step := NewCrateStep(Crate{Name: "ripgrep"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(runCtx)
@@ -173,7 +197,7 @@ func TestCrateStep_Apply_WithVersion(t *testing.T) {
 		ExitCode: 0,
 	})
 
-	step := NewCrateStep(Crate{Name: "bat", Version: "0.22.1"}, runner)
+	step := NewCrateStep(Crate{Name: "bat", Version: "0.22.1"}, runner, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	err := step.Apply(runCtx)
@@ -183,7 +207,7 @@ func TestCrateStep_Apply_WithVersion(t *testing.T) {
 }
 
 func TestCrateStep_Plan(t *testing.T) {
-	step := NewCrateStep(Crate{Name: "ripgrep", Version: "14.1.0"}, nil)
+	step := NewCrateStep(Crate{Name: "ripgrep", Version: "14.1.0"}, nil, nil)
 	runCtx := compiler.NewRunContext(context.Background())
 
 	diff, err := step.Plan(runCtx)
@@ -205,7 +229,7 @@ func TestCrateStep_Plan(t *testing.T) {
 }
 
 func TestCrateStep_Explain(t *testing.T) {
-	step := NewCrateStep(Crate{Name: "ripgrep", Version: "14.1.0"}, nil)
+	step := NewCrateStep(Crate{Name: "ripgrep", Version: "14.1.0"}, nil, nil)
 	explainCtx := compiler.NewExplainContext()
 
 	explanation := step.Explain(explainCtx)
