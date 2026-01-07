@@ -1,4 +1,7 @@
-.PHONY: build test lint coverage clean install release-local security
+.PHONY: build test lint coverage clean install release-local security \
+	docker-test docker-test-unit docker-test-apt docker-test-brew docker-test-full \
+	docker-test-files docker-test-e2e docker-coverage docker-lint docker-build docker-clean \
+	test-e2e
 
 # Binary name
 BINARY_NAME=preflight
@@ -81,6 +84,72 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@sed -n 's/^##//p' $(MAKEFILE_LIST) | column -t -s ':' | sed -e 's/^/ /'
+
+# =============================================================================
+# Docker Testing Targets
+# =============================================================================
+
+DOCKER_COMPOSE=docker compose -f docker-compose.test.yml
+
+## docker-test: Run all tests in Docker (unit + integration)
+docker-test: docker-test-unit docker-test-files
+
+## docker-test-unit: Run unit tests in Docker
+docker-test-unit:
+	$(DOCKER_COMPOSE) run --rm unit
+
+## docker-test-apt: Run APT provider integration tests in Docker
+docker-test-apt:
+	$(DOCKER_COMPOSE) run --rm apt
+
+## docker-test-brew: Run Homebrew provider integration tests in Docker
+docker-test-brew:
+	$(DOCKER_COMPOSE) run --rm brew
+
+## docker-test-files: Run files provider integration tests in Docker
+docker-test-files:
+	$(DOCKER_COMPOSE) run --rm files
+
+## docker-test-ssh: Run SSH provider integration tests in Docker
+docker-test-ssh:
+	$(DOCKER_COMPOSE) run --rm ssh
+
+## docker-test-full: Run full integration test suite in Docker
+docker-test-full:
+	$(DOCKER_COMPOSE) run --rm full
+
+## docker-test-e2e: Run end-to-end tests in Docker
+docker-test-e2e:
+	$(DOCKER_COMPOSE) run --rm e2e
+
+## test-e2e: Run end-to-end tests locally
+test-e2e: build
+	$(GOTEST) -v -tags=e2e ./test/e2e/...
+
+## docker-coverage: Generate coverage report in Docker
+docker-coverage:
+	mkdir -p coverage
+	$(DOCKER_COMPOSE) run --rm coverage
+	@echo "Coverage report: coverage/coverage.html"
+
+## docker-lint: Run linter in Docker
+docker-lint:
+	$(DOCKER_COMPOSE) run --rm lint
+
+## docker-build: Build Linux binary in Docker
+docker-build:
+	mkdir -p bin
+	$(DOCKER_COMPOSE) run --rm build
+	@echo "Binary: bin/preflight-linux"
+
+## docker-clean: Clean Docker test resources
+docker-clean:
+	$(DOCKER_COMPOSE) down -v --rmi local
+	rm -rf coverage/
+
+## docker-shell: Open shell in test container for debugging
+docker-shell:
+	$(DOCKER_COMPOSE) run --rm --entrypoint /bin/bash unit
 
 # Default target
 .DEFAULT_GOAL := help

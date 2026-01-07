@@ -55,6 +55,36 @@ jobs:
         with:
           version: v2.7.2
 
+  # Linux tests via Docker for cross-platform validation
+  test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run unit tests in Docker
+        run: make docker-test-unit
+
+      - name: Run files provider tests in Docker
+        run: make docker-test-files
+
+      - name: Run SSH provider tests in Docker
+        run: make docker-test-ssh
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run E2E tests in Docker
+        run: docker compose -f docker-compose.test.yml run --rm e2e
+
   security:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -72,7 +102,16 @@ jobs:
       - name: Install VerdictSec
         run: go install github.com/felixgeelhaar/verdictsec/cmd/verdict@latest
 
-      - name: Run VerdictSec Security Scan
+      - name: Run VerdictSec Vulnerability Scan
+        run: verdict vuln || true
+
+      - name: Run VerdictSec SAST Scan
+        run: verdict sast || true
+
+      - name: Run VerdictSec Secrets Scan
+        run: verdict secrets || true
+
+      - name: Run VerdictSec Full Scan
         run: verdict scan --json -o verdict-results.json || true
 
       - name: Upload VerdictSec results
