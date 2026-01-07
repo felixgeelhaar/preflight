@@ -38,7 +38,7 @@ func TestConfirmBootstrap_Interactive(t *testing.T) {
 	reader, writer, err := os.Pipe()
 	require.NoError(t, err)
 	go func() {
-		_, _ = writer.Write([]byte("YeS\n"))
+		_, _ = writer.WriteString("YeS\n")
 		_ = writer.Close()
 	}()
 	os.Stdin = reader

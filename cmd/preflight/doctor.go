@@ -32,6 +32,7 @@ var (
 	doctorVerbose      bool
 	doctorUpdateConfig bool
 	doctorDryRun       bool
+	doctorQuiet        bool
 )
 
 func init() {
@@ -39,6 +40,7 @@ func init() {
 	doctorCmd.Flags().BoolVarP(&doctorVerbose, "verbose", "v", false, "Show detailed output")
 	doctorCmd.Flags().BoolVar(&doctorUpdateConfig, "update-config", false, "Merge drift back into layer files")
 	doctorCmd.Flags().BoolVar(&doctorDryRun, "dry-run", false, "Show changes without writing (use with --update-config)")
+	doctorCmd.Flags().BoolVarP(&doctorQuiet, "quiet", "q", false, "Print results without TUI (for CI/scripts)")
 
 	rootCmd.AddCommand(doctorCmd)
 }
@@ -64,6 +66,11 @@ func runDoctor(_ *cobra.Command, _ []string) error {
 	appReport, err := preflight.Doctor(ctx, doctorOpts)
 	if err != nil {
 		return fmt.Errorf("doctor check failed: %w", err)
+	}
+
+	// Quiet mode: print results without TUI
+	if doctorQuiet {
+		return printDoctorQuiet(appReport)
 	}
 
 	// Convert to TUI types
@@ -124,6 +131,48 @@ func runDoctor(_ *cobra.Command, _ []string) error {
 		fmt.Println("\nRun 'preflight doctor --fix' to automatically fix issues.")
 	case appReport.HasPatches():
 		fmt.Printf("\n%d config patches suggested. Run 'preflight doctor --update-config' to apply.\n", appReport.PatchCount())
+	}
+
+	return nil
+}
+
+// printDoctorQuiet prints the doctor report without TUI.
+func printDoctorQuiet(report *app.DoctorReport) error {
+	fmt.Println("Doctor Report")
+	fmt.Println("=============")
+	fmt.Println()
+
+	if report.IssueCount() == 0 {
+		fmt.Println("✓ No issues found. Your system is in sync.")
+		return nil
+	}
+
+	fmt.Printf("Found %d issue(s):\n\n", report.IssueCount())
+
+	for _, issue := range report.Issues {
+		status := "!"
+		if issue.Severity == app.SeverityError {
+			status = "✗"
+		}
+		fmt.Printf("  %s [%s] %s\n", status, issue.Severity, issue.Message)
+		if issue.Provider != "" {
+			fmt.Printf("      Provider: %s\n", issue.Provider)
+		}
+		if issue.Expected != "" && issue.Actual != "" {
+			fmt.Printf("      Expected: %s\n", issue.Expected)
+			fmt.Printf("      Actual: %s\n", issue.Actual)
+		}
+		if issue.FixCommand != "" {
+			fmt.Printf("      Fix: %s\n", issue.FixCommand)
+		}
+	}
+
+	if report.FixableCount() > 0 {
+		fmt.Printf("\n%d issue(s) can be auto-fixed with 'preflight doctor --fix'\n", report.FixableCount())
+	}
+
+	if report.HasPatches() {
+		fmt.Printf("%d config patches suggested. Run 'preflight doctor --update-config' to apply.\n", report.PatchCount())
 	}
 
 	return nil

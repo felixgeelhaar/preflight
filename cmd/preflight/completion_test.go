@@ -13,7 +13,7 @@ func TestCompletionCmd_GeneratesScripts(t *testing.T) {
 		t.Run(shell, func(t *testing.T) {
 			devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 			require.NoError(t, err)
-			defer devNull.Close()
+			defer func() { _ = devNull.Close() }()
 
 			oldStdout := os.Stdout
 			os.Stdout = devNull

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -10,6 +11,8 @@ import (
 	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/app"
+	"github.com/felixgeelhaar/preflight/internal/domain/config"
+	"github.com/felixgeelhaar/preflight/internal/domain/execution"
 	"github.com/spf13/cobra"
 )
 
@@ -44,6 +47,35 @@ var (
 	watchDryRun      bool
 	watchVerbose     bool
 )
+
+type watchMode interface {
+	Start(context.Context) error
+}
+
+var newWatchMode = func(opts app.WatchOptions, applyFn func(ctx context.Context) error) watchMode {
+	return app.NewWatchMode(opts, applyFn)
+}
+
+type watchPreflight interface {
+	Plan(context.Context, string, string) (*execution.Plan, error)
+	PrintPlan(*execution.Plan)
+	Apply(context.Context, *execution.Plan, bool) ([]execution.StepResult, error)
+	PrintResults([]execution.StepResult)
+	WithMode(config.ReproducibilityMode) watchPreflight
+}
+
+type watchPreflightAdapter struct {
+	*app.Preflight
+}
+
+func (a *watchPreflightAdapter) WithMode(mode config.ReproducibilityMode) watchPreflight {
+	a.Preflight = a.Preflight.WithMode(mode)
+	return a
+}
+
+var newWatchApp = func(out io.Writer) watchPreflight {
+	return &watchPreflightAdapter{app.New(out)}
+}
 
 func init() {
 	watchCmd.Flags().StringVar(&watchDebounce, "debounce", "500ms", "Debounce duration for file changes")
@@ -86,11 +118,11 @@ func runWatch(cmd *cobra.Command, _ []string) error {
 		cancel()
 	}()
 
-	preflight := app.New(os.Stdout)
+	preflight := newWatchApp(os.Stdout)
 	if modeOverride, err := resolveModeOverride(cmd); err != nil {
 		return err
 	} else if modeOverride != nil {
-		preflight.WithMode(*modeOverride)
+		preflight = preflight.WithMode(*modeOverride)
 	}
 	configFile = filepath.Join(configDir, configFile)
 
@@ -149,7 +181,7 @@ func runWatch(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Create and start watch mode
-	watcher := app.NewWatchMode(opts, applyFn)
+	watcher := newWatchMode(opts, applyFn)
 
 	fmt.Println("🔍 Preflight Watch Mode")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━")

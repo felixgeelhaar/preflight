@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/felixgeelhaar/preflight/internal/app"
+	"github.com/felixgeelhaar/preflight/internal/domain/config"
+	"github.com/felixgeelhaar/preflight/internal/domain/execution"
 	"github.com/spf13/cobra"
 )
 
@@ -31,6 +34,32 @@ var (
 	applyRollback   bool
 )
 
+type preflightClient interface {
+	Plan(context.Context, string, string) (*execution.Plan, error)
+	PrintPlan(*execution.Plan)
+	Apply(context.Context, *execution.Plan, bool) ([]execution.StepResult, error)
+	PrintResults([]execution.StepResult)
+	UpdateLockFromPlan(context.Context, string, *execution.Plan) error
+	WithMode(config.ReproducibilityMode) preflightClient
+	WithRollbackOnFailure(bool) preflightClient
+}
+
+type preflightAdapter struct {
+	*app.Preflight
+}
+
+var newPreflight = func(out io.Writer) preflightClient {
+	return &preflightAdapter{app.New(out)}
+}
+
+func (p *preflightAdapter) WithMode(mode config.ReproducibilityMode) preflightClient {
+	return &preflightAdapter{p.Preflight.WithMode(mode)}
+}
+
+func (p *preflightAdapter) WithRollbackOnFailure(enabled bool) preflightClient {
+	return &preflightAdapter{p.Preflight.WithRollbackOnFailure(enabled)}
+}
+
 func init() {
 	rootCmd.AddCommand(applyCmd)
 
@@ -45,14 +74,14 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	ctx := context.Background()
 
 	// Create the application
-	preflight := app.New(os.Stdout)
+	preflight := newPreflight(os.Stdout)
 	if modeOverride, err := resolveModeOverride(cmd); err != nil {
 		return err
 	} else if modeOverride != nil {
-		preflight.WithMode(*modeOverride)
+		preflight = preflight.WithMode(*modeOverride)
 	}
 	if applyRollback {
-		preflight.WithRollbackOnFailure(true)
+		preflight = preflight.WithRollbackOnFailure(true)
 	}
 
 	// Create the plan

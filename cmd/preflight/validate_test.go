@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -9,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/app"
+	"github.com/felixgeelhaar/preflight/internal/domain/config"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -222,4 +225,56 @@ func TestOutputValidationText_AllTypes(t *testing.T) {
 	assert.Contains(t, output, "⛔ Policy violations")
 	assert.Contains(t, output, "⚠ Warnings")
 	assert.Contains(t, output, "ℹ Info")
+}
+
+func TestRunValidate_SuccessJSON(t *testing.T) {
+	t.Parallel()
+
+	prev := newValidatePreflight
+	fake := &fakeValidateClient{
+		result: &app.ValidationResult{
+			Info: []string{"Loaded config from preflight.yaml"},
+		},
+	}
+	newValidatePreflight = func(_ io.Writer) validatePreflightClient {
+		return fake
+	}
+	defer func() { newValidatePreflight = prev }()
+
+	prevJSON := validateJSON
+	validateJSON = true
+	defer func() { validateJSON = prevJSON }()
+
+	output := captureStdout(t, func() {
+		err := runValidate(&cobra.Command{}, nil)
+		require.NoError(t, err)
+	})
+
+	assert.Contains(t, output, `"valid": true`)
+	assert.True(t, fake.called)
+	assert.Equal(t, "preflight.yaml", fake.configPath)
+	assert.Equal(t, "default", fake.target)
+}
+
+type fakeValidateClient struct {
+	result     *app.ValidationResult
+	err        error
+	called     bool
+	configPath string
+	target     string
+	opts       app.ValidateOptions
+	modeSet    bool
+}
+
+func (f *fakeValidateClient) ValidateWithOptions(_ context.Context, configPath, target string, opts app.ValidateOptions) (*app.ValidationResult, error) {
+	f.called = true
+	f.configPath = configPath
+	f.target = target
+	f.opts = opts
+	return f.result, f.err
+}
+
+func (f *fakeValidateClient) WithMode(_ config.ReproducibilityMode) validatePreflightClient {
+	f.modeSet = true
+	return f
 }

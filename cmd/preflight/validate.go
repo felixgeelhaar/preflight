@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/felixgeelhaar/preflight/internal/app"
+	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/spf13/cobra"
 )
 
@@ -42,6 +44,24 @@ var (
 	validateOrgPolicyFile string
 )
 
+type validatePreflightClient interface {
+	ValidateWithOptions(context.Context, string, string, app.ValidateOptions) (*app.ValidationResult, error)
+	WithMode(config.ReproducibilityMode) validatePreflightClient
+}
+
+type validatePreflightAdapter struct {
+	*app.Preflight
+}
+
+func (a *validatePreflightAdapter) WithMode(mode config.ReproducibilityMode) validatePreflightClient {
+	a.Preflight = a.Preflight.WithMode(mode)
+	return a
+}
+
+var newValidatePreflight = func(out io.Writer) validatePreflightClient {
+	return &validatePreflightAdapter{Preflight: app.New(out)}
+}
+
 func init() {
 	rootCmd.AddCommand(validateCmd)
 
@@ -57,7 +77,7 @@ func runValidate(cmd *cobra.Command, _ []string) error {
 	ctx := context.Background()
 
 	// Create the application
-	preflight := app.New(os.Stdout)
+	preflight := newValidatePreflight(os.Stdout)
 	if modeOverride, err := resolveModeOverride(cmd); err != nil {
 		return err
 	} else if modeOverride != nil {

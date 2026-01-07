@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/felixgeelhaar/preflight/internal/app"
+	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +29,24 @@ var (
 	planTarget     string
 )
 
+var newPlanPreflight = func(out io.Writer) preflightClient {
+	return &planPreflightAdapter{app.New(out)}
+}
+
+type planPreflightAdapter struct {
+	*app.Preflight
+}
+
+func (a *planPreflightAdapter) WithMode(mode config.ReproducibilityMode) preflightClient {
+	a.Preflight = a.Preflight.WithMode(mode)
+	return a
+}
+
+func (a *planPreflightAdapter) WithRollbackOnFailure(enabled bool) preflightClient {
+	a.Preflight = a.Preflight.WithRollbackOnFailure(enabled)
+	return a
+}
+
 func init() {
 	rootCmd.AddCommand(planCmd)
 
@@ -38,7 +58,7 @@ func runPlan(cmd *cobra.Command, _ []string) error {
 	ctx := context.Background()
 
 	// Create the application
-	preflight := app.New(os.Stdout)
+	preflight := newPlanPreflight(os.Stdout)
 	if modeOverride, err := resolveModeOverride(cmd); err != nil {
 		return err
 	} else if modeOverride != nil {
