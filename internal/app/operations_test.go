@@ -2,11 +2,13 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -963,6 +965,134 @@ func TestCaptureRuntimeVersions_NoTools(t *testing.T) {
 	require.NoError(t, err)
 	// May or may not have items depending on system
 	assert.NotNil(t, findings)
+}
+
+func TestCaptureRuntimeManagerVersions_WithFakeCommands(t *testing.T) {
+
+	binDir := setupFakeRuntimeCommands(t)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	var output strings.Builder
+	p := New(&output)
+
+	items := p.captureRuntimeManagerVersions(time.Now())
+	require.Len(t, items, 3)
+
+	names := make([]string, 0, len(items))
+	for _, item := range items {
+		names = append(names, item.Name)
+	}
+	assert.Contains(t, names, "mise")
+	assert.Contains(t, names, "rtx")
+	assert.Contains(t, names, "asdf")
+}
+
+func TestCaptureRuntimeVersions_WithFakeCommands(t *testing.T) {
+
+	binDir := setupFakeRuntimeCommands(t)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	var output strings.Builder
+	p := New(&output)
+
+	items := p.captureRuntimeVersions(context.Background(), time.Now())
+	require.GreaterOrEqual(t, len(items), 2)
+
+	providers := make([]string, 0, len(items))
+	for _, item := range items {
+		providers = append(providers, item.Provider)
+	}
+	assert.Contains(t, providers, "runtime")
+}
+
+func TestCaptureVSCodeExtensions_WithFakeCode(t *testing.T) {
+
+	binDir := filepath.Join(t.TempDir(), "bin")
+	require.NoError(t, os.MkdirAll(binDir, 0o755))
+	writeFakeCodeCommand(t, binDir)
+
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	var output strings.Builder
+	p := New(&output)
+
+	items := p.captureVSCodeExtensions(context.Background(), time.Now())
+	require.Len(t, items, 3)
+
+	providers := make([]string, 0, len(items))
+	for _, item := range items {
+		providers = append(providers, item.Provider)
+	}
+	assert.Contains(t, providers, "vscode")
+}
+
+func setupFakeRuntimeCommands(t *testing.T) string {
+	t.Helper()
+
+	tmpDir := t.TempDir()
+	binDir := filepath.Join(tmpDir, "bin")
+	require.NoError(t, os.MkdirAll(binDir, 0o755))
+
+	writeFakeRuntimeCommand(t, binDir, "mise", "1.0.0", []string{"node 18.0.0", "python 3.11.0"}, nil)
+	writeFakeRuntimeCommand(t, binDir, "rtx", "2.0.0", []string{"node 18.2.0"}, nil)
+	writeFakeRuntimeCommand(t, binDir, "asdf", "3.0.0", nil, []string{"nodejs 18.1.0"})
+
+	return binDir
+}
+
+func writeFakeRuntimeCommand(t *testing.T, dir, name, version string, listLines, currentLines []string) {
+	t.Helper()
+
+	var b strings.Builder
+	b.WriteString("#!/bin/sh\n")
+	b.WriteString("case \"$1\" in\n")
+	b.WriteString("--version)\n")
+	fmt.Fprintf(&b, "  echo \"%s\"\n  exit 0\n", version)
+	b.WriteString("  ;;\n")
+	b.WriteString("list)\n")
+	for _, line := range listLines {
+		fmt.Fprintf(&b, "  echo \"%s\"\n", line)
+	}
+	b.WriteString("  exit 0\n")
+	b.WriteString("  ;;\n")
+	b.WriteString("current)\n")
+	for _, line := range currentLines {
+		fmt.Fprintf(&b, "  echo \"%s\"\n", line)
+	}
+	b.WriteString("  exit 0\n")
+	b.WriteString("  ;;\n")
+	b.WriteString("esac\n")
+	b.WriteString("exit 0\n")
+
+	writeFakeCommand(t, dir, name, b.String())
+}
+
+func writeFakeCodeCommand(t *testing.T, dir string) {
+	t.Helper()
+
+	script := `#!/bin/sh
+case "$1" in
+--version)
+  echo "v1.75.0"
+  exit 0
+  ;;
+--list-extensions)
+  printf "ext.one\next.two\n"
+  exit 0
+  ;;
+*)
+  exit 0
+  ;;
+esac
+`
+	writeFakeCommand(t, dir, "code", script)
+}
+
+func writeFakeCommand(t *testing.T, dir, name, script string) {
+	t.Helper()
+
+	path := filepath.Join(dir, name)
+	require.NoError(t, os.WriteFile(path, []byte(script), 0o755))
 }
 
 func TestLockUpdate_NewLockfile(t *testing.T) {

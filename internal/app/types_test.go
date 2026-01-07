@@ -225,6 +225,15 @@ func TestDoctorReport(t *testing.T) {
 	})
 }
 
+func TestCaptureOptions_WithConfigsAndTarget(t *testing.T) {
+	t.Parallel()
+
+	opts := NewCaptureOptions().WithConfigs(true).WithTarget("dev")
+
+	assert.True(t, opts.IncludeConfigs)
+	assert.Equal(t, "dev", opts.Target)
+}
+
 func TestIssueSeverity(t *testing.T) {
 	t.Parallel()
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/lock"
 	"github.com/felixgeelhaar/preflight/internal/domain/platform"
 	"github.com/felixgeelhaar/preflight/internal/domain/policy"
+	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/provider/apt"
 	"github.com/felixgeelhaar/preflight/internal/provider/bootstrap"
 	"github.com/felixgeelhaar/preflight/internal/provider/brew"
@@ -49,6 +51,7 @@ type Preflight struct {
 	modeSet           bool
 	rollbackOnFailure bool
 	out               io.Writer
+	lifecycle         *LifecycleManager
 }
 
 // New creates a new Preflight application.
@@ -60,6 +63,15 @@ func New(out io.Writer) *Preflight {
 	// Detect platform for platform-aware providers
 	plat, _ := platform.Detect()
 
+	// Create lifecycle manager for file snapshots and drift tracking
+	lifecycle, _ := DefaultLifecycleManager()
+
+	// Create files provider with lifecycle for automatic snapshots
+	filesProvider := files.NewProvider(fs)
+	if lifecycle != nil {
+		filesProvider = filesProvider.WithLifecycle(lifecycle)
+	}
+
 	// Create compiler with providers
 	comp := compiler.NewCompiler()
 	comp.RegisterProvider(bootstrap.NewProvider(cmdRunner, plat))
@@ -67,7 +79,7 @@ func New(out io.Writer) *Preflight {
 	comp.RegisterProvider(brew.NewProvider(cmdRunner))
 	comp.RegisterProvider(cargo.NewProvider(cmdRunner))
 	comp.RegisterProvider(chocolatey.NewProvider(cmdRunner, plat))
-	comp.RegisterProvider(files.NewProvider(fs))
+	comp.RegisterProvider(filesProvider)
 	comp.RegisterProvider(gem.NewProvider(cmdRunner))
 	comp.RegisterProvider(git.NewProvider(fs))
 	comp.RegisterProvider(gotools.NewProvider(cmdRunner))
@@ -82,11 +94,12 @@ func New(out io.Writer) *Preflight {
 	comp.RegisterProvider(winget.NewProvider(cmdRunner, plat))
 
 	return &Preflight{
-		compiler: comp,
-		planner:  execution.NewPlanner(),
-		executor: execution.NewExecutor(),
-		lockRepo: lockadapter.NewYAMLRepository(),
-		out:      out,
+		compiler:  comp,
+		planner:   execution.NewPlanner(),
+		executor:  execution.NewExecutor(),
+		lockRepo:  lockadapter.NewYAMLRepository(),
+		out:       out,
+		lifecycle: lifecycle,
 	}
 }
 
@@ -325,7 +338,64 @@ func (p *Preflight) PrintPlan(plan *execution.Plan) {
 		}
 	}
 
+	// Check for existing files that will be modified
+	existingFiles := p.findExistingFilesAtRisk(plan)
+	if len(existingFiles) > 0 {
+		p.printf("\n⚠️  Warning: Existing files will be modified\n")
+		p.printf("   The following files already exist and will be replaced:\n")
+		for _, f := range existingFiles {
+			p.printf("   • %s\n", f)
+		}
+		p.printf("\n   Snapshots will be created before any modifications.\n")
+		p.printf("   Use 'preflight rollback' to restore if needed.\n")
+	}
+
 	p.printf("\nRun 'preflight apply' to execute this plan.\n")
+}
+
+// findExistingFilesAtRisk returns paths of existing files that will be modified by the plan.
+func (p *Preflight) findExistingFilesAtRisk(plan *execution.Plan) []string {
+	var atRisk []string
+	seen := make(map[string]bool)
+
+	for _, entry := range plan.Entries() {
+		// Only check steps that need to be applied
+		if entry.Status() != compiler.StatusNeedsApply {
+			continue
+		}
+
+		// Check if this is a file-related step
+		stepID := entry.Step().ID().String()
+		if !strings.HasPrefix(stepID, "files:") {
+			continue
+		}
+
+		// Get the destination path from the diff
+		diff := entry.Diff()
+		if diff.IsEmpty() {
+			continue
+		}
+
+		// The diff name contains the destination path for file operations
+		destPath := diff.Name()
+		if destPath == "" {
+			continue
+		}
+
+		// Expand the path and check if file exists
+		expandedPath := ports.ExpandPath(destPath)
+		if seen[expandedPath] {
+			continue
+		}
+		seen[expandedPath] = true
+
+		// Check if the file already exists
+		if _, err := os.Stat(expandedPath); err == nil {
+			atRisk = append(atRisk, destPath)
+		}
+	}
+
+	return atRisk
 }
 
 // PrintResults outputs execution results.
@@ -430,6 +500,9 @@ func (p *Preflight) ValidateWithOptions(ctx context.Context, configPath, targetN
 
 	// Check org policies (required/forbidden patterns)
 	p.validateOrgPolicies(ctx, cfg, graph, opts, result)
+
+	// Check for packages without corresponding config files
+	p.validatePackageConfigurations(ctx, cfg, graph, result)
 
 	return result, nil
 }
@@ -678,5 +751,151 @@ func (p *Preflight) validateOrgPolicies(_ context.Context, cfg map[string]interf
 	// Report overrides applied
 	if len(orgResult.OverridesApplied) > 0 {
 		result.Info = append(result.Info, fmt.Sprintf("Org policy: %d overrides applied", len(orgResult.OverridesApplied)))
+	}
+}
+
+// packageConfigMapping maps package names to their expected config paths.
+type packageConfigMapping struct {
+	Package     string   // Package name (brew formula/cask)
+	ConfigPaths []string // Expected config paths (relative to home)
+	Description string   // Human-readable description
+}
+
+// getPackageConfigMappings returns known package-to-config mappings.
+func getPackageConfigMappings() []packageConfigMapping {
+	return []packageConfigMapping{
+		// Terminal emulators
+		{"wezterm", []string{".config/wezterm/wezterm.lua", ".wezterm.lua"}, "WezTerm terminal emulator"},
+		{"alacritty", []string{".config/alacritty/alacritty.toml", ".config/alacritty/alacritty.yml", ".alacritty.toml", ".alacritty.yml"}, "Alacritty terminal"},
+		{"kitty", []string{".config/kitty/kitty.conf"}, "Kitty terminal"},
+		{"ghostty", []string{".config/ghostty/config"}, "Ghostty terminal"},
+		{"iterm2", []string{"Library/Preferences/com.googlecode.iterm2.plist"}, "iTerm2 terminal"},
+
+		// Editors
+		{"neovim", []string{".config/nvim/init.lua", ".config/nvim/init.vim"}, "Neovim editor"},
+		{"vim", []string{".vimrc", ".vim"}, "Vim editor"},
+		{"visual-studio-code", []string{".config/Code/User/settings.json", "Library/Application Support/Code/User/settings.json"}, "VS Code editor"},
+		{"cursor", []string{".config/Cursor/User/settings.json", "Library/Application Support/Cursor/User/settings.json"}, "Cursor editor"},
+		{"zed", []string{".config/zed/settings.json"}, "Zed editor"},
+
+		// Shell tools
+		{"starship", []string{".config/starship.toml"}, "Starship prompt"},
+		{"tmux", []string{".tmux.conf", ".config/tmux/tmux.conf"}, "Tmux multiplexer"},
+		{"zsh", []string{".zshrc", ".zshenv"}, "Zsh shell"},
+
+		// CLI tools with configs
+		{"bat", []string{".config/bat/config"}, "Bat (cat replacement)"},
+		{"lazygit", []string{".config/lazygit/config.yml"}, "LazyGit TUI"},
+		{"lsd", []string{".config/lsd/config.yaml"}, "LSD (ls replacement)"},
+		{"bottom", []string{".config/bottom/bottom.toml"}, "Bottom (htop replacement)"},
+		{"ripgrep", []string{".config/ripgrep/config", ".ripgreprc"}, "Ripgrep search tool"},
+		{"fd", []string{".config/fd/ignore"}, "Fd find tool"},
+		{"fzf", []string{".fzf.zsh", ".fzf.bash"}, "FZF fuzzy finder"},
+		{"htop", []string{".config/htop/htoprc"}, "Htop process viewer"},
+		{"btop", []string{".config/btop/btop.conf"}, "Btop process viewer"},
+	}
+}
+
+// validatePackageConfigurations checks if installed packages have corresponding config files.
+func (p *Preflight) validatePackageConfigurations(_ context.Context, cfg map[string]interface{}, graph *compiler.StepGraph, result *ValidationResult) {
+	// Extract installed packages from step graph
+	installedPackages := make(map[string]bool)
+	for _, step := range graph.Steps() {
+		stepID := step.ID().String()
+		// Parse step IDs like "brew:formula:neovim" or "brew:cask:wezterm"
+		parts := strings.Split(stepID, ":")
+		if len(parts) >= 3 && (parts[0] == "brew" || parts[0] == "apt" || parts[0] == "chocolatey" || parts[0] == "scoop") {
+			packageName := parts[len(parts)-1]
+			installedPackages[strings.ToLower(packageName)] = true
+		}
+	}
+
+	if len(installedPackages) == 0 {
+		return // No packages to check
+	}
+
+	// Extract configured file destinations
+	configuredPaths := make(map[string]bool)
+	if filesSection, ok := cfg["files"].(map[string]interface{}); ok {
+		// Check links
+		if links, ok := filesSection["links"].([]interface{}); ok {
+			for _, link := range links {
+				if linkMap, ok := link.(map[string]interface{}); ok {
+					if dest, ok := linkMap["dest"].(string); ok {
+						// Normalize path (remove ~/ prefix for comparison)
+						normalized := strings.TrimPrefix(dest, "~/")
+						normalized = strings.TrimPrefix(normalized, "$HOME/")
+						configuredPaths[normalized] = true
+					}
+				}
+			}
+		}
+		// Check templates
+		if templates, ok := filesSection["templates"].([]interface{}); ok {
+			for _, tmpl := range templates {
+				if tmplMap, ok := tmpl.(map[string]interface{}); ok {
+					if dest, ok := tmplMap["dest"].(string); ok {
+						normalized := strings.TrimPrefix(dest, "~/")
+						normalized = strings.TrimPrefix(normalized, "$HOME/")
+						configuredPaths[normalized] = true
+					}
+				}
+			}
+		}
+		// Check copies
+		if copies, ok := filesSection["copies"].([]interface{}); ok {
+			for _, cp := range copies {
+				if cpMap, ok := cp.(map[string]interface{}); ok {
+					if dest, ok := cpMap["dest"].(string); ok {
+						normalized := strings.TrimPrefix(dest, "~/")
+						normalized = strings.TrimPrefix(normalized, "$HOME/")
+						configuredPaths[normalized] = true
+					}
+				}
+			}
+		}
+	}
+
+	// Check each known package mapping
+	mappings := getPackageConfigMappings()
+	var missingConfigs []string
+
+	for _, mapping := range mappings {
+		packageLower := strings.ToLower(mapping.Package)
+		if !installedPackages[packageLower] {
+			continue // Package not being installed
+		}
+
+		// Check if any of the expected config paths are configured
+		hasConfig := false
+		for _, configPath := range mapping.ConfigPaths {
+			if configuredPaths[configPath] {
+				hasConfig = true
+				break
+			}
+			// Also check if parent directory is configured (for directory-based configs)
+			dir := filepath.Dir(configPath)
+			if configuredPaths[dir] || configuredPaths[dir+"/"] {
+				hasConfig = true
+				break
+			}
+		}
+
+		if !hasConfig {
+			missingConfigs = append(missingConfigs,
+				fmt.Sprintf("%s (%s) - expected config at: %s",
+					mapping.Package, mapping.Description, mapping.ConfigPaths[0]))
+		}
+	}
+
+	// Add warnings for missing configs
+	if len(missingConfigs) > 0 {
+		result.Warnings = append(result.Warnings,
+			"The following packages are being installed without corresponding config files:")
+		for _, missing := range missingConfigs {
+			result.Warnings = append(result.Warnings, fmt.Sprintf("  • %s", missing))
+		}
+		result.Warnings = append(result.Warnings,
+			"Consider adding files: links entries for these configs to ensure reproducibility.")
 	}
 }

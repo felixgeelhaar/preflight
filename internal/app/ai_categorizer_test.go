@@ -2,8 +2,10 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -237,6 +239,83 @@ func TestParseCategorizationResponse(t *testing.T) {
 			assert.Equal(t, tt.expectedReasoning, result.Reasoning)
 		})
 	}
+}
+
+func TestProviderCategorizer_CategorizeEmptyItems(t *testing.T) {
+	t.Parallel()
+
+	provider := fakeAIProvider{available: true}
+	categorizer := NewProviderCategorizer(provider)
+
+	result, err := categorizer.Categorize(context.Background(), AICategorizationRequest{})
+	require.NoError(t, err)
+	assert.Empty(t, result.Categorizations)
+	assert.Empty(t, result.Reasoning)
+}
+
+func TestProviderCategorizer_CategorizeUnavailable(t *testing.T) {
+	t.Parallel()
+
+	provider := fakeAIProvider{available: false}
+	categorizer := NewProviderCategorizer(provider)
+
+	_, err := categorizer.Categorize(context.Background(), AICategorizationRequest{
+		Items: []CapturedItem{{Name: "pkg"}},
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not available")
+}
+
+func TestProviderCategorizer_CategorizeCompleteError(t *testing.T) {
+	t.Parallel()
+
+	provider := fakeAIProvider{
+		available:   true,
+		completeErr: errTest,
+	}
+	categorizer := NewProviderCategorizer(provider)
+
+	_, err := categorizer.Categorize(context.Background(), AICategorizationRequest{
+		Items: []CapturedItem{{Name: "pkg"}},
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "AI completion failed")
+}
+
+func TestProviderCategorizer_Categorize(t *testing.T) {
+	t.Parallel()
+
+	response := `{
+  "categorizations": {"pkg": "layer"},
+  "reasoning": {"pkg": "reason"}
+}`
+	provider := fakeAIProvider{
+		available: true,
+		response:  advisor.NewResponse(response, 10, "test"),
+	}
+	categorizer := NewProviderCategorizer(provider)
+
+	result, err := categorizer.Categorize(context.Background(), AICategorizationRequest{
+		Items:           []CapturedItem{{Name: "pkg", Provider: "brew"}},
+		AvailableLayers: []string{"layer"},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "layer", result.Categorizations["pkg"])
+	assert.Equal(t, "reason", result.Reasoning["pkg"])
+}
+
+type fakeAIProvider struct {
+	available   bool
+	response    advisor.Response
+	completeErr error
+}
+
+var errTest = fmt.Errorf("ai error")
+
+func (f fakeAIProvider) Name() string    { return "fake" }
+func (f fakeAIProvider) Available() bool { return f.available }
+func (f fakeAIProvider) Complete(_ context.Context, _ advisor.Prompt) (advisor.Response, error) {
+	return f.response, f.completeErr
 }
 
 func TestProviderCategorizer_EmptyItems(t *testing.T) {

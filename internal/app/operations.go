@@ -313,7 +313,7 @@ func (p *Preflight) captureNvimConfig(homeDir string, capturedAt time.Time) []Ca
 }
 
 func (p *Preflight) captureVSCodeExtensions(_ context.Context, capturedAt time.Time) []CapturedItem {
-	var items []CapturedItem
+	items := make([]CapturedItem, 0, 8) // Pre-allocate for version + extensions
 
 	if version := captureCommandVersion("code", "--version"); version != "" {
 		items = append(items, CapturedItem{
@@ -1745,8 +1745,9 @@ func (p *Preflight) RepoClone(ctx context.Context, opts CloneOptions) (*CloneRes
 			p.printf("Proceed with bootstrapping? [y/N]: ")
 			var response string
 			if _, err := fmt.Scanln(&response); err != nil {
+				// User cancelled input (e.g., Ctrl+C or EOF), skip gracefully
 				p.printf("\nSkipping apply. Run 'preflight apply' when ready.\n")
-				return result, nil
+				return result, nil //nolint:nilerr // Intentional: EOF/cancel means skip, not error
 			}
 			response = strings.ToLower(strings.TrimSpace(response))
 			if response != "y" && response != "yes" {
