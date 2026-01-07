@@ -14,6 +14,7 @@ import (
 type CommandRunner struct {
 	mu      sync.RWMutex
 	results map[string]ports.CommandResult
+	errors  map[string]error
 	calls   []ports.CommandCall
 }
 
@@ -21,6 +22,7 @@ type CommandRunner struct {
 func NewCommandRunner() *CommandRunner {
 	return &CommandRunner{
 		results: make(map[string]ports.CommandResult),
+		errors:  make(map[string]error),
 		calls:   make([]ports.CommandCall, 0),
 	}
 }
@@ -31,6 +33,14 @@ func (m *CommandRunner) AddResult(command string, args []string, result ports.Co
 	defer m.mu.Unlock()
 	key := buildKey(command, args)
 	m.results[key] = result
+}
+
+// AddError registers an expected command that should return an error.
+func (m *CommandRunner) AddError(command string, args []string, err error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	key := buildKey(command, args)
+	m.errors[key] = err
 }
 
 // Run executes a mock command.
@@ -46,6 +56,12 @@ func (m *CommandRunner) Run(_ context.Context, command string, args ...string) (
 	defer m.mu.RUnlock()
 
 	key := buildKey(command, args)
+
+	// Check for registered error first
+	if err, ok := m.errors[key]; ok {
+		return ports.CommandResult{}, err
+	}
+
 	if result, ok := m.results[key]; ok {
 		return result, nil
 	}
@@ -64,11 +80,12 @@ func (m *CommandRunner) Calls() []ports.CommandCall {
 	return calls
 }
 
-// Reset clears all registered results and recorded calls.
+// Reset clears all registered results, errors, and recorded calls.
 func (m *CommandRunner) Reset() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.results = make(map[string]ports.CommandResult)
+	m.errors = make(map[string]error)
 	m.calls = make([]ports.CommandCall, 0)
 }
 
