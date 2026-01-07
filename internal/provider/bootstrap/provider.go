@@ -1,3 +1,4 @@
+// Package bootstrap provides automatic toolchain installation for missing dependencies.
 package bootstrap
 
 import (

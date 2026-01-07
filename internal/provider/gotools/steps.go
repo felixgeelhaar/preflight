@@ -134,7 +134,7 @@ func (s *ToolStep) LockInfo() (compiler.LockInfo, bool) {
 func (s *ToolStep) InstalledVersion(ctx compiler.RunContext) (string, bool, error) {
 	binaryPath := filepath.Join(getGoBin(), s.tool.BinaryName())
 	if _, err := os.Stat(binaryPath); err != nil {
-		return "", false, nil
+		return "", false, nil //nolint:nilerr // Binary not found means not installed
 	}
 
 	result, err := s.runner.Run(ctx.Context(), "go", "version", "-m", binaryPath)

@@ -1,3 +1,4 @@
+// Package commandutil provides utilities for command execution and error handling.
 package commandutil
 
 import (

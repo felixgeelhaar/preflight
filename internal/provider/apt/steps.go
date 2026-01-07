@@ -98,12 +98,12 @@ func (s *UpdateStep) DependsOn() []compiler.StepID {
 // Check determines if apt metadata is up to date.
 func (s *UpdateStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
 	if _, err := exec.LookPath("apt-get"); err != nil {
-		return compiler.StatusNeedsApply, nil
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // apt-get not found means needs install
 	}
 
 	info, err := os.Stat("/var/lib/apt/periodic/update-success-stamp")
 	if err != nil {
-		return compiler.StatusNeedsApply, nil
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // File missing means needs update
 	}
 	if time.Since(info.ModTime()) < 24*time.Hour {
 		return compiler.StatusSatisfied, nil

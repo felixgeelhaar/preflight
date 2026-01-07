@@ -141,12 +141,12 @@ func (s *Step) InstalledVersion(ctx compiler.RunContext) (string, bool, error) {
 	if line == "" {
 		return "", false, nil
 	}
-	open := strings.Index(line, "(")
-	close := strings.Index(line, ")")
-	if open == -1 || close == -1 || close <= open+1 {
+	openIdx := strings.Index(line, "(")
+	closeIdx := strings.Index(line, ")")
+	if openIdx == -1 || closeIdx == -1 || closeIdx <= openIdx+1 {
 		return "", false, nil
 	}
-	versions := strings.Split(line[open+1:close], ",")
+	versions := strings.Split(line[openIdx+1:closeIdx], ",")
 	if len(versions) == 0 {
 		return "", false, nil
 	}

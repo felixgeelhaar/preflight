@@ -1,3 +1,4 @@
+// Package deps provides tool dependency resolution for package providers.
 package deps
 
 import (
@@ -10,6 +11,7 @@ import (
 // Tool identifies a runtime dependency used by package providers.
 type Tool string
 
+// Tool constants for common runtime dependencies.
 const (
 	ToolNode   Tool = "node"
 	ToolPython Tool = "python"
@@ -28,12 +30,14 @@ func ResolveToolDeps(ctx compiler.CompileContext, plat *platform.Platform, tool 
 	return []compiler.StepID{dep.StepID}
 }
 
+// ToolDependency represents a resolved tool dependency with its installation source.
 type ToolDependency struct {
 	StepID   compiler.StepID
 	Manager  string
 	Explicit bool
 }
 
+// ToolBootstrap represents a tool that needs to be installed before other packages.
 type ToolBootstrap struct {
 	Tool        Tool
 	Manager     string
@@ -41,6 +45,7 @@ type ToolBootstrap struct {
 	StepID      compiler.StepID
 }
 
+// ResolveToolDependency resolves the installation source for a tool dependency.
 func ResolveToolDependency(ctx compiler.CompileContext, plat *platform.Platform, tool Tool) (ToolDependency, bool) {
 	config := ctx.Config()
 	if config == nil {
@@ -75,6 +80,7 @@ func ResolveToolDependency(ctx compiler.CompileContext, plat *platform.Platform,
 	}, true
 }
 
+// ResolveToolBootstrap returns bootstrap information for a tool that needs installation.
 func ResolveToolBootstrap(ctx compiler.CompileContext, plat *platform.Platform, tool Tool) (ToolBootstrap, bool) {
 	dep, ok := ResolveToolDependency(ctx, plat, tool)
 	if !ok || dep.Explicit {

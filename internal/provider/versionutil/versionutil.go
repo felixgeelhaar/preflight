@@ -1,3 +1,4 @@
+// Package versionutil provides version resolution utilities for providers.
 package versionutil
 
 import "github.com/felixgeelhaar/preflight/internal/domain/compiler"
