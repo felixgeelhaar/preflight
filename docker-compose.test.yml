@@ -1,0 +1,195 @@
+# docker-compose.test.yml - Test orchestration for preflight
+#
+# Usage:
+#   docker compose -f docker-compose.test.yml run unit      # Unit tests
+#   docker compose -f docker-compose.test.yml run apt       # APT integration tests
+#   docker compose -f docker-compose.test.yml run brew      # Homebrew integration tests
+#   docker compose -f docker-compose.test.yml run full      # Full integration tests
+#   docker compose -f docker-compose.test.yml run coverage  # Coverage report
+#
+#   # Run all test suites
+#   docker compose -f docker-compose.test.yml up --abort-on-container-exit
+
+services:
+  # ==========================================================================
+  # Unit Tests - Fast, no external dependencies
+  # ==========================================================================
+  unit:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: unit-test
+    volumes:
+      # Mount source for faster iteration during development
+      - .:/app:ro
+      # Cache Go modules
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    environment:
+      - CGO_ENABLED=1
+      - GOFLAGS=-race
+    command: ["go", "test", "-race", "-v", "-short", "./..."]
+
+  # ==========================================================================
+  # Unit Tests with Coverage
+  # ==========================================================================
+  unit-coverage:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: unit-test
+    volumes:
+      - .:/app
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+      - ./coverage:/coverage
+    command: >
+      sh -c "go test -coverprofile=/coverage/unit.out ./... &&
+             go tool cover -func=/coverage/unit.out"
+
+  # ==========================================================================
+  # APT Provider Integration Tests
+  # ==========================================================================
+  apt:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: integration-apt
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+    environment:
+      - PREFLIGHT_TEST_APT=1
+    command: ["go", "test", "-v", "-tags=integration", "./internal/provider/apt/...", "./test/integration/..."]
+
+  # ==========================================================================
+  # Homebrew Provider Integration Tests (Linux)
+  # ==========================================================================
+  brew:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: integration-brew
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - brew-cache:/home/linuxbrew/.cache
+    environment:
+      - PREFLIGHT_TEST_BREW=1
+      - HOMEBREW_NO_AUTO_UPDATE=1
+      - HOMEBREW_NO_ANALYTICS=1
+    command: ["go", "test", "-v", "-tags=integration,brew", "./internal/provider/brew/...", "./test/integration/..."]
+
+  # ==========================================================================
+  # Full Integration Tests (all providers)
+  # ==========================================================================
+  full:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: integration-full
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - brew-cache:/home/testuser/.cache
+    environment:
+      - PREFLIGHT_TEST_FULL=1
+      - PREFLIGHT_TEST_APT=1
+      - PREFLIGHT_TEST_BREW=1
+      - HOMEBREW_NO_AUTO_UPDATE=1
+      - HOMEBREW_NO_ANALYTICS=1
+    command: ["go", "test", "-v", "-tags=integration", "./test/integration/..."]
+
+  # ==========================================================================
+  # Files Provider Integration Tests
+  # ==========================================================================
+  files:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: integration-apt
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+    environment:
+      - PREFLIGHT_TEST_FILES=1
+    command: ["go", "test", "-v", "-tags=integration", "./internal/provider/files/...", "./test/integration/..."]
+
+  # ==========================================================================
+  # SSH Provider Integration Tests
+  # ==========================================================================
+  ssh:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: integration-apt
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+    environment:
+      - PREFLIGHT_TEST_SSH=1
+    command: ["go", "test", "-v", "-tags=integration", "./internal/provider/ssh/...", "./test/integration/..."]
+
+  # ==========================================================================
+  # End-to-End Tests (full workflow with binary)
+  # ==========================================================================
+  e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: e2e
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+    environment:
+      - PREFLIGHT_BINARY=/app/bin/preflight
+    command: ["go", "test", "-v", "-tags=e2e", "./test/e2e/..."]
+
+  # ==========================================================================
+  # Coverage Report Generation
+  # ==========================================================================
+  coverage:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: coverage
+    volumes:
+      - .:/app
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+      - ./coverage:/coverage
+    command: >
+      sh -c "go test -coverprofile=/coverage/coverage.out ./... &&
+             go tool cover -html=/coverage/coverage.out -o /coverage/coverage.html &&
+             go tool cover -func=/coverage/coverage.out"
+
+  # ==========================================================================
+  # Lint (golangci-lint)
+  # ==========================================================================
+  lint:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: go-base
+    volumes:
+      - .:/app:ro
+      - go-mod-cache:/go/pkg/mod
+      - golangci-lint-cache:/root/.cache/golangci-lint
+    command: >
+      sh -c "curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin v1.62.2 &&
+             golangci-lint run --timeout 5m"
+
+  # ==========================================================================
+  # Build Binary
+  # ==========================================================================
+  build:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: go-base
+    volumes:
+      - .:/app
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+      - ./bin:/app/bin
+    command: ["go", "build", "-o", "bin/preflight-linux", "./cmd/preflight"]
+
+volumes:
+  go-mod-cache:
+  go-build-cache:
+  brew-cache:
+  golangci-lint-cache:

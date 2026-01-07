@@ -1,0 +1,48 @@
+# .dockerignore - Exclude files from Docker build context
+
+# Git
+.git
+.gitignore
+
+# Build artifacts
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+coverage/
+coverage.out
+coverage.html
+*.cover
+*.test
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation (not needed for tests)
+docs/
+*.md
+!go.mod
+!go.sum
+
+# Demo recordings
+demos/
+
+# Local config
+.env
+.env.*
+*.local
+
+# Homebrew formula (not needed for tests)
+Formula/

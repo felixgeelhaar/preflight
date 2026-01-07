@@ -44,3 +44,7 @@ website/dist/
 website/.astro/
 .playwright-mcp/
 /preflight
+
+# Coverage profiles
+*.cover
+coverfunc.txt
