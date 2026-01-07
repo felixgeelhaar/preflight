@@ -154,8 +154,8 @@ type InitWizardResult struct {
 
 // RunInitWizard runs the interactive init wizard.
 func RunInitWizard(ctx context.Context, opts InitWizardOptions) (*InitWizardResult, error) {
-	// Create the init wizard model
-	model := newInitWizardModel(opts)
+	// Create the init wizard model with context for AI operations
+	model := newInitWizardModel(ctx, opts)
 
 	// Run the program
 	p := tea.NewProgram(model, tea.WithContext(ctx))

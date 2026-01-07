@@ -36,7 +36,7 @@ func TestNewInterviewModel(t *testing.T) {
 	t.Parallel()
 
 	provider := &mockAIProvider{available: true}
-	model := newInterviewModel(provider)
+	model := newInterviewModel(context.Background(), provider)
 
 	assert.Equal(t, interviewStepExperience, model.step)
 	assert.Equal(t, provider, model.provider)
@@ -48,7 +48,7 @@ func TestNewInterviewModel(t *testing.T) {
 func TestInterviewModel_Init(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	cmd := model.Init()
 
 	assert.Nil(t, cmd)
@@ -57,7 +57,7 @@ func TestInterviewModel_Init(t *testing.T) {
 func TestInterviewModel_WindowResize(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	newModel, _ := model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 
 	m := newModel.(interviewModel)
@@ -68,7 +68,7 @@ func TestInterviewModel_WindowResize(t *testing.T) {
 func TestInterviewModel_EscapeSkips(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	newModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
 
 	m := newModel.(interviewModel)
@@ -79,7 +79,7 @@ func TestInterviewModel_EscapeSkips(t *testing.T) {
 func TestInterviewModel_CtrlCCancels(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	newModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 
 	m := newModel.(interviewModel)
@@ -90,7 +90,7 @@ func TestInterviewModel_CtrlCCancels(t *testing.T) {
 func TestInterviewModel_ExperienceSelection(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 
 	// Simulate selection
 	newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -103,7 +103,7 @@ func TestInterviewModel_ExperienceSelection(t *testing.T) {
 func TestInterviewModel_ViewExperience(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	model.step = interviewStepExperience
 
 	view := model.View()
@@ -114,7 +114,7 @@ func TestInterviewModel_ViewExperience(t *testing.T) {
 func TestInterviewModel_ViewLanguages(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	model.step = interviewStepLanguages
 
 	view := model.View()
@@ -125,7 +125,7 @@ func TestInterviewModel_ViewLanguages(t *testing.T) {
 func TestInterviewModel_ViewTools(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	model.step = interviewStepTools
 
 	view := model.View()
@@ -136,7 +136,7 @@ func TestInterviewModel_ViewTools(t *testing.T) {
 func TestInterviewModel_ViewGoals(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	model.step = interviewStepGoals
 
 	view := model.View()
@@ -147,7 +147,7 @@ func TestInterviewModel_ViewGoals(t *testing.T) {
 func TestInterviewModel_ViewLoading(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	model.loading = true
 
 	view := model.View()
@@ -158,7 +158,7 @@ func TestInterviewModel_ViewLoading(t *testing.T) {
 func TestInterviewModel_ViewSuggestion(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	model.step = interviewStepSuggestion
 	model.recommendation = &advisor.AIRecommendation{
 		Presets:     []string{"developer"},
@@ -176,7 +176,7 @@ func TestInterviewModel_ViewSuggestion(t *testing.T) {
 func TestInterviewModel_ViewSuggestion_NoRecommendation(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	model.step = interviewStepSuggestion
 	model.recommendation = nil
 
@@ -188,7 +188,7 @@ func TestInterviewModel_ViewSuggestion_NoRecommendation(t *testing.T) {
 func TestInterviewModel_AIResponse(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	model.loading = true
 
 	rec := &advisor.AIRecommendation{
@@ -207,7 +207,7 @@ func TestInterviewModel_AIResponse(t *testing.T) {
 func TestInterviewModel_AIResponseError(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	model.loading = true
 
 	newModel, cmd := model.Update(aiResponseMsg{err: assert.AnError})
@@ -221,7 +221,7 @@ func TestInterviewModel_AIResponseError(t *testing.T) {
 func TestInterviewModel_Result(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	rec := &advisor.AIRecommendation{
 		Presets: []string{"developer"},
 	}
@@ -233,7 +233,7 @@ func TestInterviewModel_Result(t *testing.T) {
 func TestInterviewModel_Skipped(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	assert.False(t, model.Skipped())
 
 	model.skipped = true
@@ -243,7 +243,7 @@ func TestInterviewModel_Skipped(t *testing.T) {
 func TestInterviewModel_Cancelled(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	assert.False(t, model.Cancelled())
 
 	model.cancelled = true
@@ -253,7 +253,7 @@ func TestInterviewModel_Cancelled(t *testing.T) {
 func TestInterviewModel_HandleSelection_Experience(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	model.step = interviewStepExperience
 
 	newModel, _ := model.handleSelection(components.ListSelectedMsg{
@@ -268,7 +268,7 @@ func TestInterviewModel_HandleSelection_Experience(t *testing.T) {
 func TestInterviewModel_HandleSelection_Languages(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	model.step = interviewStepLanguages
 
 	newModel, _ := model.handleSelection(components.ListSelectedMsg{
@@ -284,7 +284,7 @@ func TestInterviewModel_HandleSelection_Languages(t *testing.T) {
 func TestInterviewModel_HandleSelection_Tools(t *testing.T) {
 	t.Parallel()
 
-	model := newInterviewModel(nil)
+	model := newInterviewModel(context.Background(), nil)
 	model.step = interviewStepTools
 
 	newModel, _ := model.handleSelection(components.ListSelectedMsg{

@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"context"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 	"github.com/felixgeelhaar/preflight/internal/tui/components"
@@ -23,6 +25,7 @@ const (
 
 // initWizardModel implements the init wizard TUI.
 type initWizardModel struct {
+	ctx              context.Context
 	step             initWizardStep
 	opts             InitWizardOptions
 	styles           ui.Styles
@@ -51,7 +54,7 @@ type initWizardModel struct {
 	previewModel layerPreviewModel
 }
 
-func newInitWizardModel(opts InitWizardOptions) initWizardModel {
+func newInitWizardModel(ctx context.Context, opts InitWizardOptions) initWizardModel {
 	styles := ui.DefaultStyles()
 	keys := ui.DefaultKeyMap()
 
@@ -113,7 +116,7 @@ func newInitWizardModel(opts InitWizardOptions) initWizardModel {
 	// Initialize interview model if advisor is available
 	var interview interviewModel
 	if opts.Advisor != nil && opts.Advisor.Available() {
-		interview = newInterviewModel(opts.Advisor)
+		interview = newInterviewModel(ctx, opts.Advisor)
 	}
 
 	// Determine starting step
@@ -128,6 +131,7 @@ func newInitWizardModel(opts InitWizardOptions) initWizardModel {
 	}
 
 	return initWizardModel{
+		ctx:            ctx,
 		step:           startStep,
 		opts:           opts,
 		styles:         styles,

@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
@@ -23,6 +24,7 @@ const (
 
 // interviewModel implements the AI interview TUI.
 type interviewModel struct {
+	ctx      context.Context
 	step     interviewStep
 	provider advisor.AIProvider
 	styles   ui.Styles
@@ -58,7 +60,7 @@ type aiResponseMsg struct {
 	err            error
 }
 
-func newInterviewModel(provider advisor.AIProvider) interviewModel {
+func newInterviewModel(ctx context.Context, provider advisor.AIProvider) interviewModel {
 	styles := ui.DefaultStyles()
 
 	// Experience level options
@@ -107,6 +109,7 @@ func newInterviewModel(provider advisor.AIProvider) interviewModel {
 		WithHeight(8)
 
 	return interviewModel{
+		ctx:            ctx,
 		step:           interviewStepExperience,
 		provider:       provider,
 		styles:         styles,
@@ -244,7 +247,10 @@ func (m interviewModel) requestSuggestion() tea.Cmd {
 			return aiResponseMsg{err: nil, recommendation: nil}
 		}
 
-		ctx := context.Background()
+		// Use parent context with 15-second timeout for AI requests
+		ctx, cancel := context.WithTimeout(m.ctx, 15*time.Second)
+		defer cancel()
+
 		prompt := advisor.BuildInterviewPrompt(m.profile)
 		resp, err := m.provider.Complete(ctx, prompt)
 		if err != nil {

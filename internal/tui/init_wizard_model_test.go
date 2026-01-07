@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -12,7 +13,7 @@ func TestNewInitWizardModel(t *testing.T) {
 	t.Parallel()
 
 	opts := InitWizardOptions{}
-	model := newInitWizardModel(opts)
+	model := newInitWizardModel(context.Background(), opts)
 
 	assert.Equal(t, stepWelcome, model.step)
 	assert.Equal(t, 80, model.width)
@@ -24,7 +25,7 @@ func TestNewInitWizardModel_SkipWelcome(t *testing.T) {
 	t.Parallel()
 
 	opts := InitWizardOptions{SkipWelcome: true}
-	model := newInitWizardModel(opts)
+	model := newInitWizardModel(context.Background(), opts)
 
 	assert.Equal(t, stepSelectProvider, model.step)
 }
@@ -32,7 +33,7 @@ func TestNewInitWizardModel_SkipWelcome(t *testing.T) {
 func TestInitWizardModel_Init(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	cmd := model.Init()
 
 	assert.Nil(t, cmd)
@@ -41,7 +42,7 @@ func TestInitWizardModel_Init(t *testing.T) {
 func TestInitWizardModel_Update_WindowSize(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	msg := tea.WindowSizeMsg{Width: 100, Height: 50}
 
 	updated, cmd := model.Update(msg)
@@ -55,7 +56,7 @@ func TestInitWizardModel_Update_WindowSize(t *testing.T) {
 func TestInitWizardModel_HandleKeyMsg_QuitFromWelcome(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	msg := tea.KeyMsg{Type: tea.KeyCtrlC}
 
 	updated, cmd := model.Update(msg)
@@ -68,7 +69,7 @@ func TestInitWizardModel_HandleKeyMsg_QuitFromWelcome(t *testing.T) {
 func TestInitWizardModel_HandleKeyMsg_EscFromWelcome(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	msg := tea.KeyMsg{Type: tea.KeyEsc}
 
 	updated, cmd := model.Update(msg)
@@ -81,7 +82,7 @@ func TestInitWizardModel_HandleKeyMsg_EscFromWelcome(t *testing.T) {
 func TestInitWizardModel_HandleKeyMsg_EnterFromWelcome(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	msg := tea.KeyMsg{Type: tea.KeyEnter}
 
 	updated, cmd := model.Update(msg)
@@ -94,7 +95,7 @@ func TestInitWizardModel_HandleKeyMsg_EnterFromWelcome(t *testing.T) {
 func TestInitWizardModel_HandleKeyMsg_GoBack(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepSelectPreset
 
 	msg := tea.KeyMsg{Type: tea.KeyEsc}
@@ -108,7 +109,7 @@ func TestInitWizardModel_HandleKeyMsg_GoBack(t *testing.T) {
 func TestInitWizardModel_HandleSelection_Provider(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepSelectProvider
 
 	msg := components.ListSelectedMsg{
@@ -124,7 +125,7 @@ func TestInitWizardModel_HandleSelection_Provider(t *testing.T) {
 func TestInitWizardModel_HandleSelection_Preset(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepSelectPreset
 
 	msg := components.ListSelectedMsg{
@@ -141,7 +142,7 @@ func TestInitWizardModel_HandleSelection_Preset(t *testing.T) {
 func TestInitWizardModel_HandleConfirm_Yes(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepConfirm
 	model.selectedPreset = "nvim:balanced"
 
@@ -158,7 +159,7 @@ func TestInitWizardModel_HandleConfirm_Yes(t *testing.T) {
 func TestInitWizardModel_HandleConfirm_No(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepConfirm
 	model.selectedPreset = "nvim:balanced"
 
@@ -173,7 +174,7 @@ func TestInitWizardModel_HandleConfirm_No(t *testing.T) {
 func TestInitWizardModel_GetPresetsForProvider(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 
 	tests := []struct {
 		provider string
@@ -198,7 +199,7 @@ func TestInitWizardModel_GetPresetsForProvider(t *testing.T) {
 func TestInitWizardModel_View_Welcome(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepWelcome
 
 	view := model.View()
@@ -210,7 +211,7 @@ func TestInitWizardModel_View_Welcome(t *testing.T) {
 func TestInitWizardModel_View_SelectProvider(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepSelectProvider
 
 	view := model.View()
@@ -221,7 +222,7 @@ func TestInitWizardModel_View_SelectProvider(t *testing.T) {
 func TestInitWizardModel_View_SelectPreset(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepSelectPreset
 
 	view := model.View()
@@ -232,7 +233,7 @@ func TestInitWizardModel_View_SelectPreset(t *testing.T) {
 func TestInitWizardModel_View_Confirm(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepConfirm
 	model.selectedPreset = "nvim:balanced"
 
@@ -245,7 +246,7 @@ func TestInitWizardModel_View_Confirm(t *testing.T) {
 func TestInitWizardModel_View_Complete(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepComplete
 
 	view := model.View()
@@ -256,7 +257,7 @@ func TestInitWizardModel_View_Complete(t *testing.T) {
 func TestInitWizardModel_View_Error(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepError
 	model.lastError = assert.AnError
 
@@ -269,7 +270,7 @@ func TestInitWizardModel_View_Error(t *testing.T) {
 func TestInitWizardModel_View_Error_Nil(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepError
 	model.lastError = nil
 
@@ -282,7 +283,7 @@ func TestInitWizardModel_View_Error_Nil(t *testing.T) {
 func TestInitWizardModel_HandleKeyMsg_EscFromError(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepError
 	model.lastError = assert.AnError
 
@@ -296,7 +297,7 @@ func TestInitWizardModel_HandleKeyMsg_EscFromError(t *testing.T) {
 func TestInitWizardModel_HandleKeyMsg_QuitFromError(t *testing.T) {
 	t.Parallel()
 
-	model := newInitWizardModel(InitWizardOptions{})
+	model := newInitWizardModel(context.Background(), InitWizardOptions{})
 	model.step = stepError
 	model.lastError = assert.AnError
 
@@ -322,7 +323,7 @@ func TestInitWizardModel_Update_ComponentForwarding(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			model := newInitWizardModel(InitWizardOptions{})
+			model := newInitWizardModel(context.Background(), InitWizardOptions{})
 			model.step = tt.step
 
 			// Send a key that components can handle
