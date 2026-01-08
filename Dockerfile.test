@@ -1,0 +1,185 @@
+# Dockerfile.test - Multi-stage test environment for preflight
+# Supports both unit tests and integration tests with real package managers
+
+# =============================================================================
+# Stage 1: Base Go environment
+# =============================================================================
+FROM golang:1.25-bookworm AS go-base
+
+# Install common development tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    ca-certificates \
+    gnupg \
+    openssh-client \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Cache Go modules
+COPY go.mod go.sum ./
+RUN go mod download
+
+# =============================================================================
+# Stage 2: Unit test environment (no package managers needed)
+# =============================================================================
+FROM go-base AS unit-test
+
+COPY . .
+
+# Run unit tests with race detection
+CMD ["go", "test", "-race", "-v", "./..."]
+
+# =============================================================================
+# Stage 3: Integration test environment with apt
+# =============================================================================
+FROM go-base AS integration-apt
+
+# Install apt-related tools for testing
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    apt-utils \
+    dpkg-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for realistic testing
+RUN useradd -m -s /bin/bash testuser
+RUN mkdir -p /home/testuser/.config /home/testuser/.local
+RUN chown -R testuser:testuser /home/testuser
+
+COPY . .
+
+# Set up test user environment
+ENV HOME=/home/testuser
+USER testuser
+WORKDIR /home/testuser
+
+# Copy app as testuser
+COPY --chown=testuser:testuser . /app
+WORKDIR /app
+
+CMD ["go", "test", "-v", "-tags=integration", "./test/integration/..."]
+
+# =============================================================================
+# Stage 4: Integration test environment with Homebrew (Linux)
+# =============================================================================
+FROM go-base AS integration-brew
+
+# Install Homebrew dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    procps \
+    file \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create linuxbrew user
+RUN useradd -m -s /bin/bash linuxbrew
+RUN mkdir -p /home/linuxbrew/.config /home/linuxbrew/.local
+RUN chown -R linuxbrew:linuxbrew /home/linuxbrew
+
+# Install Homebrew as linuxbrew user
+USER linuxbrew
+ENV HOME=/home/linuxbrew
+WORKDIR /home/linuxbrew
+
+RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || true
+
+# Add Homebrew to PATH
+ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
+ENV HOMEBREW_NO_AUTO_UPDATE=1
+ENV HOMEBREW_NO_ANALYTICS=1
+
+# Copy app
+COPY --chown=linuxbrew:linuxbrew . /app
+WORKDIR /app
+
+# Download Go modules as linuxbrew user
+RUN go mod download
+
+CMD ["go", "test", "-v", "-tags=integration,brew", "./test/integration/..."]
+
+# =============================================================================
+# Stage 5: Full integration environment (apt + brew + files)
+# =============================================================================
+FROM ubuntu:24.04 AS integration-full
+
+# Install base dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    ca-certificates \
+    git \
+    gnupg \
+    openssh-client \
+    procps \
+    file \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Go (detect architecture)
+ARG GO_VERSION=1.25.0
+ARG TARGETARCH
+RUN ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
+    curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz" | tar -C /usr/local -xzf -
+ENV PATH="/usr/local/go/bin:${PATH}"
+ENV GOPATH="/go"
+ENV PATH="${GOPATH}/bin:${PATH}"
+
+# Create test user with sudo access
+RUN useradd -m -s /bin/bash -G sudo testuser
+RUN echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+RUN mkdir -p /home/testuser/.config /home/testuser/.local /home/testuser/.ssh
+RUN chown -R testuser:testuser /home/testuser
+
+# Install Homebrew as testuser
+USER testuser
+ENV HOME=/home/testuser
+WORKDIR /home/testuser
+
+RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || true
+
+# Add Homebrew to PATH
+ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
+ENV HOMEBREW_NO_AUTO_UPDATE=1
+ENV HOMEBREW_NO_ANALYTICS=1
+
+# Set up Go workspace
+RUN sudo mkdir -p /go/src /go/bin /go/pkg
+RUN sudo chown -R testuser:testuser /go
+
+# Copy app
+COPY --chown=testuser:testuser . /app
+WORKDIR /app
+
+# Download Go modules
+RUN go mod download
+
+# Default: run all integration tests
+CMD ["go", "test", "-v", "-tags=integration", "./test/integration/..."]
+
+# =============================================================================
+# Stage 6: End-to-end tests
+# =============================================================================
+FROM integration-full AS e2e
+
+# Build the binary first
+RUN go build -o /app/bin/preflight ./cmd/preflight
+
+# Set environment for e2e tests
+ENV PREFLIGHT_BINARY=/app/bin/preflight
+
+# Run e2e tests
+CMD ["go", "test", "-v", "-tags=e2e", "./test/e2e/..."]
+
+# =============================================================================
+# Stage 7: Coverage report generation
+# =============================================================================
+FROM go-base AS coverage
+
+COPY . .
+
+# Install coverage tools
+RUN go install github.com/felixgeelhaar/coverctl@latest || true
+
+# Generate coverage report
+CMD ["sh", "-c", "go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out -o coverage.html"]

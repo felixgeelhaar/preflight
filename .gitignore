@@ -8,6 +8,7 @@ bin/
 
 # Test binary
 *.test
+!Dockerfile.test
 
 # Output of go coverage
 *.out
