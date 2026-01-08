@@ -36,7 +36,11 @@ func TestLoader_Discover_EmptyPath(t *testing.T) {
 }
 
 func TestLoader_Discover_NonExistentPath(t *testing.T) {
-	loader := NewLoader().WithSearchPaths("/nonexistent/path")
+	// Use a path inside a temp dir that definitely doesn't exist
+	tmpDir := t.TempDir()
+	nonExistentPath := filepath.Join(tmpDir, "this-path-does-not-exist")
+
+	loader := NewLoader().WithSearchPaths(nonExistentPath)
 
 	result, err := loader.Discover(context.Background())
 	require.NoError(t, err) // Should not error on non-existent paths

@@ -203,13 +203,16 @@ func TestDirExists(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Use a path inside tmpDir that definitely doesn't exist
+	nonExistentPath := filepath.Join(tmpDir, "this-path-does-not-exist")
+
 	tests := []struct {
 		path     string
 		expected bool
 	}{
 		{tmpDir, true},
 		{tmpFile, false},
-		{"/nonexistent/path", false},
+		{nonExistentPath, false},
 	}
 
 	for _, tt := range tests {
