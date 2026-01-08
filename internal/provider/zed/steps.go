@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
@@ -13,16 +12,10 @@ import (
 )
 
 // getZedConfigPath returns the Zed configuration directory path.
+// Uses dynamic discovery: checks XDG_CONFIG_HOME on Linux, Application Support on macOS.
 func getZedConfigPath() string {
-	home, _ := os.UserHomeDir()
-	switch runtime.GOOS {
-	case "darwin":
-		return filepath.Join(home, ".config", "zed")
-	case "linux":
-		return filepath.Join(home, ".config", "zed")
-	default:
-		return filepath.Join(home, ".config", "zed")
-	}
+	discovery := NewDiscovery()
+	return discovery.FindConfigDir()
 }
 
 // ExtensionStep represents a Zed extension installation step.

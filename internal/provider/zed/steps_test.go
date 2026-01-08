@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
@@ -13,6 +14,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// zedConfigDir returns the platform-appropriate Zed config directory relative to homeDir.
+// This matches the Discovery.BestPracticePath() behavior for tests.
+func zedConfigDir(homeDir string) string {
+	switch runtime.GOOS {
+	case "darwin":
+		return filepath.Join(homeDir, "Library", "Application Support", "Zed")
+	default:
+		return filepath.Join(homeDir, ".config", "zed")
+	}
+}
 
 // =============================================================================
 // ExtensionStep Tests
@@ -42,8 +54,8 @@ func TestExtensionStep_Check_Satisfied(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	// Create extension directory
-	extPath := filepath.Join(tmpDir, ".config", "zed", "extensions", "installed", "python")
+	// Create extension directory using platform-appropriate path
+	extPath := filepath.Join(zedConfigDir(tmpDir), "extensions", "installed", "python")
 	err := os.MkdirAll(extPath, 0o755)
 	require.NoError(t, err)
 
@@ -101,7 +113,7 @@ func TestExtensionStep_Apply(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify extension was added to auto_install_extensions
-	settingsPath := filepath.Join(tmpDir, ".config", "zed", "settings.json")
+	settingsPath := filepath.Join(zedConfigDir(tmpDir), "settings.json")
 	data, err := os.ReadFile(settingsPath)
 	require.NoError(t, err)
 
@@ -159,8 +171,8 @@ func TestSettingsStep_Check_Satisfied(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	// Create existing settings file
-	configPath := filepath.Join(tmpDir, ".config", "zed")
+	// Create existing settings file using platform-appropriate path
+	configPath := zedConfigDir(tmpDir)
 	err := os.MkdirAll(configPath, 0o755)
 	require.NoError(t, err)
 
@@ -231,8 +243,8 @@ func TestSettingsStep_Apply(t *testing.T) {
 
 	require.NoError(t, err)
 
-	// Verify settings were written
-	settingsPath := filepath.Join(tmpDir, ".config", "zed", "settings.json")
+	// Verify settings were written using platform-appropriate path
+	settingsPath := filepath.Join(zedConfigDir(tmpDir), "settings.json")
 	data, err := os.ReadFile(settingsPath)
 	require.NoError(t, err)
 
@@ -308,8 +320,8 @@ func TestKeymapStep_Check_NeedsApply_FileExists(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	// Create existing keymap file
-	configPath := filepath.Join(tmpDir, ".config", "zed")
+	// Create existing keymap file using platform-appropriate path
+	configPath := zedConfigDir(tmpDir)
 	err := os.MkdirAll(configPath, 0o755)
 	require.NoError(t, err)
 	err = os.WriteFile(filepath.Join(configPath, "keymap.json"), []byte("[]"), 0o644)
@@ -362,8 +374,8 @@ func TestKeymapStep_Apply(t *testing.T) {
 
 	require.NoError(t, err)
 
-	// Verify keymap was written
-	keymapPath := filepath.Join(tmpDir, ".config", "zed", "keymap.json")
+	// Verify keymap was written using platform-appropriate path
+	keymapPath := filepath.Join(zedConfigDir(tmpDir), "keymap.json")
 	data, err := os.ReadFile(keymapPath)
 	require.NoError(t, err)
 
@@ -423,8 +435,8 @@ func TestThemeStep_Check_Satisfied(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	// Create existing settings with theme
-	configPath := filepath.Join(tmpDir, ".config", "zed")
+	// Create existing settings with theme using platform-appropriate path
+	configPath := zedConfigDir(tmpDir)
 	err := os.MkdirAll(configPath, 0o755)
 	require.NoError(t, err)
 
@@ -463,8 +475,8 @@ func TestThemeStep_Check_NeedsApply_DifferentTheme(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	// Create existing settings with different theme
-	configPath := filepath.Join(tmpDir, ".config", "zed")
+	// Create existing settings with different theme using platform-appropriate path
+	configPath := zedConfigDir(tmpDir)
 	err := os.MkdirAll(configPath, 0o755)
 	require.NoError(t, err)
 
@@ -511,8 +523,8 @@ func TestThemeStep_Apply(t *testing.T) {
 
 	require.NoError(t, err)
 
-	// Verify theme was written
-	settingsPath := filepath.Join(tmpDir, ".config", "zed", "settings.json")
+	// Verify theme was written using platform-appropriate path
+	settingsPath := filepath.Join(zedConfigDir(tmpDir), "settings.json")
 	data, err := os.ReadFile(settingsPath)
 	require.NoError(t, err)
 

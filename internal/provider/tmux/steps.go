@@ -11,15 +11,31 @@ import (
 )
 
 // getTPMPath returns the TPM installation path.
+// Uses dynamic discovery to find existing TPM installation.
 func getTPMPath() string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".tmux", "plugins", "tpm")
+	discovery := NewDiscovery()
+
+	// Check if TPM exists in known location
+	if found := discovery.FindTPMPath(); found != "" {
+		return found
+	}
+
+	// Return best-practice path for new installation
+	return discovery.TPMBestPracticePath()
 }
 
 // getTmuxConfigPath returns the tmux configuration file path.
+// Uses dynamic discovery: checks TMUX_CONF env var first, then XDG, then legacy paths.
 func getTmuxConfigPath() string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".tmux.conf")
+	discovery := NewDiscovery()
+
+	// Check if config exists in any known location
+	if found := discovery.FindConfig(); found != "" {
+		return found
+	}
+
+	// Return best-practice path for new configs
+	return discovery.BestPracticePath()
 }
 
 // TPMStep represents a TPM (Tmux Plugin Manager) installation step.
@@ -159,6 +175,11 @@ func (s *PluginStep) Apply(_ compiler.RunContext) error {
 		content = append(content, []byte(pluginLine)...)
 	}
 
+	// Ensure parent directory exists (important for XDG paths)
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		return err
+	}
+
 	return os.WriteFile(configPath, content, 0o644)
 }
 
@@ -226,7 +247,7 @@ func (s *ConfigStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
 
 // Plan returns the diff for this step.
 func (s *ConfigStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
-	return compiler.NewDiff(compiler.DiffTypeModify, "config", ".tmux.conf", "", fmt.Sprintf("%d settings", len(s.settings))), nil
+	return compiler.NewDiff(compiler.DiffTypeModify, "config", "tmux.conf", "", fmt.Sprintf("%d settings", len(s.settings))), nil
 }
 
 // Apply writes the configuration.
@@ -262,6 +283,11 @@ func (s *ConfigStep) Apply(_ compiler.RunContext) error {
 		if !settingsApplied[key] {
 			newLines = append(newLines, fmt.Sprintf("set -g %s %s", key, value))
 		}
+	}
+
+	// Ensure parent directory exists (important for XDG paths)
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		return err
 	}
 
 	return os.WriteFile(configPath, []byte(strings.Join(newLines, "\n")), 0o644)

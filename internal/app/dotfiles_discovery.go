@@ -87,6 +87,9 @@ func getDiscoveryPatterns() []discoveryPattern {
 		{Pattern: ".config/kitty", Provider: "terminal", Description: "Kitty configuration", IsDirectory: true},
 		{Pattern: ".config/ghostty", Provider: "terminal", Description: "Ghostty configuration", IsDirectory: true},
 		{Pattern: ".hyper.js", Provider: "terminal", Description: "Hyper configuration"},
+		{Pattern: "Library/Preferences/com.googlecode.iterm2.plist", Provider: "terminal", Description: "iTerm2 preferences (macOS)"},
+		{Pattern: "Library/Application Support/iTerm2/DynamicProfiles", Provider: "terminal", Description: "iTerm2 dynamic profiles", IsDirectory: true},
+		{Pattern: "AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json", Provider: "terminal", Description: "Windows Terminal settings"},
 
 		// Editors
 		{Pattern: ".config/nvim", Provider: "nvim", Description: "Neovim configuration", IsDirectory: true},

@@ -178,8 +178,8 @@ func (s *SettingsStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 }
 
 func (s *SettingsStep) getSettingsPath() string {
-	// Cross-platform path resolution would be more complex in production
-	return ports.ExpandPath("~/.config/Code/User/settings.json")
+	discovery := NewDiscovery()
+	return discovery.FindSettingsPath()
 }
 
 // KeybindingsStep manages VSCode keybindings.json.
@@ -257,5 +257,6 @@ func (s *KeybindingsStep) Explain(_ compiler.ExplainContext) compiler.Explanatio
 }
 
 func (s *KeybindingsStep) getKeybindingsPath() string {
-	return ports.ExpandPath("~/.config/Code/User/keybindings.json")
+	discovery := NewDiscovery()
+	return discovery.FindKeybindingsPath()
 }

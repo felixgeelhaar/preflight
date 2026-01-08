@@ -38,7 +38,8 @@ func (s *PresetStep) DependsOn() []compiler.StepID {
 
 // Check verifies if the preset is installed.
 func (s *PresetStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
-	configPath := ports.ExpandPath("~/.config/nvim")
+	discovery := NewDiscovery()
+	configPath := discovery.BestPracticePath()
 	if s.fs.Exists(configPath) {
 		return compiler.StatusSatisfied, nil
 	}
@@ -73,7 +74,8 @@ func (s *PresetStep) Apply(ctx compiler.RunContext) error {
 		return fmt.Errorf("unknown preset: %s", s.preset)
 	}
 
-	configPath := ports.ExpandPath("~/.config/nvim")
+	discovery := NewDiscovery()
+	configPath := discovery.BestPracticePath()
 	result, err := s.runner.Run(ctx.Context(), "git", "clone", repoURL, configPath)
 	if err != nil {
 		return err
@@ -136,7 +138,8 @@ func (s *ConfigRepoStep) DependsOn() []compiler.StepID {
 
 // Check verifies if the config repo is cloned.
 func (s *ConfigRepoStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
-	configPath := ports.ExpandPath("~/.config/nvim")
+	discovery := NewDiscovery()
+	configPath := discovery.BestPracticePath()
 	if s.fs.Exists(configPath) {
 		return compiler.StatusSatisfied, nil
 	}
@@ -156,7 +159,8 @@ func (s *ConfigRepoStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 
 // Apply clones the config repository.
 func (s *ConfigRepoStep) Apply(ctx compiler.RunContext) error {
-	configPath := ports.ExpandPath("~/.config/nvim")
+	discovery := NewDiscovery()
+	configPath := discovery.BestPracticePath()
 	result, err := s.runner.Run(ctx.Context(), "git", "clone", s.repo, configPath)
 	if err != nil {
 		return err
@@ -205,7 +209,8 @@ func (s *LazyLockStep) DependsOn() []compiler.StepID {
 
 // Check verifies if lazy-lock.json is in sync.
 func (s *LazyLockStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
-	lockPath := ports.ExpandPath("~/.config/nvim/lazy-lock.json")
+	discovery := NewDiscovery()
+	lockPath := discovery.LazyLockPath()
 	if s.fs.Exists(lockPath) {
 		return compiler.StatusSatisfied, nil
 	}

@@ -14,6 +14,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// tmuxConfigPath returns the best-practice tmux config path relative to homeDir.
+// This matches the Discovery.BestPracticePath() behavior (XDG location).
+func tmuxConfigPath(homeDir string) string {
+	return filepath.Join(homeDir, ".config", "tmux", "tmux.conf")
+}
+
 // =============================================================================
 // TPMStep Tests
 // =============================================================================
@@ -174,9 +180,11 @@ func TestPluginStep_Check_Satisfied(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	// Create config with plugin
-	configPath := filepath.Join(tmpDir, ".tmux.conf")
-	err := os.WriteFile(configPath, []byte("set -g @plugin 'tmux-plugins/tmux-sensible'\n"), 0o644)
+	// Create config with plugin at XDG best-practice path
+	configPath := tmuxConfigPath(tmpDir)
+	err := os.MkdirAll(filepath.Dir(configPath), 0o755)
+	require.NoError(t, err)
+	err = os.WriteFile(configPath, []byte("set -g @plugin 'tmux-plugins/tmux-sensible'\n"), 0o644)
 	require.NoError(t, err)
 
 	runner := mocks.NewCommandRunner()
@@ -211,9 +219,11 @@ func TestPluginStep_Check_NeedsApply_PluginNotInConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	// Create config without the plugin
-	configPath := filepath.Join(tmpDir, ".tmux.conf")
-	err := os.WriteFile(configPath, []byte("set -g @plugin 'tmux-plugins/tpm'\n"), 0o644)
+	// Create config without the plugin at XDG best-practice path
+	configPath := tmuxConfigPath(tmpDir)
+	err := os.MkdirAll(filepath.Dir(configPath), 0o755)
+	require.NoError(t, err)
+	err = os.WriteFile(configPath, []byte("set -g @plugin 'tmux-plugins/tpm'\n"), 0o644)
 	require.NoError(t, err)
 
 	runner := mocks.NewCommandRunner()
@@ -273,8 +283,8 @@ func TestPluginStep_Apply(t *testing.T) {
 
 	require.NoError(t, err)
 
-	// Verify plugin was added
-	configPath := filepath.Join(tmpDir, ".tmux.conf")
+	// Verify plugin was added (using XDG best-practice path)
+	configPath := tmuxConfigPath(tmpDir)
 	data, err := os.ReadFile(configPath)
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "tmux-plugins/tmux-sensible")
@@ -285,9 +295,11 @@ func TestPluginStep_Apply_AppendToExisting(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	// Create existing config
-	configPath := filepath.Join(tmpDir, ".tmux.conf")
-	err := os.WriteFile(configPath, []byte("set -g @plugin 'tmux-plugins/tpm'\n"), 0o644)
+	// Create existing config at XDG best-practice path
+	configPath := tmuxConfigPath(tmpDir)
+	err := os.MkdirAll(filepath.Dir(configPath), 0o755)
+	require.NoError(t, err)
+	err = os.WriteFile(configPath, []byte("set -g @plugin 'tmux-plugins/tpm'\n"), 0o644)
 	require.NoError(t, err)
 
 	runner := mocks.NewCommandRunner()
@@ -336,9 +348,11 @@ func TestConfigStep_Check_Satisfied(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	// Create config with settings
-	configPath := filepath.Join(tmpDir, ".tmux.conf")
-	err := os.WriteFile(configPath, []byte("set -g prefix C-a\nset -g mouse on\n"), 0o644)
+	// Create config with settings at XDG best-practice path
+	configPath := tmuxConfigPath(tmpDir)
+	err := os.MkdirAll(filepath.Dir(configPath), 0o755)
+	require.NoError(t, err)
+	err = os.WriteFile(configPath, []byte("set -g prefix C-a\nset -g mouse on\n"), 0o644)
 	require.NoError(t, err)
 
 	runner := mocks.NewCommandRunner()
@@ -376,9 +390,11 @@ func TestConfigStep_Check_NeedsApply_SettingMissing(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	// Create config with only one setting
-	configPath := filepath.Join(tmpDir, ".tmux.conf")
-	err := os.WriteFile(configPath, []byte("set -g prefix C-a\n"), 0o644)
+	// Create config with only one setting at XDG best-practice path
+	configPath := tmuxConfigPath(tmpDir)
+	err := os.MkdirAll(filepath.Dir(configPath), 0o755)
+	require.NoError(t, err)
+	err = os.WriteFile(configPath, []byte("set -g prefix C-a\n"), 0o644)
 	require.NoError(t, err)
 
 	runner := mocks.NewCommandRunner()
@@ -411,7 +427,7 @@ func TestConfigStep_Plan(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
 	assert.Equal(t, "config", diff.Resource())
-	assert.Equal(t, ".tmux.conf", diff.Name())
+	assert.Equal(t, "tmux.conf", diff.Name())
 	assert.Contains(t, diff.NewValue(), "2 settings")
 }
 
@@ -451,8 +467,8 @@ func TestConfigStep_Apply_NewConfig(t *testing.T) {
 
 	require.NoError(t, err)
 
-	// Verify settings were written
-	configPath := filepath.Join(tmpDir, ".tmux.conf")
+	// Verify settings were written (using XDG best-practice path)
+	configPath := tmuxConfigPath(tmpDir)
 	data, err := os.ReadFile(configPath)
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "set -g prefix C-a")
@@ -464,9 +480,11 @@ func TestConfigStep_Apply_UpdateExisting(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	// Create existing config
-	configPath := filepath.Join(tmpDir, ".tmux.conf")
-	err := os.WriteFile(configPath, []byte("set -g prefix C-b\nset -g status on\n"), 0o644)
+	// Create existing config at XDG best-practice path
+	configPath := tmuxConfigPath(tmpDir)
+	err := os.MkdirAll(filepath.Dir(configPath), 0o755)
+	require.NoError(t, err)
+	err = os.WriteFile(configPath, []byte("set -g prefix C-b\nset -g status on\n"), 0o644)
 	require.NoError(t, err)
 
 	runner := mocks.NewCommandRunner()

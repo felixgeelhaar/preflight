@@ -12,9 +12,17 @@ import (
 )
 
 // getStarshipConfigPath returns the Starship configuration file path.
+// Uses dynamic discovery: checks STARSHIP_CONFIG env var first, then XDG paths.
 func getStarshipConfigPath() string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "starship.toml")
+	discovery := NewDiscovery()
+
+	// Check if config exists in any known location
+	if found := discovery.FindConfig(); found != "" {
+		return found
+	}
+
+	// Return best-practice path for new configs
+	return discovery.BestPracticePath()
 }
 
 // InstallStep represents a Starship installation step.

@@ -30,6 +30,8 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/provider/gem"
 	"github.com/felixgeelhaar/preflight/internal/provider/git"
 	"github.com/felixgeelhaar/preflight/internal/provider/gotools"
+	"github.com/felixgeelhaar/preflight/internal/provider/helix"
+	"github.com/felixgeelhaar/preflight/internal/provider/jetbrains"
 	"github.com/felixgeelhaar/preflight/internal/provider/npm"
 	"github.com/felixgeelhaar/preflight/internal/provider/nvim"
 	"github.com/felixgeelhaar/preflight/internal/provider/pip"
@@ -37,7 +39,10 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/provider/scoop"
 	"github.com/felixgeelhaar/preflight/internal/provider/shell"
 	"github.com/felixgeelhaar/preflight/internal/provider/ssh"
+	"github.com/felixgeelhaar/preflight/internal/provider/sublime"
+	"github.com/felixgeelhaar/preflight/internal/provider/terminal"
 	"github.com/felixgeelhaar/preflight/internal/provider/vscode"
+	"github.com/felixgeelhaar/preflight/internal/provider/windsurf"
 	"github.com/felixgeelhaar/preflight/internal/provider/winget"
 )
 
@@ -83,6 +88,8 @@ func New(out io.Writer) *Preflight {
 	comp.RegisterProvider(gem.NewProvider(cmdRunner))
 	comp.RegisterProvider(git.NewProvider(fs))
 	comp.RegisterProvider(gotools.NewProvider(cmdRunner))
+	comp.RegisterProvider(helix.NewProvider(cmdRunner))
+	comp.RegisterProvider(jetbrains.NewProvider(cmdRunner))
 	comp.RegisterProvider(npm.NewProvider(cmdRunner))
 	comp.RegisterProvider(nvim.NewProvider(fs, cmdRunner))
 	comp.RegisterProvider(pip.NewProvider(cmdRunner))
@@ -90,7 +97,10 @@ func New(out io.Writer) *Preflight {
 	comp.RegisterProvider(scoop.NewProvider(cmdRunner, plat))
 	comp.RegisterProvider(shell.NewProvider(fs))
 	comp.RegisterProvider(ssh.NewProvider(fs))
+	comp.RegisterProvider(sublime.NewProvider(cmdRunner))
+	comp.RegisterProvider(terminal.NewProvider(fs, cmdRunner))
 	comp.RegisterProvider(vscode.NewProvider(fs, cmdRunner, plat))
+	comp.RegisterProvider(windsurf.NewProvider(cmdRunner))
 	comp.RegisterProvider(winget.NewProvider(cmdRunner, plat))
 
 	return &Preflight{
