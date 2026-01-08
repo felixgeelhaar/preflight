@@ -20,6 +20,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/platform"
 	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/provider/nvim"
+	"github.com/felixgeelhaar/preflight/internal/provider/terminal"
 	"github.com/felixgeelhaar/preflight/internal/templates"
 	"github.com/felixgeelhaar/preflight/internal/validation"
 )
@@ -67,6 +68,7 @@ func defaultCaptureProviders() []string {
 		"git",
 		"ssh",
 		"shell",
+		"terminal",
 		"nvim",
 		"vscode",
 		"runtime",
@@ -134,6 +136,8 @@ func (p *Preflight) captureProvider(ctx context.Context, provider, homeDir strin
 		items = p.captureGemPackages(ctx, now)
 	case "cargo":
 		items = p.captureCargoCrates(ctx, now)
+	case "terminal":
+		items = p.captureTerminalConfig(homeDir, now)
 	default:
 		return nil, fmt.Errorf("unknown provider: %s", provider)
 	}
@@ -922,6 +926,31 @@ func (p *Preflight) captureCargoCrates(_ context.Context, capturedAt time.Time) 
 			Name:       name,
 			Value:      value,
 			Source:     "cargo install --list",
+			CapturedAt: capturedAt,
+		})
+	}
+
+	return items
+}
+
+// captureTerminalConfig discovers installed terminal emulator configurations.
+func (p *Preflight) captureTerminalConfig(homeDir string, capturedAt time.Time) []CapturedItem {
+	discovery := terminal.NewDiscovery()
+	configs := discovery.FindAllConfigs()
+
+	items := make([]CapturedItem, 0, len(configs))
+	for termName, configPath := range configs {
+		// Make path relative to home directory for cleaner output
+		relPath := configPath
+		if strings.HasPrefix(configPath, homeDir) {
+			relPath = strings.TrimPrefix(configPath, homeDir+string(filepath.Separator))
+		}
+
+		items = append(items, CapturedItem{
+			Provider:   "terminal",
+			Name:       termName,
+			Value:      relPath,
+			Source:     configPath,
 			CapturedAt: capturedAt,
 		})
 	}

@@ -375,6 +375,25 @@ func TestCaptureConfigGenerator_addProviderConfigToLayer(t *testing.T) {
 				assert.Contains(t, layer.Packages.Cargo.Crates, "cargo-tool")
 			},
 		},
+		{
+			name:     "terminal",
+			provider: "terminal",
+			items: []CapturedItem{
+				{Name: "alacritty", Value: ".config/alacritty/alacritty.toml"},
+				{Name: "wezterm", Value: ".config/wezterm/wezterm.lua"},
+				{Name: "kitty", Value: ".config/kitty/kitty.conf"},
+			},
+			verify: func(t *testing.T, layer *captureLayerYAML) {
+				require.NotNil(t, layer.Terminal)
+				require.NotNil(t, layer.Terminal.Alacritty)
+				assert.Equal(t, ".config/alacritty/alacritty.toml", layer.Terminal.Alacritty.Source)
+				assert.True(t, layer.Terminal.Alacritty.Link)
+				require.NotNil(t, layer.Terminal.WezTerm)
+				assert.Equal(t, ".config/wezterm/wezterm.lua", layer.Terminal.WezTerm.Source)
+				require.NotNil(t, layer.Terminal.Kitty)
+				assert.Equal(t, ".config/kitty/kitty.conf", layer.Terminal.Kitty.Source)
+			},
+		},
 	}
 
 	for _, tt := range cases {

@@ -262,6 +262,8 @@ func (g *CaptureConfigGenerator) addProviderConfigToLayer(layer *captureLayerYAM
 		g.addGemPackagesToLayer(layer, items)
 	case "cargo":
 		g.addCargoPackagesToLayer(layer, items)
+	case "terminal":
+		g.addTerminalConfigToLayer(layer, items)
 	}
 }
 
@@ -360,12 +362,12 @@ func (g *CaptureConfigGenerator) applyDotfilesToLayer(layer *captureLayerYAML) {
 		layer.Shell.Starship.ConfigSource = configSource
 	}
 
-	// Handle terminal emulator configs (WezTerm, Alacritty, Kitty, etc.)
+	// Handle terminal emulator configs from dotfiles (if captured)
 	if configSource := getConfigSource("terminal"); configSource != "" {
 		if layer.Terminal == nil {
 			layer.Terminal = &captureTerminalYAML{}
 		}
-		layer.Terminal.ConfigSource = configSource
+		// Config source applies to all terminals, individual terminals will be set via addProviderConfigToLayer
 	}
 }
 
@@ -534,6 +536,8 @@ func (g *CaptureConfigGenerator) generateProviderLayerIfSupported(name, provider
 		g.addGemPackagesToLayer(&layer, items)
 	case "cargo":
 		g.addCargoPackagesToLayer(&layer, items)
+	case "terminal":
+		g.addTerminalConfigToLayer(&layer, items)
 	default:
 		// Provider not supported for layer generation
 		return false, nil
@@ -672,6 +676,11 @@ func (g *CaptureConfigGenerator) generateLayerFromCapture(findings *CaptureFindi
 	// Generate cargo section
 	if cargoItems, ok := byProvider["cargo"]; ok && len(cargoItems) > 0 {
 		g.addCargoPackagesToLayer(&layer, cargoItems)
+	}
+
+	// Generate terminal section
+	if terminalItems, ok := byProvider["terminal"]; ok && len(terminalItems) > 0 {
+		g.addTerminalConfigToLayer(&layer, terminalItems)
 	}
 
 	// Apply config_source from captured dotfiles before writing
@@ -940,6 +949,47 @@ func (g *CaptureConfigGenerator) addCargoPackagesToLayer(layer *captureLayerYAML
 	}
 	layer.Packages.Cargo = &captureCargoYAML{
 		Crates: crates,
+	}
+}
+
+// addTerminalConfigToLayer adds terminal emulator configs to a layer.
+func (g *CaptureConfigGenerator) addTerminalConfigToLayer(layer *captureLayerYAML, items []CapturedItem) {
+	if len(items) == 0 {
+		return
+	}
+
+	if layer.Terminal == nil {
+		layer.Terminal = &captureTerminalYAML{}
+	}
+
+	for _, item := range items {
+		// item.Value contains the relative path to the config file
+		source := ""
+		if s, ok := item.Value.(string); ok {
+			source = s
+		}
+
+		entry := &captureTerminalEntryYAML{
+			Source: source,
+			Link:   true, // Default to linking for dotfiles management
+		}
+
+		switch item.Name {
+		case "alacritty":
+			layer.Terminal.Alacritty = entry
+		case "kitty":
+			layer.Terminal.Kitty = entry
+		case "wezterm":
+			layer.Terminal.WezTerm = entry
+		case "ghostty":
+			layer.Terminal.Ghostty = entry
+		case "iterm2":
+			layer.Terminal.ITerm2 = entry
+		case "hyper":
+			layer.Terminal.Hyper = entry
+		case "windows_terminal":
+			layer.Terminal.WindowsTerminal = entry
+		}
 	}
 }
 
@@ -1508,9 +1558,21 @@ type captureTmuxYAML struct {
 }
 
 // captureTerminalYAML represents terminal emulator configurations.
-// Supports WezTerm, Alacritty, Kitty, Ghostty, and other terminal emulators.
+// Supports WezTerm, Alacritty, Kitty, Ghostty, iTerm2, Hyper, and Windows Terminal.
 type captureTerminalYAML struct {
-	ConfigSource string `yaml:"config_source,omitempty"` // Path to terminal config (e.g., ".config/wezterm" or ".wezterm.lua")
+	Alacritty       *captureTerminalEntryYAML `yaml:"alacritty,omitempty"`
+	Kitty           *captureTerminalEntryYAML `yaml:"kitty,omitempty"`
+	WezTerm         *captureTerminalEntryYAML `yaml:"wezterm,omitempty"`
+	Ghostty         *captureTerminalEntryYAML `yaml:"ghostty,omitempty"`
+	ITerm2          *captureTerminalEntryYAML `yaml:"iterm2,omitempty"`
+	Hyper           *captureTerminalEntryYAML `yaml:"hyper,omitempty"`
+	WindowsTerminal *captureTerminalEntryYAML `yaml:"windows_terminal,omitempty"`
+}
+
+// captureTerminalEntryYAML represents a single terminal emulator config.
+type captureTerminalEntryYAML struct {
+	Source string `yaml:"source,omitempty"` // Path to config file (e.g., ".config/alacritty/alacritty.toml")
+	Link   bool   `yaml:"link,omitempty"`   // Whether to create a symlink (default: true for dotfiles management)
 }
 
 type captureVSCodeYAML struct {
