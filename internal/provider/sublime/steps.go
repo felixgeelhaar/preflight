@@ -61,7 +61,8 @@ func (s *PackagesStep) Check(_ compiler.RunContext) (compiler.StepStatus, error)
 
 	var config map[string]interface{}
 	if err := json.Unmarshal(data, &config); err != nil {
-		return compiler.StatusNeedsApply, nil
+		// Config file is invalid or corrupted - needs to be rewritten
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: invalid config means needs apply
 	}
 
 	installedPkgs, ok := config["installed_packages"].([]interface{})
@@ -211,7 +212,8 @@ func (s *SettingsStep) Check(_ compiler.RunContext) (compiler.StepStatus, error)
 
 	var current map[string]interface{}
 	if err := json.Unmarshal(data, &current); err != nil {
-		return compiler.StatusNeedsApply, nil
+		// Settings file is invalid or corrupted - needs to be rewritten
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: invalid config means needs apply
 	}
 
 	// Check if all desired settings are present

@@ -253,7 +253,7 @@ func (s *SettingsStep) Apply(_ compiler.RunContext) error {
 		// Create a generic options file for custom settings
 		var settingsEntries []string
 		for key, value := range s.settings {
-			settingsEntries = append(settingsEntries, fmt.Sprintf(`    <option name="%s" value="%v" />`, key, value))
+			settingsEntries = append(settingsEntries, fmt.Sprintf(`    <option name=%q value="%v" />`, key, value))
 		}
 
 		settingsConfig := fmt.Sprintf(`<application>

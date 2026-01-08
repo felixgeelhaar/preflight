@@ -181,7 +181,7 @@ func TestExpandPath(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"~/.config/test", filepath.Join(home, ".config/test")},
+		{"~/.config/test", filepath.Join(home, ".config", "test")},
 		{"/absolute/path", "/absolute/path"},
 		{"relative/path", "relative/path"},
 	}

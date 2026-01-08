@@ -30,8 +30,8 @@ func NewDiscoveryWithOS(goos string) *Discovery {
 	}
 }
 
-// VSCodeSearchOpts returns the search options for VSCode config.
-func VSCodeSearchOpts() pathutil.ConfigSearchOpts {
+// SearchOpts returns the search options for VSCode config.
+func SearchOpts() pathutil.ConfigSearchOpts {
 	return pathutil.ConfigSearchOpts{
 		// VSCODE_PORTABLE overrides default locations for portable installations
 		EnvVar:         "VSCODE_PORTABLE",
@@ -134,7 +134,7 @@ func (d *Discovery) getUserDir() string {
 
 // GetCandidatePaths returns all candidate paths for config discovery (for capture).
 func (d *Discovery) GetCandidatePaths() []string {
-	return d.finder.GetCandidatePaths(VSCodeSearchOpts())
+	return d.finder.GetCandidatePaths(SearchOpts())
 }
 
 // fileExists checks if a file exists.

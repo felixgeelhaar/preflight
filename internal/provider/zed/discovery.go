@@ -30,8 +30,8 @@ func NewDiscoveryWithOS(goos string) *Discovery {
 	}
 }
 
-// ZedSearchOpts returns the search options for Zed config.
-func ZedSearchOpts() pathutil.ConfigSearchOpts {
+// SearchOpts returns the search options for Zed config.
+func SearchOpts() pathutil.ConfigSearchOpts {
 	return pathutil.ConfigSearchOpts{
 		// Zed uses XDG_CONFIG_HOME/zed on Linux
 		XDGSubpath: "zed",
@@ -105,5 +105,5 @@ func (d *Discovery) FindKeymapPath() string {
 
 // GetCandidatePaths returns all candidate paths for config discovery (for capture).
 func (d *Discovery) GetCandidatePaths() []string {
-	return d.finder.GetCandidatePaths(ZedSearchOpts())
+	return d.finder.GetCandidatePaths(SearchOpts())
 }

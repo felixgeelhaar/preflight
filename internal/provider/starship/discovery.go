@@ -16,8 +16,8 @@ func NewDiscovery() *Discovery {
 	}
 }
 
-// StarshipSearchOpts returns the search options for Starship config.
-func StarshipSearchOpts() pathutil.ConfigSearchOpts {
+// SearchOpts returns the search options for Starship config.
+func SearchOpts() pathutil.ConfigSearchOpts {
 	return pathutil.ConfigSearchOpts{
 		// STARSHIP_CONFIG can point directly to the config file
 		EnvVar:         "STARSHIP_CONFIG",
@@ -30,15 +30,15 @@ func StarshipSearchOpts() pathutil.ConfigSearchOpts {
 // FindConfig discovers the Starship configuration file location.
 // Checks: 1) STARSHIP_CONFIG env var, 2) XDG_CONFIG_HOME/starship.toml, 3) legacy paths.
 func (d *Discovery) FindConfig() string {
-	return d.finder.FindConfig(StarshipSearchOpts())
+	return d.finder.FindConfig(SearchOpts())
 }
 
 // BestPracticePath returns the canonical path for Starship config.
 func (d *Discovery) BestPracticePath() string {
-	return d.finder.BestPracticePath(StarshipSearchOpts())
+	return d.finder.BestPracticePath(SearchOpts())
 }
 
 // GetCandidatePaths returns all candidate paths for config discovery (for capture).
 func (d *Discovery) GetCandidatePaths() []string {
-	return d.finder.GetCandidatePaths(StarshipSearchOpts())
+	return d.finder.GetCandidatePaths(SearchOpts())
 }

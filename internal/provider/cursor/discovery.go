@@ -30,8 +30,8 @@ func NewDiscoveryWithOS(goos string) *Discovery {
 	}
 }
 
-// CursorSearchOpts returns the search options for Cursor config.
-func CursorSearchOpts() pathutil.ConfigSearchOpts {
+// SearchOpts returns the search options for Cursor config.
+func SearchOpts() pathutil.ConfigSearchOpts {
 	return pathutil.ConfigSearchOpts{
 		// CURSOR_PORTABLE overrides default locations for portable installations
 		EnvVar:         "CURSOR_PORTABLE",
@@ -122,5 +122,5 @@ func (d *Discovery) FindKeybindingsPath() string {
 
 // GetCandidatePaths returns all candidate paths for config discovery (for capture).
 func (d *Discovery) GetCandidatePaths() []string {
-	return d.finder.GetCandidatePaths(CursorSearchOpts())
+	return d.finder.GetCandidatePaths(SearchOpts())
 }

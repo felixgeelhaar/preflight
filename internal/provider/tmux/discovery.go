@@ -16,8 +16,8 @@ func NewDiscovery() *Discovery {
 	}
 }
 
-// TmuxConfigSearchOpts returns the search options for tmux config.
-func TmuxConfigSearchOpts() pathutil.ConfigSearchOpts {
+// ConfigSearchOpts returns the search options for tmux config.
+func ConfigSearchOpts() pathutil.ConfigSearchOpts {
 	return pathutil.ConfigSearchOpts{
 		// TMUX_CONF can be used to specify custom config location
 		EnvVar:         "TMUX_CONF",
@@ -44,13 +44,13 @@ func TPMSearchOpts() pathutil.ConfigSearchOpts {
 // FindConfig discovers the tmux configuration file location.
 // Checks: 1) TMUX_CONF env var, 2) XDG_CONFIG_HOME/tmux/tmux.conf, 3) ~/.tmux.conf.
 func (d *Discovery) FindConfig() string {
-	return d.finder.FindConfig(TmuxConfigSearchOpts())
+	return d.finder.FindConfig(ConfigSearchOpts())
 }
 
 // BestPracticePath returns the canonical path for tmux config.
 // Prefers XDG location: ~/.config/tmux/tmux.conf
 func (d *Discovery) BestPracticePath() string {
-	return d.finder.BestPracticePath(TmuxConfigSearchOpts())
+	return d.finder.BestPracticePath(ConfigSearchOpts())
 }
 
 // FindTPMPath discovers the TPM installation location.
@@ -65,5 +65,5 @@ func (d *Discovery) TPMBestPracticePath() string {
 
 // GetCandidatePaths returns all candidate paths for config discovery (for capture).
 func (d *Discovery) GetCandidatePaths() []string {
-	return d.finder.GetCandidatePaths(TmuxConfigSearchOpts())
+	return d.finder.GetCandidatePaths(ConfigSearchOpts())
 }

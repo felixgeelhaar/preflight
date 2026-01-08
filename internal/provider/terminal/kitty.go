@@ -55,7 +55,8 @@ func (s *KittyConfigStep) checkSourceMode() (compiler.StepStatus, error) {
 	if s.cfg.Link {
 		linkTarget, err := os.Readlink(s.targetPath)
 		if err != nil {
-			return compiler.StatusNeedsApply, nil
+			// Symlink doesn't exist or can't be read - needs to be created
+			return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: missing symlink means needs apply
 		}
 
 		if !filepath.IsAbs(linkTarget) {
@@ -79,7 +80,8 @@ func (s *KittyConfigStep) checkSourceMode() (compiler.StepStatus, error) {
 
 	dstHash, err := s.fs.FileHash(s.targetPath)
 	if err != nil {
-		return compiler.StatusNeedsApply, nil
+		// Target file can't be read - needs to be created/updated
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: unreadable target means needs apply
 	}
 
 	if srcHash == dstHash {

@@ -4,8 +4,8 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/provider/pathutil"
 )
 
-// TerminalPaths holds discovered paths for a terminal emulator.
-type TerminalPaths struct {
+// Paths holds discovered paths for a terminal emulator.
+type Paths struct {
 	ConfigFile string // Main config file path
 	ConfigDir  string // Config directory (for additional files)
 	DataDir    string // Data directory (themes, plugins, etc.)

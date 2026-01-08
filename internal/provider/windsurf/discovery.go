@@ -30,8 +30,8 @@ func NewDiscoveryWithOS(goos string) *Discovery {
 	}
 }
 
-// WindsurfSearchOpts returns the search options for Windsurf config.
-func WindsurfSearchOpts() pathutil.ConfigSearchOpts {
+// SearchOpts returns the search options for Windsurf config.
+func SearchOpts() pathutil.ConfigSearchOpts {
 	return pathutil.ConfigSearchOpts{
 		// WINDSURF_PORTABLE overrides default locations for portable installations
 		EnvVar:         "WINDSURF_PORTABLE",
@@ -122,5 +122,5 @@ func (d *Discovery) FindKeybindingsPath() string {
 
 // GetCandidatePaths returns all candidate paths for config discovery (for capture).
 func (d *Discovery) GetCandidatePaths() []string {
-	return d.finder.GetCandidatePaths(WindsurfSearchOpts())
+	return d.finder.GetCandidatePaths(SearchOpts())
 }

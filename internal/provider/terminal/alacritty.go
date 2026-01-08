@@ -57,7 +57,8 @@ func (s *AlacrittyConfigStep) checkSourceMode() (compiler.StepStatus, error) {
 		// Check if symlink exists and points to correct target
 		linkTarget, err := os.Readlink(s.targetPath)
 		if err != nil {
-			return compiler.StatusNeedsApply, nil
+			// Symlink doesn't exist or can't be read - needs to be created
+			return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: missing symlink means needs apply
 		}
 
 		// Resolve to absolute path for comparison
@@ -83,7 +84,8 @@ func (s *AlacrittyConfigStep) checkSourceMode() (compiler.StepStatus, error) {
 
 	dstHash, err := s.fs.FileHash(s.targetPath)
 	if err != nil {
-		return compiler.StatusNeedsApply, nil
+		// Target file can't be read - needs to be created/updated
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: unreadable target means needs apply
 	}
 
 	if srcHash == dstHash {

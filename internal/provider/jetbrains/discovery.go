@@ -13,6 +13,7 @@ import (
 // IDE represents a JetBrains IDE product.
 type IDE string
 
+// IDE constants for supported JetBrains products.
 const (
 	IDEIntelliJ  IDE = "IntelliJIdea"
 	IDEPyCharm   IDE = "PyCharm"
@@ -60,8 +61,8 @@ func NewDiscoveryWithOS(goos string) *Discovery {
 	}
 }
 
-// JetBrainsSearchOpts returns the search options for JetBrains IDE config.
-func JetBrainsSearchOpts(ide IDE) pathutil.ConfigSearchOpts {
+// SearchOpts returns the search options for JetBrains IDE config.
+func SearchOpts(ide IDE) pathutil.ConfigSearchOpts {
 	return pathutil.ConfigSearchOpts{
 		// No specific env var override for JetBrains
 		EnvVar:         "",
@@ -209,5 +210,5 @@ func (d *Discovery) GetInstalledIDEs() []IDE {
 
 // GetCandidatePaths returns all candidate paths for config discovery (for capture).
 func (d *Discovery) GetCandidatePaths(ide IDE) []string {
-	return d.finder.GetCandidatePaths(JetBrainsSearchOpts(ide))
+	return d.finder.GetCandidatePaths(SearchOpts(ide))
 }

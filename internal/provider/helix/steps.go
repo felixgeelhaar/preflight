@@ -405,7 +405,8 @@ func (s *ThemeStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
 
 	var config map[string]interface{}
 	if err := toml.Unmarshal(data, &config); err != nil {
-		return compiler.StatusNeedsApply, nil
+		// Config file is invalid or corrupted - needs to be rewritten
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: invalid config means needs apply
 	}
 
 	currentTheme, _ := config["theme"].(string)

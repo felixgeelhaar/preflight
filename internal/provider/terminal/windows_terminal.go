@@ -52,7 +52,8 @@ func (s *WindowsTerminalConfigStep) Check(_ compiler.RunContext) (compiler.StepS
 	// Read existing config and compare
 	existing, err := s.readConfig()
 	if err != nil {
-		return compiler.StatusNeedsApply, nil
+		// Config file can't be read - needs to be created/updated
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: unreadable config means needs apply
 	}
 
 	// Check if settings need update

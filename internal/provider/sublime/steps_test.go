@@ -409,10 +409,10 @@ func TestNewDiscoveryWithOS(t *testing.T) {
 	assert.NotNil(t, dWindows)
 }
 
-func TestSublimeSearchOpts(t *testing.T) {
+func TestSearchOpts(t *testing.T) {
 	t.Parallel()
 
-	opts := sublime.SublimeSearchOpts()
+	opts := sublime.SearchOpts()
 	assert.Equal(t, "SUBLIME_DATA", opts.EnvVar)
 	assert.Contains(t, opts.ConfigFileName, "Preferences.sublime-settings")
 	assert.NotEmpty(t, opts.MacOSPaths)

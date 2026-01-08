@@ -44,7 +44,8 @@ func (s *ITerm2SettingsStep) Check(_ compiler.RunContext) (compiler.StepStatus, 
 	for key, value := range s.cfg.Settings {
 		current, err := s.readDefault(key)
 		if err != nil {
-			return compiler.StatusNeedsApply, nil
+			// Setting doesn't exist or can't be read - needs to be applied
+			return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: missing setting means needs apply
 		}
 		if current != fmt.Sprintf("%v", value) {
 			return compiler.StatusNeedsApply, nil
@@ -185,7 +186,8 @@ func (s *ITerm2ProfilesStep) Check(_ compiler.RunContext) (compiler.StepStatus, 
 	// Compare existing profiles with desired
 	content, err := s.fs.ReadFile(profilePath)
 	if err != nil {
-		return compiler.StatusNeedsApply, nil
+		// Profile file can't be read - needs to be created/updated
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: unreadable profile means needs apply
 	}
 
 	desired, err := s.generateProfilesJSON()

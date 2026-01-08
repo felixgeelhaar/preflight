@@ -30,8 +30,8 @@ func NewDiscoveryWithOS(goos string) *Discovery {
 	}
 }
 
-// HelixSearchOpts returns the search options for Helix config.
-func HelixSearchOpts() pathutil.ConfigSearchOpts {
+// SearchOpts returns the search options for Helix config.
+func SearchOpts() pathutil.ConfigSearchOpts {
 	return pathutil.ConfigSearchOpts{
 		// HELIX_CONFIG_DIR can override the config directory
 		EnvVar:         "HELIX_CONFIG_DIR",
@@ -121,5 +121,5 @@ func (d *Discovery) FindThemesDir() string {
 
 // GetCandidatePaths returns all candidate paths for config discovery (for capture).
 func (d *Discovery) GetCandidatePaths() []string {
-	return d.finder.GetCandidatePaths(HelixSearchOpts())
+	return d.finder.GetCandidatePaths(SearchOpts())
 }

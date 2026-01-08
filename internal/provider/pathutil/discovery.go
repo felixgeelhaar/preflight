@@ -46,7 +46,8 @@ func (f *ConfigFinder) FindConfig(opts ConfigSearchOpts) string {
 // GetCandidatePaths returns all candidate paths in priority order (for capture).
 // Does not check if files exist - returns all possible locations.
 func (f *ConfigFinder) GetCandidatePaths(opts ConfigSearchOpts) []string {
-	var paths []string
+	// Pre-allocate with estimated capacity to avoid reallocations
+	paths := make([]string, 0, 8)
 
 	// 1. Explicit environment variable override
 	if opts.EnvVar != "" {

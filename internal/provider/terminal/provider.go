@@ -126,7 +126,7 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 }
 
 // compileAlacritty generates steps for Alacritty configuration.
-func (p *Provider) compileAlacritty(ctx compiler.CompileContext, cfg *Config) ([]compiler.Step, error) {
+func (p *Provider) compileAlacritty(ctx compiler.CompileContext, cfg *Config) ([]compiler.Step, error) { //nolint:unparam // error return reserved for future use
 	targetPath := p.discovery.AlacrittyBestPracticePath()
 	if cfg.Alacritty.ConfigPath != "" {
 		targetPath = cfg.Alacritty.ConfigPath
@@ -144,7 +144,7 @@ func (p *Provider) compileAlacritty(ctx compiler.CompileContext, cfg *Config) ([
 }
 
 // compileKitty generates steps for Kitty configuration.
-func (p *Provider) compileKitty(ctx compiler.CompileContext, cfg *Config) ([]compiler.Step, error) {
+func (p *Provider) compileKitty(ctx compiler.CompileContext, cfg *Config) ([]compiler.Step, error) { //nolint:unparam // error return reserved for future use
 	targetPath := p.discovery.KittyBestPracticePath()
 	if cfg.Kitty.ConfigPath != "" {
 		targetPath = cfg.Kitty.ConfigPath
@@ -162,7 +162,7 @@ func (p *Provider) compileKitty(ctx compiler.CompileContext, cfg *Config) ([]com
 }
 
 // compileWezTerm generates steps for WezTerm configuration.
-func (p *Provider) compileWezTerm(ctx compiler.CompileContext, cfg *Config) ([]compiler.Step, error) {
+func (p *Provider) compileWezTerm(ctx compiler.CompileContext, cfg *Config) ([]compiler.Step, error) { //nolint:unparam // error return reserved for future use
 	targetPath := p.discovery.WezTermBestPracticePath()
 	if cfg.WezTerm.ConfigPath != "" {
 		targetPath = cfg.WezTerm.ConfigPath
@@ -179,7 +179,7 @@ func (p *Provider) compileWezTerm(ctx compiler.CompileContext, cfg *Config) ([]c
 }
 
 // compileGhostty generates steps for Ghostty configuration.
-func (p *Provider) compileGhostty(ctx compiler.CompileContext, cfg *Config) ([]compiler.Step, error) {
+func (p *Provider) compileGhostty(ctx compiler.CompileContext, cfg *Config) ([]compiler.Step, error) { //nolint:unparam // error return reserved for future use
 	targetPath := p.discovery.GhosttyBestPracticePath()
 	if cfg.Ghostty.ConfigPath != "" {
 		targetPath = cfg.Ghostty.ConfigPath
@@ -196,7 +196,7 @@ func (p *Provider) compileGhostty(ctx compiler.CompileContext, cfg *Config) ([]c
 }
 
 // compileITerm2 generates steps for iTerm2 configuration.
-func (p *Provider) compileITerm2(_ compiler.CompileContext, cfg *Config) ([]compiler.Step, error) {
+func (p *Provider) compileITerm2(_ compiler.CompileContext, cfg *Config) ([]compiler.Step, error) { //nolint:unparam // error return reserved for future use
 	var steps []compiler.Step
 
 	// Settings step
@@ -214,7 +214,7 @@ func (p *Provider) compileITerm2(_ compiler.CompileContext, cfg *Config) ([]comp
 }
 
 // compileHyper generates steps for Hyper configuration.
-func (p *Provider) compileHyper(ctx compiler.CompileContext, cfg *Config) ([]compiler.Step, error) {
+func (p *Provider) compileHyper(ctx compiler.CompileContext, cfg *Config) ([]compiler.Step, error) { //nolint:unparam // error return reserved for future use
 	targetPath := p.discovery.HyperBestPracticePath()
 	if cfg.Hyper.ConfigPath != "" {
 		targetPath = cfg.Hyper.ConfigPath
@@ -231,7 +231,7 @@ func (p *Provider) compileHyper(ctx compiler.CompileContext, cfg *Config) ([]com
 }
 
 // compileWindowsTerminal generates steps for Windows Terminal configuration.
-func (p *Provider) compileWindowsTerminal(_ compiler.CompileContext, cfg *Config) ([]compiler.Step, error) {
+func (p *Provider) compileWindowsTerminal(_ compiler.CompileContext, cfg *Config) ([]compiler.Step, error) { //nolint:unparam // error return reserved for future use
 	targetPath := p.discovery.WindowsTerminalBestPracticePath()
 
 	step := NewWindowsTerminalConfigStep(

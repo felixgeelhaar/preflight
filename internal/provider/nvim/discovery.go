@@ -19,9 +19,9 @@ func NewDiscovery() *Discovery {
 	}
 }
 
-// NvimSearchOpts returns the search options for Neovim config.
+// SearchOpts returns the search options for Neovim config.
 // Supports NVIM_APPNAME for custom config directory names.
-func NvimSearchOpts() pathutil.ConfigSearchOpts {
+func SearchOpts() pathutil.ConfigSearchOpts {
 	appName := os.Getenv("NVIM_APPNAME")
 	if appName == "" {
 		appName = "nvim"
@@ -45,8 +45,8 @@ func NvimSearchOpts() pathutil.ConfigSearchOpts {
 	}
 }
 
-// NvimDataSearchOpts returns the search options for Neovim data directory.
-func NvimDataSearchOpts() pathutil.ConfigSearchOpts {
+// DataSearchOpts returns the search options for Neovim data directory.
+func DataSearchOpts() pathutil.ConfigSearchOpts {
 	appName := os.Getenv("NVIM_APPNAME")
 	if appName == "" {
 		appName = "nvim"
@@ -73,7 +73,7 @@ func NvimDataSearchOpts() pathutil.ConfigSearchOpts {
 // FindConfig discovers the Neovim configuration directory.
 // Checks: 1) XDG_CONFIG_HOME/NVIM_APPNAME, 2) platform-specific paths, 3) legacy paths.
 func (d *Discovery) FindConfig() string {
-	opts := NvimSearchOpts()
+	opts := SearchOpts()
 
 	// First check if there's a custom XDG_CONFIG_HOME set
 	xdgConfig := os.Getenv("XDG_CONFIG_HOME")
@@ -120,7 +120,7 @@ func (d *Discovery) BestPracticePath() string {
 
 // GetCandidatePaths returns all candidate paths for config discovery (for capture).
 func (d *Discovery) GetCandidatePaths() []string {
-	return d.finder.GetCandidatePaths(NvimSearchOpts())
+	return d.finder.GetCandidatePaths(SearchOpts())
 }
 
 // LazyLockPath returns the path to lazy-lock.json.

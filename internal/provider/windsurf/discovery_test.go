@@ -149,10 +149,10 @@ func TestNewDiscoveryWithOS(t *testing.T) {
 	assert.NotNil(t, windowsDiscovery)
 }
 
-func TestWindsurfSearchOpts(t *testing.T) {
+func TestSearchOpts(t *testing.T) {
 	t.Parallel()
 
-	opts := windsurf.WindsurfSearchOpts()
+	opts := windsurf.SearchOpts()
 
 	assert.Equal(t, "WINDSURF_PORTABLE", opts.EnvVar)
 	assert.Contains(t, opts.ConfigFileName, "data/user-data/User")

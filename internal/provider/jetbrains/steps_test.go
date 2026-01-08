@@ -584,17 +584,17 @@ func TestNewDiscoveryWithOS(t *testing.T) {
 	assert.NotNil(t, dWindows)
 }
 
-func TestJetBrainsSearchOpts(t *testing.T) {
+func TestSearchOpts(t *testing.T) {
 	t.Parallel()
 
-	opts := jetbrains.JetBrainsSearchOpts(jetbrains.IDEGoLand)
+	opts := jetbrains.SearchOpts(jetbrains.IDEGoLand)
 	assert.Equal(t, "", opts.EnvVar)
 	assert.Contains(t, opts.MacOSPaths[0], "GoLand")
 	assert.Contains(t, opts.LinuxPaths[0], "GoLand")
 	assert.Contains(t, opts.WindowsPaths[0], "GoLand")
 
 	// Test with different IDE
-	opts2 := jetbrains.JetBrainsSearchOpts(jetbrains.IDEPyCharm)
+	opts2 := jetbrains.SearchOpts(jetbrains.IDEPyCharm)
 	assert.Contains(t, opts2.MacOSPaths[0], "PyCharm")
 }
 

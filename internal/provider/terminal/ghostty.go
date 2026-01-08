@@ -49,7 +49,8 @@ func (s *GhosttyConfigStep) Check(_ compiler.RunContext) (compiler.StepStatus, e
 		if s.cfg.Link {
 			linkTarget, err := os.Readlink(s.targetPath)
 			if err != nil {
-				return compiler.StatusNeedsApply, nil
+				// Symlink doesn't exist or can't be read - needs to be created
+				return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: missing symlink means needs apply
 			}
 
 			if !filepath.IsAbs(linkTarget) {
@@ -74,7 +75,8 @@ func (s *GhosttyConfigStep) Check(_ compiler.RunContext) (compiler.StepStatus, e
 
 		dstHash, err := s.fs.FileHash(s.targetPath)
 		if err != nil {
-			return compiler.StatusNeedsApply, nil
+			// Target file can't be read - needs to be created/updated
+			return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: unreadable target means needs apply
 		}
 
 		if srcHash == dstHash {
@@ -94,7 +96,8 @@ func (s *GhosttyConfigStep) Check(_ compiler.RunContext) (compiler.StepStatus, e
 
 	existing, err := s.readGhosttyConfig()
 	if err != nil {
-		return compiler.StatusNeedsApply, nil
+		// Config file doesn't exist or can't be parsed - needs to be created
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // intentional: missing/invalid config means needs apply
 	}
 
 	for key, value := range s.cfg.Settings {
@@ -208,7 +211,8 @@ func (s *GhosttyConfigStep) readGhosttyConfig() (map[string]interface{}, error) 
 
 // writeGhosttyConfig writes the config file.
 func (s *GhosttyConfigStep) writeGhosttyConfig(settings map[string]interface{}) error {
-	var lines []string
+	// Pre-allocate: header + empty + settings + trailing empty
+	lines := make([]string, 0, len(settings)+3)
 	lines = append(lines, "# Ghostty configuration managed by preflight")
 	lines = append(lines, "")
 

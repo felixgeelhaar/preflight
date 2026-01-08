@@ -30,8 +30,8 @@ func NewDiscoveryWithOS(goos string) *Discovery {
 	}
 }
 
-// SublimeSearchOpts returns the search options for Sublime Text config.
-func SublimeSearchOpts() pathutil.ConfigSearchOpts {
+// SearchOpts returns the search options for Sublime Text config.
+func SearchOpts() pathutil.ConfigSearchOpts {
 	return pathutil.ConfigSearchOpts{
 		// SUBLIME_DATA can override the config directory
 		EnvVar:         "SUBLIME_DATA",
@@ -159,5 +159,5 @@ func (d *Discovery) FindPackageControlPath() string {
 
 // GetCandidatePaths returns all candidate paths for config discovery (for capture).
 func (d *Discovery) GetCandidatePaths() []string {
-	return d.finder.GetCandidatePaths(SublimeSearchOpts())
+	return d.finder.GetCandidatePaths(SearchOpts())
 }
