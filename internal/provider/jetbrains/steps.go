@@ -292,10 +292,10 @@ func (s *SettingsStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 
 // SettingsSyncStep represents a JetBrains Settings Sync configuration step.
 type SettingsSyncStep struct {
-	ide       IDE
-	config    *SettingsSyncConfig
-	id        compiler.StepID
-	runner    ports.CommandRunner
+	ide    IDE
+	config *SettingsSyncConfig
+	id     compiler.StepID
+	runner ports.CommandRunner
 }
 
 // NewSettingsSyncStep creates a new SettingsSyncStep.
@@ -350,13 +350,13 @@ func (s *SettingsSyncStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 
 // settingsSyncXML represents the XML structure for Settings Sync configuration.
 type settingsSyncXML struct {
-	XMLName   xml.Name             `xml:"application"`
+	XMLName   xml.Name              `xml:"application"`
 	Component settingsSyncComponent `xml:"component"`
 }
 
 type settingsSyncComponent struct {
-	Name    string                `xml:"name,attr"`
-	Options []settingsSyncOption  `xml:"option"`
+	Name    string               `xml:"name,attr"`
+	Options []settingsSyncOption `xml:"option"`
 }
 
 type settingsSyncOption struct {

@@ -137,8 +137,8 @@ func TestProvider_Compile_WithSettings(t *testing.T) {
 		"jetbrains": map[string]interface{}{
 			"ides": []interface{}{
 				map[string]interface{}{
-					"name":    "IntelliJIdea",
-					"keymap":  "VSCode",
+					"name":   "IntelliJIdea",
+					"keymap": "VSCode",
 					"settings": map[string]interface{}{
 						"editor.fontSize": 14,
 					},

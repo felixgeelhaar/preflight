@@ -54,7 +54,6 @@ func TestDiscovery_FindKittyConfig(t *testing.T) {
 	assert.Equal(t, configFile, path)
 }
 
-
 // --- WezTerm Tests ---
 
 func TestWezTermSearchOpts(t *testing.T) {
@@ -86,7 +85,6 @@ func TestDiscovery_FindWezTermConfig(t *testing.T) {
 	assert.Equal(t, configFile, path)
 }
 
-
 // --- Ghostty Tests ---
 
 func TestGhosttySearchOpts(t *testing.T) {
@@ -116,7 +114,6 @@ func TestDiscovery_FindGhosttyConfig(t *testing.T) {
 	path := d.FindGhosttyConfig()
 	assert.Equal(t, configFile, path)
 }
-
 
 // --- iTerm2 Tests ---
 
@@ -198,7 +195,7 @@ func TestWindowsTerminalSearchOpts(t *testing.T) {
 	assert.Len(t, opts.WindowsPaths, 2)
 }
 
-func TestDiscovery_FindWindowsTerminalConfig(t *testing.T) {
+func TestDiscovery_FindWindowsTerminalConfig(_ *testing.T) {
 	// This function will return empty on non-Windows systems
 	d := NewDiscovery()
 	path := d.FindWindowsTerminalConfig()

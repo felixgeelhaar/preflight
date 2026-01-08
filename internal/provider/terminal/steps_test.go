@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,7 +45,7 @@ func TestAlacrittyConfigStep_Check_SourceMode_NotExists(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusNeedsApply, status)
@@ -60,7 +61,7 @@ func TestAlacrittyConfigStep_Check_NoSource(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -76,7 +77,7 @@ func TestAlacrittyConfigStep_Plan_WithSource(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
@@ -121,7 +122,7 @@ func TestKittyConfigStep_Check_SettingsMode_NotExists(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusNeedsApply, status)
@@ -254,7 +255,7 @@ func TestGhosttyConfigStep_Check_NoConfig(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -269,7 +270,7 @@ func TestGhosttyConfigStep_Check_SettingsMode_NeedsApply(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusNeedsApply, status)
@@ -284,7 +285,7 @@ func TestGhosttyConfigStep_Plan_NoConfig(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeNone, diff.Type())
@@ -299,7 +300,7 @@ func TestGhosttyConfigStep_Plan_WithSettings(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
@@ -315,7 +316,7 @@ func TestGhosttyConfigStep_Plan_WithSource(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
@@ -331,7 +332,7 @@ func TestGhosttyConfigStep_Apply_Settings(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	err := step.Apply(ctx)
 	require.NoError(t, err)
 
@@ -380,7 +381,7 @@ func TestHyperConfigStep_Check_NoSource(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -395,7 +396,7 @@ func TestHyperConfigStep_Check_NeedsApply(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusNeedsApply, status)
@@ -410,7 +411,7 @@ func TestHyperConfigStep_Plan_NoSource(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeNone, diff.Type())
@@ -425,7 +426,7 @@ func TestHyperConfigStep_Plan_WithSource(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
@@ -445,7 +446,7 @@ func TestHyperConfigStep_Apply_Link(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	err = step.Apply(ctx)
 	require.NoError(t, err)
 }
@@ -489,7 +490,7 @@ func TestWezTermConfigStep_Check_NoSource(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -504,7 +505,7 @@ func TestWezTermConfigStep_Check_NeedsApply(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusNeedsApply, status)
@@ -519,7 +520,7 @@ func TestWezTermConfigStep_Plan_NoSource(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeNone, diff.Type())
@@ -534,7 +535,7 @@ func TestWezTermConfigStep_Plan_WithSource(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
@@ -554,7 +555,7 @@ func TestWezTermConfigStep_Apply_Link(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	err = step.Apply(ctx)
 	require.NoError(t, err)
 }
@@ -596,7 +597,7 @@ func TestWindowsTerminalConfigStep_Check_NoConfig(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -610,7 +611,7 @@ func TestWindowsTerminalConfigStep_Check_NeedsApply(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusNeedsApply, status)
@@ -624,7 +625,7 @@ func TestWindowsTerminalConfigStep_Plan_NoConfig(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeNone, diff.Type())
@@ -638,7 +639,7 @@ func TestWindowsTerminalConfigStep_Plan_WithSettings(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
@@ -652,7 +653,7 @@ func TestWindowsTerminalConfigStep_Apply_Settings(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	err := step.Apply(ctx)
 	require.NoError(t, err)
 
@@ -696,7 +697,7 @@ func TestITerm2SettingsStep_Check_NoSettings(t *testing.T) {
 		runner,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -709,7 +710,7 @@ func TestITerm2SettingsStep_Check_NeedsApply(t *testing.T) {
 		runner,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusNeedsApply, status)
@@ -722,7 +723,7 @@ func TestITerm2SettingsStep_Plan_NoSettings(t *testing.T) {
 		runner,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeNone, diff.Type())
@@ -735,7 +736,7 @@ func TestITerm2SettingsStep_Plan_WithSettings(t *testing.T) {
 		runner,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
@@ -751,7 +752,7 @@ func TestITerm2SettingsStep_Apply(t *testing.T) {
 		runner,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	err := step.Apply(ctx)
 	require.NoError(t, err)
 }
@@ -791,7 +792,7 @@ func TestITerm2ProfilesStep_Check_NoProfiles(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -805,7 +806,7 @@ func TestITerm2ProfilesStep_Check_NeedsApply(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusNeedsApply, status)
@@ -819,7 +820,7 @@ func TestITerm2ProfilesStep_Plan_NoProfiles(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeNone, diff.Type())
@@ -833,7 +834,7 @@ func TestITerm2ProfilesStep_Plan_WithProfiles(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
@@ -848,7 +849,7 @@ func TestITerm2ProfilesStep_Apply(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	err := step.Apply(ctx)
 	require.NoError(t, err)
 
@@ -898,7 +899,7 @@ func TestKittyConfigStep_Check_NoConfig(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -914,7 +915,7 @@ func TestKittyConfigStep_Plan_NoConfig(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	// Kitty always reports a modify diff, even with 0 settings
@@ -932,7 +933,7 @@ func TestKittyConfigStep_Plan_WithSettings(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
@@ -949,7 +950,7 @@ func TestKittyConfigStep_Apply_Settings(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	err := step.Apply(ctx)
 	require.NoError(t, err)
 
@@ -982,8 +983,8 @@ func TestKittyConfigStep_Explain(t *testing.T) {
 
 func TestDiscovery_HyperSearchOpts(t *testing.T) {
 	opts := HyperSearchOpts()
-	assert.Empty(t, opts.EnvVar)            // Hyper doesn't use an env var
-	assert.Empty(t, opts.LegacyPaths)       // Hyper uses direct home paths
+	assert.Empty(t, opts.EnvVar)      // Hyper doesn't use an env var
+	assert.Empty(t, opts.LegacyPaths) // Hyper uses direct home paths
 	assert.Contains(t, opts.MacOSPaths, "~/.hyper.js")
 	assert.Contains(t, opts.LinuxPaths, "~/.hyper.js")
 }
@@ -1052,7 +1053,7 @@ func TestAlacrittyConfigStep_Apply_SourceMode_Link(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	err = step.Apply(ctx)
 	require.NoError(t, err)
 }
@@ -1071,7 +1072,7 @@ func TestAlacrittyConfigStep_Apply_SourceMode_Copy(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	err = step.Apply(ctx)
 	require.NoError(t, err)
 
@@ -1095,7 +1096,7 @@ func TestAlacrittyConfigStep_Apply_SettingsMode(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	err := step.Apply(ctx)
 	require.NoError(t, err)
 
@@ -1122,7 +1123,7 @@ func TestAlacrittyConfigStep_Check_CopyMode_Satisfied(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -1146,7 +1147,7 @@ func TestKittyConfigStep_Apply_SourceMode_Link(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	err = step.Apply(ctx)
 	require.NoError(t, err)
 }
@@ -1165,7 +1166,7 @@ func TestKittyConfigStep_Check_SourceMode_NeedsApply(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusNeedsApply, status)
@@ -1181,7 +1182,7 @@ func TestKittyConfigStep_Plan_WithSource(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
@@ -1205,7 +1206,7 @@ func TestGhosttyConfigStep_Apply_SourceMode(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	err = step.Apply(ctx)
 	require.NoError(t, err)
 }
@@ -1226,7 +1227,7 @@ func TestGhosttyConfigStep_Check_CopyMode_Satisfied(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -1252,7 +1253,7 @@ func TestHyperConfigStep_Check_CopyMode_Satisfied(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -1278,7 +1279,7 @@ func TestWezTermConfigStep_Check_CopyMode_Satisfied(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -1301,7 +1302,7 @@ func TestWindowsTerminalConfigStep_Check_Satisfied(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.StatusSatisfied, status)
@@ -1317,7 +1318,7 @@ func TestWindowsTerminalConfigStep_Plan_WithProfiles(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	diff, err := step.Plan(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
@@ -1340,7 +1341,7 @@ func TestITerm2ProfilesStep_Check_Satisfied(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	status, err := step.Check(ctx)
 	require.NoError(t, err)
 	// Profiles always needs apply since we always regenerate
@@ -1378,7 +1379,7 @@ func TestAlacrittyConfigStep_InstalledVersion(t *testing.T) {
 		fs,
 	)
 
-	ctx := compiler.NewRunContext(nil)
+	ctx := compiler.NewRunContext(context.Background())
 	version, err := step.InstalledVersion(ctx)
 	require.NoError(t, err)
 	assert.Empty(t, version)

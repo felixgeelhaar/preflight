@@ -16,10 +16,10 @@ type Config struct {
 
 // Keybinding represents a Sublime Text keybinding.
 type Keybinding struct {
-	Keys    []string `yaml:"keys" json:"keys"`
-	Command string   `yaml:"command" json:"command"`
+	Keys    []string               `yaml:"keys" json:"keys"`
+	Command string                 `yaml:"command" json:"command"`
 	Args    map[string]interface{} `yaml:"args,omitempty" json:"args,omitempty"`
-	Context []KeyContext `yaml:"context,omitempty" json:"context,omitempty"`
+	Context []KeyContext           `yaml:"context,omitempty" json:"context,omitempty"`
 }
 
 // KeyContext represents a keybinding context condition.

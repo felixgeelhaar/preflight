@@ -138,7 +138,7 @@ func TestConfigStep_Apply_WithSource_Link(t *testing.T) {
 
 	info, err := os.Lstat(configFile)
 	require.NoError(t, err)
-	assert.True(t, info.Mode()&os.ModeSymlink != 0, "should be a symlink")
+	assert.NotEqual(t, 0, info.Mode()&os.ModeSymlink, "should be a symlink")
 }
 
 func TestConfigStep_Apply_WithSource_Copy(t *testing.T) {
@@ -692,7 +692,7 @@ func TestLanguagesStep_Apply_Link(t *testing.T) {
 
 	info, err := os.Lstat(langFile)
 	require.NoError(t, err)
-	assert.True(t, info.Mode()&os.ModeSymlink != 0, "should be a symlink")
+	assert.NotEqual(t, 0, info.Mode()&os.ModeSymlink, "should be a symlink")
 }
 
 // =============================================================================

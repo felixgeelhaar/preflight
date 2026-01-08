@@ -14,19 +14,19 @@ import (
 type IDE string
 
 const (
-	IDEIntelliJ    IDE = "IntelliJIdea"
-	IDEPyCharm     IDE = "PyCharm"
-	IDEWebStorm    IDE = "WebStorm"
-	IDEGoLand      IDE = "GoLand"
-	IDEPhpStorm    IDE = "PhpStorm"
-	IDERubyMine    IDE = "RubyMine"
-	IDECLion       IDE = "CLion"
-	IDEDataGrip    IDE = "DataGrip"
-	IDERider       IDE = "Rider"
-	IDEAndroid     IDE = "AndroidStudio"
-	IDEFleet       IDE = "Fleet"
-	IDERustRover   IDE = "RustRover"
-	IDEAquaDB      IDE = "Aqua"
+	IDEIntelliJ  IDE = "IntelliJIdea"
+	IDEPyCharm   IDE = "PyCharm"
+	IDEWebStorm  IDE = "WebStorm"
+	IDEGoLand    IDE = "GoLand"
+	IDEPhpStorm  IDE = "PhpStorm"
+	IDERubyMine  IDE = "RubyMine"
+	IDECLion     IDE = "CLion"
+	IDEDataGrip  IDE = "DataGrip"
+	IDERider     IDE = "Rider"
+	IDEAndroid   IDE = "AndroidStudio"
+	IDEFleet     IDE = "Fleet"
+	IDERustRover IDE = "RustRover"
+	IDEAquaDB    IDE = "Aqua"
 )
 
 // AllIDEs returns all supported JetBrains IDEs.

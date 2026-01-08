@@ -135,27 +135,27 @@ type WindowsTerminalProfile struct {
 
 // WindowsTerminalColorScheme represents a Windows Terminal color scheme.
 type WindowsTerminalColorScheme struct {
-	Name            string `yaml:"name"`
-	Background      string `yaml:"background"`
-	Foreground      string `yaml:"foreground"`
-	Black           string `yaml:"black,omitempty"`
-	Red             string `yaml:"red,omitempty"`
-	Green           string `yaml:"green,omitempty"`
-	Yellow          string `yaml:"yellow,omitempty"`
-	Blue            string `yaml:"blue,omitempty"`
-	Purple          string `yaml:"purple,omitempty"`
-	Cyan            string `yaml:"cyan,omitempty"`
-	White           string `yaml:"white,omitempty"`
-	BrightBlack     string `yaml:"bright_black,omitempty"`
-	BrightRed       string `yaml:"bright_red,omitempty"`
-	BrightGreen     string `yaml:"bright_green,omitempty"`
-	BrightYellow    string `yaml:"bright_yellow,omitempty"`
-	BrightBlue      string `yaml:"bright_blue,omitempty"`
-	BrightPurple    string `yaml:"bright_purple,omitempty"`
-	BrightCyan      string `yaml:"bright_cyan,omitempty"`
-	BrightWhite     string `yaml:"bright_white,omitempty"`
-	CursorColor     string `yaml:"cursor_color,omitempty"`
-	SelectionColor  string `yaml:"selection_color,omitempty"`
+	Name           string `yaml:"name"`
+	Background     string `yaml:"background"`
+	Foreground     string `yaml:"foreground"`
+	Black          string `yaml:"black,omitempty"`
+	Red            string `yaml:"red,omitempty"`
+	Green          string `yaml:"green,omitempty"`
+	Yellow         string `yaml:"yellow,omitempty"`
+	Blue           string `yaml:"blue,omitempty"`
+	Purple         string `yaml:"purple,omitempty"`
+	Cyan           string `yaml:"cyan,omitempty"`
+	White          string `yaml:"white,omitempty"`
+	BrightBlack    string `yaml:"bright_black,omitempty"`
+	BrightRed      string `yaml:"bright_red,omitempty"`
+	BrightGreen    string `yaml:"bright_green,omitempty"`
+	BrightYellow   string `yaml:"bright_yellow,omitempty"`
+	BrightBlue     string `yaml:"bright_blue,omitempty"`
+	BrightPurple   string `yaml:"bright_purple,omitempty"`
+	BrightCyan     string `yaml:"bright_cyan,omitempty"`
+	BrightWhite    string `yaml:"bright_white,omitempty"`
+	CursorColor    string `yaml:"cursor_color,omitempty"`
+	SelectionColor string `yaml:"selection_color,omitempty"`
 }
 
 // ParseConfig parses the terminal configuration from a raw map.

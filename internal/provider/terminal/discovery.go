@@ -190,7 +190,7 @@ func WindowsTerminalSearchOpts() pathutil.ConfigSearchOpts {
 	return pathutil.ConfigSearchOpts{
 		EnvVar:         "",
 		ConfigFileName: "",
-		XDGSubpath:     "", // Windows Terminal uses its own location
+		XDGSubpath:     "",         // Windows Terminal uses its own location
 		MacOSPaths:     []string{}, // Not available
 		LinuxPaths:     []string{}, // Not available (except WSL)
 		WindowsPaths: []string{

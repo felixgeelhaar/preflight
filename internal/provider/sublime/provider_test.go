@@ -78,8 +78,8 @@ func TestProvider_Compile_WithSettings(t *testing.T) {
 	ctx := compiler.NewCompileContext(map[string]interface{}{
 		"sublime": map[string]interface{}{
 			"settings": map[string]interface{}{
-				"font_size":         14,
-				"tab_size":          4,
+				"font_size":                14,
+				"tab_size":                 4,
 				"translate_tabs_to_spaces": true,
 			},
 		},
