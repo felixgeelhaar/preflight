@@ -7,6 +7,82 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.9.0] - 2026-01-08
+
+### Added
+
+- **Terminal Emulator Provider**: Full capture and apply support for 7 terminal emulators
+  - **Alacritty**: TOML config at `~/.config/alacritty/alacritty.toml`
+  - **Kitty**: conf format at `~/.config/kitty/kitty.conf`
+  - **WezTerm**: Lua config at `~/.config/wezterm/wezterm.lua`
+  - **Ghostty**: conf format at `~/.config/ghostty/config`
+  - **iTerm2**: plist at `~/Library/Preferences/com.googlecode.iterm2.plist` (macOS)
+  - **Hyper**: JavaScript at `~/.hyper.js`
+  - **Windows Terminal**: JSON settings (Windows/WSL)
+  - Dynamic config path discovery with env var support (ALACRITTY_CONFIG_DIR, KITTY_CONFIG_DIRECTORY, etc.)
+  - XDG Base Directory compliance
+
+- **Dynamic Config Path Discovery**: New `pathutil` package for cross-platform config discovery
+  - Environment variable overrides (tool-specific and XDG_CONFIG_HOME)
+  - Platform-specific default paths (macOS, Linux, Windows)
+  - Legacy path fallbacks for backwards compatibility
+  - Best-practice path recommendations for apply operations
+
+- **Editor Providers**: Expanded editor support with config discovery
+  - JetBrains IDEs, Sublime Text, Zed, Cursor, Windsurf
+  - Platform-aware config path detection
+
+- **Snapshot/Backup Functionality**: Pre-apply configuration backup
+  - Automatic snapshots before destructive operations
+  - Rollback capability for failed applies
+
+- **Enhanced CLI Commands**: Improved error handling and user experience
+  - Better error messages with actionable suggestions
+  - Progress indicators for long-running operations
+
+- **Bootstrap Tooling**: CLI helpers for initial setup
+  - Guided configuration generation
+  - Provider auto-detection
+
+### Changed
+
+- **CI Infrastructure**: Docker-based testing with Go 1.25
+  - Parallel test execution improvements
+  - Platform-specific test skipping in containers
+
+### Fixed
+
+- **Test Reliability**: Fixed flaky tests in CI environments
+  - Use temp directories instead of hardcoded paths
+  - Skip permission-dependent tests when running as root
+  - Environment-independent nvim capture tests
+
+- **Lint Cleanup**: Resolved all golangci-lint issues across providers
+
+### Example Configuration
+
+```yaml
+# layers/terminal.yaml
+terminal:
+  alacritty:
+    source: ".config/alacritty/alacritty.toml"
+    link: true
+
+  kitty:
+    source: ".config/kitty/kitty.conf"
+    link: true
+
+  wezterm:
+    source: ".config/wezterm/wezterm.lua"
+    link: true
+
+  ghostty:
+    source: ".config/ghostty/config"
+    link: true
+```
+
+---
+
 ## [4.6.0] - 2026-01-02
 
 ### Added
@@ -1066,6 +1142,7 @@ policies:
 
 ---
 
+[4.9.0]: https://github.com/felixgeelhaar/preflight/compare/v4.8.0...v4.9.0
 [4.6.0]: https://github.com/felixgeelhaar/preflight/compare/v4.0.1...v4.6.0
 [4.0.1]: https://github.com/felixgeelhaar/preflight/compare/v4.0.0...v4.0.1
 [4.0.0]: https://github.com/felixgeelhaar/preflight/compare/v3.4.0...v4.0.0
