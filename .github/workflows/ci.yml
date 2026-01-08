@@ -55,6 +55,22 @@ jobs:
         with:
           version: v2.7.2
 
+  goreleaser-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+
+      - name: Validate GoReleaser config
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          args: check
+
   # Linux tests via Docker for cross-platform validation
   test-linux:
     runs-on: ubuntu-latest
