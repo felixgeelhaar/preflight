@@ -211,6 +211,11 @@ packages: {}
 func TestYAMLRepository_SaveWriteError(t *testing.T) {
 	t.Parallel()
 
+	// Skip when running as root (e.g., in Docker) since root can create directories anywhere
+	if os.Geteuid() == 0 {
+		t.Skip("Skipping test: running as root bypasses filesystem permissions")
+	}
+
 	repo := NewYAMLRepository()
 	ctx := context.Background()
 
@@ -226,6 +231,11 @@ func TestYAMLRepository_SaveWriteError(t *testing.T) {
 
 func TestYAMLRepository_SaveToReadOnlyDir(t *testing.T) {
 	t.Parallel()
+
+	// Skip when running as root (e.g., in Docker) since root can write anywhere
+	if os.Geteuid() == 0 {
+		t.Skip("Skipping test: running as root bypasses directory permissions")
+	}
 
 	repo := NewYAMLRepository()
 	ctx := context.Background()

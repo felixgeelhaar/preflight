@@ -3,6 +3,7 @@ package terminal
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/provider/pathutil"
@@ -127,6 +128,10 @@ func TestITerm2SearchOpts(t *testing.T) {
 }
 
 func TestDiscovery_FindITerm2Config(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("iTerm2 is only available on macOS")
+	}
+
 	tmpDir := t.TempDir()
 
 	// Create an iTerm2 plist file
@@ -147,12 +152,20 @@ func TestDiscovery_FindITerm2Config(t *testing.T) {
 }
 
 func TestDiscovery_ITerm2BestPracticePath(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("iTerm2 is only available on macOS")
+	}
+
 	d := NewDiscovery()
 	path := d.ITerm2BestPracticePath()
 	assert.Contains(t, path, "com.googlecode.iterm2.plist")
 }
 
 func TestDiscovery_ITerm2DynamicProfilesDir(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("iTerm2 is only available on macOS")
+	}
+
 	d := NewDiscovery()
 	path := d.ITerm2DynamicProfilesDir()
 	assert.Contains(t, path, "DynamicProfiles")
@@ -284,7 +297,7 @@ func TestDiscovery_FindAllConfigs_AllTerminals(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpDir, ".config"))
 
-	// Create configs for all terminals except Windows Terminal (platform-specific)
+	// Create configs for cross-platform terminals
 	configs := []struct {
 		dir  string
 		file string
@@ -293,8 +306,15 @@ func TestDiscovery_FindAllConfigs_AllTerminals(t *testing.T) {
 		{".config/kitty", "kitty.conf"},
 		{".config/wezterm", "wezterm.lua"},
 		{".config/ghostty", "config"},
-		{"Library/Preferences", "com.googlecode.iterm2.plist"},
 		{"", ".hyper.js"},
+	}
+
+	// Add macOS-specific iTerm2 config only on macOS
+	if runtime.GOOS == "darwin" {
+		configs = append(configs, struct {
+			dir  string
+			file string
+		}{"Library/Preferences", "com.googlecode.iterm2.plist"})
 	}
 
 	for _, cfg := range configs {
@@ -314,13 +334,17 @@ func TestDiscovery_FindAllConfigs_AllTerminals(t *testing.T) {
 	d := NewDiscovery()
 	foundConfigs := d.FindAllConfigs()
 
-	// Verify all non-Windows terminals are found
+	// Verify cross-platform terminals are found
 	assert.Contains(t, foundConfigs, "alacritty")
 	assert.Contains(t, foundConfigs, "kitty")
 	assert.Contains(t, foundConfigs, "wezterm")
 	assert.Contains(t, foundConfigs, "ghostty")
-	assert.Contains(t, foundConfigs, "iterm2")
 	assert.Contains(t, foundConfigs, "hyper")
+
+	// Verify macOS-only iTerm2 is found only on macOS
+	if runtime.GOOS == "darwin" {
+		assert.Contains(t, foundConfigs, "iterm2")
+	}
 }
 
 // --- Search Options Tests ---
