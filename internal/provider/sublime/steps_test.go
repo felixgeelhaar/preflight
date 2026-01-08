@@ -393,6 +393,166 @@ func TestKeybindingsStep_Explain(t *testing.T) {
 }
 
 // =============================================================================
+// Discovery Tests
+// =============================================================================
+
+func TestNewDiscoveryWithOS(t *testing.T) {
+	t.Parallel()
+
+	d := sublime.NewDiscoveryWithOS("darwin")
+	assert.NotNil(t, d)
+
+	dLinux := sublime.NewDiscoveryWithOS("linux")
+	assert.NotNil(t, dLinux)
+
+	dWindows := sublime.NewDiscoveryWithOS("windows")
+	assert.NotNil(t, dWindows)
+}
+
+func TestSublimeSearchOpts(t *testing.T) {
+	t.Parallel()
+
+	opts := sublime.SublimeSearchOpts()
+	assert.Equal(t, "SUBLIME_DATA", opts.EnvVar)
+	assert.Contains(t, opts.ConfigFileName, "Preferences.sublime-settings")
+	assert.NotEmpty(t, opts.MacOSPaths)
+	assert.NotEmpty(t, opts.LinuxPaths)
+	assert.NotEmpty(t, opts.WindowsPaths)
+}
+
+func TestDiscovery_BestPracticePath(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	// Test darwin
+	d := sublime.NewDiscoveryWithOS("darwin")
+	path := d.BestPracticePath()
+	assert.Contains(t, path, "Sublime Text")
+	assert.Contains(t, path, "Library/Application Support")
+
+	// Test linux
+	dLinux := sublime.NewDiscoveryWithOS("linux")
+	pathLinux := dLinux.BestPracticePath()
+	assert.Contains(t, pathLinux, "sublime-text")
+	assert.Contains(t, pathLinux, ".config")
+
+	// Test windows
+	t.Setenv("APPDATA", tmpDir)
+	dWindows := sublime.NewDiscoveryWithOS("windows")
+	pathWindows := dWindows.BestPracticePath()
+	assert.Contains(t, pathWindows, "Sublime Text")
+
+	// Test windows with empty APPDATA
+	t.Setenv("APPDATA", "")
+	pathWindowsNoAppData := dWindows.BestPracticePath()
+	assert.Contains(t, pathWindowsNoAppData, "Sublime Text")
+
+	// Test unknown OS
+	dUnknown := sublime.NewDiscoveryWithOS("freebsd")
+	pathUnknown := dUnknown.BestPracticePath()
+	assert.Contains(t, pathUnknown, "sublime-text")
+}
+
+func TestDiscovery_FindConfigDir_WithEnvVar(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create config via env var path
+	sublimeDataDir := filepath.Join(tmpDir, "sublime-data")
+	userDir := filepath.Join(sublimeDataDir, "Packages", "User")
+	err := os.MkdirAll(userDir, 0o755)
+	require.NoError(t, err)
+
+	t.Setenv("SUBLIME_DATA", sublimeDataDir)
+	t.Setenv("HOME", tmpDir)
+
+	d := sublime.NewDiscovery()
+	path := d.FindConfigDir()
+	assert.Equal(t, userDir, path)
+}
+
+func TestDiscovery_FindConfigDir_Linux(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("SUBLIME_DATA", "")
+
+	// Create sublime-text directory
+	sublimeDir := filepath.Join(tmpDir, ".config", "sublime-text", "Packages", "User")
+	err := os.MkdirAll(sublimeDir, 0o755)
+	require.NoError(t, err)
+
+	d := sublime.NewDiscoveryWithOS("linux")
+	path := d.FindConfigDir()
+	assert.Equal(t, sublimeDir, path)
+}
+
+func TestDiscovery_FindConfigDir_Windows(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("APPDATA", tmpDir)
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("SUBLIME_DATA", "")
+
+	// Create sublime-text directory
+	sublimeDir := filepath.Join(tmpDir, "Sublime Text", "Packages", "User")
+	err := os.MkdirAll(sublimeDir, 0o755)
+	require.NoError(t, err)
+
+	d := sublime.NewDiscoveryWithOS("windows")
+	path := d.FindConfigDir()
+	assert.Equal(t, sublimeDir, path)
+}
+
+func TestDiscovery_FindConfigDir_WindowsNoAppData(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("APPDATA", "")
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("SUBLIME_DATA", "")
+
+	d := sublime.NewDiscoveryWithOS("windows")
+	path := d.FindConfigDir()
+	// Should fall back to AppData/Roaming path
+	assert.Contains(t, path, "Sublime Text")
+}
+
+func TestDiscovery_FindConfigDir_UnknownOS(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("SUBLIME_DATA", "")
+
+	d := sublime.NewDiscoveryWithOS("freebsd")
+	path := d.FindConfigDir()
+	assert.Contains(t, path, "sublime-text")
+}
+
+func TestDiscovery_FindKeybindingsPath_Windows(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("APPDATA", tmpDir)
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("SUBLIME_DATA", "")
+
+	d := sublime.NewDiscoveryWithOS("windows")
+	path := d.FindKeybindingsPath()
+	assert.Contains(t, path, "Default (Windows).sublime-keymap")
+}
+
+func TestDiscovery_FindKeybindingsPath_UnknownOS(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("SUBLIME_DATA", "")
+
+	d := sublime.NewDiscoveryWithOS("freebsd")
+	path := d.FindKeybindingsPath()
+	assert.Contains(t, path, "Default (Linux).sublime-keymap")
+}
+
+func TestDiscovery_GetCandidatePaths(t *testing.T) {
+	t.Parallel()
+
+	d := sublime.NewDiscovery()
+	paths := d.GetCandidatePaths()
+	assert.NotEmpty(t, paths)
+}
+
+// =============================================================================
 // Helper Functions
 // =============================================================================
 

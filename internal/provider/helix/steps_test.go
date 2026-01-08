@@ -395,6 +395,524 @@ func TestThemeStep_Explain(t *testing.T) {
 }
 
 // =============================================================================
+// Additional ConfigStep Check Tests
+// =============================================================================
+
+func TestConfigStep_Check_Source_Link_Satisfied(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create source file
+	sourceFile := filepath.Join(tmpDir, "source-config.toml")
+	err := os.WriteFile(sourceFile, []byte("theme = \"gruvbox\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create helix config dir and symlink
+	configPath := getHelixConfigPathForTest(tmpDir)
+	err = os.MkdirAll(configPath, 0o755)
+	require.NoError(t, err)
+
+	configFile := filepath.Join(configPath, "config.toml")
+	absSource, _ := filepath.Abs(sourceFile)
+	err = os.Symlink(absSource, configFile)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewConfigStep(sourceFile, true, nil, nil, nil, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusSatisfied, status)
+}
+
+func TestConfigStep_Check_Source_Link_WrongTarget(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create source file
+	sourceFile := filepath.Join(tmpDir, "source-config.toml")
+	err := os.WriteFile(sourceFile, []byte("theme = \"gruvbox\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create a different file
+	wrongTarget := filepath.Join(tmpDir, "wrong-config.toml")
+	err = os.WriteFile(wrongTarget, []byte("theme = \"onedark\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create helix config dir and symlink pointing to wrong file
+	configPath := getHelixConfigPathForTest(tmpDir)
+	err = os.MkdirAll(configPath, 0o755)
+	require.NoError(t, err)
+
+	configFile := filepath.Join(configPath, "config.toml")
+	err = os.Symlink(wrongTarget, configFile)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewConfigStep(sourceFile, true, nil, nil, nil, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestConfigStep_Check_Source_Link_NotSymlink(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create source file
+	sourceFile := filepath.Join(tmpDir, "source-config.toml")
+	err := os.WriteFile(sourceFile, []byte("theme = \"gruvbox\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create helix config dir and regular file (not symlink)
+	configPath := getHelixConfigPathForTest(tmpDir)
+	err = os.MkdirAll(configPath, 0o755)
+	require.NoError(t, err)
+
+	configFile := filepath.Join(configPath, "config.toml")
+	err = os.WriteFile(configFile, []byte("theme = \"gruvbox\"\n"), 0o644)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewConfigStep(sourceFile, true, nil, nil, nil, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestConfigStep_Check_Source_Copy_Satisfied(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create source file
+	sourceFile := filepath.Join(tmpDir, "source-config.toml")
+	err := os.WriteFile(sourceFile, []byte("theme = \"gruvbox\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create helix config dir and regular file
+	configPath := getHelixConfigPathForTest(tmpDir)
+	err = os.MkdirAll(configPath, 0o755)
+	require.NoError(t, err)
+
+	configFile := filepath.Join(configPath, "config.toml")
+	err = os.WriteFile(configFile, []byte("theme = \"gruvbox\"\n"), 0o644)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewConfigStep(sourceFile, false, nil, nil, nil, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusSatisfied, status)
+}
+
+func TestConfigStep_Check_Source_NeedsApply_NoFile(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create source file
+	sourceFile := filepath.Join(tmpDir, "source-config.toml")
+	err := os.WriteFile(sourceFile, []byte("theme = \"gruvbox\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// No config file exists
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewConfigStep(sourceFile, false, nil, nil, nil, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+// =============================================================================
+// Additional LanguagesStep Check Tests
+// =============================================================================
+
+func TestLanguagesStep_Check_Link_Satisfied(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create source file
+	sourceFile := filepath.Join(tmpDir, "languages.toml")
+	err := os.WriteFile(sourceFile, []byte("[[language]]\nname = \"go\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create helix config dir and symlink
+	configPath := getHelixConfigPathForTest(tmpDir)
+	err = os.MkdirAll(configPath, 0o755)
+	require.NoError(t, err)
+
+	langFile := filepath.Join(configPath, "languages.toml")
+	absSource, _ := filepath.Abs(sourceFile)
+	err = os.Symlink(absSource, langFile)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewLanguagesStep(sourceFile, true, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusSatisfied, status)
+}
+
+func TestLanguagesStep_Check_Link_WrongTarget(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create source file
+	sourceFile := filepath.Join(tmpDir, "languages.toml")
+	err := os.WriteFile(sourceFile, []byte("[[language]]\nname = \"go\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create wrong target
+	wrongTarget := filepath.Join(tmpDir, "wrong-languages.toml")
+	err = os.WriteFile(wrongTarget, []byte("[[language]]\nname = \"rust\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create helix config dir and symlink pointing to wrong file
+	configPath := getHelixConfigPathForTest(tmpDir)
+	err = os.MkdirAll(configPath, 0o755)
+	require.NoError(t, err)
+
+	langFile := filepath.Join(configPath, "languages.toml")
+	err = os.Symlink(wrongTarget, langFile)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewLanguagesStep(sourceFile, true, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestLanguagesStep_Check_Link_NotSymlink(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create source file
+	sourceFile := filepath.Join(tmpDir, "languages.toml")
+	err := os.WriteFile(sourceFile, []byte("[[language]]\nname = \"go\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create helix config dir and regular file (not symlink)
+	configPath := getHelixConfigPathForTest(tmpDir)
+	err = os.MkdirAll(configPath, 0o755)
+	require.NoError(t, err)
+
+	langFile := filepath.Join(configPath, "languages.toml")
+	err = os.WriteFile(langFile, []byte("[[language]]\nname = \"go\"\n"), 0o644)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewLanguagesStep(sourceFile, true, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestLanguagesStep_Check_Copy_Satisfied(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create source file
+	sourceFile := filepath.Join(tmpDir, "languages.toml")
+	err := os.WriteFile(sourceFile, []byte("[[language]]\nname = \"go\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create helix config dir and regular file
+	configPath := getHelixConfigPathForTest(tmpDir)
+	err = os.MkdirAll(configPath, 0o755)
+	require.NoError(t, err)
+
+	langFile := filepath.Join(configPath, "languages.toml")
+	err = os.WriteFile(langFile, []byte("[[language]]\nname = \"go\"\n"), 0o644)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewLanguagesStep(sourceFile, false, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusSatisfied, status)
+}
+
+func TestLanguagesStep_Apply_Link(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create source file
+	sourceFile := filepath.Join(tmpDir, "languages.toml")
+	err := os.WriteFile(sourceFile, []byte("[[language]]\nname = \"go\"\n"), 0o644)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewLanguagesStep(sourceFile, true, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	err = step.Apply(ctx)
+
+	require.NoError(t, err)
+
+	// Verify symlink was created
+	configPath := getHelixConfigPathForTest(tmpDir)
+	langFile := filepath.Join(configPath, "languages.toml")
+
+	info, err := os.Lstat(langFile)
+	require.NoError(t, err)
+	assert.True(t, info.Mode()&os.ModeSymlink != 0, "should be a symlink")
+}
+
+// =============================================================================
+// Additional ThemeStep Check Tests
+// =============================================================================
+
+func TestThemeStep_Check_Satisfied(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create config dir and config.toml with theme already set
+	configPath := getHelixConfigPathForTest(tmpDir)
+	err := os.MkdirAll(configPath, 0o755)
+	require.NoError(t, err)
+
+	configFile := filepath.Join(configPath, "config.toml")
+	err = os.WriteFile(configFile, []byte("theme = \"catppuccin_mocha\"\n"), 0o644)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewThemeStep("catppuccin_mocha", "", runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusSatisfied, status)
+}
+
+func TestThemeStep_Check_WrongTheme(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create config dir and config.toml with different theme
+	configPath := getHelixConfigPathForTest(tmpDir)
+	err := os.MkdirAll(configPath, 0o755)
+	require.NoError(t, err)
+
+	configFile := filepath.Join(configPath, "config.toml")
+	err = os.WriteFile(configFile, []byte("theme = \"gruvbox\"\n"), 0o644)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewThemeStep("catppuccin_mocha", "", runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestThemeStep_Check_CustomTheme_Satisfied(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create custom theme source
+	themeSource := filepath.Join(tmpDir, "my_theme.toml")
+	err := os.WriteFile(themeSource, []byte("[\"ui.background\"]\nbg = \"#1e1e2e\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create config dir, themes dir, and install the theme
+	configPath := getHelixConfigPathForTest(tmpDir)
+	themesDir := filepath.Join(configPath, "themes")
+	err = os.MkdirAll(themesDir, 0o755)
+	require.NoError(t, err)
+
+	installedTheme := filepath.Join(themesDir, "my_theme.toml")
+	err = os.WriteFile(installedTheme, []byte("[\"ui.background\"]\nbg = \"#1e1e2e\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create config.toml with theme set
+	configFile := filepath.Join(configPath, "config.toml")
+	err = os.WriteFile(configFile, []byte("theme = \"my_theme\"\n"), 0o644)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewThemeStep("my_theme", themeSource, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusSatisfied, status)
+}
+
+func TestThemeStep_Check_CustomTheme_NotInstalled(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	// Create custom theme source
+	themeSource := filepath.Join(tmpDir, "my_theme.toml")
+	err := os.WriteFile(themeSource, []byte("[\"ui.background\"]\nbg = \"#1e1e2e\"\n"), 0o644)
+	require.NoError(t, err)
+
+	// Create config dir but no themes
+	configPath := getHelixConfigPathForTest(tmpDir)
+	err = os.MkdirAll(configPath, 0o755)
+	require.NoError(t, err)
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewThemeStep("my_theme", themeSource, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestThemeStep_Plan_WithSource(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewThemeStep("", "dotfiles/my_theme.toml", runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	diff, err := step.Plan(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
+	assert.Equal(t, "theme", diff.Resource())
+	assert.Contains(t, diff.NewValue(), "my_theme")
+}
+
+func TestThemeStep_Explain_WithSource(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewThemeStep("", "my_theme.toml", runner)
+
+	ctx := compiler.NewExplainContext()
+	explanation := step.Explain(ctx)
+
+	assert.Equal(t, "Set Helix Theme", explanation.Summary())
+	assert.Contains(t, explanation.Detail(), "my_theme")
+}
+
+func TestConfigStep_Explain_WithSource_Link(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewConfigStep("dotfiles/config.toml", true, nil, nil, nil, runner)
+
+	ctx := compiler.NewExplainContext()
+	explanation := step.Explain(ctx)
+
+	assert.Contains(t, explanation.Detail(), "Symlinks")
+	assert.Contains(t, explanation.Detail(), "dotfiles/config.toml")
+}
+
+func TestConfigStep_Explain_WithSource_Copy(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewConfigStep("dotfiles/config.toml", false, nil, nil, nil, runner)
+
+	ctx := compiler.NewExplainContext()
+	explanation := step.Explain(ctx)
+
+	assert.Contains(t, explanation.Detail(), "Copies")
+	assert.Contains(t, explanation.Detail(), "dotfiles/config.toml")
+}
+
+func TestConfigStep_Apply_WithKeys(t *testing.T) {
+	// Cannot use t.Parallel() with t.Setenv()
+	tmpDir := t.TempDir()
+	setupHelixConfigPath(t, tmpDir)
+
+	runner := mocks.NewCommandRunner()
+	settings := map[string]interface{}{"theme": "catppuccin_mocha"}
+	keys := map[string]interface{}{
+		"normal": map[string]interface{}{
+			"space": map[string]interface{}{
+				"f": "file_picker",
+			},
+		},
+	}
+	step := helix.NewConfigStep("", false, settings, nil, keys, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	err := step.Apply(ctx)
+
+	require.NoError(t, err)
+
+	// Verify config was written with keys
+	configPath := getHelixConfigPathForTest(tmpDir)
+	data, err := os.ReadFile(filepath.Join(configPath, "config.toml"))
+	require.NoError(t, err)
+
+	var written map[string]interface{}
+	err = toml.Unmarshal(data, &written)
+	require.NoError(t, err)
+	assert.Equal(t, "catppuccin_mocha", written["theme"])
+
+	keysSection, ok := written["keys"].(map[string]interface{})
+	require.True(t, ok)
+	assert.NotNil(t, keysSection["normal"])
+}
+
+func TestLanguagesStep_Plan_Copy(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	step := helix.NewLanguagesStep("dotfiles/languages.toml", false, runner)
+
+	ctx := compiler.NewRunContext(context.Background())
+	diff, err := step.Plan(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.DiffTypeModify, diff.Type())
+	assert.Equal(t, "config", diff.Resource())
+	assert.Contains(t, diff.NewValue(), "copy")
+}
+
+// =============================================================================
 // Helper Functions
 // =============================================================================
 

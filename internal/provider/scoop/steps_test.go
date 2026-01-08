@@ -12,6 +12,94 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// InstallStep tests
+
+func TestInstallStep_ID(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	step := NewInstallStep(runner, nil)
+
+	assert.Equal(t, scoopInstallStepID, step.ID().String())
+}
+
+func TestInstallStep_DependsOn(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	step := NewInstallStep(runner, nil)
+
+	deps := step.DependsOn()
+	assert.Nil(t, deps)
+}
+
+func TestInstallStep_Plan(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	step := NewInstallStep(runner, nil)
+
+	ctx := compiler.NewRunContext(context.Background())
+	diff, err := step.Plan(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.DiffTypeAdd, diff.Type())
+	assert.Equal(t, "scoop", diff.Resource())
+}
+
+func TestInstallStep_Explain(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	step := NewInstallStep(runner, nil)
+
+	ctx := compiler.NewExplainContext()
+	explanation := step.Explain(ctx)
+
+	assert.Equal(t, "Install Scoop", explanation.Summary())
+	assert.NotEmpty(t, explanation.DocLinks())
+}
+
+func TestInstallStep_scoopCommand_Native(t *testing.T) {
+	t.Parallel()
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	runner := mocks.NewCommandRunner()
+	step := NewInstallStep(runner, plat)
+
+	assert.Equal(t, "scoop", step.scoopCommand())
+}
+
+func TestInstallStep_scoopCommand_WSL(t *testing.T) {
+	t.Parallel()
+
+	plat := platform.NewWSL(platform.EnvWSL2, "Ubuntu", "/mnt/c")
+	runner := mocks.NewCommandRunner()
+	step := NewInstallStep(runner, plat)
+
+	assert.Equal(t, "scoop.cmd", step.scoopCommand())
+}
+
+func TestInstallStep_powerShellCommand_Native(t *testing.T) {
+	t.Parallel()
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	runner := mocks.NewCommandRunner()
+	step := NewInstallStep(runner, plat)
+
+	assert.Equal(t, "powershell", step.powerShellCommand())
+}
+
+func TestInstallStep_powerShellCommand_WSL(t *testing.T) {
+	t.Parallel()
+
+	plat := platform.NewWSL(platform.EnvWSL2, "Ubuntu", "/mnt/c")
+	runner := mocks.NewCommandRunner()
+	step := NewInstallStep(runner, plat)
+
+	assert.Equal(t, "powershell.exe", step.powerShellCommand())
+}
+
 // BucketStep tests
 
 func TestBucketStep_ID(t *testing.T) {
