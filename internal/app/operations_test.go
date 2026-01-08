@@ -897,7 +897,21 @@ func TestCaptureNvimConfig_WithLazyLock(t *testing.T) {
 	findings, err := p.Capture(ctx, opts)
 
 	require.NoError(t, err)
-	assert.Len(t, findings.Items, 3) // version, config dir, and lazy-lock.json
+	// At minimum: config dir and lazy-lock.json (version depends on nvim being installed)
+	require.GreaterOrEqual(t, len(findings.Items), 2)
+
+	// Verify expected items are present
+	var foundConfig, foundLazyLock bool
+	for _, item := range findings.Items {
+		if item.Name == "config" {
+			foundConfig = true
+		}
+		if item.Name == "lazy-lock.json" {
+			foundLazyLock = true
+		}
+	}
+	assert.True(t, foundConfig, "expected config to be captured")
+	assert.True(t, foundLazyLock, "expected lazy-lock.json to be captured")
 }
 
 func TestCaptureNvimConfig_WithPacker(t *testing.T) {
@@ -922,7 +936,21 @@ func TestCaptureNvimConfig_WithPacker(t *testing.T) {
 	findings, err := p.Capture(ctx, opts)
 
 	require.NoError(t, err)
-	assert.Len(t, findings.Items, 3) // version, config dir, and packer_compiled.lua
+	// At minimum: config dir and packer_compiled.lua (version depends on nvim being installed)
+	require.GreaterOrEqual(t, len(findings.Items), 2)
+
+	// Verify expected items are present
+	var foundConfig, foundPacker bool
+	for _, item := range findings.Items {
+		if item.Name == "config" {
+			foundConfig = true
+		}
+		if item.Name == "packer_compiled.lua" {
+			foundPacker = true
+		}
+	}
+	assert.True(t, foundConfig, "expected config to be captured")
+	assert.True(t, foundPacker, "expected packer_compiled.lua to be captured")
 }
 
 func TestCaptureNvimConfig_WithVimrc(t *testing.T) {
@@ -944,8 +972,18 @@ func TestCaptureNvimConfig_WithVimrc(t *testing.T) {
 	findings, err := p.Capture(ctx, opts)
 
 	require.NoError(t, err)
-	assert.Len(t, findings.Items, 2) // version and .vimrc
-	assert.Equal(t, ".vimrc", findings.Items[1].Name)
+	// At minimum, .vimrc should be captured (version depends on nvim being installed)
+	require.GreaterOrEqual(t, len(findings.Items), 1)
+
+	// Find .vimrc in items (position depends on whether nvim version was captured)
+	var foundVimrc bool
+	for _, item := range findings.Items {
+		if item.Name == ".vimrc" {
+			foundVimrc = true
+			break
+		}
+	}
+	assert.True(t, foundVimrc, "expected .vimrc to be captured")
 }
 
 func TestCaptureRuntimeVersions_NoTools(t *testing.T) {
