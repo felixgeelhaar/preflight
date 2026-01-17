@@ -1,7 +1,7 @@
 {
   "version": "1",
-  "created_at": "2026-01-07T22:18:02.012345Z",
-  "updated_at": "2026-01-07T22:18:02.012345Z",
+  "created_at": "2026-01-17T11:30:39.805685Z",
+  "updated_at": "2026-01-17T11:30:39.805685Z",
   "scope": {},
   "fingerprints": [
     {
@@ -9,1304 +9,1624 @@
       "rule_id": "G115",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012199Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805629Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "951c6d16ea2d1234674823563e2e1ae5",
       "rule_id": "G106",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012201Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80563Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "eace7e71fbb296c447eba18e14f23873",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012202Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80563Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "bceef8b9d535784f22cc3778c4a8fabc",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012208Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805631Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "730e31e69c87ac165db4790e3ac4ab38",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012208Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805631Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "f9619a2be5d66e4e8ae41c1fa6a774c6",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012215Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805633Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "2c03a973a55615cdd2f7e1990b8cf7b5",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012215Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805633Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "ad9aacb55942ab9384e00b0900809531",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012215Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805634Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "a0156910020115de3d69c864d2696ccd",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012216Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805634Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "c01b8e873dea7d36610f8bd2bd82c07d",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012235Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805636Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "5443a6ceeb4466b59e6ee7ce94f5a3c3",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012235Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805636Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "009bb5c9a555c099692e7154f82a7c18",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012236Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805636Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "e9c2902bc730a813f6f3933e3815bd8f",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012236Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805637Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "785fda8d06b68dd955021dfdef1ce222",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012236Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805637Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "0abc4ba21a99c9732055ff12fbc7ef2d",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012237Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805637Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "c613c8f7ebe99e5563c2d1a370084dd3",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01224Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805639Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "17dee8b136295cf06612066bc08d1cee",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012241Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805639Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "73b244d54da9bee55172d7f88f44c127",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012241Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805639Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "75f0b2366db920cd9afff74e12fc70f0",
       "rule_id": "G204",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012241Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805639Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "39d027131f876530ee88996134e823fa",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012248Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80564Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "29f58134bc4bff0a3c6efc3dd17fc7f1",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012248Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80564Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "f785cf4a0b77d4862778f58bf7c4691d",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012248Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80564Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "d1cace5e954eb9af223425288add500d",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012249Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80564Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "9d5004ddc53552c6f0eab571a8e26574",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012249Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80564Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "7420779fdc606a57cfa4580b4802d649",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012249Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80564Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "a6df843e26021d3d50ebc2329008dc3f",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01225Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80564Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "f932e48cfaed76b5b698d916c245279a",
+      "fingerprint": "1f4aa3a375c1e52b946a59d3d202ac61",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01225Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805641Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "4d827e36a3b871c517d31e88c80473d1",
+      "fingerprint": "752398ae78a21b0629b3faad3669467a",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01225Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805641Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "96f3a5f045453406dea592c72f17be58",
+      "fingerprint": "9e08b9da0a7ebc58a2109e0d724cf001",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01225Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805641Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "72fe0d66132651e9c220957b41b8dec7",
+      "fingerprint": "cca709dacd34fe5a6d4061e247b7752c",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012256Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805642Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "5211035a82422964512f1c597f4b3e22",
+      "fingerprint": "0b5d26d391c9838e04a7fb522813a3b2",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012256Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805642Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "b194ee7223b48e61500c454ee93115c4",
+      "fingerprint": "bb58ce3cf5930a978aea3bb177114391",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012257Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805642Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "e4c19fbcd91b3a53fcdd960ab9a744c8",
+      "fingerprint": "0f2c1e668fd22fcb420156e075a3ab00",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012257Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805642Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "28eb54409b60b096a39f6a936dbebc9a",
+      "fingerprint": "f3d4291aa8eb57f7fae95c6e8a4f951a",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012257Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805642Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "ee00697390f710a809bb5d9319cae5e8",
+      "fingerprint": "41eab5e3d36ceef57836546e6f815a33",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012257Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805642Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "cf7dec18816c5a6ebc04272cad3c6ff6",
+      "fingerprint": "50a75c730ddd448a164a915e0c21589a",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012258Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805642Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "65c6b59825c47c06542cec2a7d3bbc6e",
+      "fingerprint": "3e5c4847a084df3c00c7d65f3d9cdd49",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012258Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805643Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "a2971cba184ba9ae3e10a12c6e613e1e",
+      "fingerprint": "72f3ee07ad63dad6ae310b5bd99b334e",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012258Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805643Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "2b48c4187d27766fa8a2c8e1a9f239ce",
+      "fingerprint": "696cb7a0948eef3e07b3acab498d5c87",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01227Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805645Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "e990850fbfba7182886ea326b1abdc83",
+      "fingerprint": "4bb84071455468791108b50512d67051",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01227Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805645Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "35a3aa2b3708584dd3605725aa6d1342",
+      "fingerprint": "8ca16b8f0f78c042c3109ec8a91c62a0",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012271Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805645Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "6da6c265b52d2b140fc4b39028b14f6c",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805645Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "236b0d7c364ad6c2cb5ad62173bae7fb",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805646Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "e7d3ecad84a6e3e083c5d814534befa4",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805646Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "905a32d0ba589e49df11ef63e4741cf9",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805646Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "555552fe500f36f060b4f6f27c24ae75",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805646Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "7aee50cfe6c1dacf67d5a83fdfb5b515",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805646Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "6dcb3a7b15a8e60e2ec96e7f0b1d8018",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805646Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "1f6227869455f156399048ef1704c716",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805647Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "7c048141f07886bf7bc0ccaeb159439e",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805647Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "b1839ba268b7dcb5d106886959961099",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805647Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "00fc530e15c45a57e840b7e735627178",
+      "rule_id": "G304",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805647Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "ad7906fdf041b54be28df358ea2f42c5",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012271Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805647Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "bf21ccb9b08bae7f5aead31ccc4a8e2a",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012271Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805647Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "2da86a0a287912536e0347784617d895",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012271Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805647Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "a6aab374a6c98b32663f93d382479678",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012272Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805647Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "6e74fc7ba786b2c4dc8b4afdadc1f23a",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012272Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805648Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "8e550c4fc14b8154973f5ee6057c3b43",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012272Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80565Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "47f9ba0a96a55e7e600daf44292ef3f6",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012273Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80565Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "042ccf11956b0aa1028eb77884d33af6",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012273Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80565Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "e29e309079d819c46a5fd4cec96d80e9",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012273Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80565Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "b538a49d1f24192ed7ba6d536d7ac0cc",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012274Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805651Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "2389e5801b9fbf0f433acbdf4dda24d6",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012274Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805651Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "f2fdf48969afe52bb589588dcd613195",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012274Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805651Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "05f125f24484d62725841d01f7d4e8da",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012274Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805651Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "1b3aa5f8b69a9be7896188f9fc8abb37",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012275Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805651Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "3c9f90f5d5d879e27a956d84db61f36e",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012275Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805651Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "00acfe5ef7789a6eced08a91847a69bc",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012275Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805651Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "a07f7c48b5ef0c2cb10151ec0f0b7e1f",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012283Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805651Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "2927201e2859973e0cc410204ea9dcae",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012283Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805652Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "ea505c674f39efa8401039d5e18b126b",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012283Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805652Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "5778bb544d277d11c938efcbc919fa61",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012283Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805652Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "0a76d694800d2f572142667bf1f8df99",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012284Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805652Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "cdb2cccea872bf930f4f2ff9ab06855b",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012284Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805652Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "cb8bf8f98decea9ade3b4d6b35eabb02",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012284Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805652Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "a6e568bae72fad61542e7888a1d0d325",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012285Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805652Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "cb2d1fa7b4d23e4d0ec3cc04f17ccd68",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012285Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80566Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "c10e35dc63e0838f6aeb352a3ff43676",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012285Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805661Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "f61101a8606643492b03ab871a7cf80e",
+      "fingerprint": "1f63008f02196d827bfed6d895c15956",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012286Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805661Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "5922a2cb948abd75e834ea8ae34093c8",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012286Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805661Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "b0caf82c38b7a7dd87e24113a190e998",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012286Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805661Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "a44eb99f980973a04b5f1fdabde1e511",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012286Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805661Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "7947c6fa563cbfa4766a811ae6a3585a",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012287Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805661Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "0cdf488411581d481d78a45c15c7ff56",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012287Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805661Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "a429be59b223d2133967dc8542530380",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012287Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805662Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "bb77bb81e44aab4c754da1f508097f29",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012288Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805662Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "c130b478e9d0c6b66877ea32a8b0cdfc",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012288Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805662Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "a3eb124844c3a2de92d2fa2361edd50b",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012302Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805662Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "77e081763d74d8f4883230f0ba523cbe",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012302Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805662Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "933be1a1aa7910d43f2e7b6bc52d3bd0",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012302Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805662Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "7310caa9239f5d11a268ffc090fb119b",
       "rule_id": "G304",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012302Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805662Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "731b0c8ca70339947f99e8ea5bad7850",
       "rule_id": "G110",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012303Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805663Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "32acecff7a6d62a7c38cd683206d8787",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012303Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805663Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "5b6ceef361734468f1e7176a51a52b54",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012303Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805663Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "62e3154b0ef3b08933e296242fd21db0",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012304Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805663Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "2367a0e8a197ce5e39e96f5cd27f788b",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012304Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805663Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "fa88d52fd9cea4db103f1f55776beebe",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012304Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805663Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "e39624ed15744be4dcea5351def38b5c",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012305Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805663Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "779d2eab35a3d5524a4e46fca8d6fc4b",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012305Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805664Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "42f9a1e1c644de1a469bb93f6b03ac4a",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012305Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805664Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "15e0ed38b4c51c323288dc9dc38a60fc",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012305Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805664Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "dc30f619f40362c270f811f86866761c",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012306Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805664Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "25ee1ac23e03ff4adbb5e4afa028c181",
+      "fingerprint": "5f1273f43534f4ada85af6f5c4636d1e",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012306Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805664Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "a653d6289b7d1376799fd9deefb91d60",
+      "fingerprint": "be9a79e35124edfb0a6397544a621e78",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012306Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805664Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "56a4f59bf353179c2942cc53274424e8",
+      "fingerprint": "42d9caca72423f8473d8673e617b09ef",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012307Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805664Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "97b4a02f81f2e5582df68dd0bef3bb70",
+      "fingerprint": "e34bb656b7f3a874a48e51552948c5cc",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012307Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805665Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "9d59cd7092b7b09aa6dfd24b57732e72",
+      "fingerprint": "96ece881251f7a8fb38b8f1d1e94be39",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012307Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805665Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "ea45b7becbb5a6325dbacc5345e93b10",
+      "fingerprint": "b0bef5551d554ea7ba149d966141b986",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012308Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805665Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "ffb9a3997b567f02e1626c417d48079b",
+      "fingerprint": "670cba220417b5cd5877fcc04297c3f0",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012308Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805665Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "ebbf370bd16a278ce664578595fc140d",
+      "fingerprint": "7db51fd1dc24a79383cae256885c2ce1",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012308Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805665Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "61ac2c5bf3128ca3fb06b21bed8e6791",
+      "fingerprint": "7af5a8b120c3f07d6217afb89b8d3d33",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012309Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805666Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "b3ae4f45784165b299c8dc1495ac8350",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805666Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "5bb1442e8dff8126422245ce1d30ac90",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805666Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "6ce354837404928bb4025086715631de",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805669Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "18aa61b868c3cc58142ded3844d32d89",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805669Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "aba2e8bb2b0fb988f3ab12d84df9005e",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.80567Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "c28636e6a8c4261ae5505dc2d06cf71d",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.80567Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "346095ccab51c011bbf4da95fead0f42",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.80567Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "489776fb56098ca362a53e774b04f1be",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.80567Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "14f1876a6cc74f381149abddbbb9d791",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.80567Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "1c868f38a8fecd2746db09b309e10b01",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.80567Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "c71af8a07c5018a13536030a4928e121",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.80567Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "dffc470b1eff572254342a415863b9ec",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805671Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "bec62dba066d631bf7ff8d8d37cf2033",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805671Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "0ed9ca425bb307b5adf19d0d7023b039",
+      "rule_id": "G301",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805671Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "2093e8e70e5696cc1e13a7053050055a",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012309Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805671Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "d2cd376d56b735fd412a7f14d4a63ddc",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012309Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805671Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "635e077391c6d60df25f003457ae462a",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01231Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805671Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "786165ad75de08aeecb5fd0a1deb94a0",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01231Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805671Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "ce43996c17a5323188081bd43e91a928",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01231Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805671Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "fabf6784a48de686e1fa7bb5e3867898",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01231Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805671Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "95b6bf6cd0090d70e301fa1974455c95",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012311Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805671Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "bc9c40669ba42b2cfa17fd8439d2b4e2",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012311Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805672Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "cec6f307f3cbf3059089ce2ab63daa0a",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012311Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805672Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "db5c8e991d39ff1da6d5de7e239ba8df",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012312Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805672Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "02fa85b5352113a25820a1521ca3d727",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012312Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805672Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "ff07c4408020f22cce6c7c83c8b50d39",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012312Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805672Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "54c3ef02ac6d4c2f2fba8195cd61859d",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012313Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805672Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "3c759e9b372c682bc7d3914bfebcdedd",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012322Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805672Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "790cb36df1b81646d1b5f7b23fe507d1",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012322Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805672Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "0cdf4bd54cd7e3beb018c92f1f9c67d6",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012322Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805672Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "dbdaa86f36c53c018192786c2f568292",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012322Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805673Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "08a1a403dd5eb7c532a7c037c2a2c986",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012323Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805673Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "8479f338a58ef79fa33dada679e07ec2",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012323Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805673Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "32ab71138579c994a001e84eae29b0c3",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012323Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805673Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "f2834e043c823d5d4ba74635993dec79",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012324Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805673Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "03872c909ba7035321aba9a2d399f1c3",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012324Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805673Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "0411c9c3b568a77490fa5a32c3f1634b",
       "rule_id": "G301",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012324Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805674Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "8e9223796d32cd8daa354d43582f275a",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012324Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805674Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "ee9d161a52d8cb75d7a5f677a98cf83a",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012325Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805674Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "28cd698caf77bcec75b9fa7d0915e52e",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012325Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805674Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "d33ee7ca1c949427736c733c406a904e",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012325Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805674Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "5a29fd430bc6b48046508fce6d6fc8e1",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012325Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805678Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "ceee6568bec3bb63f0322e7ab528d080",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012326Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805678Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "e1382f87a655778a95bb5cc7dd33c470",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012326Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805679Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "da2fc0547eb2b136147ca65119bf3286",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012326Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805679Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "24024c48e46077a60924a8aaa56a6df6",
+      "fingerprint": "3193d8e6e3ccb09476648c6ac807abb6",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012327Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805679Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "a8e52b7be2b103106f69040faa8e4954",
+      "fingerprint": "0eb4804e3eaed3e583b08f6cb49c8aef",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012327Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805679Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "5019249bc25edf204950fd03843b780b",
+      "fingerprint": "9da113efb0e218d6e577a583adfedf84",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012327Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805679Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "953d599bad7218969029a201bfae5900",
+      "fingerprint": "55e12daa4dfa53320eccff2053723e6b",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012327Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805679Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "ba60fb23df2311645ce516f174762915",
+      "fingerprint": "73d79a94d6c4a6fced21e48eb8997314",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012328Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805679Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "c5d2d85c04a5e7ae3883be6786eea543",
+      "fingerprint": "8d4eb3bc83d46131fbda0a030306ee90",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012328Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805679Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "980b11336d5665abe33e7f142342ad73",
+      "fingerprint": "f387b703e5d7e9bef1e064444eb4367a",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012328Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80568Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "ceafdb87a9e52327dda130a64bea3901",
+      "fingerprint": "8cc29388b21a64a9594c30c7924dd3b5",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012329Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80568Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "d58a1a101990ba21ce6ac4b70b3d48e9",
+      "fingerprint": "e9cdfe683a115d080b5cb2aa7288fd29",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012329Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80568Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
-      "fingerprint": "af12c8e992665c2ccc1430ac8dd5d586",
+      "fingerprint": "40ee3e2c11628e2d77f8a3d638b729fa",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012329Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.80568Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "47a65a26acc52eb95b9dc953c52c84cd",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.80568Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "e1ca82c35d78fbc6722902fc3cd9904b",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.80568Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "60ae2aee37d2a40e4fd64404fbfc9198",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.80568Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "96cbb2507d66dac08549a30c8bb9e601",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.80568Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "dfe6bba19ce521f567c5fef508e94c1e",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805681Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "0886bf512a120ac362695d6fc8988334",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805681Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "56b3a881456401cfcdbf48a0f6aabc91",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805681Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "7d9f6bbfbc5cb37201283d0ee3f042ef",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805681Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "2f90cd522fd35f449ee3f4df92656d11",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805681Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "f3203630d4970b6b8359132ccf03e331",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805681Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "73da7cec19a157472a4619d7539ba533",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805681Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "884665779487c29df460c04d8dcdddc7",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805682Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "2ae044e75e54939e833e1de635525660",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805682Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "609cfce62176cf3daa0540f4a5971a54",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805682Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
+    },
+    {
+      "fingerprint": "f4fbd9938a3f5f89aaee4413f9ad22d3",
+      "rule_id": "G306",
+      "engine_id": "gosec",
+      "file": "",
+      "added_at": "2026-01-17T11:30:39.805682Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "9d99a6173b0c6859412fed42175adf8d",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01233Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805682Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "db41c03784a9e7ac5daff69de47ed0dd",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01233Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805682Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "344c021e56e36dfe8f44cf510814557f",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.01233Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805682Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "927bbfd9468197cd67d016fe591bc799",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012331Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805682Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "e3be53b924922a48f86175e508d97197",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012331Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805683Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "5b154bcc68f3105ac6cf1977244f0fe1",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012331Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805683Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "35c571ae290da3718b8aeb5cff1fee98",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012331Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805683Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "64a052f1c844ffda0bad079d6fe9e9d8",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012332Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805683Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "739bbca3e512faabb8d79313670b5edb",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012332Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805683Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "dd4d2127beb168660a843bb6767ed724",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012332Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805683Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "7f2329c70426b12eda4e43288742719e",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012332Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805683Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "b39efff386205edb2bca3e4c88a440d1",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012342Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805683Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "6a674f119f063339d1bf6386ba001d61",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012342Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805684Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "2b7df25f052ee8aea6c7093cfb924eb3",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012342Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805684Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "a3747fccf414282132698c6acddfe963",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012343Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805684Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "24a450624e29afd854e7e43f76e67c4b",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012343Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805684Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "d41184ba87f3d06544ddaabbef417905",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012343Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805684Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "3f0cfe94997bebee938973b6ab079151",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012343Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805684Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "8d3759d21e1b9849cf5908b84bfffe5f",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012344Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805685Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "2067d6836b2a3610dc4f55ff56b4d3ae",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012344Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805685Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "133105831bc8f3142a8f49ab61d76c9e",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012344Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805685Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     },
     {
       "fingerprint": "214779d125e296e2249cead1abe4bb96",
       "rule_id": "G306",
       "engine_id": "gosec",
       "file": "",
-      "added_at": "2026-01-07T22:18:02.012345Z",
-      "reason": "E2E test framework, init non-interactive mode, and existing code patterns - expected subprocess and file operations for CLI tool"
+      "added_at": "2026-01-17T11:30:39.805685Z",
+      "reason": "Provider file operations - config management tool legitimately reads/writes user config files at OS-specific paths. G304 file inclusion and G301/G306 permissions are intentional for user-facing config files."
     }
   ]
 }
