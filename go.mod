@@ -7,7 +7,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/felixgeelhaar/mcp-go v1.4.0
-	github.com/felixgeelhaar/statekit v1.0.1
+	github.com/felixgeelhaar/statekit v1.1.0
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/spf13/cobra v1.10.2
