@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/felixgeelhaar/preflight/internal/adapters/lockfile"
 	"github.com/felixgeelhaar/preflight/internal/app"
@@ -68,7 +70,8 @@ func init() {
 }
 
 func runSync(cmd *cobra.Command, _ []string) error {
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
 
 	// Find repository root
 	repoRoot, err := findRepoRoot()

@@ -7,12 +7,18 @@ import (
 
 // Provider implements the compiler.Provider interface for runtime version management.
 type Provider struct {
-	fs ports.FileSystem
+	fs     ports.FileSystem
+	runner ports.CommandRunner
 }
 
-// NewProvider creates a new runtime provider.
+// NewProvider creates a new runtime provider with filesystem only (backward compatible).
 func NewProvider(fs ports.FileSystem) *Provider {
 	return &Provider{fs: fs}
+}
+
+// NewProviderWith creates a new runtime provider with all dependencies.
+func NewProviderWith(fs ports.FileSystem, runner ports.CommandRunner) *Provider {
+	return &Provider{fs: fs, runner: runner}
 }
 
 // Name returns the provider name.
@@ -41,7 +47,7 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 
 	// Add plugin steps first (plugins must be installed before tools)
 	for _, plugin := range cfg.Plugins {
-		steps = append(steps, NewPluginStep(plugin))
+		steps = append(steps, NewPluginStepWith(plugin, cfg.Backend, p.runner))
 	}
 
 	// Add tool-versions step if there are tools

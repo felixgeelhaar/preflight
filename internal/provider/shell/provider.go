@@ -7,12 +7,18 @@ import (
 
 // Provider implements the compiler.Provider interface for shell configuration.
 type Provider struct {
-	fs ports.FileSystem
+	fs     ports.FileSystem
+	runner ports.CommandRunner
 }
 
-// NewProvider creates a new shell provider.
+// NewProvider creates a new shell provider with filesystem only (backward compatible).
 func NewProvider(fs ports.FileSystem) *Provider {
 	return &Provider{fs: fs}
+}
+
+// NewProviderWith creates a new shell provider with all dependencies.
+func NewProviderWith(fs ports.FileSystem, runner ports.CommandRunner) *Provider {
+	return &Provider{fs: fs, runner: runner}
 }
 
 // Name returns the provider name.
@@ -54,23 +60,23 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 	for _, shell := range cfg.Shells {
 		// Framework step (if framework is specified)
 		if shell.Framework != "" {
-			steps = append(steps, NewFrameworkStepWithFS(shell, p.fs))
+			steps = append(steps, NewFrameworkStepWith(shell, p.fs, p.runner))
 
 			// Add plugin steps based on framework
 			if shell.Framework == "fisher" {
 				// Fisher plugins
 				for _, plugin := range shell.Plugins {
-					steps = append(steps, NewFisherPluginStepWithFS(plugin, p.fs))
+					steps = append(steps, NewFisherPluginStepWith(plugin, p.fs, p.runner))
 				}
 			} else {
 				// Standard plugins (oh-my-zsh, etc.)
 				for _, plugin := range shell.Plugins {
-					steps = append(steps, NewPluginStep(shell.Name, shell.Framework, plugin))
+					steps = append(steps, NewPluginStepWithFS(shell.Name, shell.Framework, plugin, p.fs))
 				}
 
 				// Custom plugins (git cloned)
 				for _, plugin := range shell.CustomPlugins {
-					steps = append(steps, NewCustomPluginStepWithFS(shell.Name, shell.Framework, plugin, p.fs))
+					steps = append(steps, NewCustomPluginStepWith(shell.Name, shell.Framework, plugin, p.fs, p.runner))
 				}
 			}
 		}
@@ -84,13 +90,13 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 	// Add env step if there are environment variables
 	if len(cfg.Env) > 0 && len(cfg.Shells) > 0 {
 		// Use the first shell's name for env step
-		steps = append(steps, NewEnvStep(cfg.Shells[0].Name, cfg.Env))
+		steps = append(steps, NewEnvStepWithFS(cfg.Shells[0].Name, cfg.Env, p.fs))
 	}
 
 	// Add aliases step if there are aliases
 	if len(cfg.Aliases) > 0 && len(cfg.Shells) > 0 {
 		// Use the first shell's name for aliases step
-		steps = append(steps, NewAliasStep(cfg.Shells[0].Name, cfg.Aliases))
+		steps = append(steps, NewAliasStepWithFS(cfg.Shells[0].Name, cfg.Aliases, p.fs))
 	}
 
 	return steps, nil

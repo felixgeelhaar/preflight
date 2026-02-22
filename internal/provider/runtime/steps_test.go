@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
@@ -169,6 +170,190 @@ func TestPluginStep_DependsOn_Empty(t *testing.T) {
 	}
 }
 
+func TestPluginStep_Check_Installed(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("asdf", []string{"plugin", "list"}, ports.CommandResult{
+		ExitCode: 0,
+		Stdout:   "golang\nnode\npython\n",
+	})
+
+	step := NewPluginStepWith(plugin, "", runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if status != compiler.StatusSatisfied {
+		t.Errorf("Check() = %v, want %v", status, compiler.StatusSatisfied)
+	}
+}
+
+func TestPluginStep_Check_NotInstalled(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("asdf", []string{"plugin", "list"}, ports.CommandResult{
+		ExitCode: 0,
+		Stdout:   "node\npython\n",
+	})
+
+	step := NewPluginStepWith(plugin, "", runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if status != compiler.StatusNeedsApply {
+		t.Errorf("Check() = %v, want %v", status, compiler.StatusNeedsApply)
+	}
+}
+
+func TestPluginStep_Check_NoRunner(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	step := NewPluginStep(plugin)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if status != compiler.StatusNeedsApply {
+		t.Errorf("Check() = %v, want %v", status, compiler.StatusNeedsApply)
+	}
+}
+
+func TestPluginStep_Apply_WithoutURL(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("asdf", []string{"plugin", "add", "golang"}, ports.CommandResult{ExitCode: 0})
+
+	step := NewPluginStepWith(plugin, "", runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	if err != nil {
+		t.Fatalf("Apply() error = %v", err)
+	}
+
+	calls := runner.Calls()
+	if len(calls) != 1 {
+		t.Fatalf("expected 1 call, got %d", len(calls))
+	}
+	if calls[0].Command != "asdf" {
+		t.Errorf("command = %q, want %q", calls[0].Command, "asdf")
+	}
+}
+
+func TestPluginStep_Apply_WithURL(t *testing.T) {
+	plugin := PluginConfig{
+		Name: "golang",
+		URL:  "https://github.com/asdf-community/asdf-golang.git",
+	}
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("asdf", []string{"plugin", "add", "golang", "https://github.com/asdf-community/asdf-golang.git"}, ports.CommandResult{ExitCode: 0})
+
+	step := NewPluginStepWith(plugin, "", runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	if err != nil {
+		t.Fatalf("Apply() error = %v", err)
+	}
+}
+
+func TestPluginStep_Apply_Fails(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("asdf", []string{"plugin", "add", "golang"}, ports.CommandResult{
+		ExitCode: 1,
+		Stderr:   "plugin not found",
+	})
+
+	step := NewPluginStepWith(plugin, "", runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	if err == nil {
+		t.Fatal("Apply() expected error, got nil")
+	}
+	if !contains(err.Error(), "plugin add golang failed") {
+		t.Errorf("error = %q, want to contain %q", err.Error(), "plugin add golang failed")
+	}
+}
+
+func TestPluginStep_Apply_NoRunner(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	step := NewPluginStep(plugin)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	if err == nil {
+		t.Fatal("Apply() expected error, got nil")
+	}
+	if !contains(err.Error(), "command runner not configured") {
+		t.Errorf("error = %q, want to contain %q", err.Error(), "command runner not configured")
+	}
+}
+
+func TestPluginStep_BackendBinary_Default(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("asdf", []string{"plugin", "add", "golang"}, ports.CommandResult{ExitCode: 0})
+
+	step := NewPluginStepWith(plugin, "", runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	if err != nil {
+		t.Fatalf("Apply() error = %v", err)
+	}
+
+	calls := runner.Calls()
+	if calls[0].Command != "asdf" {
+		t.Errorf("command = %q, want %q", calls[0].Command, "asdf")
+	}
+}
+
+func TestPluginStep_BackendBinary_Mise(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("mise", []string{"plugin", "add", "golang"}, ports.CommandResult{ExitCode: 0})
+
+	step := NewPluginStepWith(plugin, "mise", runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	if err != nil {
+		t.Fatalf("Apply() error = %v", err)
+	}
+
+	calls := runner.Calls()
+	if calls[0].Command != "mise" {
+		t.Errorf("command = %q, want %q", calls[0].Command, "mise")
+	}
+}
+
+func TestPluginStep_BackendBinary_Rtx(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("mise", []string{"plugin", "add", "golang"}, ports.CommandResult{ExitCode: 0})
+
+	step := NewPluginStepWith(plugin, "rtx", runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	if err != nil {
+		t.Fatalf("Apply() error = %v", err)
+	}
+
+	calls := runner.Calls()
+	if calls[0].Command != "mise" {
+		t.Errorf("command = %q, want %q (rtx maps to mise)", calls[0].Command, "mise")
+	}
+}
+
 func TestToolVersionStep_ProjectScope_WritesToProjectPath(t *testing.T) {
 	cfg := &Config{
 		Scope: "project",
@@ -203,4 +388,17 @@ func TestToolVersionStep_Explain(t *testing.T) {
 	if explanation.Summary() == "" {
 		t.Error("Explain() returned empty summary")
 	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && searchStr(s, substr)
+}
+
+func searchStr(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

@@ -2,8 +2,10 @@ package shell
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
+	"github.com/felixgeelhaar/preflight/internal/adapters/command"
 	"github.com/felixgeelhaar/preflight/internal/adapters/filesystem"
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
@@ -14,20 +16,29 @@ type FrameworkStep struct {
 	config Entry
 	id     compiler.StepID
 	fs     ports.FileSystem
+	runner ports.CommandRunner
 }
 
-// NewFrameworkStep creates a new FrameworkStep.
+// NewFrameworkStep creates a new FrameworkStep with real dependencies.
 func NewFrameworkStep(config Entry) *FrameworkStep {
-	return NewFrameworkStepWithFS(config, filesystem.NewRealFileSystem())
+	return NewFrameworkStepWith(config, filesystem.NewRealFileSystem(), command.NewRealRunner())
 }
 
-// NewFrameworkStepWithFS creates a new FrameworkStep with a custom filesystem.
+// NewFrameworkStepWithFS creates a new FrameworkStep with a custom filesystem and no runner.
+//
+// Deprecated: Use NewFrameworkStepWith for full functionality.
 func NewFrameworkStepWithFS(config Entry, fs ports.FileSystem) *FrameworkStep {
+	return NewFrameworkStepWith(config, fs, nil)
+}
+
+// NewFrameworkStepWith creates a new FrameworkStep with custom dependencies.
+func NewFrameworkStepWith(config Entry, fs ports.FileSystem, runner ports.CommandRunner) *FrameworkStep {
 	id := compiler.MustNewStepID(fmt.Sprintf("shell:framework:%s:%s", config.Name, config.Framework))
 	return &FrameworkStep{
 		config: config,
 		id:     id,
 		fs:     fs,
+		runner: runner,
 	}
 }
 
@@ -62,10 +73,41 @@ func (s *FrameworkStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 }
 
 // Apply installs the framework.
-func (s *FrameworkStep) Apply(_ compiler.RunContext) error {
-	// In real implementation, this would run the framework installation script
-	// For oh-my-zsh: sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-	// For fisher: curl -sL https://git.io/fisher | source && fisher install jorgebucaran/fisher
+func (s *FrameworkStep) Apply(ctx compiler.RunContext) error {
+	if s.runner == nil {
+		return fmt.Errorf("command runner not configured for framework step")
+	}
+
+	switch s.config.Framework {
+	case "oh-my-zsh":
+		installScript := `RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`
+		result, err := s.runner.Run(ctx.Context(), "/bin/bash", "-c", installScript)
+		if err != nil {
+			return fmt.Errorf("oh-my-zsh install failed: %w", err)
+		}
+		if !result.Success() {
+			return fmt.Errorf("oh-my-zsh install failed: %s", result.Stderr)
+		}
+	case "fisher":
+		installScript := `curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher`
+		result, err := s.runner.Run(ctx.Context(), "fish", "-c", installScript)
+		if err != nil {
+			return fmt.Errorf("fisher install failed: %w", err)
+		}
+		if !result.Success() {
+			return fmt.Errorf("fisher install failed: %s", result.Stderr)
+		}
+	case "oh-my-fish":
+		result, err := s.runner.Run(ctx.Context(), "/bin/bash", "-c", "curl -L https://get.oh-my.fish | fish")
+		if err != nil {
+			return fmt.Errorf("oh-my-fish install failed: %w", err)
+		}
+		if !result.Success() {
+			return fmt.Errorf("oh-my-fish install failed: %s", result.Stderr)
+		}
+	default:
+		return fmt.Errorf("unsupported framework: %s", s.config.Framework)
+	}
 	return nil
 }
 
@@ -112,16 +154,23 @@ type PluginStep struct {
 	framework string
 	plugin    string
 	id        compiler.StepID
+	fs        ports.FileSystem
 }
 
 // NewPluginStep creates a new PluginStep.
 func NewPluginStep(shell, framework, plugin string) *PluginStep {
+	return NewPluginStepWithFS(shell, framework, plugin, filesystem.NewRealFileSystem())
+}
+
+// NewPluginStepWithFS creates a new PluginStep with a custom filesystem.
+func NewPluginStepWithFS(shell, framework, plugin string, fs ports.FileSystem) *PluginStep {
 	id := compiler.MustNewStepID(fmt.Sprintf("shell:plugin:%s:%s", shell, plugin))
 	return &PluginStep{
 		shell:     shell,
 		framework: framework,
 		plugin:    plugin,
 		id:        id,
+		fs:        fs,
 	}
 }
 
@@ -136,9 +185,21 @@ func (s *PluginStep) DependsOn() []compiler.StepID {
 	return []compiler.StepID{frameworkID}
 }
 
-// Check verifies if the plugin is enabled.
+// Check verifies if the plugin is enabled in the shell config.
 func (s *PluginStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
-	// Built-in plugins are always available, just need to be enabled in config
+	configPath := ports.ExpandPath(shellConfigPath(s.shell))
+	if configPath == "" {
+		return compiler.StatusNeedsApply, nil
+	}
+
+	content, err := s.fs.ReadFile(configPath)
+	if err != nil {
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // missing config means needs apply
+	}
+
+	if containsPlugin(string(content), s.plugin) {
+		return compiler.StatusSatisfied, nil
+	}
 	return compiler.StatusNeedsApply, nil
 }
 
@@ -153,10 +214,22 @@ func (s *PluginStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 	), nil
 }
 
-// Apply enables the plugin.
+// Apply enables the plugin in the shell configuration file.
 func (s *PluginStep) Apply(_ compiler.RunContext) error {
-	// In real implementation, this would update the shell config to enable the plugin
-	return nil
+	configPath := ports.ExpandPath(shellConfigPath(s.shell))
+	if configPath == "" {
+		return fmt.Errorf("unsupported shell for plugin management: %s", s.shell)
+	}
+
+	content, err := s.fs.ReadFile(configPath)
+	if err != nil {
+		// Config file doesn't exist yet, create with plugin
+		newContent := fmt.Sprintf("plugins=(%s)\n", s.plugin)
+		return s.fs.WriteFile(configPath, []byte(newContent), 0o644)
+	}
+
+	updated := addPluginToConfig(string(content), s.plugin)
+	return s.fs.WriteFile(configPath, []byte(updated), 0o644)
 }
 
 // Explain provides context for this step.
@@ -175,15 +248,23 @@ type CustomPluginStep struct {
 	plugin    CustomPlugin
 	id        compiler.StepID
 	fs        ports.FileSystem
+	runner    ports.CommandRunner
 }
 
-// NewCustomPluginStep creates a new CustomPluginStep.
+// NewCustomPluginStep creates a new CustomPluginStep with real dependencies.
 func NewCustomPluginStep(shell, framework string, plugin CustomPlugin) *CustomPluginStep {
-	return NewCustomPluginStepWithFS(shell, framework, plugin, filesystem.NewRealFileSystem())
+	return NewCustomPluginStepWith(shell, framework, plugin, filesystem.NewRealFileSystem(), command.NewRealRunner())
 }
 
-// NewCustomPluginStepWithFS creates a new CustomPluginStep with a custom filesystem.
+// NewCustomPluginStepWithFS creates a new CustomPluginStep with a custom filesystem and no runner.
+//
+// Deprecated: Use NewCustomPluginStepWith for full functionality.
 func NewCustomPluginStepWithFS(shell, framework string, plugin CustomPlugin, fs ports.FileSystem) *CustomPluginStep {
+	return NewCustomPluginStepWith(shell, framework, plugin, fs, nil)
+}
+
+// NewCustomPluginStepWith creates a new CustomPluginStep with custom dependencies.
+func NewCustomPluginStepWith(shell, framework string, plugin CustomPlugin, fs ports.FileSystem, runner ports.CommandRunner) *CustomPluginStep {
 	id := compiler.MustNewStepID(fmt.Sprintf("shell:custom-plugin:%s:%s", shell, plugin.Name))
 	return &CustomPluginStep{
 		shell:     shell,
@@ -191,6 +272,7 @@ func NewCustomPluginStepWithFS(shell, framework string, plugin CustomPlugin, fs 
 		plugin:    plugin,
 		id:        id,
 		fs:        fs,
+		runner:    runner,
 	}
 }
 
@@ -225,10 +307,24 @@ func (s *CustomPluginStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 	), nil
 }
 
-// Apply clones the custom plugin.
-func (s *CustomPluginStep) Apply(_ compiler.RunContext) error {
-	// In real implementation, this would clone the git repository
-	// git clone https://github.com/<repo> <plugin-path>
+// Apply clones the custom plugin from its git repository.
+func (s *CustomPluginStep) Apply(ctx compiler.RunContext) error {
+	if s.runner == nil {
+		return fmt.Errorf("command runner not configured for custom plugin step")
+	}
+
+	path := s.pluginPath()
+	if path == "" {
+		return fmt.Errorf("unsupported framework for custom plugins: %s", s.framework)
+	}
+
+	result, err := s.runner.Run(ctx.Context(), "git", "clone", s.plugin.Repo, path)
+	if err != nil {
+		return fmt.Errorf("git clone failed for %s: %w", s.plugin.Name, err)
+	}
+	if !result.Success() {
+		return fmt.Errorf("git clone failed for %s: %s", s.plugin.Name, result.Stderr)
+	}
 	return nil
 }
 
@@ -255,15 +351,22 @@ type EnvStep struct {
 	shell string
 	env   map[string]string
 	id    compiler.StepID
+	fs    ports.FileSystem
 }
 
 // NewEnvStep creates a new EnvStep.
 func NewEnvStep(shell string, env map[string]string) *EnvStep {
+	return NewEnvStepWithFS(shell, env, filesystem.NewRealFileSystem())
+}
+
+// NewEnvStepWithFS creates a new EnvStep with a custom filesystem.
+func NewEnvStepWithFS(shell string, env map[string]string, fs ports.FileSystem) *EnvStep {
 	id := compiler.MustNewStepID(fmt.Sprintf("shell:env:%s", shell))
 	return &EnvStep{
 		shell: shell,
 		env:   env,
 		id:    id,
+		fs:    fs,
 	}
 }
 
@@ -277,8 +380,23 @@ func (s *EnvStep) DependsOn() []compiler.StepID {
 	return nil
 }
 
-// Check verifies if environment variables are set.
+// Check verifies if environment variables are set in the config file.
 func (s *EnvStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
+	configPath := ports.ExpandPath(shellConfigPath(s.shell))
+	if configPath == "" {
+		return compiler.StatusNeedsApply, nil
+	}
+
+	content, err := s.fs.ReadFile(configPath)
+	if err != nil {
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // missing config means needs apply
+	}
+
+	existing := ReadManagedBlock(string(content), "env")
+	desired := generateEnvBlock(s.env)
+	if existing == desired {
+		return compiler.StatusSatisfied, nil
+	}
 	return compiler.StatusNeedsApply, nil
 }
 
@@ -293,9 +411,21 @@ func (s *EnvStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 	), nil
 }
 
-// Apply sets environment variables.
+// Apply writes environment variables to the shell config file.
 func (s *EnvStep) Apply(_ compiler.RunContext) error {
-	return nil
+	configPath := ports.ExpandPath(shellConfigPath(s.shell))
+	if configPath == "" {
+		return fmt.Errorf("unsupported shell for env management: %s", s.shell)
+	}
+
+	content, err := s.fs.ReadFile(configPath)
+	if err != nil {
+		content = []byte{}
+	}
+
+	block := generateEnvBlock(s.env)
+	updated := WriteManagedBlock(string(content), "env", block)
+	return s.fs.WriteFile(configPath, []byte(updated), 0o644)
 }
 
 // Explain provides context for this step.
@@ -312,15 +442,22 @@ type AliasStep struct {
 	shell   string
 	aliases map[string]string
 	id      compiler.StepID
+	fs      ports.FileSystem
 }
 
 // NewAliasStep creates a new AliasStep.
 func NewAliasStep(shell string, aliases map[string]string) *AliasStep {
+	return NewAliasStepWithFS(shell, aliases, filesystem.NewRealFileSystem())
+}
+
+// NewAliasStepWithFS creates a new AliasStep with a custom filesystem.
+func NewAliasStepWithFS(shell string, aliases map[string]string, fs ports.FileSystem) *AliasStep {
 	id := compiler.MustNewStepID(fmt.Sprintf("shell:aliases:%s", shell))
 	return &AliasStep{
 		shell:   shell,
 		aliases: aliases,
 		id:      id,
+		fs:      fs,
 	}
 }
 
@@ -334,8 +471,23 @@ func (s *AliasStep) DependsOn() []compiler.StepID {
 	return nil
 }
 
-// Check verifies if aliases are configured.
+// Check verifies if aliases are configured in the shell config file.
 func (s *AliasStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
+	configPath := ports.ExpandPath(shellConfigPath(s.shell))
+	if configPath == "" {
+		return compiler.StatusNeedsApply, nil
+	}
+
+	content, err := s.fs.ReadFile(configPath)
+	if err != nil {
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // missing config means needs apply
+	}
+
+	existing := ReadManagedBlock(string(content), "aliases")
+	desired := generateAliasBlock(s.aliases)
+	if existing == desired {
+		return compiler.StatusSatisfied, nil
+	}
 	return compiler.StatusNeedsApply, nil
 }
 
@@ -350,9 +502,21 @@ func (s *AliasStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 	), nil
 }
 
-// Apply configures aliases.
+// Apply writes aliases to the shell config file.
 func (s *AliasStep) Apply(_ compiler.RunContext) error {
-	return nil
+	configPath := ports.ExpandPath(shellConfigPath(s.shell))
+	if configPath == "" {
+		return fmt.Errorf("unsupported shell for alias management: %s", s.shell)
+	}
+
+	content, err := s.fs.ReadFile(configPath)
+	if err != nil {
+		content = []byte{}
+	}
+
+	block := generateAliasBlock(s.aliases)
+	updated := WriteManagedBlock(string(content), "aliases", block)
+	return s.fs.WriteFile(configPath, []byte(updated), 0o644)
 }
 
 // Explain provides context for this step.
@@ -420,12 +584,14 @@ func (s *StarshipStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 	), nil
 }
 
-// Apply configures starship.
+// Apply creates the starship configuration file.
 func (s *StarshipStep) Apply(_ compiler.RunContext) error {
-	// In real implementation, this would:
-	// 1. Create starship.toml with preset configuration
-	// 2. Add init command to shell config
-	return nil
+	configPath := ports.ExpandPath("~/.config/starship.toml")
+	if err := s.fs.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		return fmt.Errorf("failed to create config dir: %w", err)
+	}
+	content := s.generateConfig()
+	return s.fs.WriteFile(configPath, content, 0o644)
 }
 
 // Explain provides context for this step.
@@ -441,20 +607,38 @@ func (s *StarshipStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 	)
 }
 
+func (s *StarshipStep) generateConfig() []byte {
+	var b strings.Builder
+	b.WriteString("# Managed by preflight\n")
+	if s.config.Preset != "" {
+		fmt.Fprintf(&b, `"$schema" = 'https://starship.rs/config-schema.json'`+"\n")
+		fmt.Fprintf(&b, "palette = '%s'\n", s.config.Preset)
+	}
+	return []byte(b.String())
+}
+
 // FisherPluginStep manages fisher plugin installation.
 type FisherPluginStep struct {
 	plugin string
 	id     compiler.StepID
 	fs     ports.FileSystem
+	runner ports.CommandRunner
 }
 
-// NewFisherPluginStep creates a new FisherPluginStep.
+// NewFisherPluginStep creates a new FisherPluginStep with real dependencies.
 func NewFisherPluginStep(plugin string) *FisherPluginStep {
-	return NewFisherPluginStepWithFS(plugin, filesystem.NewRealFileSystem())
+	return NewFisherPluginStepWith(plugin, filesystem.NewRealFileSystem(), command.NewRealRunner())
 }
 
-// NewFisherPluginStepWithFS creates a new FisherPluginStep with a custom filesystem.
+// NewFisherPluginStepWithFS creates a new FisherPluginStep with a custom filesystem and no runner.
+//
+// Deprecated: Use NewFisherPluginStepWith for full functionality.
 func NewFisherPluginStepWithFS(plugin string, fs ports.FileSystem) *FisherPluginStep {
+	return NewFisherPluginStepWith(plugin, fs, nil)
+}
+
+// NewFisherPluginStepWith creates a new FisherPluginStep with custom dependencies.
+func NewFisherPluginStepWith(plugin string, fs ports.FileSystem, runner ports.CommandRunner) *FisherPluginStep {
 	// Sanitize plugin name for step ID (replace dots with dashes)
 	sanitizedPlugin := strings.ReplaceAll(plugin, ".", "-")
 	id := compiler.MustNewStepID(fmt.Sprintf("shell:fisher:%s", sanitizedPlugin))
@@ -462,6 +646,7 @@ func NewFisherPluginStepWithFS(plugin string, fs ports.FileSystem) *FisherPlugin
 		plugin: plugin,
 		id:     id,
 		fs:     fs,
+		runner: runner,
 	}
 }
 
@@ -476,9 +661,16 @@ func (s *FisherPluginStep) DependsOn() []compiler.StepID {
 	return []compiler.StepID{frameworkID}
 }
 
-// Check verifies if the fisher plugin is installed.
+// Check verifies if the fisher plugin is installed by reading the fish_plugins file.
 func (s *FisherPluginStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
-	// In real implementation, check if plugin is in fish_plugins file
+	pluginsPath := ports.ExpandPath("~/.config/fish/fish_plugins")
+	content, err := s.fs.ReadFile(pluginsPath)
+	if err != nil {
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // missing file means needs apply
+	}
+	if strings.Contains(string(content), s.plugin) {
+		return compiler.StatusSatisfied, nil
+	}
 	return compiler.StatusNeedsApply, nil
 }
 
@@ -493,9 +685,19 @@ func (s *FisherPluginStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 	), nil
 }
 
-// Apply installs the fisher plugin.
-func (s *FisherPluginStep) Apply(_ compiler.RunContext) error {
-	// In real implementation: fisher install <plugin>
+// Apply installs the fisher plugin via the fish shell.
+func (s *FisherPluginStep) Apply(ctx compiler.RunContext) error {
+	if s.runner == nil {
+		return fmt.Errorf("command runner not configured for fisher plugin step")
+	}
+
+	result, err := s.runner.Run(ctx.Context(), "fish", "-c", fmt.Sprintf("fisher install %s", s.plugin))
+	if err != nil {
+		return fmt.Errorf("fisher install %s failed: %w", s.plugin, err)
+	}
+	if !result.Success() {
+		return fmt.Errorf("fisher install %s failed: %s", s.plugin, result.Stderr)
+	}
 	return nil
 }
 

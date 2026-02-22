@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
@@ -67,11 +69,12 @@ func init() {
 	applyCmd.Flags().StringVarP(&applyTarget, "target", "t", "default", "Target to apply")
 	applyCmd.Flags().BoolVar(&applyDryRun, "dry-run", false, "Show what would be done without making changes")
 	applyCmd.Flags().BoolVar(&applyUpdateLock, "update-lock", false, "Update lockfile after apply")
-	applyCmd.Flags().BoolVar(&applyRollback, "rollback-on-error", false, "Attempt rollback when a step fails")
+	applyCmd.Flags().BoolVar(&applyRollback, "rollback-on-error", true, "Attempt rollback when a step fails (disable with --rollback-on-error=false)")
 }
 
 func runApply(cmd *cobra.Command, _ []string) error {
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
 
 	// Create the application
 	preflight := newPreflight(os.Stdout)
@@ -80,9 +83,7 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	} else if modeOverride != nil {
 		preflight = preflight.WithMode(*modeOverride)
 	}
-	if applyRollback {
-		preflight = preflight.WithRollbackOnFailure(true)
-	}
+	preflight = preflight.WithRollbackOnFailure(applyRollback)
 
 	// Create the plan
 	plan, err := preflight.Plan(ctx, applyConfigPath, applyTarget)

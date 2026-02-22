@@ -27,7 +27,7 @@ func TestApplyCmd_FlagDefaults(t *testing.T) {
 		{"target default", "target", "default"},
 		{"dry-run default", "dry-run", "false"},
 		{"update-lock default", "update-lock", "false"},
-		{"rollback-on-error default", "rollback-on-error", "false"},
+		{"rollback-on-error default", "rollback-on-error", "true"},
 	}
 
 	for _, tt := range tests {

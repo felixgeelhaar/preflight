@@ -3,6 +3,7 @@ package runtime
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
@@ -104,16 +105,25 @@ func (s *ToolVersionStep) generateContent() []byte {
 
 // PluginStep manages an asdf/rtx plugin.
 type PluginStep struct {
-	plugin PluginConfig
-	id     compiler.StepID
+	plugin  PluginConfig
+	backend string
+	id      compiler.StepID
+	runner  ports.CommandRunner
 }
 
-// NewPluginStep creates a new PluginStep.
+// NewPluginStep creates a new PluginStep without a runner (backward compatible).
 func NewPluginStep(plugin PluginConfig) *PluginStep {
+	return NewPluginStepWith(plugin, "", nil)
+}
+
+// NewPluginStepWith creates a new PluginStep with a command runner and backend.
+func NewPluginStepWith(plugin PluginConfig, backend string, runner ports.CommandRunner) *PluginStep {
 	id := compiler.MustNewStepID(fmt.Sprintf("runtime:plugin:%s", plugin.Name))
 	return &PluginStep{
-		plugin: plugin,
-		id:     id,
+		plugin:  plugin,
+		backend: backend,
+		id:      id,
+		runner:  runner,
 	}
 }
 
@@ -127,10 +137,23 @@ func (s *PluginStep) DependsOn() []compiler.StepID {
 	return nil
 }
 
-// Check verifies if the plugin is installed.
-func (s *PluginStep) Check(_ compiler.RunContext) (compiler.StepStatus, error) {
-	// In real implementation, this would check if the plugin is installed
-	// For now, always return needs-apply
+// Check verifies if the plugin is installed by querying the runtime backend.
+func (s *PluginStep) Check(ctx compiler.RunContext) (compiler.StepStatus, error) {
+	if s.runner == nil {
+		return compiler.StatusNeedsApply, nil
+	}
+
+	bin := s.backendBinary()
+	result, err := s.runner.Run(ctx.Context(), bin, "plugin", "list")
+	if err != nil {
+		return compiler.StatusNeedsApply, nil //nolint:nilerr // command failure means needs apply
+	}
+
+	for _, line := range strings.Split(result.Stdout, "\n") {
+		if strings.TrimSpace(line) == s.plugin.Name {
+			return compiler.StatusSatisfied, nil
+		}
+	}
 	return compiler.StatusNeedsApply, nil
 }
 
@@ -149,10 +172,25 @@ func (s *PluginStep) Plan(_ compiler.RunContext) (compiler.Diff, error) {
 	), nil
 }
 
-// Apply installs the plugin.
-func (s *PluginStep) Apply(_ compiler.RunContext) error {
-	// In real implementation, this would run:
-	// asdf plugin add <name> [url]
+// Apply installs the plugin using the runtime backend.
+func (s *PluginStep) Apply(ctx compiler.RunContext) error {
+	if s.runner == nil {
+		return fmt.Errorf("command runner not configured for runtime plugin step")
+	}
+
+	bin := s.backendBinary()
+	args := []string{"plugin", "add", s.plugin.Name}
+	if s.plugin.URL != "" {
+		args = append(args, s.plugin.URL)
+	}
+
+	result, err := s.runner.Run(ctx.Context(), bin, args...)
+	if err != nil {
+		return fmt.Errorf("%s plugin add %s failed: %w", bin, s.plugin.Name, err)
+	}
+	if !result.Success() {
+		return fmt.Errorf("%s plugin add %s failed: %s", bin, s.plugin.Name, result.Stderr)
+	}
 	return nil
 }
 
@@ -163,4 +201,14 @@ func (s *PluginStep) Explain(_ compiler.ExplainContext) compiler.Explanation {
 		fmt.Sprintf("Install asdf plugin for %s version management", s.plugin.Name),
 		nil,
 	)
+}
+
+// backendBinary returns the binary name for the configured backend.
+func (s *PluginStep) backendBinary() string {
+	switch s.backend {
+	case "rtx", "mise":
+		return "mise"
+	default:
+		return "asdf"
+	}
 }
