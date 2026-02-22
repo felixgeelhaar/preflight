@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"text/tabwriter"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/security"
@@ -67,7 +69,7 @@ func init() {
 }
 
 func runCleanup(_ *cobra.Command, _ []string) error {
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	// Create checker
 	checker := security.NewBrewRedundancyChecker()
@@ -77,16 +79,19 @@ func runCleanup(_ *cobra.Command, _ []string) error {
 		} else {
 			fmt.Fprintf(os.Stderr, "Error: Homebrew is not installed\n")
 		}
+		cancel()
 		os.Exit(2)
 	}
 
 	// Handle specific remove requests
 	if len(cleanupRemove) > 0 {
+		cancel()
 		return handleRemove(ctx, checker, cleanupRemove)
 	}
 
 	// Handle autoremove
 	if cleanupAutoremove {
+		cancel()
 		return handleAutoremove(ctx, checker)
 	}
 
@@ -105,11 +110,13 @@ func runCleanup(_ *cobra.Command, _ []string) error {
 		} else {
 			fmt.Fprintf(os.Stderr, "Analysis failed: %v\n", err)
 		}
+		cancel()
 		os.Exit(2)
 	}
 
 	// Handle --all flag
 	if cleanupAll && len(result.Redundancies) > 0 {
+		cancel()
 		return handleCleanupAll(ctx, checker, result)
 	}
 
@@ -122,9 +129,11 @@ func runCleanup(_ *cobra.Command, _ []string) error {
 
 	// Exit with code 1 if redundancies found
 	if len(result.Redundancies) > 0 {
+		cancel()
 		os.Exit(1)
 	}
 
+	cancel()
 	return nil
 }
 

@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor/anthropic"
@@ -96,7 +98,8 @@ func runInit(_ *cobra.Command, _ []string) error {
 	}
 
 	// Run the wizard
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
 	result, err := tui.RunInitWizard(ctx, opts)
 	if err != nil {
 		return fmt.Errorf("init wizard failed: %w", err)

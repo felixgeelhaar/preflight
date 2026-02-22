@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/felixgeelhaar/preflight/internal/adapters/filesystem"
 	"github.com/felixgeelhaar/preflight/internal/app"
@@ -75,7 +77,8 @@ func runCapture(_ *cobra.Command, _ []string) error {
 		opts.Interactive = false
 	}
 
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
 
 	// Create app instance and capture items
 	preflight := app.New(os.Stdout)
