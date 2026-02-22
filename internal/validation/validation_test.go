@@ -383,3 +383,500 @@ func TestContainsPathTraversal(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateCaskName(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "valid cask", input: "visual-studio-code", wantErr: nil},
+		{name: "valid cask with dot", input: "firefox", wantErr: nil},
+		{name: "empty", input: "", wantErr: ErrEmptyInput},
+		{name: "injection attempt", input: "app;rm -rf", wantErr: ErrInvalidPackageName},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateCaskName(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateBrewArg(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "HEAD flag", input: "--HEAD", wantErr: nil},
+		{name: "with-openssl", input: "--with-openssl", wantErr: nil},
+		{name: "force flag", input: "--force", wantErr: nil},
+		{name: "short flag", input: "-v", wantErr: nil},
+		{name: "empty", input: "", wantErr: ErrEmptyInput},
+		{name: "no dash prefix", input: "HEAD", wantErr: ErrInvalidBrewArg},
+		{name: "injection attempt", input: "--flag;rm", wantErr: ErrInvalidBrewArg},
+		{name: "too long", input: "--" + strings.Repeat("a", 300), wantErr: ErrInvalidBrewArg},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateBrewArg(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateWingetID(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "valid ID", input: "Microsoft.VisualStudioCode", wantErr: nil},
+		{name: "git", input: "Git.Git", wantErr: nil},
+		{name: "7zip", input: "7zip.7zip", wantErr: nil},
+		{name: "with hyphen", input: "Some-Publisher.Some-App", wantErr: nil},
+		{name: "empty", input: "", wantErr: ErrEmptyInput},
+		{name: "no dot", input: "MicrosoftVisualStudioCode", wantErr: ErrInvalidWingetID},
+		{name: "injection", input: "Publisher.App;rm", wantErr: ErrInvalidWingetID},
+		{name: "too long", input: strings.Repeat("a", 300), wantErr: ErrInvalidWingetID},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateWingetID(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateWingetSource(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "empty allowed", input: "", wantErr: nil},
+		{name: "winget", input: "winget", wantErr: nil},
+		{name: "msstore", input: "msstore", wantErr: nil},
+		{name: "with hyphen", input: "my-source", wantErr: nil},
+		{name: "injection", input: "source;rm", wantErr: ErrInvalidWingetSource},
+		{name: "too long", input: strings.Repeat("a", 200), wantErr: ErrInvalidWingetSource},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateWingetSource(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateScoopBucket(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "extras", input: "extras", wantErr: nil},
+		{name: "versions", input: "versions", wantErr: nil},
+		{name: "github repo", input: "ScoopInstaller/Main", wantErr: nil},
+		{name: "empty", input: "", wantErr: ErrEmptyInput},
+		{name: "injection", input: "bucket;rm", wantErr: ErrInvalidScoopBucket},
+		{name: "too long", input: strings.Repeat("a", 300), wantErr: ErrInvalidScoopBucket},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateScoopBucket(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateChocoPackage(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "git", input: "git", wantErr: nil},
+		{name: "nodejs", input: "nodejs", wantErr: nil},
+		{name: "with dot", input: "7zip.install", wantErr: nil},
+		{name: "python3", input: "python3", wantErr: nil},
+		{name: "empty", input: "", wantErr: ErrEmptyInput},
+		{name: "injection", input: "pkg;rm", wantErr: ErrInvalidChocoPackage},
+		{name: "too long", input: strings.Repeat("a", 300), wantErr: ErrInvalidChocoPackage},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateChocoPackage(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateChocoSource(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "chocolatey", input: "chocolatey", wantErr: nil},
+		{name: "internal", input: "internal", wantErr: nil},
+		{name: "with hyphen", input: "my-feed", wantErr: nil},
+		{name: "empty", input: "", wantErr: ErrEmptyInput},
+		{name: "injection", input: "source;rm", wantErr: ErrInvalidChocoSource},
+		{name: "too long", input: strings.Repeat("a", 200), wantErr: ErrInvalidChocoSource},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateChocoSource(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateURL(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "https URL", input: "https://community.chocolatey.org/api/v2/", wantErr: nil},
+		{name: "http URL", input: "http://nuget.internal.com/v3/", wantErr: nil},
+		{name: "simple URL", input: "https://example.com", wantErr: nil},
+		{name: "empty", input: "", wantErr: ErrEmptyInput},
+		{name: "no scheme", input: "example.com", wantErr: ErrInvalidURL},
+		{name: "ftp scheme", input: "ftp://example.com", wantErr: ErrInvalidURL},
+		{name: "too long", input: "https://" + strings.Repeat("a", 2100), wantErr: ErrInvalidURL},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateURL(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateConfigPath(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "empty allowed", input: "", wantErr: nil},
+		{name: "yaml extension", input: "config/preflight.yaml", wantErr: nil},
+		{name: "yml extension", input: "config/preflight.yml", wantErr: nil},
+		{name: "wrong extension", input: "config/preflight.json", wantErr: ErrInvalidPath},
+		{name: "no extension", input: "config/preflight", wantErr: ErrInvalidPath},
+		{name: "shell metachar", input: "config;rm.yaml", wantErr: ErrCommandInjection},
+		{name: "null byte", input: "config\x00.yaml", wantErr: ErrInvalidPath},
+		{name: "too long", input: strings.Repeat("a", 5000) + ".yaml", wantErr: ErrInvalidPath},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateConfigPath(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateTarget(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "empty allowed", input: "", wantErr: nil},
+		{name: "default", input: "default", wantErr: nil},
+		{name: "with hyphen", input: "my-target", wantErr: nil},
+		{name: "with underscore", input: "my_target", wantErr: nil},
+		{name: "with dot", input: "work.laptop", wantErr: nil},
+		{name: "alphanumeric", input: "target123", wantErr: nil},
+		{name: "invalid char space", input: "my target", wantErr: ErrInvalidPath},
+		{name: "invalid char semicolon", input: "target;rm", wantErr: ErrInvalidPath},
+		{name: "too long", input: strings.Repeat("a", 200), wantErr: ErrInvalidPath},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateTarget(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateSnapshotID(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "empty allowed", input: "", wantErr: nil},
+		{name: "simple id", input: "snapshot-1", wantErr: nil},
+		{name: "with underscore", input: "snap_20240101", wantErr: nil},
+		{name: "alphanumeric", input: "abc123", wantErr: nil},
+		{name: "invalid char dot", input: "snap.1", wantErr: ErrInvalidPath},
+		{name: "invalid char space", input: "snap 1", wantErr: ErrInvalidPath},
+		{name: "too long", input: strings.Repeat("a", 200), wantErr: ErrInvalidPath},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateSnapshotID(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateNpmPackage(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "simple package", input: "lodash", wantErr: nil},
+		{name: "scoped package", input: "@types/node", wantErr: nil},
+		{name: "scoped with version", input: "@anthropic-ai/claude-code@2.0.0", wantErr: nil},
+		{name: "with version", input: "pnpm@10.24.0", wantErr: nil},
+		{name: "with dots", input: "socket.io", wantErr: nil},
+		{name: "empty", input: "", wantErr: ErrEmptyInput},
+		{name: "injection", input: "pkg;rm", wantErr: ErrInvalidNpmPackage},
+		{name: "too long", input: strings.Repeat("a", 300), wantErr: ErrInvalidNpmPackage},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateNpmPackage(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateGoTool(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "gopls", input: "golang.org/x/tools/gopls@latest", wantErr: nil},
+		{name: "golangci-lint", input: "github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.0", wantErr: nil},
+		{name: "without version", input: "github.com/user/tool/cmd/tool", wantErr: nil},
+		{name: "empty", input: "", wantErr: ErrEmptyInput},
+		{name: "simple name", input: "gopls", wantErr: ErrInvalidGoTool},
+		{name: "injection", input: "github.com/user/tool;rm", wantErr: ErrInvalidGoTool},
+		{name: "too long", input: strings.Repeat("a", 600), wantErr: ErrInvalidGoTool},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateGoTool(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidatePipPackage(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "simple package", input: "requests", wantErr: nil},
+		{name: "with exact version", input: "black==23.1.0", wantErr: nil},
+		{name: "with min version", input: "ruff>=0.1.0", wantErr: ErrCommandInjection},
+		{name: "with compat version", input: "numpy~=1.24.0", wantErr: nil},
+		{name: "empty", input: "", wantErr: ErrEmptyInput},
+		{name: "injection", input: "pkg;rm", wantErr: ErrInvalidPipPackage},
+		{name: "too long", input: strings.Repeat("a", 300), wantErr: ErrInvalidPipPackage},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidatePipPackage(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateGemName(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "rails", input: "rails", wantErr: nil},
+		{name: "bundler with version", input: "bundler@2.4.0", wantErr: nil},
+		{name: "rake", input: "rake", wantErr: nil},
+		{name: "with hyphen", input: "ruby-lint", wantErr: nil},
+		{name: "empty", input: "", wantErr: ErrEmptyInput},
+		{name: "injection", input: "gem;rm", wantErr: ErrInvalidGemName},
+		{name: "too long", input: strings.Repeat("a", 300), wantErr: ErrInvalidGemName},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateGemName(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateCargoCrate(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{name: "ripgrep", input: "ripgrep", wantErr: nil},
+		{name: "bat with version", input: "bat@0.22.1", wantErr: nil},
+		{name: "tokio", input: "tokio", wantErr: nil},
+		{name: "with underscore", input: "cargo_watch", wantErr: nil},
+		{name: "empty", input: "", wantErr: ErrEmptyInput},
+		{name: "injection", input: "crate;rm", wantErr: ErrInvalidCargoCrate},
+		{name: "with dot", input: "crate.name", wantErr: ErrInvalidCargoCrate},
+		{name: "too long", input: strings.Repeat("a", 300), wantErr: ErrInvalidCargoCrate},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateCargoCrate(tt.input)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
