@@ -1,6 +1,8 @@
 package security
 
 import (
+	"context"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -280,6 +282,209 @@ func TestTrivyScanner_Version_Parsing(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestTrivyScanner_Version_WithMock(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		output   string
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "standard version output",
+			output:   "Version: 0.50.0\nVulnerability DB:\n  Version: 2",
+			expected: "0.50.0",
+		},
+		{
+			name:     "single line version",
+			output:   "Version: 0.48.1",
+			expected: "0.48.1",
+		},
+		{
+			name:     "no version prefix returns raw output",
+			output:   "some-other-output",
+			expected: "some-other-output",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			scanner := &TrivyScanner{
+				execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+					return exec.Command("printf", "%s", tt.output)
+				},
+			}
+
+			version, err := scanner.Version(context.Background())
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, version)
+		})
+	}
+}
+
+func TestTrivyScanner_Version_Error(t *testing.T) {
+	t.Parallel()
+
+	scanner := &TrivyScanner{
+		execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+			return exec.Command("false")
+		},
+	}
+
+	_, err := scanner.Version(context.Background())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get trivy version")
+}
+
+func TestTrivyScanner_Scan_WithMock(t *testing.T) {
+	t.Parallel()
+
+	trivyOutput := `{
+		"Results": [
+			{
+				"Target": "go.mod",
+				"Type": "gomod",
+				"Vulnerabilities": [
+					{
+						"VulnerabilityID": "CVE-2024-1234",
+						"PkgName": "golang.org/x/net",
+						"InstalledVersion": "0.1.0",
+						"FixedVersion": "0.2.0",
+						"Severity": "HIGH",
+						"Title": "HTTP/2 vulnerability",
+						"Description": "A vulnerability in net/http2",
+						"References": ["https://nvd.nist.gov/vuln/detail/CVE-2024-1234"],
+						"CVSS": {"nvd": {"V3Score": 7.5}}
+					}
+				]
+			}
+		]
+	}`
+
+	scanner := &TrivyScanner{
+		execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+			if name == "trivy" && len(args) > 0 && args[0] == "--version" {
+				return exec.Command("printf", "%s", "Version: 0.50.0")
+			}
+			// Scan command
+			return exec.Command("printf", "%s", trivyOutput)
+		},
+	}
+
+	ctx := context.Background()
+	target := ScanTarget{Type: "directory", Path: "."}
+	opts := ScanOptions{}
+
+	result, err := scanner.Scan(ctx, target, opts)
+	if err != nil {
+		// Expected: trivy not available on this machine
+		assert.ErrorIs(t, err, ErrScannerNotAvailable)
+	} else {
+		require.NotNil(t, result)
+		assert.Equal(t, "trivy", result.Scanner)
+		assert.Equal(t, "0.50.0", result.Version)
+		require.Len(t, result.Vulnerabilities, 1)
+		assert.Equal(t, "CVE-2024-1234", result.Vulnerabilities[0].ID)
+		assert.Equal(t, "golang.org/x/net", result.Vulnerabilities[0].Package)
+	}
+}
+
+func TestTrivyScanner_Scan_WithFilters(t *testing.T) {
+	t.Parallel()
+
+	trivyOutput := `{
+		"Results": [
+			{
+				"Target": "go.mod",
+				"Type": "gomod",
+				"Vulnerabilities": [
+					{
+						"VulnerabilityID": "CVE-2024-1111",
+						"PkgName": "pkg-a",
+						"InstalledVersion": "0.1.0",
+						"Severity": "CRITICAL"
+					},
+					{
+						"VulnerabilityID": "CVE-2024-2222",
+						"PkgName": "pkg-b",
+						"InstalledVersion": "1.0.0",
+						"Severity": "LOW"
+					},
+					{
+						"VulnerabilityID": "CVE-2024-3333",
+						"PkgName": "pkg-c",
+						"InstalledVersion": "2.0.0",
+						"Severity": "HIGH"
+					}
+				]
+			}
+		]
+	}`
+
+	scanner := &TrivyScanner{
+		execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+			if name == "trivy" && len(args) > 0 && args[0] == "--version" {
+				return exec.Command("printf", "%s", "Version: 0.50.0")
+			}
+			return exec.Command("printf", "%s", trivyOutput)
+		},
+	}
+
+	if !scanner.Available() {
+		t.Skip("trivy not available")
+	}
+
+	t.Run("filter by min severity", func(t *testing.T) {
+		t.Parallel()
+		result, err := scanner.Scan(context.Background(), ScanTarget{Type: "directory", Path: "."}, ScanOptions{
+			MinSeverity: SeverityHigh,
+		})
+		require.NoError(t, err)
+		// Should only include CRITICAL and HIGH
+		assert.Len(t, result.Vulnerabilities, 2)
+	})
+
+	t.Run("filter by ignore IDs", func(t *testing.T) {
+		t.Parallel()
+		result, err := scanner.Scan(context.Background(), ScanTarget{Type: "directory", Path: "."}, ScanOptions{
+			IgnoreIDs: []string{"CVE-2024-1111"},
+		})
+		require.NoError(t, err)
+		assert.Len(t, result.Vulnerabilities, 2)
+		for _, v := range result.Vulnerabilities {
+			assert.NotEqual(t, "CVE-2024-1111", v.ID)
+		}
+	})
+}
+
+func TestTrivyScanner_Scan_ExitCode(t *testing.T) {
+	t.Parallel()
+
+	// When trivy exits with non-zero and no stdout, it's an error
+	scanner := &TrivyScanner{
+		execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+			if name == "trivy" && len(args) > 0 && args[0] == "--version" {
+				return exec.Command("printf", "%s", "Version: 0.50.0")
+			}
+			// Simulate trivy failing with non-zero exit code
+			return exec.Command("false")
+		},
+	}
+
+	if !scanner.Available() {
+		t.Skip("trivy not available")
+	}
+
+	_, err := scanner.Scan(context.Background(), ScanTarget{Type: "directory", Path: "."}, ScanOptions{})
+	assert.Error(t, err)
 }
 
 // Helper functions mimicking strings package for isolated testing

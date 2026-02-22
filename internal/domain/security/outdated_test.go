@@ -2,6 +2,7 @@ package security
 
 import (
 	"context"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -639,4 +640,418 @@ func TestFailedPackage(t *testing.T) {
 
 	assert.Equal(t, "test-pkg", pkg.Name)
 	assert.Equal(t, "permission denied", pkg.Error)
+}
+
+func TestBrewOutdatedChecker_Check_WithMockExec(t *testing.T) {
+	t.Parallel()
+
+	brewOutdatedJSON := `{
+		"formulae": [
+			{
+				"name": "go",
+				"installed_versions": ["1.21.0"],
+				"current_version": "1.22.0",
+				"pinned": false
+			},
+			{
+				"name": "python",
+				"installed_versions": ["3.11.0"],
+				"current_version": "3.12.0",
+				"pinned": true
+			},
+			{
+				"name": "curl",
+				"installed_versions": ["8.0.0"],
+				"current_version": "8.0.1",
+				"pinned": false
+			}
+		],
+		"casks": [
+			{
+				"name": "docker",
+				"installed_versions": ["4.25.0"],
+				"current_version": "4.26.0"
+			}
+		]
+	}`
+
+	t.Run("check returns outdated packages with default filters", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewOutdatedChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", brewOutdatedJSON)
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		// Default: IncludePatch=false, IncludePinned=false
+		result, err := checker.Check(context.Background(), OutdatedOptions{})
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, "brew", result.Checker)
+		// go (minor), docker (minor) are included; python (pinned, excluded), curl (patch, excluded)
+		assert.Len(t, result.Packages, 2)
+	})
+
+	t.Run("check with include patch", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewOutdatedChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", brewOutdatedJSON)
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Check(context.Background(), OutdatedOptions{
+			IncludePatch: true,
+		})
+		require.NoError(t, err)
+		// go (minor), curl (patch), docker (minor) - python pinned excluded
+		assert.Len(t, result.Packages, 3)
+	})
+
+	t.Run("check with include pinned", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewOutdatedChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", brewOutdatedJSON)
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Check(context.Background(), OutdatedOptions{
+			IncludePinned: true,
+		})
+		require.NoError(t, err)
+		// go (minor), python (minor, pinned), docker (minor) - curl (patch, excluded)
+		assert.Len(t, result.Packages, 3)
+	})
+
+	t.Run("check with ignore packages", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewOutdatedChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", brewOutdatedJSON)
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Check(context.Background(), OutdatedOptions{
+			IgnorePackages: []string{"go"},
+		})
+		require.NoError(t, err)
+		// Only docker (minor) - go (ignored), python (pinned excluded), curl (patch excluded)
+		assert.Len(t, result.Packages, 1)
+		assert.Equal(t, "docker", result.Packages[0].Name)
+	})
+
+	t.Run("not available returns error", func(t *testing.T) {
+		t.Parallel()
+		checker := NewBrewOutdatedChecker()
+		if checker.Available() {
+			t.Skip("brew is available, skipping not-available test")
+		}
+
+		_, err := checker.Check(context.Background(), OutdatedOptions{})
+		assert.ErrorIs(t, err, ErrScannerNotAvailable)
+	})
+}
+
+func TestBrewOutdatedChecker_Check_ExecError(t *testing.T) {
+	t.Parallel()
+
+	checker := &BrewOutdatedChecker{
+		execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+			return exec.Command("false")
+		},
+	}
+
+	if !checker.Available() {
+		t.Skip("brew not available")
+	}
+
+	_, err := checker.Check(context.Background(), OutdatedOptions{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to run brew outdated")
+}
+
+func TestBrewOutdatedChecker_Upgrade_WithMockExec(t *testing.T) {
+	t.Parallel()
+
+	brewOutdatedJSON := `{
+		"formulae": [
+			{
+				"name": "go",
+				"installed_versions": ["1.21.0"],
+				"current_version": "1.22.0",
+				"pinned": false
+			},
+			{
+				"name": "node",
+				"installed_versions": ["18.0.0"],
+				"current_version": "20.0.0",
+				"pinned": false
+			}
+		],
+		"casks": [
+			{
+				"name": "docker",
+				"installed_versions": ["4.25.0"],
+				"current_version": "4.26.0"
+			}
+		]
+	}`
+
+	t.Run("dry run upgrade", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewOutdatedChecker{
+			execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+				// brew outdated --json call
+				if name == "brew" && len(args) > 0 && args[0] == "outdated" {
+					return exec.Command("printf", "%s", brewOutdatedJSON)
+				}
+				return exec.Command("echo", "ok")
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Upgrade(context.Background(), []string{"go"}, UpgradeOptions{
+			DryRun: true,
+		})
+		require.NoError(t, err)
+		assert.True(t, result.DryRun)
+		assert.Len(t, result.Upgraded, 1)
+		assert.Equal(t, "go", result.Upgraded[0].Name)
+		assert.Equal(t, "1.21.0", result.Upgraded[0].FromVersion)
+		assert.Equal(t, "1.22.0", result.Upgraded[0].ToVersion)
+	})
+
+	t.Run("skip major without flag", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewOutdatedChecker{
+			execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+				if name == "brew" && len(args) > 0 && args[0] == "outdated" {
+					return exec.Command("printf", "%s", brewOutdatedJSON)
+				}
+				return exec.Command("echo", "ok")
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Upgrade(context.Background(), []string{"node"}, UpgradeOptions{
+			DryRun: true,
+		})
+		require.NoError(t, err)
+		assert.Len(t, result.Skipped, 1)
+		assert.Equal(t, "node", result.Skipped[0].Name)
+		assert.Equal(t, UpdateMajor, result.Skipped[0].UpdateType)
+	})
+
+	t.Run("include major upgrade", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewOutdatedChecker{
+			execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+				if name == "brew" && len(args) > 0 && args[0] == "outdated" {
+					return exec.Command("printf", "%s", brewOutdatedJSON)
+				}
+				return exec.Command("echo", "ok")
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Upgrade(context.Background(), []string{"node"}, UpgradeOptions{
+			DryRun:       true,
+			IncludeMajor: true,
+		})
+		require.NoError(t, err)
+		assert.Len(t, result.Upgraded, 1)
+		assert.Equal(t, "node", result.Upgraded[0].Name)
+	})
+
+	t.Run("upgrade all when no packages specified", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewOutdatedChecker{
+			execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+				if name == "brew" && len(args) > 0 && args[0] == "outdated" {
+					return exec.Command("printf", "%s", brewOutdatedJSON)
+				}
+				return exec.Command("echo", "ok")
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Upgrade(context.Background(), nil, UpgradeOptions{
+			DryRun:       true,
+			IncludeMajor: true,
+		})
+		require.NoError(t, err)
+		// All packages should be upgraded (go, node, docker)
+		assert.Len(t, result.Upgraded, 3)
+	})
+
+	t.Run("actual upgrade success", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewOutdatedChecker{
+			execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+				if name == "brew" && len(args) > 0 && args[0] == "outdated" {
+					return exec.Command("printf", "%s", brewOutdatedJSON)
+				}
+				// brew upgrade <pkg> succeeds
+				return exec.Command("true")
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Upgrade(context.Background(), []string{"go"}, UpgradeOptions{})
+		require.NoError(t, err)
+		assert.Len(t, result.Upgraded, 1)
+		assert.False(t, result.DryRun)
+	})
+
+	t.Run("actual upgrade failure", func(t *testing.T) {
+		t.Parallel()
+		callNum := 0
+		checker := &BrewOutdatedChecker{
+			execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+				callNum++
+				if name == "brew" && len(args) > 0 && args[0] == "outdated" {
+					return exec.Command("printf", "%s", brewOutdatedJSON)
+				}
+				// brew upgrade <pkg> fails
+				return exec.Command("false")
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Upgrade(context.Background(), []string{"go"}, UpgradeOptions{})
+		require.NoError(t, err)
+		assert.Len(t, result.Failed, 1)
+		assert.Equal(t, "go", result.Failed[0].Name)
+	})
+
+	t.Run("cask upgrade uses --cask flag", func(t *testing.T) {
+		t.Parallel()
+		var capturedArgs []string
+		checker := &BrewOutdatedChecker{
+			execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+				if name == "brew" && len(args) > 0 && args[0] == "outdated" {
+					return exec.Command("printf", "%s", brewOutdatedJSON)
+				}
+				// Capture the upgrade command args
+				capturedArgs = args
+				return exec.Command("true")
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Upgrade(context.Background(), []string{"docker"}, UpgradeOptions{})
+		require.NoError(t, err)
+		assert.Len(t, result.Upgraded, 1)
+		assert.Contains(t, capturedArgs, "--cask")
+	})
+
+	t.Run("not available returns error", func(t *testing.T) {
+		t.Parallel()
+		checker := NewBrewOutdatedChecker()
+		if checker.Available() {
+			t.Skip("brew is available")
+		}
+
+		_, err := checker.Upgrade(context.Background(), nil, UpgradeOptions{})
+		assert.ErrorIs(t, err, ErrScannerNotAvailable)
+	})
+
+	t.Run("package not in outdated list is skipped", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewOutdatedChecker{
+			execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+				if name == "brew" && len(args) > 0 && args[0] == "outdated" {
+					return exec.Command("printf", "%s", brewOutdatedJSON)
+				}
+				return exec.Command("true")
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Upgrade(context.Background(), []string{"nonexistent-pkg"}, UpgradeOptions{DryRun: true})
+		require.NoError(t, err)
+		assert.Empty(t, result.Upgraded)
+		assert.Empty(t, result.Failed)
+		assert.Empty(t, result.Skipped)
+	})
+}
+
+func TestExtractMinor_EdgeCases(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "normal version",
+			input:    "v1.2.3",
+			expected: "2",
+		},
+		{
+			name:     "with prerelease in minor",
+			input:    "v1.2-beta",
+			expected: "2",
+		},
+		{
+			name:     "single part version",
+			input:    "v1",
+			expected: "",
+		},
+		{
+			name:     "just major",
+			input:    "1",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result := extractMinor(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }

@@ -2,6 +2,7 @@ package security
 
 import (
 	"context"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -386,4 +387,420 @@ func TestRedundancyResult_ToJSON(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(jsonBytes), "duplicate")
 	assert.Contains(t, string(jsonBytes), "go@1.24")
+}
+
+func TestBrewRedundancyChecker_getInstalledPackages(t *testing.T) {
+	t.Parallel()
+
+	t.Run("successful list", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", "go\ncurl\njq\ngit\n")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		packages, err := checker.getInstalledPackages(context.Background())
+		require.NoError(t, err)
+		assert.Equal(t, []string{"go", "curl", "jq", "git"}, packages)
+	})
+
+	t.Run("empty output", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", "")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		packages, err := checker.getInstalledPackages(context.Background())
+		require.NoError(t, err)
+		assert.Empty(t, packages)
+	})
+
+	t.Run("command error", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("false")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		_, err := checker.getInstalledPackages(context.Background())
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to list brew packages")
+	})
+}
+
+func TestBrewRedundancyChecker_detectOrphans(t *testing.T) {
+	t.Parallel()
+
+	t.Run("orphans found", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", "==> Would remove:\nlibpng zlib jpeg\n")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		result := checker.detectOrphans(context.Background(), make(map[string]bool))
+		assert.Equal(t, RedundancyOrphan, result.Type)
+		assert.ElementsMatch(t, []string{"libpng", "zlib", "jpeg"}, result.Packages)
+		assert.ElementsMatch(t, []string{"libpng", "zlib", "jpeg"}, result.Remove)
+		assert.Contains(t, result.Recommendation, "3 orphaned dependencies")
+	})
+
+	t.Run("no orphans", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", "Nothing to remove.\n")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		result := checker.detectOrphans(context.Background(), make(map[string]bool))
+		assert.Empty(t, result.Packages)
+	})
+
+	t.Run("orphans with ignore list", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", "libpng zlib jpeg\n")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		ignore := map[string]bool{"zlib": true}
+		result := checker.detectOrphans(context.Background(), ignore)
+		assert.ElementsMatch(t, []string{"libpng", "jpeg"}, result.Packages)
+	})
+
+	t.Run("command failure returns empty", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("false")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		result := checker.detectOrphans(context.Background(), make(map[string]bool))
+		assert.Empty(t, result.Packages)
+	})
+
+	t.Run("empty lines and headers filtered", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", "==> Header\n\nWould remove something\npkg1 pkg2\n\n")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		result := checker.detectOrphans(context.Background(), make(map[string]bool))
+		assert.ElementsMatch(t, []string{"pkg1", "pkg2"}, result.Packages)
+	})
+}
+
+func TestBrewRedundancyChecker_Check_WithMockExec(t *testing.T) {
+	t.Parallel()
+
+	t.Run("check with duplicates only", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+				if name == "brew" && len(args) > 0 && args[0] == "list" {
+					return exec.Command("printf", "%s", "go\ngo@1.24\ncurl\n")
+				}
+				return exec.Command("echo", "")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Check(context.Background(), RedundancyOptions{})
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, "brew", result.Checker)
+		// Should find go/go@1.24 duplicate
+		assert.NotEmpty(t, result.Redundancies)
+	})
+
+	t.Run("check with overlaps enabled", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+				if name == "brew" && len(args) > 0 && args[0] == "list" {
+					return exec.Command("printf", "%s", "grype\ntrivy\ncurl\n")
+				}
+				return exec.Command("echo", "")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Check(context.Background(), RedundancyOptions{
+			IncludeOverlaps: true,
+		})
+		require.NoError(t, err)
+		// Should find grype/trivy overlap in security_scanners
+		found := false
+		for _, r := range result.Redundancies {
+			if r.Type == RedundancyOverlap && r.Category == "security_scanners" {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "expected security_scanners overlap")
+	})
+
+	t.Run("check with orphans enabled", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+				if name == "brew" && len(args) > 0 && args[0] == "list" {
+					return exec.Command("printf", "%s", "curl\ngit\n")
+				}
+				if name == "brew" && len(args) > 0 && args[0] == "autoremove" {
+					return exec.Command("printf", "%s", "libpng zlib\n")
+				}
+				return exec.Command("echo", "")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Check(context.Background(), RedundancyOptions{
+			IncludeOrphans: true,
+		})
+		require.NoError(t, err)
+		// Should find orphan entries
+		found := false
+		for _, r := range result.Redundancies {
+			if r.Type == RedundancyOrphan {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "expected orphan redundancy")
+	})
+
+	t.Run("check with ignore and keep lists", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+				if name == "brew" && len(args) > 0 && args[0] == "list" {
+					return exec.Command("printf", "%s", "go\ngo@1.24\npython\npython@3.12\n")
+				}
+				return exec.Command("echo", "")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Check(context.Background(), RedundancyOptions{
+			IgnorePackages: []string{"python", "python@3.12"},
+			KeepPackages:   []string{"go@1.24"},
+		})
+		require.NoError(t, err)
+		// Should only find go duplicate, with go@1.24 kept and go removed
+		require.Len(t, result.Redundancies, 1)
+		assert.Contains(t, result.Redundancies[0].Keep, "go@1.24")
+		assert.Contains(t, result.Redundancies[0].Remove, "go")
+	})
+
+	t.Run("not available returns error", func(t *testing.T) {
+		t.Parallel()
+		checker := NewBrewRedundancyChecker()
+		if checker.Available() {
+			t.Skip("brew is available")
+		}
+
+		_, err := checker.Check(context.Background(), RedundancyOptions{})
+		assert.ErrorIs(t, err, ErrScannerNotAvailable)
+	})
+}
+
+func TestBrewRedundancyChecker_Check_GetInstalledError(t *testing.T) {
+	t.Parallel()
+
+	checker := &BrewRedundancyChecker{
+		execCommand: func(_ context.Context, name string, args ...string) *exec.Cmd {
+			if name == "brew" && len(args) > 0 && args[0] == "list" {
+				return exec.Command("false")
+			}
+			return exec.Command("echo", "")
+		},
+		toolCategories: DefaultToolCategories(),
+	}
+
+	if !checker.Available() {
+		t.Skip("brew not available")
+	}
+
+	_, err := checker.Check(context.Background(), RedundancyOptions{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to list brew packages")
+}
+
+func TestBrewRedundancyChecker_Cleanup(t *testing.T) {
+	t.Parallel()
+
+	t.Run("cleanup empty list", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("true")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		err := checker.Cleanup(context.Background(), nil, false)
+		assert.NoError(t, err)
+	})
+
+	t.Run("cleanup success", func(t *testing.T) {
+		t.Parallel()
+		var capturedArgs []string
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, args ...string) *exec.Cmd {
+				capturedArgs = args
+				return exec.Command("true")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		err := checker.Cleanup(context.Background(), []string{"pkg1", "pkg2"}, false)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"uninstall", "pkg1", "pkg2"}, capturedArgs)
+	})
+
+	t.Run("cleanup dry run", func(t *testing.T) {
+		t.Parallel()
+		var capturedArgs []string
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, args ...string) *exec.Cmd {
+				capturedArgs = args
+				return exec.Command("true")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		err := checker.Cleanup(context.Background(), []string{"pkg1"}, true)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"uninstall", "--dry-run", "pkg1"}, capturedArgs)
+	})
+
+	t.Run("cleanup error", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("false")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		err := checker.Cleanup(context.Background(), []string{"pkg1"}, false)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to uninstall packages")
+	})
+}
+
+func TestBrewRedundancyChecker_Autoremove(t *testing.T) {
+	t.Parallel()
+
+	t.Run("autoremove success with packages", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", "==> Autoremoving\nlibpng zlib\n")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		removed, err := checker.Autoremove(context.Background(), false)
+		require.NoError(t, err)
+		assert.ElementsMatch(t, []string{"libpng", "zlib"}, removed)
+	})
+
+	t.Run("autoremove dry run", func(t *testing.T) {
+		t.Parallel()
+		var capturedArgs []string
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, args ...string) *exec.Cmd {
+				capturedArgs = args
+				return exec.Command("printf", "%s", "pkg1 pkg2\n")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		removed, err := checker.Autoremove(context.Background(), true)
+		require.NoError(t, err)
+		assert.Contains(t, capturedArgs, "--dry-run")
+		assert.ElementsMatch(t, []string{"pkg1", "pkg2"}, removed)
+	})
+
+	t.Run("autoremove nothing to remove", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", "Nothing to do.\n")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		removed, err := checker.Autoremove(context.Background(), false)
+		require.NoError(t, err)
+		assert.Empty(t, removed)
+	})
+
+	t.Run("autoremove error", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewRedundancyChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("false")
+			},
+			toolCategories: DefaultToolCategories(),
+		}
+
+		_, err := checker.Autoremove(context.Background(), false)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to autoremove")
+	})
+}
+
+func TestBrewRedundancyChecker_detectOverlaps_KeepAll(t *testing.T) {
+	t.Parallel()
+
+	checker := NewBrewRedundancyChecker()
+
+	// Terminal emulators have KeepAll=true
+	packages := []string{"alacritty", "kitty", "git"}
+	result := checker.detectOverlaps(packages, make(map[string]bool))
+	require.Len(t, result, 1)
+
+	assert.Equal(t, RedundancyOverlap, result[0].Type)
+	assert.Equal(t, "terminal_emulators", result[0].Category)
+	// KeepAll=true means Keep should contain all installed, Remove should be empty
+	assert.ElementsMatch(t, []string{"alacritty", "kitty"}, result[0].Keep)
+	assert.Empty(t, result[0].Remove)
+	assert.Contains(t, result[0].Recommendation, "typically used together")
 }

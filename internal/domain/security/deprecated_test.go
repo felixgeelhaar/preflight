@@ -2,6 +2,7 @@ package security
 
 import (
 	"context"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -338,6 +339,110 @@ func (m *mockDeprecationChecker) Check(_ context.Context, _ DeprecationOptions) 
 		Checker:  m.name,
 		Packages: m.packages,
 	}, nil
+}
+
+func TestBrewDeprecationChecker_Check_WithMockExec(t *testing.T) {
+	t.Parallel()
+
+	brewInfoJSON := `[
+		{
+			"name": "python@2",
+			"full_name": "python@2",
+			"deprecated": true,
+			"deprecation_date": "2020-04-01",
+			"deprecation_reason": "uses Python 2",
+			"disabled": false,
+			"installed": [{"version": "2.7.18"}]
+		},
+		{
+			"name": "go",
+			"full_name": "go",
+			"deprecated": false,
+			"disabled": false,
+			"installed": [{"version": "1.22.0"}]
+		},
+		{
+			"name": "old-tool",
+			"full_name": "old-tool",
+			"deprecated": false,
+			"disabled": true,
+			"disable_date": "2023-01-15",
+			"disable_reason": "no longer maintained",
+			"installed": [{"version": "1.0.0"}]
+		}
+	]`
+
+	t.Run("successful check returns deprecated packages", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewDeprecationChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", brewInfoJSON)
+			},
+		}
+
+		// Available() uses exec.LookPath - skip if brew not available
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		result, err := checker.Check(context.Background(), DeprecationOptions{})
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, "brew", result.Checker)
+		assert.Len(t, result.Packages, 2) // python@2 (deprecated) + old-tool (disabled)
+	})
+
+	t.Run("check with ignore filter", func(t *testing.T) {
+		t.Parallel()
+		checker := &BrewDeprecationChecker{
+			execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+				return exec.Command("printf", "%s", brewInfoJSON)
+			},
+		}
+
+		if !checker.Available() {
+			t.Skip("brew not available")
+		}
+
+		opts := DeprecationOptions{
+			IgnorePackages: []string{"python@2"},
+		}
+
+		result, err := checker.Check(context.Background(), opts)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Len(t, result.Packages, 1)
+		assert.Equal(t, "old-tool", result.Packages[0].Name)
+	})
+
+	t.Run("not available returns error", func(t *testing.T) {
+		t.Parallel()
+		checker := NewBrewDeprecationChecker()
+		if checker.Available() {
+			t.Skip("brew is available, skipping not-available test")
+		}
+
+		_, err := checker.Check(context.Background(), DeprecationOptions{})
+		assert.ErrorIs(t, err, ErrScannerNotAvailable)
+	})
+}
+
+func TestBrewDeprecationChecker_Check_ExecError(t *testing.T) {
+	t.Parallel()
+
+	checker := &BrewDeprecationChecker{
+		execCommand: func(_ context.Context, _ string, _ ...string) *exec.Cmd {
+			return exec.Command("false")
+		},
+	}
+
+	if !checker.Available() {
+		t.Skip("brew not available")
+	}
+
+	_, err := checker.Check(context.Background(), DeprecationOptions{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to run brew info")
 }
 
 func TestDeprecationCheckerRegistry_WithMock(t *testing.T) {

@@ -137,3 +137,34 @@ func TestValidSeverityStrings(t *testing.T) {
 	assert.Contains(t, strings, "low")
 	assert.Contains(t, strings, "negligible")
 }
+
+func TestSeverity_Order_UnknownCustomSeverity(t *testing.T) {
+	t.Parallel()
+
+	// A severity string not in the severityOrder map should return 0
+	customSeverity := Severity("custom-severity-not-in-map")
+	assert.Equal(t, 0, customSeverity.Order())
+}
+
+func TestSeverity_String(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		severity Severity
+		expected string
+	}{
+		{SeverityCritical, "critical"},
+		{SeverityHigh, "high"},
+		{SeverityMedium, "medium"},
+		{SeverityLow, "low"},
+		{SeverityNegligible, "negligible"},
+		{SeverityUnknown, "unknown"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.expected, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.expected, tt.severity.String())
+		})
+	}
+}

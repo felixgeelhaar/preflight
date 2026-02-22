@@ -1243,8 +1243,6 @@ func TestValidateWithPolicyViolations(t *testing.T) {
 func TestFormatAge_EdgeCases(t *testing.T) {
 	t.Parallel()
 
-	now := time.Now()
-
 	tests := []struct {
 		name     string
 		duration time.Duration
@@ -1264,7 +1262,8 @@ func TestFormatAge_EdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			result := formatAge(now.Add(-tt.duration))
+			// Compute now inside each subtest to avoid drift from parallel scheduling
+			result := formatAge(time.Now().Add(-tt.duration))
 			assert.Contains(t, result, tt.contains)
 		})
 	}

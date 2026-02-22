@@ -2,6 +2,7 @@ package scoop
 
 import (
 	"context"
+	"os/exec"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
@@ -588,4 +589,536 @@ func TestPackageStep_scoopCommand_NilPlatform(t *testing.T) {
 	step := NewPackageStep(pkg, nil, nil)
 
 	assert.Equal(t, "scoop", step.scoopCommand())
+}
+
+// --- InstallStep Apply tests ---
+
+func TestInstallStep_Apply_Success(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("powershell", []string{"-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "iwr -useb https://get.scoop.sh | iex"}, ports.CommandResult{
+		ExitCode: 0,
+		Stdout:   "Scoop installed successfully.",
+	})
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	step := NewInstallStep(runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	err := step.Apply(ctx)
+
+	require.NoError(t, err)
+}
+
+func TestInstallStep_Apply_Failure(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("powershell", []string{"-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "iwr -useb https://get.scoop.sh | iex"}, ports.CommandResult{
+		ExitCode: 1,
+		Stderr:   "Failed to download",
+	})
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	step := NewInstallStep(runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	err := step.Apply(ctx)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "scoop install failed")
+}
+
+func TestInstallStep_Apply_RunnerError(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("powershell", []string{"-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "iwr -useb https://get.scoop.sh | iex"}, assert.AnError)
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	step := NewInstallStep(runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	err := step.Apply(ctx)
+
+	assert.Error(t, err)
+}
+
+func TestInstallStep_Apply_WSL_UsesPowershellExe(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("powershell.exe", []string{"-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "iwr -useb https://get.scoop.sh | iex"}, ports.CommandResult{
+		ExitCode: 0,
+	})
+
+	plat := platform.NewWSL(platform.EnvWSL2, "Ubuntu", "/mnt/c")
+	step := NewInstallStep(runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	err := step.Apply(ctx)
+
+	require.NoError(t, err)
+	calls := runner.Calls()
+	require.Len(t, calls, 1)
+	assert.Equal(t, "powershell.exe", calls[0].Command)
+}
+
+// --- BucketStep additional Check tests ---
+
+func TestBucketStep_Check_CommandNotFound(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("scoop", []string{"bucket", "list"}, exec.ErrNotFound)
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	bucket := Bucket{Name: "extras"}
+	step := NewBucketStep(bucket, runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestBucketStep_Check_UnknownError(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("scoop", []string{"bucket", "list"}, assert.AnError)
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	bucket := Bucket{Name: "extras"}
+	step := NewBucketStep(bucket, runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	status, err := step.Check(ctx)
+
+	assert.Error(t, err)
+	assert.Equal(t, compiler.StatusUnknown, status)
+}
+
+func TestBucketStep_Check_CommandFailed(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("scoop", []string{"bucket", "list"}, ports.CommandResult{
+		ExitCode: 1,
+		Stderr:   "Scoop error",
+	})
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	bucket := Bucket{Name: "extras"}
+	step := NewBucketStep(bucket, runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	status, err := step.Check(ctx)
+
+	assert.Error(t, err)
+	assert.Equal(t, compiler.StatusUnknown, status)
+	assert.Contains(t, err.Error(), "scoop bucket list failed")
+}
+
+// --- BucketStep additional Apply tests ---
+
+func TestBucketStep_Apply_CommandNotFound(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("scoop", []string{"bucket", "add", "extras"}, exec.ErrNotFound)
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	bucket := Bucket{Name: "extras"}
+	step := NewBucketStep(bucket, runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	err := step.Apply(ctx)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "scoop not found in PATH")
+}
+
+func TestBucketStep_Apply_RunnerError(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("scoop", []string{"bucket", "add", "extras"}, assert.AnError)
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	bucket := Bucket{Name: "extras"}
+	step := NewBucketStep(bucket, runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	err := step.Apply(ctx)
+
+	assert.Error(t, err)
+}
+
+func TestBucketStep_Apply_WSL_UsesScoopCmd(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("scoop.cmd", []string{"bucket", "add", "extras"}, ports.CommandResult{
+		ExitCode: 0,
+	})
+
+	plat := platform.NewWSL(platform.EnvWSL2, "Ubuntu", "/mnt/c")
+	bucket := Bucket{Name: "extras"}
+	step := NewBucketStep(bucket, runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	err := step.Apply(ctx)
+
+	require.NoError(t, err)
+	calls := runner.Calls()
+	require.Len(t, calls, 1)
+	assert.Equal(t, "scoop.cmd", calls[0].Command)
+}
+
+// --- BucketStep Explain additional ---
+
+func TestBucketStep_Explain_WithURL(t *testing.T) {
+	t.Parallel()
+
+	bucket := Bucket{Name: "custom", URL: "https://github.com/user/bucket"}
+	step := NewBucketStep(bucket, nil, nil)
+	ctx := compiler.NewExplainContext()
+
+	explanation := step.Explain(ctx)
+
+	assert.Contains(t, explanation.Detail(), "custom")
+	assert.Contains(t, explanation.Detail(), "https://github.com/user/bucket")
+}
+
+func TestBucketStep_Explain_WSL(t *testing.T) {
+	t.Parallel()
+
+	plat := platform.NewWSL(platform.EnvWSL2, "Ubuntu", "/mnt/c")
+	bucket := Bucket{Name: "extras"}
+	step := NewBucketStep(bucket, nil, plat)
+	ctx := compiler.NewExplainContext()
+
+	explanation := step.Explain(ctx)
+
+	tradeoffs := explanation.Tradeoffs()
+	hasWSLTradeoff := false
+	for _, to := range tradeoffs {
+		if to == "+ Adds Windows Scoop bucket from WSL" {
+			hasWSLTradeoff = true
+			break
+		}
+	}
+	assert.True(t, hasWSLTradeoff, "Should include WSL-specific tradeoff")
+}
+
+// --- PackageStep additional Check tests ---
+
+func TestPackageStep_Check_CommandNotFound(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("scoop", []string{"list"}, exec.ErrNotFound)
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	pkg := Package{Name: "git"}
+	step := NewPackageStep(pkg, runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestPackageStep_Check_UnknownError(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("scoop", []string{"list"}, assert.AnError)
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	pkg := Package{Name: "git"}
+	step := NewPackageStep(pkg, runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	status, err := step.Check(ctx)
+
+	assert.Error(t, err)
+	assert.Equal(t, compiler.StatusUnknown, status)
+}
+
+func TestPackageStep_Check_CommandFailed(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("scoop", []string{"list"}, ports.CommandResult{
+		ExitCode: 1,
+		Stderr:   "Scoop error",
+	})
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	pkg := Package{Name: "git"}
+	step := NewPackageStep(pkg, runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	status, err := step.Check(ctx)
+
+	assert.Error(t, err)
+	assert.Equal(t, compiler.StatusUnknown, status)
+	assert.Contains(t, err.Error(), "scoop list failed")
+}
+
+func TestPackageStep_Check_WSL_UsesScoopCmd(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("scoop.cmd", []string{"list"}, ports.CommandResult{
+		ExitCode: 0,
+		Stdout:   "Installed apps:\n\ngit (2.43.0) [main]\n",
+	})
+
+	plat := platform.NewWSL(platform.EnvWSL2, "Ubuntu", "/mnt/c")
+	pkg := Package{Name: "git"}
+	step := NewPackageStep(pkg, runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusSatisfied, status)
+}
+
+// --- PackageStep additional Apply tests ---
+
+func TestPackageStep_Apply_CommandNotFound(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("scoop", []string{"install", "git"}, exec.ErrNotFound)
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	pkg := Package{Name: "git"}
+	step := NewPackageStep(pkg, runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	err := step.Apply(ctx)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "scoop not found in PATH")
+}
+
+func TestPackageStep_Apply_RunnerError(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("scoop", []string{"install", "git"}, assert.AnError)
+
+	plat := platform.New(platform.OSWindows, "amd64", platform.EnvNative)
+	pkg := Package{Name: "git"}
+	step := NewPackageStep(pkg, runner, plat)
+	ctx := compiler.NewRunContext(context.Background())
+
+	err := step.Apply(ctx)
+
+	assert.Error(t, err)
+}
+
+// --- PackageStep Explain additional ---
+
+func TestPackageStep_Explain_WithVersion(t *testing.T) {
+	t.Parallel()
+
+	pkg := Package{Name: "git", Version: "2.43.0"}
+	step := NewPackageStep(pkg, nil, nil)
+	ctx := compiler.NewExplainContext()
+
+	explanation := step.Explain(ctx)
+
+	assert.Contains(t, explanation.Detail(), "2.43.0")
+}
+
+// --- PackageStep LockInfo ---
+
+func TestPackageStep_LockInfo(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name            string
+		pkg             Package
+		expectedName    string
+		expectedVersion string
+	}{
+		{
+			name:            "without version",
+			pkg:             Package{Name: "git"},
+			expectedName:    "git",
+			expectedVersion: "",
+		},
+		{
+			name:            "with version",
+			pkg:             Package{Name: "git", Version: "2.43.0"},
+			expectedName:    "git",
+			expectedVersion: "2.43.0",
+		},
+		{
+			name:            "with bucket",
+			pkg:             Package{Name: "neovim", Bucket: "extras", Version: "0.9.5"},
+			expectedName:    "extras/neovim",
+			expectedVersion: "0.9.5",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			step := NewPackageStep(tc.pkg, nil, nil)
+
+			info, ok := step.LockInfo()
+
+			assert.True(t, ok)
+			assert.Equal(t, "scoop", info.Provider)
+			assert.Equal(t, tc.expectedName, info.Name)
+			assert.Equal(t, tc.expectedVersion, info.Version)
+		})
+	}
+}
+
+// --- PackageStep InstalledVersion ---
+
+func TestPackageStep_InstalledVersion(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name            string
+		pkg             Package
+		plat            *platform.Platform
+		cmd             string
+		result          ports.CommandResult
+		err             error
+		expectedVersion string
+		expectedFound   bool
+		expectedErr     bool
+	}{
+		{
+			name: "found with version",
+			pkg:  Package{Name: "git"},
+			plat: platform.New(platform.OSWindows, "amd64", platform.EnvNative),
+			cmd:  "scoop",
+			result: ports.CommandResult{
+				ExitCode: 0,
+				Stdout:   "git 2.43.0 [main]\n",
+			},
+			expectedVersion: "2.43.0",
+			expectedFound:   true,
+		},
+		{
+			name: "not found - empty output",
+			pkg:  Package{Name: "git"},
+			plat: platform.New(platform.OSWindows, "amd64", platform.EnvNative),
+			cmd:  "scoop",
+			result: ports.CommandResult{
+				ExitCode: 0,
+				Stdout:   "curl 8.5.0 [main]\n",
+			},
+			expectedVersion: "",
+			expectedFound:   false,
+		},
+		{
+			name: "not found - no fields",
+			pkg:  Package{Name: "git"},
+			plat: platform.New(platform.OSWindows, "amd64", platform.EnvNative),
+			cmd:  "scoop",
+			result: ports.CommandResult{
+				ExitCode: 0,
+				Stdout:   "\n",
+			},
+			expectedVersion: "",
+			expectedFound:   false,
+		},
+		{
+			name:            "command not found",
+			pkg:             Package{Name: "git"},
+			plat:            platform.New(platform.OSWindows, "amd64", platform.EnvNative),
+			cmd:             "scoop",
+			err:             exec.ErrNotFound,
+			expectedVersion: "",
+			expectedFound:   false,
+		},
+		{
+			name:            "runner error - not command not found",
+			pkg:             Package{Name: "git"},
+			plat:            platform.New(platform.OSWindows, "amd64", platform.EnvNative),
+			cmd:             "scoop",
+			err:             assert.AnError,
+			expectedVersion: "",
+			expectedFound:   false,
+			expectedErr:     true,
+		},
+		{
+			name: "run failure - not success",
+			pkg:  Package{Name: "git"},
+			plat: platform.New(platform.OSWindows, "amd64", platform.EnvNative),
+			cmd:  "scoop",
+			result: ports.CommandResult{
+				ExitCode: 1,
+			},
+			expectedVersion: "",
+			expectedFound:   false,
+		},
+		{
+			name: "WSL uses scoop.cmd",
+			pkg:  Package{Name: "git"},
+			plat: platform.NewWSL(platform.EnvWSL2, "Ubuntu", "/mnt/c"),
+			cmd:  "scoop.cmd",
+			result: ports.CommandResult{
+				ExitCode: 0,
+				Stdout:   "git 2.43.0 [main]\n",
+			},
+			expectedVersion: "2.43.0",
+			expectedFound:   true,
+		},
+		{
+			name: "package name found but only one field",
+			pkg:  Package{Name: "git"},
+			plat: platform.New(platform.OSWindows, "amd64", platform.EnvNative),
+			cmd:  "scoop",
+			result: ports.CommandResult{
+				ExitCode: 0,
+				Stdout:   "git\n",
+			},
+			expectedVersion: "",
+			expectedFound:   false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			runner := mocks.NewCommandRunner()
+			args := []string{"list", tc.pkg.Name}
+			if tc.err != nil {
+				runner.AddError(tc.cmd, args, tc.err)
+			} else {
+				runner.AddResult(tc.cmd, args, tc.result)
+			}
+
+			step := NewPackageStep(tc.pkg, runner, tc.plat)
+			ctx := compiler.NewRunContext(context.Background())
+
+			version, found, err := step.InstalledVersion(ctx)
+
+			if tc.expectedErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tc.expectedVersion, version)
+			assert.Equal(t, tc.expectedFound, found)
+		})
+	}
 }
