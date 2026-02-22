@@ -32,6 +32,7 @@ jobs:
       - name: Check coverage threshold
         run: |
           go install github.com/felixgeelhaar/coverctl@latest
+          go clean -testcache
           coverctl check
 
       - name: Upload coverage artifact
