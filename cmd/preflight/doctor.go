@@ -73,7 +73,8 @@ func runDoctor(_ *cobra.Command, _ []string) error {
 
 	// Quiet mode: print results without TUI
 	if doctorQuiet {
-		return printDoctorQuiet(appReport)
+		printDoctorQuiet(appReport)
+		return nil
 	}
 
 	// Convert to TUI types
@@ -140,14 +141,14 @@ func runDoctor(_ *cobra.Command, _ []string) error {
 }
 
 // printDoctorQuiet prints the doctor report without TUI.
-func printDoctorQuiet(report *app.DoctorReport) error {
+func printDoctorQuiet(report *app.DoctorReport) {
 	fmt.Println("Doctor Report")
 	fmt.Println("=============")
 	fmt.Println()
 
 	if report.IssueCount() == 0 {
 		fmt.Println("✓ No issues found. Your system is in sync.")
-		return nil
+		return
 	}
 
 	fmt.Printf("Found %d issue(s):\n\n", report.IssueCount())
@@ -177,6 +178,4 @@ func printDoctorQuiet(report *app.DoctorReport) error {
 	if report.HasPatches() {
 		fmt.Printf("%d config patches suggested. Run 'preflight doctor --update-config' to apply.\n", report.PatchCount())
 	}
-
-	return nil
 }

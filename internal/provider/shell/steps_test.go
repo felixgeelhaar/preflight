@@ -107,6 +107,48 @@ func TestFrameworkStep_Explain(t *testing.T) {
 	assert.Contains(t, exp.Detail(), "oh-my-zsh")
 }
 
+func TestFrameworkStep_Explain_Fisher(t *testing.T) {
+	t.Parallel()
+
+	sc := shell.Entry{
+		Name:      "fish",
+		Framework: "fisher",
+	}
+	step := shell.NewFrameworkStep(sc)
+
+	ctx := compiler.NewExplainContext()
+	exp := step.Explain(ctx)
+
+	assert.NotEmpty(t, exp.Summary())
+	assert.Contains(t, exp.Detail(), "fisher")
+}
+
+func TestFrameworkStep_Explain_OhMyFish(t *testing.T) {
+	t.Parallel()
+
+	sc := shell.Entry{
+		Name:      "fish",
+		Framework: "oh-my-fish",
+	}
+	step := shell.NewFrameworkStep(sc)
+
+	ctx := compiler.NewExplainContext()
+	exp := step.Explain(ctx)
+
+	assert.NotEmpty(t, exp.Summary())
+	assert.Contains(t, exp.Detail(), "oh-my-fish")
+}
+
+func TestNewProviderWith(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
+	provider := shell.NewProviderWith(fs, runner)
+
+	assert.Equal(t, "shell", provider.Name())
+}
+
 func TestFrameworkStep_Apply_OhMyZsh(t *testing.T) {
 	t.Parallel()
 

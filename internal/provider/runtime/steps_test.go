@@ -390,6 +390,98 @@ func TestToolVersionStep_Explain(t *testing.T) {
 	}
 }
 
+func TestPluginStep_Plan(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	step := NewPluginStep(plugin)
+
+	diff, err := step.Plan(compiler.RunContext{})
+	if err != nil {
+		t.Fatalf("Plan() error = %v", err)
+	}
+	if diff.IsEmpty() {
+		t.Error("Plan() returned empty diff")
+	}
+	if !searchStr(diff.Summary(), "golang") {
+		t.Errorf("Plan() summary = %q, want to contain %q", diff.Summary(), "golang")
+	}
+}
+
+func TestPluginStep_Plan_WithURL(t *testing.T) {
+	plugin := PluginConfig{
+		Name: "golang",
+		URL:  "https://github.com/asdf-community/asdf-golang.git",
+	}
+	step := NewPluginStep(plugin)
+
+	diff, err := step.Plan(compiler.RunContext{})
+	if err != nil {
+		t.Fatalf("Plan() error = %v", err)
+	}
+	if !searchStr(diff.Summary(), "https://github.com/asdf-community/asdf-golang.git") {
+		t.Errorf("Plan() summary = %q, want to contain URL", diff.Summary())
+	}
+}
+
+func TestPluginStep_Explain(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	step := NewPluginStep(plugin)
+
+	explanation := step.Explain(compiler.ExplainContext{})
+	if explanation.Summary() == "" {
+		t.Error("Explain() returned empty summary")
+	}
+	if !searchStr(explanation.Detail(), "golang") {
+		t.Errorf("Explain() detail = %q, want to contain %q", explanation.Detail(), "golang")
+	}
+}
+
+func TestNewProviderWith(t *testing.T) {
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
+	provider := NewProviderWith(fs, runner)
+
+	if provider.Name() != "runtime" {
+		t.Errorf("Name() = %q, want %q", provider.Name(), "runtime")
+	}
+}
+
+func TestPluginStep_Check_RunnerError(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	runner := mocks.NewCommandRunner()
+	// No result added - will return error
+
+	step := NewPluginStepWith(plugin, "", runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if status != compiler.StatusNeedsApply {
+		t.Errorf("Check() = %v, want %v", status, compiler.StatusNeedsApply)
+	}
+}
+
+func TestPluginStep_Check_MiseBackend(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("mise", []string{"plugin", "list"}, ports.CommandResult{
+		ExitCode: 0,
+		Stdout:   "golang\nnode\n",
+	})
+
+	step := NewPluginStepWith(plugin, "mise", runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if status != compiler.StatusSatisfied {
+		t.Errorf("Check() = %v, want %v", status, compiler.StatusSatisfied)
+	}
+}
+
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && searchStr(s, substr)
 }
