@@ -185,3 +185,173 @@ func TestDiscoverSource_ImplementsInterface(t *testing.T) {
 
 	var _ discover.RepoSource = (*DiscoverSource)(nil)
 }
+
+func TestDiscoverSource_SearchDotfileRepos_DefaultQuery(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("gh", []string{
+		"search", "repos",
+		"dotfiles",
+		"--sort", "stars",
+		"--order", "desc",
+		"--limit", "10",
+		"--json", "name,fullName,description,url,stargazerCount,primaryLanguage,owner",
+	}, ports.CommandResult{
+		Stdout: `[
+			{
+				"name": "dotfiles",
+				"fullName": "user/dotfiles",
+				"description": "My config",
+				"url": "https://github.com/user/dotfiles",
+				"stargazerCount": 100,
+				"primaryLanguage": "Shell",
+				"owner": {"login": "user"}
+			}
+		]`,
+		ExitCode: 0,
+	})
+
+	source := NewDiscoverSource(runner)
+	ctx := context.Background()
+
+	// Empty query should default to "dotfiles"
+	repos, err := source.SearchDotfileRepos(ctx, discover.SearchOptions{
+		Query:      "",
+		MaxResults: 10,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, repos, 1)
+	assert.Equal(t, "user", repos[0].Owner)
+}
+
+func TestDiscoverSource_SearchDotfileRepos_OwnerFallbackFromFullName(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("gh", []string{
+		"search", "repos",
+		"dotfiles",
+		"--sort", "stars",
+		"--order", "desc",
+		"--limit", "10",
+		"--json", "name,fullName,description,url,stargazerCount,primaryLanguage,owner",
+	}, ports.CommandResult{
+		Stdout: `[
+			{
+				"name": "dotfiles",
+				"fullName": "fallbackuser/dotfiles",
+				"description": "",
+				"url": "https://github.com/fallbackuser/dotfiles",
+				"stargazerCount": 5,
+				"primaryLanguage": "",
+				"owner": {"login": ""}
+			}
+		]`,
+		ExitCode: 0,
+	})
+
+	source := NewDiscoverSource(runner)
+	ctx := context.Background()
+
+	repos, err := source.SearchDotfileRepos(ctx, discover.SearchOptions{
+		Query:      "dotfiles",
+		MaxResults: 10,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, repos, 1)
+	// Owner should be extracted from fullName since owner.login is empty
+	assert.Equal(t, "fallbackuser", repos[0].Owner)
+}
+
+func TestDiscoverSource_SearchDotfileRepos_RunnerError(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("gh", []string{
+		"search", "repos",
+		"dotfiles",
+		"--sort", "stars",
+		"--order", "desc",
+		"--limit", "10",
+		"--json", "name,fullName,description,url,stargazerCount,primaryLanguage,owner",
+	}, assert.AnError)
+
+	source := NewDiscoverSource(runner)
+	ctx := context.Background()
+
+	_, err := source.SearchDotfileRepos(ctx, discover.SearchOptions{
+		Query:      "dotfiles",
+		MaxResults: 10,
+	})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to search repositories")
+}
+
+func TestDiscoverSource_SearchDotfileRepos_InvalidJSON(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("gh", []string{
+		"search", "repos",
+		"dotfiles",
+		"--sort", "stars",
+		"--order", "desc",
+		"--limit", "10",
+		"--json", "name,fullName,description,url,stargazerCount,primaryLanguage,owner",
+	}, ports.CommandResult{
+		Stdout:   "not valid json",
+		ExitCode: 0,
+	})
+
+	source := NewDiscoverSource(runner)
+	ctx := context.Background()
+
+	_, err := source.SearchDotfileRepos(ctx, discover.SearchOptions{
+		Query:      "dotfiles",
+		MaxResults: 10,
+	})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse search results")
+}
+
+func TestDiscoverSource_GetRepoFiles_RunnerError(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("gh", []string{
+		"api", "repos/user/dotfiles/git/trees/HEAD?recursive=1",
+	}, assert.AnError)
+
+	source := NewDiscoverSource(runner)
+	ctx := context.Background()
+
+	_, err := source.GetRepoFiles(ctx, "user", "dotfiles")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get repository files")
+}
+
+func TestDiscoverSource_GetRepoFiles_InvalidJSON(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("gh", []string{
+		"api", "repos/user/dotfiles/git/trees/HEAD?recursive=1",
+	}, ports.CommandResult{
+		Stdout:   "not valid json at all",
+		ExitCode: 0,
+	})
+
+	source := NewDiscoverSource(runner)
+	ctx := context.Background()
+
+	_, err := source.GetRepoFiles(ctx, "user", "dotfiles")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse tree response")
+}

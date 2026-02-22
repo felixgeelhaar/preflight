@@ -408,3 +408,265 @@ func TestRealFileSystem_CreateLink_NonExistent(t *testing.T) {
 		t.Error("CreateLink() should create a symlink for non-existent target")
 	}
 }
+
+// =============================================================================
+// Error Path Tests
+// =============================================================================
+
+func TestRealFileSystem_WriteFile_Error(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+
+	// Writing to a non-existent directory should fail
+	err := fsys.WriteFile("/nonexistent/dir/file.txt", []byte("data"), 0o644)
+	if err == nil {
+		t.Error("WriteFile() should return error for non-existent directory")
+	}
+}
+
+func TestRealFileSystem_CreateSymlink_Error(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+
+	// Creating a symlink at an existing file path should fail
+	tmpDir := t.TempDir()
+	existing := filepath.Join(tmpDir, "existing.txt")
+	if err := os.WriteFile(existing, []byte("data"), 0o644); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	err := fsys.CreateSymlink("/some/target", existing)
+	if err == nil {
+		t.Error("CreateSymlink() should return error when link path already exists")
+	}
+}
+
+func TestRealFileSystem_Remove_Error(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+
+	err := fsys.Remove("/nonexistent/path/file.txt")
+	if err == nil {
+		t.Error("Remove() should return error for non-existent file")
+	}
+}
+
+func TestRealFileSystem_MkdirAll_Error(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+
+	// Create a file, then try to make a directory inside it
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "afile")
+	if err := os.WriteFile(filePath, []byte("data"), 0o644); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	err := fsys.MkdirAll(filepath.Join(filePath, "subdir"), 0o755)
+	if err == nil {
+		t.Error("MkdirAll() should return error when path contains a file")
+	}
+}
+
+func TestRealFileSystem_Rename_Error(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+
+	err := fsys.Rename("/nonexistent/old.txt", "/nonexistent/new.txt")
+	if err == nil {
+		t.Error("Rename() should return error for non-existent file")
+	}
+}
+
+func TestRealFileSystem_IsSymlink_NonExistent(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+
+	isLink, target := fsys.IsSymlink("/nonexistent/path")
+	if isLink {
+		t.Error("IsSymlink() should return false for non-existent path")
+	}
+	if target != "" {
+		t.Errorf("IsSymlink() target should be empty, got %q", target)
+	}
+}
+
+func TestRealFileSystem_IsDir_NonExistent(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+
+	if fsys.IsDir("/nonexistent/path") {
+		t.Error("IsDir() should return false for non-existent path")
+	}
+}
+
+func TestRealFileSystem_CopyFile_DestWriteError(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+	tmpDir := t.TempDir()
+
+	// Create source file
+	srcFile := filepath.Join(tmpDir, "source.txt")
+	if err := os.WriteFile(srcFile, []byte("content"), 0o644); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	// Try to copy to a non-existent directory
+	dstFile := filepath.Join(tmpDir, "nonexistent", "deep", "dest.txt")
+	err := fsys.CopyFile(srcFile, dstFile)
+	if err == nil {
+		t.Error("CopyFile() should return error when destination directory does not exist")
+	}
+}
+
+// =============================================================================
+// IsJunction Additional Tests (Unix: symlink to directory)
+// =============================================================================
+
+func TestRealFileSystem_IsJunction_SymlinkToDirectory(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+	tmpDir := t.TempDir()
+
+	// Create a target directory
+	targetDir := filepath.Join(tmpDir, "target-dir")
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	// Create a symlink pointing to the directory
+	linkPath := filepath.Join(tmpDir, "dir-link")
+	if err := os.Symlink(targetDir, linkPath); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	isJunction, target := fsys.IsJunction(linkPath)
+	if !isJunction {
+		t.Error("IsJunction() should return true for symlink to directory")
+	}
+	if target != targetDir {
+		t.Errorf("IsJunction() target = %q, want %q", target, targetDir)
+	}
+}
+
+func TestRealFileSystem_IsJunction_SymlinkToFile(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+	tmpDir := t.TempDir()
+
+	// Create a target file
+	targetFile := filepath.Join(tmpDir, "target-file.txt")
+	if err := os.WriteFile(targetFile, []byte("content"), 0o644); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	// Create a symlink pointing to the file
+	linkPath := filepath.Join(tmpDir, "file-link")
+	if err := os.Symlink(targetFile, linkPath); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	isJunction, _ := fsys.IsJunction(linkPath)
+	if isJunction {
+		t.Error("IsJunction() should return false for symlink to regular file")
+	}
+}
+
+func TestRealFileSystem_IsJunction_BrokenSymlink(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+	tmpDir := t.TempDir()
+
+	// Create a symlink pointing to a non-existent target
+	linkPath := filepath.Join(tmpDir, "broken-link")
+	if err := os.Symlink(filepath.Join(tmpDir, "does-not-exist"), linkPath); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	// Broken symlink: os.Stat follows and fails, so we get (true, target) for the broken case
+	isJunction, target := fsys.IsJunction(linkPath)
+	if !isJunction {
+		t.Error("IsJunction() should return true for broken symlink (symlink exists, target missing)")
+	}
+	if target == "" {
+		t.Error("IsJunction() should return the target for broken symlink")
+	}
+}
+
+func TestRealFileSystem_IsJunction_RegularFile(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+	tmpDir := t.TempDir()
+
+	// Create a regular file
+	filePath := filepath.Join(tmpDir, "regular.txt")
+	if err := os.WriteFile(filePath, []byte("data"), 0o644); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	isJunction, _ := fsys.IsJunction(filePath)
+	if isJunction {
+		t.Error("IsJunction() should return false for regular file")
+	}
+}
+
+// =============================================================================
+// CreateJunction Error Path Tests
+// =============================================================================
+
+func TestRealFileSystem_CreateJunction_Error(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+	tmpDir := t.TempDir()
+
+	// Create a file where the link should go so symlink fails
+	blockingFile := filepath.Join(tmpDir, "blocker")
+	if err := os.WriteFile(blockingFile, []byte("data"), 0o644); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	err := fsys.CreateJunction("/some/target", blockingFile)
+	if err == nil {
+		t.Error("CreateJunction() should return error when link path is already a file")
+	}
+}
+
+// =============================================================================
+// CreateLink Error Path Tests
+// =============================================================================
+
+func TestRealFileSystem_CreateLink_Error(t *testing.T) {
+	t.Parallel()
+
+	fsys := NewRealFileSystem()
+	tmpDir := t.TempDir()
+
+	srcFile := filepath.Join(tmpDir, "source.txt")
+	if err := os.WriteFile(srcFile, []byte("content"), 0o644); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	// Create a file where the link should go so symlink fails
+	blockingFile := filepath.Join(tmpDir, "existing-link")
+	if err := os.WriteFile(blockingFile, []byte("data"), 0o644); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	err := fsys.CreateLink(srcFile, blockingFile)
+	if err == nil {
+		t.Error("CreateLink() should return error when link path already exists")
+	}
+}

@@ -203,4 +203,142 @@ func TestClient_SetRemote(t *testing.T) {
 
 		require.NoError(t, err)
 	})
+
+	t.Run("add remote runner error", func(t *testing.T) {
+		t.Parallel()
+
+		runner := mocks.NewCommandRunner()
+		runner.AddError("git", []string{"-C", "/path/to/repo", "remote", "add", "origin", "git@github.com:user/repo.git"}, assert.AnError)
+
+		client := github.NewClient(runner)
+		err := client.SetRemote(context.Background(), "/path/to/repo", "git@github.com:user/repo.git")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to add remote")
+	})
+
+	t.Run("add remote fails with non-exists error", func(t *testing.T) {
+		t.Parallel()
+
+		runner := mocks.NewCommandRunner()
+		runner.AddResult("git", []string{"-C", "/path/to/repo", "remote", "add", "origin", "git@github.com:user/repo.git"}, ports.CommandResult{
+			ExitCode: 1,
+			Stderr:   "fatal: not a git repository",
+		})
+
+		client := github.NewClient(runner)
+		err := client.SetRemote(context.Background(), "/path/to/repo", "git@github.com:user/repo.git")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to add remote")
+		assert.Contains(t, err.Error(), "not a git repository")
+	})
+
+	t.Run("set-url runner error", func(t *testing.T) {
+		t.Parallel()
+
+		runner := mocks.NewCommandRunner()
+		runner.AddResult("git", []string{"-C", "/path/to/repo", "remote", "add", "origin", "git@github.com:user/repo.git"}, ports.CommandResult{
+			ExitCode: 128,
+			Stderr:   "error: remote origin already exists.",
+		})
+		runner.AddError("git", []string{"-C", "/path/to/repo", "remote", "set-url", "origin", "git@github.com:user/repo.git"}, assert.AnError)
+
+		client := github.NewClient(runner)
+		err := client.SetRemote(context.Background(), "/path/to/repo", "git@github.com:user/repo.git")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to set remote URL")
+	})
+
+	t.Run("set-url command fails", func(t *testing.T) {
+		t.Parallel()
+
+		runner := mocks.NewCommandRunner()
+		runner.AddResult("git", []string{"-C", "/path/to/repo", "remote", "add", "origin", "git@github.com:user/repo.git"}, ports.CommandResult{
+			ExitCode: 128,
+			Stderr:   "error: remote origin already exists.",
+		})
+		runner.AddResult("git", []string{"-C", "/path/to/repo", "remote", "set-url", "origin", "git@github.com:user/repo.git"}, ports.CommandResult{
+			ExitCode: 1,
+			Stderr:   "fatal: could not set remote URL",
+		})
+
+		client := github.NewClient(runner)
+		err := client.SetRemote(context.Background(), "/path/to/repo", "git@github.com:user/repo.git")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to set remote URL")
+		assert.Contains(t, err.Error(), "could not set remote URL")
+	})
+}
+
+func TestClient_IsAuthenticated_RunnerError(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("gh", []string{"auth", "status"}, assert.AnError)
+
+	client := github.NewClient(runner)
+	_, err := client.IsAuthenticated(context.Background())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to check auth status")
+}
+
+func TestClient_GetAuthenticatedUser_RunnerError(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("gh", []string{"api", "user", "--jq", ".login"}, assert.AnError)
+
+	client := github.NewClient(runner)
+	_, err := client.GetAuthenticatedUser(context.Background())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get user")
+}
+
+func TestClient_CreateRepository_RunnerError(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("gh", []string{
+		"repo", "create", "my-repo", "--confirm", "--private",
+		"--json", "name,url,cloneUrl,sshUrl,owner",
+	}, assert.AnError)
+
+	client := github.NewClient(runner)
+	_, err := client.CreateRepository(context.Background(), ports.GitHubCreateOptions{
+		Name:    "my-repo",
+		Private: true,
+	})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create repository")
+}
+
+func TestClient_CreateRepository_JSONParseFallback(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("gh", []string{
+		"repo", "create", "my-dotfiles", "--confirm", "--public",
+		"--json", "name,url,cloneUrl,sshUrl,owner",
+	}, ports.CommandResult{
+		ExitCode: 0,
+		Stdout:   "https://github.com/testuser/my-dotfiles\n",
+	})
+
+	client := github.NewClient(runner)
+	info, err := client.CreateRepository(context.Background(), ports.GitHubCreateOptions{
+		Name:    "my-dotfiles",
+		Private: false,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "my-dotfiles", info.Name)
+	assert.Equal(t, "https://github.com/testuser/my-dotfiles", info.URL)
+	assert.Equal(t, "https://github.com/testuser/my-dotfiles.git", info.CloneURL)
+	assert.Equal(t, "git@github.com:my-dotfiles.git", info.SSHURL)
 }

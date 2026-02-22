@@ -3,6 +3,7 @@ package ipc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -335,4 +336,349 @@ func TestDefaultLockPath(t *testing.T) {
 	path := DefaultLockPath()
 	assert.Contains(t, path, ".preflight")
 	assert.Contains(t, path, "agent.lock")
+}
+
+func TestServer_SocketPath(t *testing.T) {
+	t.Parallel()
+
+	provider := &mockAgentProvider{}
+	cfg := ServerConfig{
+		SocketPath: "/tmp/test-socketpath.sock",
+		LockPath:   "/tmp/test-socketpath.lock",
+	}
+
+	server := NewServer(cfg, provider)
+	assert.Equal(t, "/tmp/test-socketpath.sock", server.SocketPath())
+}
+
+func TestServer_HandleStopRequest_WithProviderError(t *testing.T) {
+	socketPath := fmt.Sprintf("/tmp/pf-stoperr-%d.sock", os.Getpid())
+	lockPath := fmt.Sprintf("/tmp/pf-stoperr-%d.lock", os.Getpid())
+	t.Cleanup(func() {
+		_ = os.Remove(socketPath)
+		_ = os.Remove(lockPath)
+	})
+
+	provider := &mockAgentProvider{
+		stopError: errors.New("shutdown failed"),
+	}
+	cfg := ServerConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+	}
+
+	server := NewServer(cfg, provider)
+	err := server.Start()
+	require.NoError(t, err)
+	defer func() { _ = server.Stop() }()
+
+	conn, err := net.Dial("unix", socketPath)
+	require.NoError(t, err)
+	defer func() { _ = conn.Close() }()
+
+	msg, _ := NewMessage(MessageTypeStopRequest, "req-stop-err", StopRequest{Force: false})
+	err = json.NewEncoder(conn).Encode(msg)
+	require.NoError(t, err)
+
+	var resp Message
+	err = json.NewDecoder(conn).Decode(&resp)
+	require.NoError(t, err)
+
+	assert.Equal(t, MessageTypeStopResponse, resp.Type)
+
+	var stopResp StopResponse
+	err = json.Unmarshal(resp.Payload, &stopResp)
+	require.NoError(t, err)
+
+	assert.False(t, stopResp.Success)
+	assert.Contains(t, stopResp.Message, "shutdown failed")
+}
+
+func TestServer_HandleStopRequest_WithCustomTimeout(t *testing.T) {
+	socketPath := fmt.Sprintf("/tmp/pf-stoptimeout-%d.sock", os.Getpid())
+	lockPath := fmt.Sprintf("/tmp/pf-stoptimeout-%d.lock", os.Getpid())
+	t.Cleanup(func() {
+		_ = os.Remove(socketPath)
+		_ = os.Remove(lockPath)
+	})
+
+	provider := &mockAgentProvider{}
+	cfg := ServerConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+	}
+
+	server := NewServer(cfg, provider)
+	err := server.Start()
+	require.NoError(t, err)
+	defer func() { _ = server.Stop() }()
+
+	conn, err := net.Dial("unix", socketPath)
+	require.NoError(t, err)
+	defer func() { _ = conn.Close() }()
+
+	msg, _ := NewMessage(MessageTypeStopRequest, "req-stop-timeout", StopRequest{
+		Force:          false,
+		TimeoutSeconds: 10,
+	})
+	err = json.NewEncoder(conn).Encode(msg)
+	require.NoError(t, err)
+
+	var resp Message
+	err = json.NewDecoder(conn).Decode(&resp)
+	require.NoError(t, err)
+
+	assert.Equal(t, MessageTypeStopResponse, resp.Type)
+
+	var stopResp StopResponse
+	err = json.Unmarshal(resp.Payload, &stopResp)
+	require.NoError(t, err)
+	assert.True(t, stopResp.Success)
+}
+
+func TestServer_HandleStopRequest_NilPayload(t *testing.T) {
+	socketPath := fmt.Sprintf("/tmp/pf-stopnil-%d.sock", os.Getpid())
+	lockPath := fmt.Sprintf("/tmp/pf-stopnil-%d.lock", os.Getpid())
+	t.Cleanup(func() {
+		_ = os.Remove(socketPath)
+		_ = os.Remove(lockPath)
+	})
+
+	provider := &mockAgentProvider{}
+	cfg := ServerConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+	}
+
+	server := NewServer(cfg, provider)
+	err := server.Start()
+	require.NoError(t, err)
+	defer func() { _ = server.Stop() }()
+
+	conn, err := net.Dial("unix", socketPath)
+	require.NoError(t, err)
+	defer func() { _ = conn.Close() }()
+
+	// Send a stop request with nil payload (no JSON body)
+	msg := &Message{
+		Type:      MessageTypeStopRequest,
+		RequestID: "req-stop-nil",
+		Timestamp: time.Now(),
+		Payload:   nil,
+	}
+	err = json.NewEncoder(conn).Encode(msg)
+	require.NoError(t, err)
+
+	var resp Message
+	err = json.NewDecoder(conn).Decode(&resp)
+	require.NoError(t, err)
+
+	assert.Equal(t, MessageTypeStopResponse, resp.Type)
+
+	var stopResp StopResponse
+	err = json.Unmarshal(resp.Payload, &stopResp)
+	require.NoError(t, err)
+	assert.True(t, stopResp.Success)
+}
+
+func TestServer_HandleStopRequest_InvalidPayload(t *testing.T) {
+	socketPath := fmt.Sprintf("/tmp/pf-stopbad-%d.sock", os.Getpid())
+	lockPath := fmt.Sprintf("/tmp/pf-stopbad-%d.lock", os.Getpid())
+	t.Cleanup(func() {
+		_ = os.Remove(socketPath)
+		_ = os.Remove(lockPath)
+	})
+
+	provider := &mockAgentProvider{}
+	cfg := ServerConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+	}
+
+	server := NewServer(cfg, provider)
+	err := server.Start()
+	require.NoError(t, err)
+	defer func() { _ = server.Stop() }()
+
+	conn, err := net.Dial("unix", socketPath)
+	require.NoError(t, err)
+	defer func() { _ = conn.Close() }()
+
+	// Send raw JSON with a payload that is valid JSON but cannot be unmarshaled
+	// into StopRequest (e.g. force field is a string instead of bool)
+	rawMsg := `{"type":"stop_request","request_id":"req-stop-bad","timestamp":"2025-01-01T00:00:00Z","payload":"not-an-object"}` + "\n"
+	_, err = conn.Write([]byte(rawMsg))
+	require.NoError(t, err)
+
+	var resp Message
+	err = json.NewDecoder(conn).Decode(&resp)
+	require.NoError(t, err)
+
+	assert.Equal(t, MessageTypeErrorResponse, resp.Type)
+
+	var errResp ErrorResponse
+	err = json.Unmarshal(resp.Payload, &errResp)
+	require.NoError(t, err)
+	assert.Contains(t, errResp.Message, "invalid stop request payload")
+}
+
+func TestServer_HandleApproveRequest_EmptyRequestID(t *testing.T) {
+	socketPath := fmt.Sprintf("/tmp/pf-approveid-%d.sock", os.Getpid())
+	lockPath := fmt.Sprintf("/tmp/pf-approveid-%d.lock", os.Getpid())
+	t.Cleanup(func() {
+		_ = os.Remove(socketPath)
+		_ = os.Remove(lockPath)
+	})
+
+	provider := &mockAgentProvider{}
+	cfg := ServerConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+	}
+
+	server := NewServer(cfg, provider)
+	err := server.Start()
+	require.NoError(t, err)
+	defer func() { _ = server.Stop() }()
+
+	conn, err := net.Dial("unix", socketPath)
+	require.NoError(t, err)
+	defer func() { _ = conn.Close() }()
+
+	// Send approve request with empty request_id
+	msg, _ := NewMessage(MessageTypeApproveRequest, "req-approve-empty", ApproveRequest{RequestID: ""})
+	err = json.NewEncoder(conn).Encode(msg)
+	require.NoError(t, err)
+
+	var resp Message
+	err = json.NewDecoder(conn).Decode(&resp)
+	require.NoError(t, err)
+
+	assert.Equal(t, MessageTypeErrorResponse, resp.Type)
+
+	var errResp ErrorResponse
+	err = json.Unmarshal(resp.Payload, &errResp)
+	require.NoError(t, err)
+	assert.Contains(t, errResp.Message, "request_id is required")
+}
+
+func TestServer_HandleApproveRequest_ProviderError(t *testing.T) {
+	socketPath := fmt.Sprintf("/tmp/pf-approveerr-%d.sock", os.Getpid())
+	lockPath := fmt.Sprintf("/tmp/pf-approveerr-%d.lock", os.Getpid())
+	t.Cleanup(func() {
+		_ = os.Remove(socketPath)
+		_ = os.Remove(lockPath)
+	})
+
+	provider := &mockAgentProvider{
+		approveError: errors.New("approval denied"),
+	}
+	cfg := ServerConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+	}
+
+	server := NewServer(cfg, provider)
+	err := server.Start()
+	require.NoError(t, err)
+	defer func() { _ = server.Stop() }()
+
+	conn, err := net.Dial("unix", socketPath)
+	require.NoError(t, err)
+	defer func() { _ = conn.Close() }()
+
+	msg, _ := NewMessage(MessageTypeApproveRequest, "req-approve-err", ApproveRequest{RequestID: "some-id"})
+	err = json.NewEncoder(conn).Encode(msg)
+	require.NoError(t, err)
+
+	var resp Message
+	err = json.NewDecoder(conn).Decode(&resp)
+	require.NoError(t, err)
+
+	assert.Equal(t, MessageTypeApproveResponse, resp.Type)
+
+	var approveResp ApproveResponse
+	err = json.Unmarshal(resp.Payload, &approveResp)
+	require.NoError(t, err)
+	assert.False(t, approveResp.Success)
+	assert.Equal(t, "some-id", approveResp.RequestID)
+	assert.Contains(t, approveResp.Message, "approval denied")
+}
+
+func TestServer_HandleApproveRequest_InvalidPayload(t *testing.T) {
+	socketPath := fmt.Sprintf("/tmp/pf-approvebad-%d.sock", os.Getpid())
+	lockPath := fmt.Sprintf("/tmp/pf-approvebad-%d.lock", os.Getpid())
+	t.Cleanup(func() {
+		_ = os.Remove(socketPath)
+		_ = os.Remove(lockPath)
+	})
+
+	provider := &mockAgentProvider{}
+	cfg := ServerConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+	}
+
+	server := NewServer(cfg, provider)
+	err := server.Start()
+	require.NoError(t, err)
+	defer func() { _ = server.Stop() }()
+
+	conn, err := net.Dial("unix", socketPath)
+	require.NoError(t, err)
+	defer func() { _ = conn.Close() }()
+
+	// Send raw JSON with a payload that is valid JSON but cannot be unmarshaled
+	// into ApproveRequest (payload is a string instead of an object)
+	rawMsg := `{"type":"approve_request","request_id":"req-approve-bad","timestamp":"2025-01-01T00:00:00Z","payload":"not-an-object"}` + "\n"
+	_, err = conn.Write([]byte(rawMsg))
+	require.NoError(t, err)
+
+	var resp Message
+	err = json.NewDecoder(conn).Decode(&resp)
+	require.NoError(t, err)
+
+	assert.Equal(t, MessageTypeErrorResponse, resp.Type)
+
+	var errResp ErrorResponse
+	err = json.Unmarshal(resp.Payload, &errResp)
+	require.NoError(t, err)
+	assert.Contains(t, errResp.Message, "invalid approve request payload")
+}
+
+func TestServer_HandleConnection_InvalidJSON(t *testing.T) {
+	socketPath := fmt.Sprintf("/tmp/pf-badjson-%d.sock", os.Getpid())
+	lockPath := fmt.Sprintf("/tmp/pf-badjson-%d.lock", os.Getpid())
+	t.Cleanup(func() {
+		_ = os.Remove(socketPath)
+		_ = os.Remove(lockPath)
+	})
+
+	provider := &mockAgentProvider{}
+	cfg := ServerConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+	}
+
+	server := NewServer(cfg, provider)
+	err := server.Start()
+	require.NoError(t, err)
+	defer func() { _ = server.Stop() }()
+
+	conn, err := net.Dial("unix", socketPath)
+	require.NoError(t, err)
+
+	// Send invalid JSON data - the server should send an error response
+	_, err = conn.Write([]byte("this is not json\n"))
+	require.NoError(t, err)
+
+	// Give the server time to process and close the connection
+	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	var resp Message
+	decodeErr := json.NewDecoder(conn).Decode(&resp)
+	// The server may close the connection or send an error; either is acceptable
+	if decodeErr == nil {
+		assert.Equal(t, MessageTypeErrorResponse, resp.Type)
+	}
+	_ = conn.Close()
 }

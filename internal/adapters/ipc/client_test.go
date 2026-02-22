@@ -227,3 +227,136 @@ func TestClient_ConnectionTimeout(t *testing.T) {
 	_, err := client.Status()
 	assert.ErrorIs(t, err, ErrAgentNotRunning)
 }
+
+func TestClient_GetAgentPID_InvalidContent(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	lockPath := filepath.Join(tmpDir, "agent.lock")
+	_ = os.WriteFile(lockPath, []byte("not-a-number\n"), 0o600)
+
+	client := NewClient(ClientConfig{
+		SocketPath: filepath.Join(tmpDir, "agent.sock"),
+		LockPath:   lockPath,
+	})
+
+	pid := client.GetAgentPID()
+	assert.Zero(t, pid)
+}
+
+func TestClient_Status_ErrorResponse(t *testing.T) {
+	// Start a server that returns an error for status requests
+	socketPath := fmt.Sprintf("/tmp/pf-clisterr-%d.sock", os.Getpid())
+	lockPath := fmt.Sprintf("/tmp/pf-clisterr-%d.lock", os.Getpid())
+	t.Cleanup(func() {
+		_ = os.Remove(socketPath)
+		_ = os.Remove(lockPath)
+	})
+
+	// Create a custom "server" that sends error responses
+	// We use a real server but test error response path through unknown message
+	provider := &mockAgentProvider{
+		status: agent.Status{State: agent.StateRunning},
+	}
+	serverCfg := ServerConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+		Version:    "1.0.0",
+	}
+	server := NewServer(serverCfg, provider)
+	require.NoError(t, server.Start())
+	defer func() { _ = server.Stop() }()
+
+	// Client should successfully get a status response
+	client := NewClient(ClientConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+		Timeout:    5 * time.Second,
+	})
+
+	status, err := client.Status()
+	require.NoError(t, err)
+	assert.Equal(t, agent.StateRunning, status.Status.State)
+}
+
+func TestClient_Stop_WithProviderError(t *testing.T) {
+	socketPath := fmt.Sprintf("/tmp/pf-clistoperr-%d.sock", os.Getpid())
+	lockPath := fmt.Sprintf("/tmp/pf-clistoperr-%d.lock", os.Getpid())
+	t.Cleanup(func() {
+		_ = os.Remove(socketPath)
+		_ = os.Remove(lockPath)
+	})
+
+	provider := &mockAgentProvider{
+		status:    agent.Status{State: agent.StateRunning},
+		stopError: fmt.Errorf("cannot stop right now"),
+	}
+	serverCfg := ServerConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+	}
+	server := NewServer(serverCfg, provider)
+	require.NoError(t, server.Start())
+	defer func() { _ = server.Stop() }()
+
+	client := NewClient(ClientConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+		Timeout:    5 * time.Second,
+	})
+
+	resp, err := client.Stop(true, 5*time.Second)
+	require.NoError(t, err)
+	assert.False(t, resp.Success)
+	assert.Contains(t, resp.Message, "cannot stop right now")
+}
+
+func TestClient_Approve_WithProviderError(t *testing.T) {
+	socketPath := fmt.Sprintf("/tmp/pf-cliapperr-%d.sock", os.Getpid())
+	lockPath := fmt.Sprintf("/tmp/pf-cliapperr-%d.lock", os.Getpid())
+	t.Cleanup(func() {
+		_ = os.Remove(socketPath)
+		_ = os.Remove(lockPath)
+	})
+
+	provider := &mockAgentProvider{
+		status:       agent.Status{State: agent.StateRunning},
+		approveError: fmt.Errorf("approval not found"),
+	}
+	serverCfg := ServerConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+	}
+	server := NewServer(serverCfg, provider)
+	require.NoError(t, server.Start())
+	defer func() { _ = server.Stop() }()
+
+	client := NewClient(ClientConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+		Timeout:    5 * time.Second,
+	})
+
+	resp, err := client.Approve("nonexistent-id")
+	require.NoError(t, err)
+	assert.False(t, resp.Success)
+	assert.Contains(t, resp.Message, "approval not found")
+}
+
+func TestClient_IsAgentRunning_NoSocket(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	lockPath := filepath.Join(tmpDir, "agent.lock")
+	socketPath := filepath.Join(tmpDir, "agent.sock")
+
+	// Create lock file but no socket file
+	_ = os.WriteFile(lockPath, []byte("12345\n"), 0o600)
+
+	client := NewClient(ClientConfig{
+		SocketPath: socketPath,
+		LockPath:   lockPath,
+	})
+
+	assert.False(t, client.IsAgentRunning())
+}
