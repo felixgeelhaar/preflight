@@ -234,7 +234,8 @@ func (s *FormulaStep) Apply(ctx compiler.RunContext) error {
 		}
 	}
 
-	args := []string{"install", s.formula.Name}
+	args := make([]string, 0, 2+len(s.formula.Args))
+	args = append(args, "install", s.formula.Name)
 	args = append(args, s.formula.Args...)
 
 	result, err := s.runner.Run(ctx.Context(), "brew", args...)

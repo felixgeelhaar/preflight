@@ -302,7 +302,7 @@ func pathToString(parts []pathPart) string {
 	var result strings.Builder
 	for i, part := range parts {
 		if part.isIndex {
-			result.WriteString(fmt.Sprintf("[%d]", part.index))
+			fmt.Fprintf(&result, "[%d]", part.index)
 		} else {
 			if i > 0 {
 				result.WriteString(".")

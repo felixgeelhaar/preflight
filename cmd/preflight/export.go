@@ -125,7 +125,7 @@ func exportToNix(config map[string]interface{}) ([]byte, error) {
 				if name, ok := f.(string); ok {
 					// Convert brew name to nix package name (best effort)
 					nixName := strings.ReplaceAll(name, "-", "")
-					sb.WriteString(fmt.Sprintf("    %s\n", nixName))
+					fmt.Fprintf(&sb, "    %s\n", nixName)
 				}
 			}
 			sb.WriteString("  ];\n\n")
@@ -137,10 +137,10 @@ func exportToNix(config map[string]interface{}) ([]byte, error) {
 		sb.WriteString("  programs.git = {\n")
 		sb.WriteString("    enable = true;\n")
 		if name, ok := git["name"].(string); ok {
-			sb.WriteString(fmt.Sprintf("    userName = \"%s\";\n", name))
+			fmt.Fprintf(&sb, "    userName = \"%s\";\n", name)
 		}
 		if email, ok := git["email"].(string); ok {
-			sb.WriteString(fmt.Sprintf("    userEmail = \"%s\";\n", email))
+			fmt.Fprintf(&sb, "    userEmail = \"%s\";\n", email)
 		}
 		sb.WriteString("  };\n\n")
 	}
@@ -154,7 +154,7 @@ func exportToNix(config map[string]interface{}) ([]byte, error) {
 				sb.WriteString("    plugins = [\n")
 				for _, p := range plugins {
 					if name, ok := p.(string); ok {
-						sb.WriteString(fmt.Sprintf("      { name = \"%s\"; }\n", name))
+						fmt.Fprintf(&sb, "      { name = \"%s\"; }\n", name)
 					}
 				}
 				sb.WriteString("    ];\n")
@@ -180,7 +180,7 @@ func exportToBrewfile(config map[string]interface{}) ([]byte, error) {
 		if taps, ok := brew["taps"].([]interface{}); ok {
 			for _, t := range taps {
 				if name, ok := t.(string); ok {
-					sb.WriteString(fmt.Sprintf("tap \"%s\"\n", name))
+					fmt.Fprintf(&sb, "tap \"%s\"\n", name)
 				}
 			}
 			if len(taps) > 0 {
@@ -192,7 +192,7 @@ func exportToBrewfile(config map[string]interface{}) ([]byte, error) {
 		if formulae, ok := brew["formulae"].([]interface{}); ok {
 			for _, f := range formulae {
 				if name, ok := f.(string); ok {
-					sb.WriteString(fmt.Sprintf("brew \"%s\"\n", name))
+					fmt.Fprintf(&sb, "brew \"%s\"\n", name)
 				}
 			}
 			if len(formulae) > 0 {
@@ -204,7 +204,7 @@ func exportToBrewfile(config map[string]interface{}) ([]byte, error) {
 		if casks, ok := brew["casks"].([]interface{}); ok {
 			for _, c := range casks {
 				if name, ok := c.(string); ok {
-					sb.WriteString(fmt.Sprintf("cask \"%s\"\n", name))
+					fmt.Fprintf(&sb, "cask \"%s\"\n", name)
 				}
 			}
 		}
@@ -235,7 +235,7 @@ func exportToShell(config map[string]interface{}) ([]byte, error) {
 			sb.WriteString("# Add taps\n")
 			for _, t := range taps {
 				if name, ok := t.(string); ok {
-					sb.WriteString(fmt.Sprintf("brew tap %s\n", name))
+					fmt.Fprintf(&sb, "brew tap %s\n", name)
 				}
 			}
 			sb.WriteString("\n")
@@ -248,9 +248,9 @@ func exportToShell(config map[string]interface{}) ([]byte, error) {
 			for i, f := range formulae {
 				if name, ok := f.(string); ok {
 					if i < len(formulae)-1 {
-						sb.WriteString(fmt.Sprintf("  %s \\\n", name))
+						fmt.Fprintf(&sb, "  %s \\\n", name)
 					} else {
-						sb.WriteString(fmt.Sprintf("  %s\n", name))
+						fmt.Fprintf(&sb, "  %s\n", name)
 					}
 				}
 			}
@@ -264,9 +264,9 @@ func exportToShell(config map[string]interface{}) ([]byte, error) {
 			for i, c := range casks {
 				if name, ok := c.(string); ok {
 					if i < len(casks)-1 {
-						sb.WriteString(fmt.Sprintf("  %s \\\n", name))
+						fmt.Fprintf(&sb, "  %s \\\n", name)
 					} else {
-						sb.WriteString(fmt.Sprintf("  %s\n", name))
+						fmt.Fprintf(&sb, "  %s\n", name)
 					}
 				}
 			}
@@ -278,10 +278,10 @@ func exportToShell(config map[string]interface{}) ([]byte, error) {
 	if git, ok := config["git"].(map[string]interface{}); ok {
 		sb.WriteString("# Configure git\n")
 		if name, ok := git["name"].(string); ok {
-			sb.WriteString(fmt.Sprintf("git config --global user.name \"%s\"\n", name))
+			fmt.Fprintf(&sb, "git config --global user.name \"%s\"\n", name)
 		}
 		if email, ok := git["email"].(string); ok {
-			sb.WriteString(fmt.Sprintf("git config --global user.email \"%s\"\n", email))
+			fmt.Fprintf(&sb, "git config --global user.email \"%s\"\n", email)
 		}
 		sb.WriteString("\n")
 	}

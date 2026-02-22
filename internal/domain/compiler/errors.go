@@ -55,26 +55,26 @@ func (e *StepError) Format() string {
 	var b strings.Builder
 
 	// Error code and message
-	b.WriteString(fmt.Sprintf("[%s] %s", e.Code, e.Message))
+	fmt.Fprintf(&b, "[%s] %s", e.Code, e.Message)
 
 	// Provider context
 	if e.Provider != "" {
-		b.WriteString(fmt.Sprintf("\n  Provider: %s", e.Provider))
+		fmt.Fprintf(&b, "\n  Provider: %s", e.Provider)
 	}
 
 	// Step context
 	if e.StepID != "" {
-		b.WriteString(fmt.Sprintf("\n  Step: %s", e.StepID))
+		fmt.Fprintf(&b, "\n  Step: %s", e.StepID)
 	}
 
 	// Suggestion
 	if e.Suggestion != "" {
-		b.WriteString(fmt.Sprintf("\n  Suggestion: %s", e.Suggestion))
+		fmt.Fprintf(&b, "\n  Suggestion: %s", e.Suggestion)
 	}
 
 	// Underlying error
 	if e.Underlying != nil {
-		b.WriteString(fmt.Sprintf("\n  Cause: %s", e.Underlying.Error()))
+		fmt.Fprintf(&b, "\n  Cause: %s", e.Underlying.Error())
 	}
 
 	return b.String()

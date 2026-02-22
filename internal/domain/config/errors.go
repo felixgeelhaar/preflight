@@ -42,7 +42,7 @@ func (e *UserError) Error() string {
 
 	// Add context if present
 	if e.Context != "" {
-		b.WriteString(fmt.Sprintf(" (at %s)", e.Context))
+		fmt.Fprintf(&b, " (at %s)", e.Context)
 	}
 
 	return b.String()
@@ -66,16 +66,16 @@ func (e *UserError) Format() string {
 	var b strings.Builder
 
 	// Error code and message
-	b.WriteString(fmt.Sprintf("[%s] %s", e.Code, e.Message))
+	fmt.Fprintf(&b, "[%s] %s", e.Code, e.Message)
 
 	// Context
 	if e.Context != "" {
-		b.WriteString(fmt.Sprintf("\n  Location: %s", e.Context))
+		fmt.Fprintf(&b, "\n  Location: %s", e.Context)
 	}
 
 	// Suggestion
 	if e.Suggestion != "" {
-		b.WriteString(fmt.Sprintf("\n  Suggestion: %s", e.Suggestion))
+		fmt.Fprintf(&b, "\n  Suggestion: %s", e.Suggestion)
 	}
 
 	return b.String()
@@ -178,9 +178,9 @@ func (l *ErrorList) Error() string {
 	}
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("%d errors occurred:\n", len(l.errors)))
+	fmt.Fprintf(&b, "%d errors occurred:\n", len(l.errors))
 	for i, err := range l.errors {
-		b.WriteString(fmt.Sprintf("  %d. %s\n", i+1, err.Error()))
+		fmt.Fprintf(&b, "  %d. %s\n", i+1, err.Error())
 	}
 	return b.String()
 }
@@ -192,9 +192,9 @@ func (l *ErrorList) Format() string {
 	}
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("Found %d error(s):\n", len(l.errors)))
+	fmt.Fprintf(&b, "Found %d error(s):\n", len(l.errors))
 	for i, err := range l.errors {
-		b.WriteString(fmt.Sprintf("\n--- Error %d ---\n", i+1))
+		fmt.Fprintf(&b, "\n--- Error %d ---\n", i+1)
 		b.WriteString(err.Format())
 		b.WriteString("\n")
 	}

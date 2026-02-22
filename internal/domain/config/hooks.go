@@ -153,7 +153,8 @@ func (r *HookRunner) runHook(ctx context.Context, hook Hook, hookCtx HookContext
 
 // buildEnv creates environment variables for the hook.
 func (r *HookRunner) buildEnv(hook Hook, ctx HookContext) []string {
-	env := []string{
+	env := make([]string, 0, 7+len(hook.Environment))
+	env = append(env,
 		fmt.Sprintf("PREFLIGHT_TARGET=%s", ctx.Target),
 		fmt.Sprintf("PREFLIGHT_LAYER_COUNT=%d", ctx.LayerCount),
 		fmt.Sprintf("PREFLIGHT_STEP_COUNT=%d", ctx.StepCount),
@@ -161,7 +162,7 @@ func (r *HookRunner) buildEnv(hook Hook, ctx HookContext) []string {
 		fmt.Sprintf("PREFLIGHT_SKIPPED_STEPS=%d", ctx.SkippedSteps),
 		fmt.Sprintf("PREFLIGHT_FAILED_STEPS=%d", ctx.FailedSteps),
 		fmt.Sprintf("PREFLIGHT_DRY_RUN=%t", ctx.DryRun),
-	}
+	)
 
 	// Add hook-specific environment
 	for k, v := range hook.Environment {

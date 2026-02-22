@@ -145,7 +145,7 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 
 	// Includes
 	if len(m.Git.Includes) > 0 {
-		var includes []interface{}
+		includes := make([]interface{}, 0, len(m.Git.Includes))
 		for _, inc := range m.Git.Includes {
 			incMap := map[string]interface{}{
 				"path": inc.Path,
@@ -193,7 +193,7 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 
 	// Hosts section
 	if len(m.SSH.Hosts) > 0 {
-		var hosts []interface{}
+		hosts := make([]interface{}, 0, len(m.SSH.Hosts))
 		for _, h := range m.SSH.Hosts {
 			hostMap := map[string]interface{}{
 				"host": h.Host,
@@ -241,7 +241,7 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 
 	// Matches section
 	if len(m.SSH.Matches) > 0 {
-		var matches []interface{}
+		matches := make([]interface{}, 0, len(m.SSH.Matches))
 		for _, match := range m.SSH.Matches {
 			matchMap := map[string]interface{}{
 				"match": match.Match,
@@ -282,7 +282,7 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 
 	// Tools section
 	if len(m.Runtime.Tools) > 0 {
-		var tools []interface{}
+		tools := make([]interface{}, 0, len(m.Runtime.Tools))
 		for _, t := range m.Runtime.Tools {
 			toolMap := map[string]interface{}{
 				"name":    t.Name,
@@ -295,7 +295,7 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 
 	// Plugins section
 	if len(m.Runtime.Plugins) > 0 {
-		var plugins []interface{}
+		plugins := make([]interface{}, 0, len(m.Runtime.Plugins))
 		for _, p := range m.Runtime.Plugins {
 			pluginMap := map[string]interface{}{
 				"name": p.Name,
@@ -321,7 +321,7 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 
 	// Shells section
 	if len(m.Shell.Shells) > 0 {
-		var shells []interface{}
+		shells := make([]interface{}, 0, len(m.Shell.Shells))
 		for _, s := range m.Shell.Shells {
 			shellMap := map[string]interface{}{
 				"name": s.Name,
@@ -419,7 +419,7 @@ func (m *MergedConfig) Raw() map[string]interface{} {
 	}
 
 	if len(m.VSCode.Keybindings) > 0 {
-		var keybindings []interface{}
+		keybindings := make([]interface{}, 0, len(m.VSCode.Keybindings))
 		for _, kb := range m.VSCode.Keybindings {
 			kbMap := map[string]interface{}{
 				"key":     kb.Key,

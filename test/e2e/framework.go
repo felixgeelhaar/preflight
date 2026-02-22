@@ -195,7 +195,8 @@ func (h *Harness) RunFail(args ...string) string {
 func (h *Harness) Init(preset string, extraArgs ...string) string {
 	h.T.Helper()
 
-	args := []string{"init", "--non-interactive", "--preset", preset, "--output", h.ConfigDir}
+	args := make([]string, 0, 6+len(extraArgs))
+	args = append(args, "init", "--non-interactive", "--preset", preset, "--output", h.ConfigDir)
 	args = append(args, extraArgs...)
 
 	return h.RunSuccess(args...)
@@ -205,7 +206,8 @@ func (h *Harness) Init(preset string, extraArgs ...string) string {
 func (h *Harness) Plan(extraArgs ...string) string {
 	h.T.Helper()
 
-	args := []string{"plan", "--config", filepath.Join(h.ConfigDir, "preflight.yaml")}
+	args := make([]string, 0, 3+len(extraArgs))
+	args = append(args, "plan", "--config", filepath.Join(h.ConfigDir, "preflight.yaml"))
 	args = append(args, extraArgs...)
 
 	return h.RunSuccess(args...)
@@ -228,7 +230,8 @@ func (h *Harness) Apply(dryRun bool, extraArgs ...string) string {
 func (h *Harness) Doctor(extraArgs ...string) string {
 	h.T.Helper()
 
-	args := []string{"doctor", "--quiet", "--config", filepath.Join(h.ConfigDir, "preflight.yaml")}
+	args := make([]string, 0, 4+len(extraArgs))
+	args = append(args, "doctor", "--quiet", "--config", filepath.Join(h.ConfigDir, "preflight.yaml"))
 	args = append(args, extraArgs...)
 
 	return h.RunSuccess(args...)
@@ -238,7 +241,8 @@ func (h *Harness) Doctor(extraArgs ...string) string {
 func (h *Harness) Validate(extraArgs ...string) string {
 	h.T.Helper()
 
-	args := []string{"validate", "--config", filepath.Join(h.ConfigDir, "preflight.yaml")}
+	args := make([]string, 0, 3+len(extraArgs))
+	args = append(args, "validate", "--config", filepath.Join(h.ConfigDir, "preflight.yaml"))
 	args = append(args, extraArgs...)
 
 	return h.RunSuccess(args...)

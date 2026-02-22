@@ -212,7 +212,7 @@ func handleAutoremove(ctx context.Context, checker *security.BrewRedundancyCheck
 
 func handleCleanupAll(ctx context.Context, checker *security.BrewRedundancyChecker, result *security.RedundancyResult) error {
 	// Collect all packages to remove
-	var toRemove []string
+	toRemove := make([]string, 0, len(result.Redundancies))
 	for _, red := range result.Redundancies {
 		toRemove = append(toRemove, red.Remove...)
 	}

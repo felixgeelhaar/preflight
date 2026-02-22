@@ -274,37 +274,37 @@ func (r *ComplianceReport) ToText() string {
 	sb.WriteString("╰───────────────────────────────────────────────────────────────╯\n\n")
 
 	// Policy info
-	sb.WriteString(fmt.Sprintf("Policy:       %s\n", r.PolicyName))
+	fmt.Fprintf(&sb, "Policy:       %s\n", r.PolicyName)
 	if r.PolicyDescription != "" {
-		sb.WriteString(fmt.Sprintf("Description:  %s\n", r.PolicyDescription))
+		fmt.Fprintf(&sb, "Description:  %s\n", r.PolicyDescription)
 	}
-	sb.WriteString(fmt.Sprintf("Enforcement:  %s\n", r.Enforcement))
-	sb.WriteString(fmt.Sprintf("Generated:    %s\n\n", r.GeneratedAt.Format(time.RFC3339)))
+	fmt.Fprintf(&sb, "Enforcement:  %s\n", r.Enforcement)
+	fmt.Fprintf(&sb, "Generated:    %s\n\n", r.GeneratedAt.Format(time.RFC3339))
 
 	// Summary
 	sb.WriteString("─── Summary ───────────────────────────────────────────────────\n")
 	statusIcon := r.getStatusIcon()
-	sb.WriteString(fmt.Sprintf("Status:           %s %s\n", statusIcon, r.Summary.Status))
-	sb.WriteString(fmt.Sprintf("Compliance Score: %.1f%%\n", r.Summary.ComplianceScore))
-	sb.WriteString(fmt.Sprintf("Total Checks:     %d\n", r.Summary.TotalChecks))
-	sb.WriteString(fmt.Sprintf("Passed:           %d\n", r.Summary.PassedChecks))
-	sb.WriteString(fmt.Sprintf("Violations:       %d\n", r.Summary.ViolationCount))
-	sb.WriteString(fmt.Sprintf("Warnings:         %d\n", r.Summary.WarningCount))
-	sb.WriteString(fmt.Sprintf("Overrides:        %d\n\n", r.Summary.OverrideCount))
+	fmt.Fprintf(&sb, "Status:           %s %s\n", statusIcon, r.Summary.Status)
+	fmt.Fprintf(&sb, "Compliance Score: %.1f%%\n", r.Summary.ComplianceScore)
+	fmt.Fprintf(&sb, "Total Checks:     %d\n", r.Summary.TotalChecks)
+	fmt.Fprintf(&sb, "Passed:           %d\n", r.Summary.PassedChecks)
+	fmt.Fprintf(&sb, "Violations:       %d\n", r.Summary.ViolationCount)
+	fmt.Fprintf(&sb, "Warnings:         %d\n", r.Summary.WarningCount)
+	fmt.Fprintf(&sb, "Overrides:        %d\n\n", r.Summary.OverrideCount)
 
 	// Violations
 	if len(r.Violations) > 0 {
 		sb.WriteString("─── Violations (Blocking) ─────────────────────────────────────\n")
 		for i, v := range r.Violations {
-			sb.WriteString(fmt.Sprintf("\n[%d] %s\n", i+1, v.Type))
-			sb.WriteString(fmt.Sprintf("    Pattern: %s\n", v.Pattern))
+			fmt.Fprintf(&sb, "\n[%d] %s\n", i+1, v.Type)
+			fmt.Fprintf(&sb, "    Pattern: %s\n", v.Pattern)
 			if v.Value != "" {
-				sb.WriteString(fmt.Sprintf("    Value:   %s\n", v.Value))
+				fmt.Fprintf(&sb, "    Value:   %s\n", v.Value)
 			}
 			if v.Message != "" {
-				sb.WriteString(fmt.Sprintf("    Message: %s\n", v.Message))
+				fmt.Fprintf(&sb, "    Message: %s\n", v.Message)
 			}
-			sb.WriteString(fmt.Sprintf("    Fix:     %s\n", v.Recommendation))
+			fmt.Fprintf(&sb, "    Fix:     %s\n", v.Recommendation)
 		}
 		sb.WriteString("\n")
 	}
@@ -313,15 +313,15 @@ func (r *ComplianceReport) ToText() string {
 	if len(r.Warnings) > 0 {
 		sb.WriteString("─── Warnings (Non-Blocking) ───────────────────────────────────\n")
 		for i, w := range r.Warnings {
-			sb.WriteString(fmt.Sprintf("\n[%d] %s\n", i+1, w.Type))
-			sb.WriteString(fmt.Sprintf("    Pattern: %s\n", w.Pattern))
+			fmt.Fprintf(&sb, "\n[%d] %s\n", i+1, w.Type)
+			fmt.Fprintf(&sb, "    Pattern: %s\n", w.Pattern)
 			if w.Value != "" {
-				sb.WriteString(fmt.Sprintf("    Value:   %s\n", w.Value))
+				fmt.Fprintf(&sb, "    Value:   %s\n", w.Value)
 			}
 			if w.Message != "" {
-				sb.WriteString(fmt.Sprintf("    Message: %s\n", w.Message))
+				fmt.Fprintf(&sb, "    Message: %s\n", w.Message)
 			}
-			sb.WriteString(fmt.Sprintf("    Fix:     %s\n", w.Recommendation))
+			fmt.Fprintf(&sb, "    Fix:     %s\n", w.Recommendation)
 		}
 		sb.WriteString("\n")
 	}
@@ -330,10 +330,10 @@ func (r *ComplianceReport) ToText() string {
 	if len(r.Overrides) > 0 {
 		sb.WriteString("─── Applied Overrides ─────────────────────────────────────────\n")
 		for i, o := range r.Overrides {
-			sb.WriteString(fmt.Sprintf("\n[%d] %s\n", i+1, o.Pattern))
-			sb.WriteString(fmt.Sprintf("    Justification: %s\n", o.Justification))
+			fmt.Fprintf(&sb, "\n[%d] %s\n", i+1, o.Pattern)
+			fmt.Fprintf(&sb, "    Justification: %s\n", o.Justification)
 			if o.ApprovedBy != "" {
-				sb.WriteString(fmt.Sprintf("    Approved By:   %s\n", o.ApprovedBy))
+				fmt.Fprintf(&sb, "    Approved By:   %s\n", o.ApprovedBy)
 			}
 			if o.ExpiresAt != "" {
 				expiryStatus := "active"
@@ -342,7 +342,7 @@ func (r *ComplianceReport) ToText() string {
 				} else if o.DaysUntilExpiry > 0 && o.DaysUntilExpiry <= 7 {
 					expiryStatus = fmt.Sprintf("expires in %d days", o.DaysUntilExpiry)
 				}
-				sb.WriteString(fmt.Sprintf("    Expires:       %s (%s)\n", o.ExpiresAt, expiryStatus))
+				fmt.Fprintf(&sb, "    Expires:       %s (%s)\n", o.ExpiresAt, expiryStatus)
 			}
 		}
 		sb.WriteString("\n")

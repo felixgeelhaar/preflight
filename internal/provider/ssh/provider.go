@@ -37,7 +37,7 @@ func (p *Provider) Compile(ctx compiler.CompileContext) ([]compiler.Step, error)
 		return nil, nil
 	}
 
-	steps := make([]compiler.Step, 0)
+	steps := make([]compiler.Step, 0, 1)
 	steps = append(steps, NewConfigStep(cfg, p.fs))
 
 	return steps, nil

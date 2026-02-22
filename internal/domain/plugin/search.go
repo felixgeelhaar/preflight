@@ -419,7 +419,7 @@ func FormatSearchResults(results []SearchResult) string {
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Found %d plugin(s):\n\n", len(results)))
+	fmt.Fprintf(&sb, "Found %d plugin(s):\n\n", len(results))
 
 	for i := range results {
 		r := &results[i]
@@ -433,13 +433,13 @@ func FormatSearchResults(results []SearchResult) string {
 		trustIndicator := r.GetTrustIndicator()
 		trustSymbol := trustIndicator.Symbol()
 
-		sb.WriteString(fmt.Sprintf("  %s %s [%s]\n", trustSymbol, r.FullName, typeLabel))
+		fmt.Fprintf(&sb, "  %s %s [%s]\n", trustSymbol, r.FullName, typeLabel)
 		if r.Description != "" {
 			desc := r.Description
 			if len(desc) > 70 {
 				desc = desc[:67] + "..."
 			}
-			sb.WriteString(fmt.Sprintf("    %s\n", desc))
+			fmt.Fprintf(&sb, "    %s\n", desc)
 		}
 
 		// Enhanced stats line with trust score
@@ -447,9 +447,9 @@ func FormatSearchResults(results []SearchResult) string {
 		if r.IsArchived {
 			archiveLabel = " [ARCHIVED]"
 		}
-		sb.WriteString(fmt.Sprintf("    ⭐ %d  🍴 %d  trust: %s (%d)%s\n",
-			r.Stars, r.Forks, trustIndicator, r.TrustScore, archiveLabel))
-		sb.WriteString(fmt.Sprintf("    %s\n", r.HTMLURL))
+		fmt.Fprintf(&sb, "    ⭐ %d  🍴 %d  trust: %s (%d)%s\n",
+			r.Stars, r.Forks, trustIndicator, r.TrustScore, archiveLabel)
+		fmt.Fprintf(&sb, "    %s\n", r.HTMLURL)
 		sb.WriteString("\n")
 	}
 
@@ -666,18 +666,18 @@ func FormatInstallPlan(plan *InstallPlan) string {
 
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("📦 Install Plan: %s@%s\n", plan.Plugin.Name, plan.Plugin.Version))
-	sb.WriteString(fmt.Sprintf("   Source: %s\n", plan.Source))
-	sb.WriteString(fmt.Sprintf("   Trust: %s\n\n", plan.TrustLevel))
+	fmt.Fprintf(&sb, "📦 Install Plan: %s@%s\n", plan.Plugin.Name, plan.Plugin.Version)
+	fmt.Fprintf(&sb, "   Source: %s\n", plan.Source)
+	fmt.Fprintf(&sb, "   Trust: %s\n\n", plan.TrustLevel)
 
 	if plan.Plugin.Description != "" {
-		sb.WriteString(fmt.Sprintf("   %s\n\n", plan.Plugin.Description))
+		fmt.Fprintf(&sb, "   %s\n\n", plan.Plugin.Description)
 	}
 
 	if len(plan.Warnings) > 0 {
 		sb.WriteString("⚠️  Warnings:\n")
 		for _, w := range plan.Warnings {
-			sb.WriteString(fmt.Sprintf("   • %s\n", w))
+			fmt.Fprintf(&sb, "   • %s\n", w)
 		}
 		sb.WriteString("\n")
 	}
@@ -689,9 +689,9 @@ func FormatInstallPlan(plan *InstallPlan) string {
 			if cap.Optional {
 				optional = " (optional)"
 			}
-			sb.WriteString(fmt.Sprintf("   • %s%s\n", cap.Name, optional))
+			fmt.Fprintf(&sb, "   • %s%s\n", cap.Name, optional)
 			if cap.Justification != "" {
-				sb.WriteString(fmt.Sprintf("     → %s\n", cap.Justification))
+				fmt.Fprintf(&sb, "     → %s\n", cap.Justification)
 			}
 		}
 		sb.WriteString("\n")
@@ -699,7 +699,7 @@ func FormatInstallPlan(plan *InstallPlan) string {
 
 	sb.WriteString("📋 Actions:\n")
 	for i, action := range plan.Actions {
-		sb.WriteString(fmt.Sprintf("   %d. %s\n", i+1, action))
+		fmt.Fprintf(&sb, "   %d. %s\n", i+1, action)
 	}
 
 	return sb.String()

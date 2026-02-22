@@ -23,7 +23,7 @@ func NewValidator() *Validator {
 
 // Validate validates a MergedConfig and returns any validation errors.
 func (v *Validator) Validate(config *MergedConfig) []ValidationError {
-	var errors []ValidationError
+	errors := make([]ValidationError, 0, len(config.Files))
 
 	errors = append(errors, v.validateFiles(config.Files)...)
 

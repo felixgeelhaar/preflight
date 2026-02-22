@@ -721,7 +721,7 @@ func buildToolAnalysisPrompt(result *security.ToolAnalysisResult, toolNames []st
 	if len(result.Findings) > 0 {
 		sb.WriteString("Existing findings:\n")
 		for _, f := range result.Findings {
-			sb.WriteString(fmt.Sprintf("- %s: %s\n", f.Type, f.Message))
+			fmt.Fprintf(&sb, "- %s: %s\n", f.Type, f.Message)
 		}
 		sb.WriteString("\n")
 	}

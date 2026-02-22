@@ -63,15 +63,15 @@ func (b *ManifestBuilder) Build() TestManifest {
 func (m TestManifest) ToYAML() string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("version: %d\n", m.Version))
+	fmt.Fprintf(&sb, "version: %d\n", m.Version)
 
 	if len(m.Targets) > 0 {
 		sb.WriteString("targets:\n")
 		for _, t := range m.Targets {
-			sb.WriteString(fmt.Sprintf("  - name: %s\n", t.Name))
+			fmt.Fprintf(&sb, "  - name: %s\n", t.Name)
 			sb.WriteString("    layers:\n")
 			for _, l := range t.Layers {
-				sb.WriteString(fmt.Sprintf("      - %s\n", l))
+				fmt.Fprintf(&sb, "      - %s\n", l)
 			}
 		}
 	}
@@ -160,26 +160,26 @@ func (b *LayerBuilder) Build() TestLayer {
 func (l TestLayer) ToYAML() string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("name: %s\n", l.Name))
+	fmt.Fprintf(&sb, "name: %s\n", l.Name)
 
 	if len(l.Brew.Formulae) > 0 || len(l.Brew.Casks) > 0 || len(l.Brew.Taps) > 0 {
 		sb.WriteString("brew:\n")
 		if len(l.Brew.Taps) > 0 {
 			sb.WriteString("  taps:\n")
 			for _, t := range l.Brew.Taps {
-				sb.WriteString(fmt.Sprintf("    - %s\n", t))
+				fmt.Fprintf(&sb, "    - %s\n", t)
 			}
 		}
 		if len(l.Brew.Formulae) > 0 {
 			sb.WriteString("  formulae:\n")
 			for _, f := range l.Brew.Formulae {
-				sb.WriteString(fmt.Sprintf("    - %s\n", f))
+				fmt.Fprintf(&sb, "    - %s\n", f)
 			}
 		}
 		if len(l.Brew.Casks) > 0 {
 			sb.WriteString("  casks:\n")
 			for _, c := range l.Brew.Casks {
-				sb.WriteString(fmt.Sprintf("    - %s\n", c))
+				fmt.Fprintf(&sb, "    - %s\n", c)
 			}
 		}
 	}
@@ -188,13 +188,13 @@ func (l TestLayer) ToYAML() string {
 		sb.WriteString("git:\n")
 		sb.WriteString("  config:\n")
 		for k, v := range l.Git.Config {
-			sb.WriteString(fmt.Sprintf("    %s: %s\n", k, v))
+			fmt.Fprintf(&sb, "    %s: %s\n", k, v)
 		}
 	}
 
 	if l.Nvim.Preset != "" {
 		sb.WriteString("nvim:\n")
-		sb.WriteString(fmt.Sprintf("  preset: %s\n", l.Nvim.Preset))
+		fmt.Fprintf(&sb, "  preset: %s\n", l.Nvim.Preset)
 	}
 
 	return sb.String()

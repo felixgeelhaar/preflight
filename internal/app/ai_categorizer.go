@@ -73,14 +73,14 @@ func buildCategorizationPrompt(req AICategorizationRequest) string {
 	// List available layers
 	sb.WriteString("Available layers:\n")
 	for _, layer := range req.AvailableLayers {
-		sb.WriteString(fmt.Sprintf("- %s\n", layer))
+		fmt.Fprintf(&sb, "- %s\n", layer)
 	}
 	sb.WriteString("- NEW (suggest a new layer name if none fit)\n\n")
 
 	// List packages to categorize
 	sb.WriteString("Packages to categorize:\n")
 	for _, item := range req.Items {
-		sb.WriteString(fmt.Sprintf("- %s (provider: %s)\n", item.Name, item.Provider))
+		fmt.Fprintf(&sb, "- %s (provider: %s)\n", item.Name, item.Provider)
 	}
 
 	sb.WriteString("\nRespond with JSON in this exact format:\n")

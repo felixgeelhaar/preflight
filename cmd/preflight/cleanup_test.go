@@ -83,7 +83,7 @@ func TestRedundancies_CollectRemovable(t *testing.T) {
 	}
 
 	// Collect all removable packages
-	var toRemove []string
+	toRemove := make([]string, 0, len(redundancies))
 	for _, red := range redundancies {
 		toRemove = append(toRemove, red.Remove...)
 	}

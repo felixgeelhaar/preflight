@@ -225,7 +225,7 @@ func (a *toolAnalyzer) findRedundancies(toolNames []string, toolSet map[string]b
 
 // findConsolidations finds opportunities to consolidate multiple tools into one.
 func (a *toolAnalyzer) findConsolidations(toolNames []string, toolSet map[string]bool) []ToolFinding {
-	findings := make([]ToolFinding, 0)
+	findings := make([]ToolFinding, 0, 1)
 
 	suggestion, found := a.kb.FindConsolidationTarget(toolNames)
 	if !found {

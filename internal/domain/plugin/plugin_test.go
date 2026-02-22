@@ -1018,13 +1018,13 @@ func TestVerifySignature(t *testing.T) {
 			errSubstr: "invalid signature encoding",
 		},
 		{
-			name: "sigstore signature requires cosign",
+			name: "sigstore signature verification fails",
 			manifest: &Manifest{
 				Name:      "test",
 				Signature: &SignatureInfo{Type: "sigstore", KeyID: "sigstore-key", Data: "dGVzdHNpZ25hdHVyZWRhdGE="}, // valid base64
 			},
 			wantErr:   true,
-			errSubstr: "cosign", // cosign tool required
+			errSubstr: "Sigstore", // matches both "cosign not found...Sigstore" and "Sigstore signature verification failed"
 		},
 	}
 
