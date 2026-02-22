@@ -149,6 +149,224 @@ func TestNewProviderWith(t *testing.T) {
 	assert.Equal(t, "shell", provider.Name())
 }
 
+func TestFrameworkStep_Apply_FisherFails(t *testing.T) {
+	t.Parallel()
+
+	sc := shell.Entry{
+		Name:      "fish",
+		Framework: "fisher",
+	}
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("fish", []string{"-c", `curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher`}, ports.CommandResult{ExitCode: 1, Stderr: "curl failed"})
+
+	step := shell.NewFrameworkStepWith(sc, fs, runner)
+	ctx := compiler.NewRunContext(context.TODO())
+	err := step.Apply(ctx)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "fisher install failed")
+}
+
+func TestFrameworkStep_Apply_OhMyFishFails(t *testing.T) {
+	t.Parallel()
+
+	sc := shell.Entry{
+		Name:      "fish",
+		Framework: "oh-my-fish",
+	}
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
+	runner.AddResult("/bin/bash", []string{"-c", "curl -L https://get.oh-my.fish | fish"}, ports.CommandResult{ExitCode: 1, Stderr: "network error"})
+
+	step := shell.NewFrameworkStepWith(sc, fs, runner)
+	ctx := compiler.NewRunContext(context.TODO())
+	err := step.Apply(ctx)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "oh-my-fish install failed")
+}
+
+func TestPluginStep_Check_UnsupportedShell(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	step := shell.NewPluginStepWithFS("tcsh", "oh-my-zsh", "git", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestPluginStep_Apply_UnsupportedShell(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	step := shell.NewPluginStepWithFS("tcsh", "oh-my-zsh", "git", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported shell")
+}
+
+func TestEnvStep_Check_UnsupportedShell(t *testing.T) {
+	t.Parallel()
+
+	env := map[string]string{"EDITOR": "nvim"}
+	fs := mocks.NewFileSystem()
+	step := shell.NewEnvStepWithFS("tcsh", env, fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestEnvStep_Apply_UnsupportedShell(t *testing.T) {
+	t.Parallel()
+
+	env := map[string]string{"EDITOR": "nvim"}
+	fs := mocks.NewFileSystem()
+	step := shell.NewEnvStepWithFS("tcsh", env, fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported shell")
+}
+
+func TestAliasStep_Check_UnsupportedShell(t *testing.T) {
+	t.Parallel()
+
+	aliases := map[string]string{"ll": "ls -la"}
+	fs := mocks.NewFileSystem()
+	step := shell.NewAliasStepWithFS("tcsh", aliases, fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestAliasStep_Apply_UnsupportedShell(t *testing.T) {
+	t.Parallel()
+
+	aliases := map[string]string{"ll": "ls -la"}
+	fs := mocks.NewFileSystem()
+	step := shell.NewAliasStepWithFS("tcsh", aliases, fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported shell")
+}
+
+func TestCustomPluginStep_Apply_UnsupportedFramework(t *testing.T) {
+	t.Parallel()
+
+	plugin := shell.CustomPlugin{
+		Name: "some-plugin",
+		Repo: "owner/some-plugin",
+	}
+	fs := mocks.NewFileSystem()
+	runner := mocks.NewCommandRunner()
+	step := shell.NewCustomPluginStepWith("fish", "unknown", plugin, fs, runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported framework")
+}
+
+func TestStarshipStep_Explain_Default(t *testing.T) {
+	t.Parallel()
+
+	cfg := shell.StarshipConfig{
+		Enabled: true,
+	}
+	step := shell.NewStarshipStep(cfg)
+	ctx := compiler.NewExplainContext()
+
+	exp := step.Explain(ctx)
+	assert.NotEmpty(t, exp.Summary())
+	assert.Contains(t, exp.Detail(), "starship")
+}
+
+func TestFisherPluginStep_Check_EmptyPluginsFile(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	pluginsPath := ports.ExpandPath("~/.config/fish/fish_plugins")
+	fs.AddFile(pluginsPath, "")
+
+	step := shell.NewFisherPluginStepWithFS("jorgebucaran/autopair.fish", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestPluginStep_Apply_FishShell(t *testing.T) {
+	t.Parallel()
+
+	fs := mocks.NewFileSystem()
+	step := shell.NewPluginStepWithFS("fish", "oh-my-fish", "bass", fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+
+	require.NoError(t, err)
+
+	configPath := ports.ExpandPath("~/.config/fish/config.fish")
+	content, _ := fs.ReadFile(configPath)
+	assert.Contains(t, string(content), "bass")
+}
+
+func TestEnvStep_Apply_FishShell(t *testing.T) {
+	t.Parallel()
+
+	env := map[string]string{"EDITOR": "nvim"}
+	fs := mocks.NewFileSystem()
+	step := shell.NewEnvStepWithFS("fish", env, fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+
+	require.NoError(t, err)
+
+	configPath := ports.ExpandPath("~/.config/fish/config.fish")
+	content, _ := fs.ReadFile(configPath)
+	assert.Contains(t, string(content), "EDITOR")
+}
+
+func TestAliasStep_Apply_FishShell(t *testing.T) {
+	t.Parallel()
+
+	aliases := map[string]string{"ll": "ls -la"}
+	fs := mocks.NewFileSystem()
+	step := shell.NewAliasStepWithFS("fish", aliases, fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+
+	require.NoError(t, err)
+
+	configPath := ports.ExpandPath("~/.config/fish/config.fish")
+	content, _ := fs.ReadFile(configPath)
+	assert.Contains(t, string(content), "ll")
+}
+
 func TestFrameworkStep_Apply_OhMyZsh(t *testing.T) {
 	t.Parallel()
 
