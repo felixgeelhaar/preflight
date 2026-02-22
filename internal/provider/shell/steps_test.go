@@ -1324,3 +1324,119 @@ func TestFisherPluginStep_Explain(t *testing.T) {
 	assert.NotEmpty(t, exp.Summary())
 	assert.Contains(t, exp.Detail(), "autopair")
 }
+
+// Tests for runner.Run() returning a Go error (not a command failure).
+
+func TestFrameworkStep_Apply_OhMyZshRunnerError(t *testing.T) {
+	t.Parallel()
+
+	config := shell.Entry{Name: "zsh", Framework: "oh-my-zsh"}
+	runner := mocks.NewCommandRunner()
+	runner.AddError("/bin/bash", []string{"-c", `RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`}, assert.AnError)
+
+	fs := mocks.NewFileSystem()
+	step := shell.NewFrameworkStepWith(config, fs, runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "oh-my-zsh install failed")
+}
+
+func TestFrameworkStep_Apply_FisherRunnerError(t *testing.T) {
+	t.Parallel()
+
+	config := shell.Entry{Name: "fish", Framework: "fisher"}
+	runner := mocks.NewCommandRunner()
+	runner.AddError("fish", []string{"-c", `curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher`}, assert.AnError)
+
+	fs := mocks.NewFileSystem()
+	step := shell.NewFrameworkStepWith(config, fs, runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "fisher install failed")
+}
+
+func TestFrameworkStep_Apply_OhMyFishRunnerError(t *testing.T) {
+	t.Parallel()
+
+	config := shell.Entry{Name: "fish", Framework: "oh-my-fish"}
+	runner := mocks.NewCommandRunner()
+	runner.AddError("/bin/bash", []string{"-c", "curl -L https://get.oh-my.fish | fish"}, assert.AnError)
+
+	fs := mocks.NewFileSystem()
+	step := shell.NewFrameworkStepWith(config, fs, runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "oh-my-fish install failed")
+}
+
+func TestCustomPluginStep_Apply_RunnerError(t *testing.T) {
+	t.Parallel()
+
+	plugin := shell.CustomPlugin{Name: "my-plugin", Repo: "https://github.com/user/plugin.git"}
+	runner := mocks.NewCommandRunner()
+	fs := mocks.NewFileSystem()
+	step := shell.NewCustomPluginStepWith("zsh", "oh-my-zsh", plugin, fs, runner)
+	// runner has no result registered, will return error
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "git clone failed")
+}
+
+func TestFisherPluginStep_Apply_RunnerError(t *testing.T) {
+	t.Parallel()
+
+	runner := mocks.NewCommandRunner()
+	runner.AddError("fish", []string{"-c", "fisher install jorgebucaran/autopair.fish"}, assert.AnError)
+
+	fs := mocks.NewFileSystem()
+	step := shell.NewFisherPluginStepWith("jorgebucaran/autopair.fish", fs, runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "fisher install")
+}
+
+func TestEnvStep_Check_MismatchedBlock(t *testing.T) {
+	t.Parallel()
+
+	env := map[string]string{"EDITOR": "nvim"}
+	fs := mocks.NewFileSystem()
+	zshrcPath := ports.ExpandPath("~/.zshrc")
+	// Write a managed block with different content
+	content := "# >>> preflight env >>>\nexport EDITOR=\"vim\"\n# <<< preflight env <<<\n"
+	fs.AddFile(zshrcPath, content)
+
+	step := shell.NewEnvStepWithFS("zsh", env, fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}
+
+func TestAliasStep_Check_MismatchedBlock(t *testing.T) {
+	t.Parallel()
+
+	aliases := map[string]string{"ll": "ls -la"}
+	fs := mocks.NewFileSystem()
+	zshrcPath := ports.ExpandPath("~/.zshrc")
+	// Write a managed block with different content
+	content := "# >>> preflight aliases >>>\nalias ll=\"ls -l\"\n# <<< preflight aliases <<<\n"
+	fs.AddFile(zshrcPath, content)
+
+	step := shell.NewAliasStepWithFS("zsh", aliases, fs)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	status, err := step.Check(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, compiler.StatusNeedsApply, status)
+}

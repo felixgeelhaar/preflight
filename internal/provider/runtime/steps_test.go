@@ -7,6 +7,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 	"github.com/felixgeelhaar/preflight/internal/ports"
 	"github.com/felixgeelhaar/preflight/internal/testutil/mocks"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestToolVersionStep_ID(t *testing.T) {
@@ -479,6 +480,45 @@ func TestPluginStep_Check_MiseBackend(t *testing.T) {
 	}
 	if status != compiler.StatusSatisfied {
 		t.Errorf("Check() = %v, want %v", status, compiler.StatusSatisfied)
+	}
+}
+
+func TestToolVersionStep_Check_FileExistsButUnreadable(t *testing.T) {
+	cfg := &Config{
+		Tools: []ToolConfig{
+			{Name: "node", Version: "20.10.0"},
+		},
+	}
+	fs := mocks.NewFileSystem()
+	path := ports.ExpandPath("~/.tool-versions")
+	// Add as dir so Exists() returns true but ReadFile() fails
+	fs.AddDir(path)
+
+	step := NewToolVersionStep(cfg, fs)
+
+	status, err := step.Check(compiler.RunContext{})
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if status != compiler.StatusNeedsApply {
+		t.Errorf("Check() = %v, want %v", status, compiler.StatusNeedsApply)
+	}
+}
+
+func TestPluginStep_Apply_RunnerError(t *testing.T) {
+	plugin := PluginConfig{Name: "golang"}
+	runner := mocks.NewCommandRunner()
+	runner.AddError("asdf", []string{"plugin", "add", "golang"}, assert.AnError)
+
+	step := NewPluginStepWith(plugin, "", runner)
+	ctx := compiler.NewRunContext(context.TODO())
+
+	err := step.Apply(ctx)
+	if err == nil {
+		t.Fatal("Apply() expected error, got nil")
+	}
+	if !contains(err.Error(), "plugin add golang failed") {
+		t.Errorf("error = %q, want to contain %q", err.Error(), "plugin add golang failed")
 	}
 }
 

@@ -96,9 +96,8 @@ func TestRedundancies_CollectRemovable(t *testing.T) {
 }
 
 func TestPrintRedundancySummaryBar_EmptyCounts(t *testing.T) {
-	t.Parallel()
+	t.Helper() // Not parallel: writes to os.Stdout, races with captureStdout in validate_test.go
 
-	// Test with zero counts - should not panic
 	summary := security.RedundancySummary{
 		Total:      0,
 		Duplicates: 0,
@@ -107,12 +106,13 @@ func TestPrintRedundancySummaryBar_EmptyCounts(t *testing.T) {
 		Removable:  0,
 	}
 
-	// This should not panic
+	stdoutMu.Lock()
 	printRedundancySummaryBar(summary)
+	stdoutMu.Unlock()
 }
 
 func TestPrintRedundancySummaryBar_AllTypes(t *testing.T) {
-	t.Parallel()
+	t.Helper() // Not parallel: writes to os.Stdout, races with captureStdout in validate_test.go
 
 	summary := security.RedundancySummary{
 		Total:      5,
@@ -122,6 +122,7 @@ func TestPrintRedundancySummaryBar_AllTypes(t *testing.T) {
 		Removable:  8,
 	}
 
-	// This should not panic
+	stdoutMu.Lock()
 	printRedundancySummaryBar(summary)
+	stdoutMu.Unlock()
 }
