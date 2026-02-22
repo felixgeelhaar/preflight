@@ -49,3 +49,6 @@ website/.astro/
 # Coverage profiles
 *.cover
 coverfunc.txt
+
+# Nox scan output
+findings.json
