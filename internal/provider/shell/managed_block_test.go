@@ -205,6 +205,47 @@ func TestAddPluginToConfig_EmptyPlugins(t *testing.T) {
 	assert.Contains(t, result, "plugins=(git)")
 }
 
+func TestReadManagedBlock_NoEndMarker(t *testing.T) {
+	t.Parallel()
+
+	content := "# >>> preflight env >>>\nexport EDITOR=\"nvim\"\n# no end marker"
+	result := ReadManagedBlock(content, "env")
+	assert.Empty(t, result)
+}
+
+func TestWriteManagedBlock_MalformedBlock(t *testing.T) {
+	t.Parallel()
+
+	// Start marker exists but no end marker
+	content := "# before\n# >>> preflight env >>>\nexport OLD=\"value\"\n# after stuff"
+	block := "export NEW=\"value\"\n"
+
+	result := WriteManagedBlock(content, "env", block)
+
+	assert.Contains(t, result, "# before")
+	assert.Contains(t, result, "export NEW=\"value\"")
+	assert.NotContains(t, result, "export OLD=\"value\"")
+}
+
+func TestWriteManagedBlock_ContentNoTrailingNewline(t *testing.T) {
+	t.Parallel()
+
+	content := "# no trailing newline"
+	block := "export FOO=\"bar\"\n"
+
+	result := WriteManagedBlock(content, "env", block)
+
+	assert.Contains(t, result, "# no trailing newline")
+	assert.Contains(t, result, "export FOO=\"bar\"")
+}
+
+func TestAddPluginToConfig_EmptyContent(t *testing.T) {
+	t.Parallel()
+
+	result := addPluginToConfig("", "git")
+	assert.Contains(t, result, "plugins=(git)")
+}
+
 func TestShellConfigPath(t *testing.T) {
 	t.Parallel()
 
