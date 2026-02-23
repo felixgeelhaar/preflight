@@ -15,6 +15,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/adapters/ipc"
 	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/domain/agent"
+	"github.com/felixgeelhaar/preflight/internal/domain/execution"
 	"github.com/spf13/cobra"
 )
 
@@ -688,8 +689,14 @@ func (p *agentProvider) Approve(_ string) error {
 	return fmt.Errorf("approval not yet implemented")
 }
 
+// reconcileApp abstracts the Plan/Apply operations for testability.
+type reconcileApp interface {
+	Plan(ctx context.Context, configPath, target string) (*execution.Plan, error)
+	Apply(ctx context.Context, plan *execution.Plan, dryRun bool) ([]execution.StepResult, error)
+}
+
 // reconcile runs a single Plan→Apply cycle against the given preflight app.
-func reconcile(ctx context.Context, pf *app.Preflight, cfg *agent.Config) (*agent.ReconciliationResult, error) {
+func reconcile(ctx context.Context, pf reconcileApp, cfg *agent.Config) (*agent.ReconciliationResult, error) {
 	startedAt := time.Now()
 
 	plan, err := pf.Plan(ctx, cfg.ConfigPath, cfg.Target)
