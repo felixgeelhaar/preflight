@@ -94,6 +94,9 @@ func setupValidConfig(t *testing.T) (string, string) {
 }
 
 // withChdir changes to the given directory for the duration of the test and reverts on cleanup.
+// NOTE: os.Chdir is process-global, so tests using this helper must not depend on CWD
+// remaining stable when running with t.Parallel(). Tests that are sensitive to CWD races
+// (e.g., those checking git status via ".") should omit t.Parallel().
 func withChdir(t *testing.T, dir string) {
 	t.Helper()
 	oldWd, err := os.Getwd()
@@ -105,8 +108,6 @@ func withChdir(t *testing.T, dir string) {
 // --- Plan tool handler tests ---
 
 func TestPlanToolHandler_ValidConfig(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -123,8 +124,6 @@ func TestPlanToolHandler_ValidConfig(t *testing.T) {
 }
 
 func TestPlanToolHandler_CustomConfigAndTarget(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -144,8 +143,6 @@ func TestPlanToolHandler_CustomConfigAndTarget(t *testing.T) {
 }
 
 func TestPlanToolHandler_MissingConfig(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
 	withChdir(t, tmpDir)
 
@@ -171,8 +168,6 @@ func TestPlanToolHandler_InvalidInput(t *testing.T) {
 // --- Apply tool handler tests ---
 
 func TestApplyToolHandler_NoConfirmNoDryRun(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -192,8 +187,6 @@ func TestApplyToolHandler_NoConfirmNoDryRun(t *testing.T) {
 }
 
 func TestApplyToolHandler_DryRun(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -212,8 +205,6 @@ func TestApplyToolHandler_DryRun(t *testing.T) {
 }
 
 func TestApplyToolHandler_ConfirmWithValidConfig(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -245,8 +236,6 @@ func TestApplyToolHandler_InvalidInput(t *testing.T) {
 }
 
 func TestApplyToolHandler_MissingConfig(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
 	withChdir(t, tmpDir)
 
@@ -260,8 +249,6 @@ func TestApplyToolHandler_MissingConfig(t *testing.T) {
 }
 
 func TestApplyToolHandler_CustomConfigAndTarget(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -283,8 +270,6 @@ func TestApplyToolHandler_CustomConfigAndTarget(t *testing.T) {
 // --- Doctor tool handler tests ---
 
 func TestDoctorToolHandler_ValidConfig(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -302,8 +287,6 @@ func TestDoctorToolHandler_ValidConfig(t *testing.T) {
 }
 
 func TestDoctorToolHandler_QuickMode(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -321,8 +304,6 @@ func TestDoctorToolHandler_QuickMode(t *testing.T) {
 }
 
 func TestDoctorToolHandler_VerboseMode(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -340,8 +321,6 @@ func TestDoctorToolHandler_VerboseMode(t *testing.T) {
 }
 
 func TestDoctorToolHandler_MissingConfig(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
 	withChdir(t, tmpDir)
 
@@ -365,8 +344,6 @@ func TestDoctorToolHandler_InvalidInput(t *testing.T) {
 }
 
 func TestDoctorToolHandler_CustomConfigAndTarget(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -388,8 +365,6 @@ func TestDoctorToolHandler_CustomConfigAndTarget(t *testing.T) {
 // --- Validate tool handler tests ---
 
 func TestValidateToolHandler_ValidConfig(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -406,8 +381,6 @@ func TestValidateToolHandler_ValidConfig(t *testing.T) {
 }
 
 func TestValidateToolHandler_MissingConfig(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
 	withChdir(t, tmpDir)
 
@@ -425,8 +398,6 @@ func TestValidateToolHandler_MissingConfig(t *testing.T) {
 }
 
 func TestValidateToolHandler_StrictModeNoWarnings(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -461,8 +432,6 @@ func TestValidateToolHandler_InvalidInput(t *testing.T) {
 }
 
 func TestValidateToolHandler_CustomConfigAndTarget(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -483,8 +452,6 @@ func TestValidateToolHandler_CustomConfigAndTarget(t *testing.T) {
 // --- Status tool handler tests ---
 
 func TestStatusToolHandler_ValidConfig(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -504,8 +471,6 @@ func TestStatusToolHandler_ValidConfig(t *testing.T) {
 }
 
 func TestStatusToolHandler_MissingConfig(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
 	withChdir(t, tmpDir)
 
@@ -535,8 +500,6 @@ func TestStatusToolHandler_InvalidInput(t *testing.T) {
 }
 
 func TestStatusToolHandler_CustomConfigAndTarget(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -588,8 +551,6 @@ func TestCaptureToolHandler_InvalidProvider(t *testing.T) {
 // --- Diff tool handler tests ---
 
 func TestDiffToolHandler_ValidConfig(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -605,8 +566,6 @@ func TestDiffToolHandler_ValidConfig(t *testing.T) {
 }
 
 func TestDiffToolHandler_MissingConfig(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
 	withChdir(t, tmpDir)
 
@@ -630,8 +589,6 @@ func TestDiffToolHandler_InvalidInput(t *testing.T) {
 }
 
 func TestDiffToolHandler_CustomConfigAndTarget(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -877,8 +834,6 @@ func TestMarketplaceToolHandler_FeaturedAction(t *testing.T) {
 // --- Sync tool handler tests ---
 
 func TestSyncToolHandler_NoConfirmNoDryRun(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -934,8 +889,6 @@ func TestSyncToolHandler_InvalidBranch(t *testing.T) {
 }
 
 func TestSyncToolHandler_CustomConfigAndTarget(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -956,8 +909,6 @@ func TestSyncToolHandler_CustomConfigAndTarget(t *testing.T) {
 }
 
 func TestSyncToolHandler_DryRunWithGitRepo(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -980,7 +931,8 @@ func TestSyncToolHandler_DryRunWithGitRepo(t *testing.T) {
 }
 
 func TestSyncToolHandler_ConfirmWithGitRepoNoRemote(t *testing.T) {
-	t.Parallel()
+	// Not parallel: this test checks git status via "." which is sensitive to
+	// process-global os.Chdir races from other parallel tests.
 
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
@@ -1257,8 +1209,6 @@ func TestToMarketplacePackage_MultipleVersions(t *testing.T) {
 // --- Integration-style tests: full handler paths ---
 
 func TestPlanAndApplyIntegration(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -1281,8 +1231,6 @@ func TestPlanAndApplyIntegration(t *testing.T) {
 }
 
 func TestStatusAndValidateIntegration(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -1306,8 +1254,6 @@ func TestStatusAndValidateIntegration(t *testing.T) {
 // --- Default value handling ---
 
 func TestDefaultConfigPath_UsedWhenEmpty(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -1324,8 +1270,6 @@ func TestDefaultConfigPath_UsedWhenEmpty(t *testing.T) {
 }
 
 func TestDefaultTarget_UsedWhenEmpty(t *testing.T) {
-	t.Parallel()
-
 	tmpDir, configPath := setupValidConfig(t)
 	withChdir(t, tmpDir)
 
@@ -1610,8 +1554,6 @@ func TestCaptureToolHandler_WithProvider(t *testing.T) {
 }
 
 func TestStatusToolHandler_ConfigExistsButValidationFails(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "preflight.yaml")
 	// Write a valid YAML config with targets but referencing layers that don't exist
