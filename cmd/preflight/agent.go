@@ -1,15 +1,19 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"runtime"
+	"syscall"
 	"text/tabwriter"
 	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/adapters/ipc"
+	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/domain/agent"
 	"github.com/spf13/cobra"
 )
@@ -185,28 +189,79 @@ func runAgentStart(_ *cobra.Command, _ []string) error {
 		fmt.Printf("  Remediation: %s\n", policy)
 		fmt.Printf("  Target: %s\n", agentTarget)
 		fmt.Println()
-		fmt.Println("Press Ctrl+C to stop.")
-		fmt.Println()
 
-		// TODO: Actually run the agent in foreground
-		// This would create an agent.Agent and run its loop
-		fmt.Println("Note: Foreground mode not yet fully implemented.")
+		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+		defer cancel()
+
+		cfg := agent.DefaultConfig().
+			WithSchedule(schedule).
+			WithRemediation(policy).
+			WithTarget(agentTarget)
+
+		ag, err := agent.NewAgent(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to create agent: %w", err)
+		}
+
+		preflight := app.New(os.Stdout)
+		ag.SetReconcileHandler(func(rctx context.Context) (*agent.ReconciliationResult, error) {
+			return reconcile(rctx, preflight, cfg)
+		})
+
+		provider := &agentProvider{agent: ag}
+		server := ipc.NewServer(ipc.ServerConfig{Version: version}, provider)
+		if err := server.Start(); err != nil {
+			return fmt.Errorf("failed to start IPC server: %w", err)
+		}
+		defer func() { _ = server.Stop() }()
+
+		if err := ag.Start(ctx); err != nil {
+			return fmt.Errorf("failed to start agent: %w", err)
+		}
+
+		fmt.Println("Agent is running. Press Ctrl+C to stop.")
+
+		<-ctx.Done()
+
+		fmt.Println("\nShutting down agent...")
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), cfg.Timeouts.Shutdown)
+		defer shutdownCancel()
+		_ = ag.Stop(shutdownCtx)
+
 		return nil
 	}
 
-	// Start as daemon
+	// Start as daemon — re-exec self with --foreground
 	fmt.Println("Starting agent as background daemon...")
 
-	// Build command to start the agent
-	// For now, we'll just print what would happen
-	// TODO: Actually start the agent as a subprocess
+	execPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+
+	args := []string{"agent", "start", "--foreground",
+		"--schedule", agentSchedule,
+		"--remediation", agentRemediation,
+		"--target", agentTarget,
+	}
+
+	// #nosec G204 -- arguments are validated flags from this CLI, not user-controlled input.
+	cmd := exec.Command(execPath, args...)
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	cmd.Stdin = nil
+	cmd.SysProcAttr = daemonProcAttr()
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start daemon: %w", err)
+	}
+
+	fmt.Printf("Agent started (PID %d)\n", cmd.Process.Pid)
 	fmt.Printf("  Schedule: %s\n", schedule)
 	fmt.Printf("  Remediation: %s\n", policy)
 	fmt.Printf("  Target: %s\n", agentTarget)
-	fmt.Println()
-	fmt.Println("Note: Daemon mode not yet fully implemented.")
-	fmt.Println("      Use --foreground to test the agent.")
 
+	_ = cmd.Process.Release()
 	return nil
 }
 
@@ -614,6 +669,61 @@ WantedBy=default.target
 	fmt.Printf("Systemd service installed: %s\n", servicePath)
 	fmt.Println("Agent will start automatically at login.")
 	return nil
+}
+
+// agentProvider bridges the running Agent to the IPC Server.
+type agentProvider struct {
+	agent *agent.Agent
+}
+
+func (p *agentProvider) Status() agent.Status {
+	return p.agent.Status()
+}
+
+func (p *agentProvider) Stop(ctx context.Context) error {
+	return p.agent.Stop(ctx)
+}
+
+func (p *agentProvider) Approve(_ string) error {
+	return fmt.Errorf("approval not yet implemented")
+}
+
+// reconcile runs a single Plan→Apply cycle against the given preflight app.
+func reconcile(ctx context.Context, pf *app.Preflight, cfg *agent.Config) (*agent.ReconciliationResult, error) {
+	startedAt := time.Now()
+
+	plan, err := pf.Plan(ctx, cfg.ConfigPath, cfg.Target)
+	if err != nil {
+		return nil, fmt.Errorf("plan failed: %w", err)
+	}
+
+	result := &agent.ReconciliationResult{
+		StartedAt:  startedAt,
+		DriftCount: plan.Summary().NeedsApply,
+	}
+	result.DriftDetected = result.DriftCount > 0
+
+	if plan.HasChanges() {
+		if cfg.Remediation == agent.RemediationAuto || cfg.Remediation == agent.RemediationSafe {
+			results, applyErr := pf.Apply(ctx, plan, false)
+			if applyErr != nil {
+				return nil, fmt.Errorf("apply failed: %w", applyErr)
+			}
+
+			applied := 0
+			for i := range results {
+				if results[i].Error() == nil {
+					applied++
+				}
+			}
+			result.RemediationApplied = applied > 0
+			result.RemediationCount = applied
+		}
+	}
+
+	result.CompletedAt = time.Now()
+	result.Duration = result.CompletedAt.Sub(startedAt)
+	return result, nil
 }
 
 func uninstallSystemdService() error {
