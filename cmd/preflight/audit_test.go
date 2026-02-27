@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/audit"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTruncateStr(t *testing.T) {
@@ -194,4 +197,201 @@ func TestBuildFilter_SuccessesOnly(t *testing.T) {
 
 	filter := buildFilter()
 	assert.True(t, filter.SuccessOnly)
+}
+
+func TestOutputEventsTable(t *testing.T) {
+	// Do not use t.Parallel() - this test captures stdout.
+	now := time.Date(2026, 2, 24, 14, 30, 0, 0, time.UTC)
+
+	events := []audit.Event{
+		{
+			ID:        "evt-1",
+			Timestamp: now,
+			Type:      audit.EventCatalogInstalled,
+			Severity:  audit.SeverityInfo,
+			Catalog:   "my-catalog",
+			Success:   true,
+		},
+		{
+			ID:        "evt-2",
+			Timestamp: now.Add(time.Minute),
+			Type:      audit.EventPluginExecuted,
+			Severity:  audit.SeverityWarning,
+			Plugin:    "my-plugin",
+			Success:   false,
+		},
+		{
+			ID:        "evt-3",
+			Timestamp: now.Add(2 * time.Minute),
+			Type:      audit.EventCapabilityDenied,
+			Severity:  audit.SeverityError,
+			Success:   true,
+		},
+	}
+
+	output := captureStdout(t, func() {
+		_ = outputEventsTable(events)
+	})
+
+	// Verify headers
+	assert.Contains(t, output, "TIME")
+	assert.Contains(t, output, "EVENT")
+	assert.Contains(t, output, "SEVERITY")
+	assert.Contains(t, output, "SUBJECT")
+	assert.Contains(t, output, "STATUS")
+
+	// Verify catalog subject
+	assert.Contains(t, output, "my-catalog")
+	// Verify plugin subject
+	assert.Contains(t, output, "my-plugin")
+	// Verify bare subject falls back to "-"
+	assert.Contains(t, output, "-")
+
+	// Verify success/failure markers
+	assert.Contains(t, output, string(rune(0x2713))) // checkmark
+	assert.Contains(t, output, string(rune(0x2717))) // X mark
+
+	// Verify event types appear
+	assert.Contains(t, output, string(audit.EventCatalogInstalled))
+	assert.Contains(t, output, string(audit.EventPluginExecuted))
+
+	// Verify footer
+	assert.Contains(t, output, "Showing 3 events")
+}
+
+func TestOutputSecurityEventsTable(t *testing.T) {
+	// Do not use t.Parallel() - this test captures stdout.
+	now := time.Date(2026, 2, 24, 14, 30, 0, 0, time.UTC)
+
+	events := []audit.Event{
+		{
+			ID:        "sec-1",
+			Timestamp: now,
+			Type:      audit.EventSandboxViolation,
+			Severity:  audit.SeverityCritical,
+			Plugin:    "bad-plugin",
+			Error:     "tried to access /etc/passwd",
+			Success:   false,
+		},
+		{
+			ID:        "sec-2",
+			Timestamp: now.Add(time.Minute),
+			Type:      audit.EventCapabilityDenied,
+			Severity:  audit.SeverityWarning,
+			Catalog:   "untrusted-catalog",
+			CapabilitiesDenied: []string{"network", "filesystem"},
+			Success:   false,
+		},
+		{
+			ID:        "sec-3",
+			Timestamp: now.Add(2 * time.Minute),
+			Type:      audit.EventSecurityAudit,
+			Severity:  audit.SeverityError,
+			Plugin:    "audit-target",
+			Details:   map[string]interface{}{"violation": "unsigned binary detected"},
+			Success:   false,
+		},
+	}
+
+	output := captureStdout(t, func() {
+		_ = outputSecurityEventsTable(events)
+	})
+
+	// Verify headers
+	assert.Contains(t, output, "TIME")
+	assert.Contains(t, output, "EVENT")
+	assert.Contains(t, output, "SEVERITY")
+	assert.Contains(t, output, "SUBJECT")
+	assert.Contains(t, output, "DETAILS")
+
+	// Verify severity icons appear
+	assert.Contains(t, output, "critical")
+	assert.Contains(t, output, "warning")
+	assert.Contains(t, output, "error")
+
+	// Verify error detail
+	assert.Contains(t, output, "tried to access /etc/passwd")
+
+	// Verify denied capabilities detail
+	assert.Contains(t, output, "denied: network, filesystem")
+
+	// Verify details["violation"] content
+	assert.Contains(t, output, "unsigned binary detected")
+
+	// Verify footer
+	assert.Contains(t, output, "Showing 3 security events")
+}
+
+func TestOutputEventsJSON(t *testing.T) {
+	// Do not use t.Parallel() - this test captures stdout.
+	now := time.Date(2026, 2, 24, 14, 30, 0, 0, time.UTC)
+
+	events := []audit.Event{
+		{
+			ID:        "json-1",
+			Timestamp: now,
+			Type:      audit.EventCatalogInstalled,
+			Severity:  audit.SeverityInfo,
+			Catalog:   "test-catalog",
+			Success:   true,
+		},
+		{
+			ID:        "json-2",
+			Timestamp: now.Add(time.Minute),
+			Type:      audit.EventPluginExecuted,
+			Severity:  audit.SeverityError,
+			Plugin:    "test-plugin",
+			Success:   false,
+			Error:     "execution failed",
+		},
+	}
+
+	output := captureStdout(t, func() {
+		err := outputEventsJSON(events)
+		require.NoError(t, err)
+	})
+
+	var parsed []map[string]interface{}
+	err := json.Unmarshal([]byte(output), &parsed)
+	require.NoError(t, err)
+	require.Len(t, parsed, 2)
+
+	// Verify first event fields
+	assert.Equal(t, "json-1", parsed[0]["id"])
+	assert.Equal(t, string(audit.EventCatalogInstalled), parsed[0]["event"])
+	assert.Equal(t, string(audit.SeverityInfo), parsed[0]["severity"])
+	assert.Equal(t, "test-catalog", parsed[0]["catalog"])
+	assert.Equal(t, true, parsed[0]["success"])
+
+	// Verify second event fields
+	assert.Equal(t, "json-2", parsed[1]["id"])
+	assert.Equal(t, string(audit.EventPluginExecuted), parsed[1]["event"])
+	assert.Equal(t, "test-plugin", parsed[1]["plugin"])
+	assert.Equal(t, false, parsed[1]["success"])
+	assert.Equal(t, "execution failed", parsed[1]["error"])
+}
+
+func TestOutputJSON(t *testing.T) {
+	// Do not use t.Parallel() - this test captures stdout.
+	data := map[string]interface{}{
+		"key":   "value",
+		"count": float64(42),
+		"nested": map[string]interface{}{
+			"inner": "data",
+		},
+	}
+
+	output := captureStdout(t, func() {
+		err := outputJSON(data)
+		require.NoError(t, err)
+	})
+
+	var parsed map[string]interface{}
+	err := json.Unmarshal([]byte(output), &parsed)
+	require.NoError(t, err)
+
+	assert.Equal(t, "value", parsed["key"])
+	assert.Equal(t, float64(42), parsed["count"])
+	nested := parsed["nested"].(map[string]interface{})
+	assert.Equal(t, "data", nested["inner"])
 }

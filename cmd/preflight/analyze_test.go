@@ -1,12 +1,15 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
+	"github.com/felixgeelhaar/preflight/internal/domain/security"
 	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -498,4 +501,434 @@ func TestFindLayerFiles_NoLayersDir(t *testing.T) {
 	paths, err := findLayerFiles()
 	require.NoError(t, err)
 	assert.Empty(t, paths)
+}
+
+// --- Batch 3: Output and parsing tests ---
+
+func TestFilterFindingsByType(t *testing.T) {
+	findings := []security.ToolFinding{
+		{Type: security.FindingDeprecated, Message: "dep1"},
+		{Type: security.FindingRedundancy, Message: "red1"},
+		{Type: security.FindingDeprecated, Message: "dep2"},
+		{Type: security.FindingConsolidation, Message: "con1"},
+		{Type: security.FindingRedundancy, Message: "red2"},
+		{Type: security.FindingRedundancy, Message: "red3"},
+	}
+
+	tests := []struct {
+		name        string
+		findingType security.FindingType
+		wantCount   int
+	}{
+		{"deprecated findings", security.FindingDeprecated, 2},
+		{"redundancy findings", security.FindingRedundancy, 3},
+		{"consolidation findings", security.FindingConsolidation, 1},
+		{"unknown type returns empty", security.FindingUnknown, 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := filterFindingsByType(findings, tt.findingType)
+			assert.Len(t, result, tt.wantCount)
+			for _, f := range result {
+				assert.Equal(t, tt.findingType, f.Type)
+			}
+		})
+	}
+}
+
+func TestBuildToolAnalysisPrompt(t *testing.T) {
+	result := &security.ToolAnalysisResult{
+		Findings: []security.ToolFinding{
+			{
+				Type:    security.FindingDeprecated,
+				Message: "golint is deprecated",
+				Tools:   []string{"golint"},
+			},
+			{
+				Type:    security.FindingRedundancy,
+				Message: "grype redundant with trivy",
+				Tools:   []string{"grype"},
+			},
+		},
+		ToolsAnalyzed: 5,
+		IssuesFound:   2,
+	}
+	toolNames := []string{"go", "golint", "trivy", "grype", "fzf"}
+
+	prompt := buildToolAnalysisPrompt(result, toolNames)
+
+	// Verify prompt contains all tool names
+	for _, tool := range toolNames {
+		assert.Contains(t, prompt, tool, "prompt should contain tool name %s", tool)
+	}
+
+	// Verify prompt contains existing finding messages
+	assert.Contains(t, prompt, "golint is deprecated")
+	assert.Contains(t, prompt, "grype redundant with trivy")
+
+	// Verify prompt includes JSON format instructions
+	assert.Contains(t, prompt, "insights")
+	assert.Contains(t, prompt, "JSON")
+}
+
+func TestParseAIToolInsights_ValidJSON(t *testing.T) {
+	content := `Some text before {"insights": [{"type": "recommendation", "severity": "warning", "tools": ["tool1"], "message": "test msg", "suggestion": "do this"}]} after`
+
+	findings := parseAIToolInsights(content)
+
+	require.NotNil(t, findings)
+	require.Len(t, findings, 1)
+	assert.Equal(t, security.FindingType("recommendation"), findings[0].Type)
+	assert.Equal(t, security.SeverityWarning, findings[0].Severity)
+	assert.Equal(t, []string{"tool1"}, findings[0].Tools)
+	assert.Equal(t, "test msg", findings[0].Message)
+	assert.Equal(t, "do this", findings[0].Suggestion)
+}
+
+func TestParseAIToolInsights_MultipleSeverities(t *testing.T) {
+	content := `{"insights": [
+		{"type": "deprecated", "severity": "error", "tools": ["a"], "message": "err", "suggestion": "fix"},
+		{"type": "info", "severity": "info", "tools": ["b"], "message": "ok", "suggestion": "none"},
+		{"type": "warn", "severity": "warning", "tools": ["c"], "message": "warn", "suggestion": "check"}
+	]}`
+
+	findings := parseAIToolInsights(content)
+
+	require.NotNil(t, findings)
+	require.Len(t, findings, 3)
+	assert.Equal(t, security.SeverityError, findings[0].Severity)
+	assert.Equal(t, security.SeverityInfo, findings[1].Severity)
+	assert.Equal(t, security.SeverityWarning, findings[2].Severity)
+}
+
+func TestParseAIToolInsights_InvalidJSON(t *testing.T) {
+	content := `{ this is not valid json }`
+
+	findings := parseAIToolInsights(content)
+
+	assert.Nil(t, findings)
+}
+
+func TestParseAIToolInsights_NoJSON(t *testing.T) {
+	content := "This is just plain text with no JSON markers at all"
+
+	findings := parseAIToolInsights(content)
+
+	assert.Nil(t, findings)
+}
+
+func TestOutputAnalyzeJSON_WithReport(t *testing.T) {
+	report := &advisor.AnalysisReport{
+		Layers: []advisor.LayerAnalysisResult{
+			{
+				LayerName:    "base",
+				Summary:      "3 packages",
+				Status:       advisor.StatusGood,
+				PackageCount: 3,
+				Recommendations: []advisor.AnalysisRecommendation{
+					{
+						Priority: advisor.PriorityMedium,
+						Message:  "Consider splitting",
+						Packages: []string{"git", "curl"},
+					},
+				},
+			},
+			{
+				LayerName:       "dev-go",
+				Summary:         "5 packages",
+				Status:          advisor.StatusWarning,
+				PackageCount:    5,
+				Recommendations: []advisor.AnalysisRecommendation{},
+			},
+		},
+		TotalPackages:        8,
+		TotalRecommendations: 1,
+		CrossLayerIssues:     []string{"git appears in multiple layers"},
+	}
+
+	output := captureStdout(t, func() {
+		outputAnalyzeJSON(report, nil)
+	})
+
+	var parsed map[string]interface{}
+	err := json.Unmarshal([]byte(output), &parsed)
+	require.NoError(t, err, "output should be valid JSON")
+
+	// Verify layers are present
+	layers, ok := parsed["layers"].([]interface{})
+	require.True(t, ok, "should have layers array")
+	assert.Len(t, layers, 2)
+
+	// Verify totals
+	assert.Equal(t, float64(8), parsed["total_packages"])
+	assert.Equal(t, float64(1), parsed["total_recommendations"])
+
+	// Verify cross-layer issues
+	issues, ok := parsed["cross_layer_issues"].([]interface{})
+	require.True(t, ok, "should have cross_layer_issues array")
+	assert.Len(t, issues, 1)
+	assert.Equal(t, "git appears in multiple layers", issues[0])
+
+	// Verify no error field
+	_, hasError := parsed["error"]
+	assert.False(t, hasError, "should not have error field")
+}
+
+func TestOutputAnalyzeJSON_WithError(t *testing.T) {
+	output := captureStdout(t, func() {
+		outputAnalyzeJSON(nil, fmt.Errorf("no layers found"))
+	})
+
+	var parsed map[string]interface{}
+	err := json.Unmarshal([]byte(output), &parsed)
+	require.NoError(t, err, "output should be valid JSON")
+
+	assert.Equal(t, "no layers found", parsed["error"])
+}
+
+func TestOutputAnalyzeText_WithLayers(t *testing.T) {
+	report := &advisor.AnalysisReport{
+		Layers: []advisor.LayerAnalysisResult{
+			{
+				LayerName:       "base",
+				Summary:         "3 packages",
+				Status:          advisor.StatusGood,
+				PackageCount:    3,
+				Recommendations: []advisor.AnalysisRecommendation{},
+			},
+			{
+				LayerName:    "dev-go",
+				Summary:      "5 packages",
+				Status:       advisor.StatusWarning,
+				PackageCount: 5,
+				Recommendations: []advisor.AnalysisRecommendation{
+					{
+						Priority: advisor.PriorityHigh,
+						Message:  "Remove deprecated tools",
+						Packages: []string{"golint"},
+					},
+				},
+			},
+		},
+		TotalPackages:        8,
+		TotalRecommendations: 1,
+	}
+
+	output := captureStdout(t, func() {
+		outputAnalyzeText(report, false, true)
+	})
+
+	// Verify report header
+	assert.Contains(t, output, "Layer Analysis Report")
+
+	// Verify layer names appear
+	assert.Contains(t, output, "base")
+	assert.Contains(t, output, "dev-go")
+
+	// Verify summary line
+	assert.Contains(t, output, "2 layers analyzed")
+	assert.Contains(t, output, "1 recommendations")
+
+	// Verify total packages
+	assert.Contains(t, output, "Total packages: 8")
+
+	// Verify recommendations appear (recommend=true)
+	assert.Contains(t, output, "Remove deprecated tools")
+
+	// Verify table appears for multiple layers (quiet=false, >1 layer)
+	assert.Contains(t, output, "LAYER")
+	assert.Contains(t, output, "PACKAGES")
+}
+
+func TestOutputAnalyzeText_NoLayers(t *testing.T) {
+	report := &advisor.AnalysisReport{
+		Layers: []advisor.LayerAnalysisResult{},
+	}
+
+	output := captureStdout(t, func() {
+		outputAnalyzeText(report, false, false)
+	})
+
+	assert.Contains(t, output, "No layers to analyze")
+}
+
+func TestPrintLayerSummaryTable(t *testing.T) {
+	layers := []advisor.LayerAnalysisResult{
+		{
+			LayerName:    "base",
+			PackageCount: 3,
+			Status:       advisor.StatusGood,
+			Recommendations: []advisor.AnalysisRecommendation{
+				{Message: "rec1"},
+			},
+		},
+		{
+			LayerName:       "dev-go",
+			PackageCount:    10,
+			Status:          advisor.StatusWarning,
+			Recommendations: []advisor.AnalysisRecommendation{},
+		},
+		{
+			LayerName:       "misc",
+			PackageCount:    0,
+			Status:          "",
+			Recommendations: []advisor.AnalysisRecommendation{},
+		},
+	}
+
+	output := captureStdout(t, func() {
+		printLayerSummaryTable(layers)
+	})
+
+	// Verify table headers
+	assert.Contains(t, output, "LAYER")
+	assert.Contains(t, output, "PACKAGES")
+	assert.Contains(t, output, "STATUS")
+	assert.Contains(t, output, "RECOMMENDATIONS")
+
+	// Verify layer data appears
+	assert.Contains(t, output, "base")
+	assert.Contains(t, output, "dev-go")
+	assert.Contains(t, output, "misc")
+
+	// Verify empty status is replaced with "-"
+	// The misc layer has empty status, should display "-"
+	lines := strings.Split(output, "\n")
+	foundMisc := false
+	for _, line := range lines {
+		if strings.Contains(line, "misc") {
+			foundMisc = true
+			assert.Contains(t, line, "-", "empty status should be displayed as '-'")
+		}
+	}
+	assert.True(t, foundMisc, "misc layer should appear in table")
+}
+
+func TestOutputToolAnalysisJSON_WithResult(t *testing.T) {
+	result := &security.ToolAnalysisResult{
+		Findings: []security.ToolFinding{
+			{
+				Type:       security.FindingDeprecated,
+				Severity:   security.SeverityWarning,
+				Tools:      []string{"golint"},
+				Message:    "golint is deprecated",
+				Suggestion: "Use golangci-lint",
+			},
+		},
+		ToolsAnalyzed:  5,
+		IssuesFound:    1,
+		Consolidations: 0,
+	}
+
+	output := captureStdout(t, func() {
+		outputToolAnalysisJSON(result, nil)
+	})
+
+	var parsed map[string]interface{}
+	err := json.Unmarshal([]byte(output), &parsed)
+	require.NoError(t, err, "output should be valid JSON")
+
+	assert.Equal(t, float64(5), parsed["tools_analyzed"])
+	assert.Equal(t, float64(1), parsed["issues_found"])
+	assert.Equal(t, float64(0), parsed["consolidations"])
+
+	findings, ok := parsed["findings"].([]interface{})
+	require.True(t, ok, "should have findings array")
+	assert.Len(t, findings, 1)
+
+	finding := findings[0].(map[string]interface{})
+	assert.Equal(t, "deprecated", finding["type"])
+	assert.Equal(t, "warning", finding["severity"])
+	assert.Equal(t, "golint is deprecated", finding["message"])
+}
+
+func TestOutputToolAnalysisJSON_WithError(t *testing.T) {
+	output := captureStdout(t, func() {
+		outputToolAnalysisJSON(nil, fmt.Errorf("analysis failed: missing knowledge base"))
+	})
+
+	var parsed map[string]interface{}
+	err := json.Unmarshal([]byte(output), &parsed)
+	require.NoError(t, err, "output should be valid JSON")
+
+	assert.Equal(t, "analysis failed: missing knowledge base", parsed["error"])
+	assert.Equal(t, float64(0), parsed["tools_analyzed"])
+}
+
+func TestOutputToolAnalysisText_WithFindings(t *testing.T) {
+	result := &security.ToolAnalysisResult{
+		Findings: []security.ToolFinding{
+			{
+				Type:       security.FindingDeprecated,
+				Severity:   security.SeverityWarning,
+				Tools:      []string{"golint"},
+				Message:    "golint is deprecated",
+				Suggestion: "Use golangci-lint instead",
+				Docs:       "https://example.com/golangci-lint",
+			},
+			{
+				Type:       security.FindingRedundancy,
+				Severity:   security.SeverityWarning,
+				Tools:      []string{"grype"},
+				Message:    "grype is redundant with trivy",
+				Suggestion: "Remove grype, keep trivy",
+			},
+			{
+				Type:       security.FindingConsolidation,
+				Severity:   security.SeverityInfo,
+				Tools:      []string{"syft", "gitleaks"},
+				Message:    "syft and gitleaks can be consolidated",
+				Suggestion: "Replace with trivy for simplified toolchain",
+				Docs:       "https://example.com/trivy",
+			},
+		},
+		ToolsAnalyzed:  6,
+		IssuesFound:    2,
+		Consolidations: 1,
+	}
+
+	output := captureStdout(t, func() {
+		outputToolAnalysisText(result, []string{"golint", "grype", "trivy", "syft", "gitleaks", "fzf"})
+	})
+
+	// Verify header
+	assert.Contains(t, output, "Tool Configuration Analysis")
+
+	// Verify deprecation section
+	assert.Contains(t, output, "Deprecation Warnings")
+	assert.Contains(t, output, "golint is deprecated")
+	assert.Contains(t, output, "Use golangci-lint instead")
+	assert.Contains(t, output, "https://example.com/golangci-lint")
+
+	// Verify redundancy section
+	assert.Contains(t, output, "Redundancy Issues")
+	assert.Contains(t, output, "grype is redundant with trivy")
+	assert.Contains(t, output, "Remove grype, keep trivy")
+
+	// Verify consolidation section
+	assert.Contains(t, output, "Consolidation Opportunities")
+	assert.Contains(t, output, "syft and gitleaks can be consolidated")
+
+	// Verify summary
+	assert.Contains(t, output, "6 tools analyzed")
+	assert.Contains(t, output, "2 issues found")
+	assert.Contains(t, output, "1 consolidation opportunities")
+}
+
+func TestOutputToolAnalysisText_NoFindings(t *testing.T) {
+	result := &security.ToolAnalysisResult{
+		Findings:       []security.ToolFinding{},
+		ToolsAnalyzed:  4,
+		IssuesFound:    0,
+		Consolidations: 0,
+	}
+
+	output := captureStdout(t, func() {
+		outputToolAnalysisText(result, []string{"go", "git", "fzf", "ripgrep"})
+	})
+
+	assert.Contains(t, output, "Tool Configuration Analysis")
+	assert.Contains(t, output, "No issues found")
+	assert.Contains(t, output, "4 tools analyzed")
 }

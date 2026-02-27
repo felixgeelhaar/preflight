@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/sync"
@@ -203,4 +204,106 @@ func TestSyncResolveCmd_IsSubcommandOfSync(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "resolve should be a subcommand of sync")
+}
+
+func TestPrintConflicts(t *testing.T) {
+	// Do not use t.Parallel() - this test captures stdout.
+	localInfo := sync.NewPackageLockInfo("1.0.0", sync.PackageProvenance{})
+	remoteInfo := sync.NewPackageLockInfo("2.0.0", sync.PackageProvenance{})
+	baseInfo := sync.PackageLockInfo{}
+
+	conflicts := []sync.LockConflict{
+		sync.NewLockConflict("brew:ripgrep", sync.BothModified, localInfo, remoteInfo, baseInfo),
+		sync.NewLockConflict("brew:fd", sync.VersionMismatch, localInfo, remoteInfo, baseInfo),
+	}
+
+	output := captureStdout(t, func() {
+		printConflicts(conflicts)
+	})
+
+	// Verify headers
+	assert.Contains(t, output, "PACKAGE")
+	assert.Contains(t, output, "TYPE")
+	assert.Contains(t, output, "LOCAL")
+	assert.Contains(t, output, "REMOTE")
+	assert.Contains(t, output, "RESOLVABLE")
+
+	// Verify conflict data
+	assert.Contains(t, output, "brew:ripgrep")
+	assert.Contains(t, output, "brew:fd")
+	assert.Contains(t, output, "1.0.0")
+	assert.Contains(t, output, "2.0.0")
+	assert.Contains(t, output, "both_modified")
+	assert.Contains(t, output, "version_mismatch")
+}
+
+func TestPrintJSONOutput(t *testing.T) {
+	// Do not use t.Parallel() - this test captures stdout.
+	data := ConflictsOutputJSON{
+		Relation:       "concurrent (merge needed)",
+		TotalConflicts: 2,
+		AutoResolvable: 1,
+		ManualConflicts: []ConflictJSON{
+			{
+				PackageKey:    "brew:pkg",
+				Type:          "BothModified",
+				LocalVersion:  "1.0.0",
+				RemoteVersion: "2.0.0",
+				Resolvable:    false,
+			},
+		},
+		NeedsMerge: true,
+	}
+
+	output := captureStdout(t, func() {
+		err := printJSONOutput(data)
+		require.NoError(t, err)
+	})
+
+	var parsed map[string]interface{}
+	err := json.Unmarshal([]byte(output), &parsed)
+	require.NoError(t, err)
+
+	assert.Equal(t, "concurrent (merge needed)", parsed["relation"])
+	assert.Equal(t, float64(2), parsed["total_conflicts"])
+	assert.Equal(t, float64(1), parsed["auto_resolvable"])
+	assert.Equal(t, true, parsed["needs_merge"])
+
+	manualConflicts := parsed["manual_conflicts"].([]interface{})
+	require.Len(t, manualConflicts, 1)
+
+	conflict := manualConflicts[0].(map[string]interface{})
+	assert.Equal(t, "brew:pkg", conflict["package_key"])
+	assert.Equal(t, "BothModified", conflict["type"])
+	assert.Equal(t, "1.0.0", conflict["local_version"])
+	assert.Equal(t, "2.0.0", conflict["remote_version"])
+	assert.Equal(t, false, conflict["auto_resolvable"])
+}
+
+func TestPrintJSONOutput_Empty(t *testing.T) {
+	// Do not use t.Parallel() - this test captures stdout.
+	data := ConflictsOutputJSON{
+		Relation:        "equal (in sync)",
+		TotalConflicts:  0,
+		AutoResolvable:  0,
+		ManualConflicts: []ConflictJSON{},
+		NeedsMerge:      false,
+	}
+
+	output := captureStdout(t, func() {
+		err := printJSONOutput(data)
+		require.NoError(t, err)
+	})
+
+	var parsed map[string]interface{}
+	err := json.Unmarshal([]byte(output), &parsed)
+	require.NoError(t, err)
+
+	assert.Equal(t, "equal (in sync)", parsed["relation"])
+	assert.Equal(t, float64(0), parsed["total_conflicts"])
+	assert.Equal(t, float64(0), parsed["auto_resolvable"])
+	assert.Equal(t, false, parsed["needs_merge"])
+
+	manualConflicts := parsed["manual_conflicts"].([]interface{})
+	assert.Empty(t, manualConflicts)
 }
