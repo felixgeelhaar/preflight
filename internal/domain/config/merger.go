@@ -1,5 +1,7 @@
 package config
 
+import "sort"
+
 // ProvenanceMap tracks which layer each value came from.
 type ProvenanceMap map[string]map[string]string
 
@@ -486,35 +488,50 @@ func (m *Merger) Merge(layers []Layer) (*MergedConfig, error) {
 		}
 	}
 
-	// Convert files map to slice
+	// Convert files map to slice (sorted by path for deterministic output)
 	for _, file := range filesMap {
 		merged.Files = append(merged.Files, file)
 	}
+	sort.Slice(merged.Files, func(i, j int) bool {
+		return merged.Files[i].Path < merged.Files[j].Path
+	})
 
 	// Convert aliases map to merged config
 	if len(aliasesMap) > 0 {
 		merged.Git.Aliases = aliasesMap
 	}
 
-	// Convert SSH hosts map to slice
+	// Convert SSH hosts map to slice (sorted by host for deterministic output)
 	for _, host := range sshHostsMap {
 		merged.SSH.Hosts = append(merged.SSH.Hosts, host)
 	}
+	sort.Slice(merged.SSH.Hosts, func(i, j int) bool {
+		return merged.SSH.Hosts[i].Host < merged.SSH.Hosts[j].Host
+	})
 
-	// Convert runtime tools map to slice
+	// Convert runtime tools map to slice (sorted by name for deterministic output)
 	for _, tool := range runtimeToolsMap {
 		merged.Runtime.Tools = append(merged.Runtime.Tools, tool)
 	}
+	sort.Slice(merged.Runtime.Tools, func(i, j int) bool {
+		return merged.Runtime.Tools[i].Name < merged.Runtime.Tools[j].Name
+	})
 
-	// Convert runtime plugins map to slice
+	// Convert runtime plugins map to slice (sorted by name for deterministic output)
 	for _, plugin := range runtimePluginsMap {
 		merged.Runtime.Plugins = append(merged.Runtime.Plugins, plugin)
 	}
+	sort.Slice(merged.Runtime.Plugins, func(i, j int) bool {
+		return merged.Runtime.Plugins[i].Name < merged.Runtime.Plugins[j].Name
+	})
 
-	// Convert shell maps to slices
+	// Convert shell maps to slices (sorted by name for deterministic output)
 	for _, sh := range shellsMap {
 		merged.Shell.Shells = append(merged.Shell.Shells, sh)
 	}
+	sort.Slice(merged.Shell.Shells, func(i, j int) bool {
+		return merged.Shell.Shells[i].Name < merged.Shell.Shells[j].Name
+	})
 	if len(shellEnvMap) > 0 {
 		merged.Shell.Env = shellEnvMap
 	}

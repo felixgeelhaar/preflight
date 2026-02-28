@@ -358,6 +358,49 @@ ssh:
 	assert.Len(t, merged.SSH.Hosts, 2)
 }
 
+func TestMerger_Merge_SSH_Hosts_DeterministicOrder(t *testing.T) {
+	t.Parallel()
+
+	baseLayer, err := config.ParseLayer([]byte(`
+name: base
+ssh:
+  hosts:
+    - host: github.com
+      hostname: github.com
+      user: git
+      identityfile: ~/.ssh/id_ed25519
+    - host: "*.internal.company.com"
+      user: deploy
+      identityfile: ~/.ssh/id_company
+`))
+	require.NoError(t, err)
+
+	workLayer, err := config.ParseLayer([]byte(`
+name: identity.work
+ssh:
+  hosts:
+    - host: work
+      hostname: git.company.com
+      user: developer
+      identityfile: ~/.ssh/id_work
+`))
+	require.NoError(t, err)
+
+	merger := config.NewMerger()
+
+	// Merge multiple times and verify consistent ordering
+	for i := 0; i < 20; i++ {
+		merged, err := merger.Merge([]config.Layer{*baseLayer, *workLayer})
+		require.NoError(t, err)
+		require.Len(t, merged.SSH.Hosts, 3, "iteration %d", i)
+
+		// Hosts should be sorted alphabetically by Host
+		assert.Equal(t, "*.internal.company.com", merged.SSH.Hosts[0].Host, "iteration %d", i)
+		assert.Equal(t, "github.com", merged.SSH.Hosts[1].Host, "iteration %d", i)
+		assert.Equal(t, "work", merged.SSH.Hosts[2].Host, "iteration %d", i)
+	}
+}
+
 func TestMerger_Merge_SSH_Defaults(t *testing.T) {
 	t.Parallel()
 

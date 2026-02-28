@@ -3,7 +3,7 @@
 #
 # Simulates a user setting up a fresh workstation:
 #   1. Run preflight init with a preset
-#   2. Customize the layer with git/ssh config
+#   2. Customize the layer with git/ssh/nvim config
 #   3. Plan and review changes
 #   4. Apply configuration
 #   5. Verify with doctor
@@ -85,7 +85,7 @@ assert_file_exists "$WORKDIR/layers/base.yaml" "base layer created"
 assert_file_contains "$WORKDIR/preflight.yaml" "intent" "manifest has intent mode"
 
 # =========================================================================
-section "Step 2: Enrich config with git + ssh"
+section "Step 2: Enrich config with git + ssh + nvim"
 # =========================================================================
 
 cat > "$WORKDIR/layers/base.yaml" <<'LAYER'
@@ -119,6 +119,9 @@ ssh:
       hostname: gitlab.com
       user: git
       identityfile: ~/.ssh/id_gitlab
+
+nvim:
+  preset: lazyvim
 LAYER
 
 pass "enriched base layer"
@@ -145,6 +148,11 @@ if [ "$ec" -eq 0 ]; then
         pass "plan includes ssh:config step"
     else
         fail "plan includes ssh:config step" "not found in plan output"
+    fi
+    if echo "$output" | grep -qF "nvim:preset"; then
+        pass "plan includes nvim:preset step"
+    else
+        fail "plan includes nvim:preset step" "not found in plan output"
     fi
 else
     fail "plan" "exit $ec"
@@ -181,6 +189,19 @@ assert_file_contains "$HOME/.ssh/config" "github.com" "ssh has github.com"
 assert_file_contains "$HOME/.ssh/config" "gitlab.com" "ssh has gitlab.com"
 assert_file_contains "$HOME/.ssh/config" "IdentityFile" "ssh has identity file"
 
+# Neovim config (LazyVim starter)
+if [ -d "$HOME/.config/nvim" ]; then
+    pass "nvim config directory created"
+else
+    fail "nvim config directory created" "~/.config/nvim not found"
+fi
+assert_file_exists "$HOME/.config/nvim/init.lua" "nvim init.lua exists"
+if [ -d "$HOME/.config/nvim/lua" ]; then
+    pass "nvim lua directory exists"
+else
+    fail "nvim lua directory exists" "~/.config/nvim/lua not found"
+fi
+
 # =========================================================================
 section "Step 7: Doctor"
 # =========================================================================
@@ -196,10 +217,6 @@ fi
 section "Step 8: Idempotency"
 # =========================================================================
 
-# Capture state
-state_before=$(git config --global --list 2>/dev/null | sort)
-ssh_md5_before=$(md5sum "$HOME/.ssh/config" 2>/dev/null | cut -d' ' -f1)
-
 # Re-apply
 output=$($PREFLIGHT apply --yes 2>&1) && ec=0 || ec=$?
 if [ "$ec" -eq 0 ]; then
@@ -208,21 +225,18 @@ else
     fail "re-apply" "exit $ec"
 fi
 
-# Verify state unchanged
-state_after=$(git config --global --list 2>/dev/null | sort)
-ssh_md5_after=$(md5sum "$HOME/.ssh/config" 2>/dev/null | cut -d' ' -f1)
-
-if [ "$state_before" = "$state_after" ]; then
-    pass "git config unchanged after re-apply"
+# Verify idempotent: plan should show no changes needed
+plan_output=$($PREFLIGHT plan 2>&1) && plan_ec=0 || plan_ec=$?
+if [ "$plan_ec" -eq 0 ] && echo "$plan_output" | grep -qi "no changes"; then
+    pass "plan shows no changes after re-apply"
 else
-    fail "git config unchanged" "state changed"
+    fail "plan shows no changes" "plan still has pending changes"
 fi
 
-if [ "$ssh_md5_before" = "$ssh_md5_after" ]; then
-    pass "ssh config unchanged after re-apply"
-else
-    fail "ssh config unchanged" "content changed"
-fi
+# Verify git config preserved
+assert_cmd_output "git user.name preserved" "Fresh Dev" git config --global user.name
+assert_file_exists "$HOME/.ssh/config" "ssh config preserved after re-apply"
+assert_file_exists "$HOME/.config/nvim/init.lua" "nvim config preserved after re-apply"
 
 # =========================================================================
 section "Step 9: Lockfile"

@@ -196,6 +196,7 @@ FROM go-base AS e2e-usecases
 RUN apt-get update && apt-get install -y --no-install-recommends \
     zsh \
     vim \
+    neovim \
     && rm -rf /var/lib/apt/lists/*
 
 COPY . .

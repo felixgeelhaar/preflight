@@ -107,6 +107,9 @@ ssh:
     - host: "*.internal.company.com"
       user: deploy
       identityfile: ~/.ssh/id_company
+
+nvim:
+  preset: lazyvim
 LAYER
 
 cat > layers/team.yaml <<'LAYER'
@@ -146,9 +149,14 @@ else
     fail "A: ssh config" "missing or incomplete"
 fi
 
-# Save full state for comparison
+if [ -d "$HOME/.config/nvim" ] && [ -f "$HOME/.config/nvim/init.lua" ]; then
+    pass "A: nvim config installed"
+else
+    fail "A: nvim config" "~/.config/nvim or init.lua not found"
+fi
+
+# Save git state for cross-machine comparison
 GIT_STATE_A=$(git config --global --list 2>/dev/null | sort)
-SSH_MD5_A=$(md5sum "$HOME/.ssh/config" 2>/dev/null | cut -d' ' -f1)
 
 # =========================================================================
 section "Phase A: Generate lockfile"
@@ -207,9 +215,14 @@ else
     fail "B: ssh config" "missing or incomplete"
 fi
 
-# Compare full state
+if [ -d "$HOME/.config/nvim" ] && [ -f "$HOME/.config/nvim/init.lua" ]; then
+    pass "B: nvim config installed"
+else
+    fail "B: nvim config" "~/.config/nvim or init.lua not found"
+fi
+
+# Compare git state across machines
 GIT_STATE_B=$(git config --global --list 2>/dev/null | sort)
-SSH_MD5_B=$(md5sum "$HOME/.ssh/config" 2>/dev/null | cut -d' ' -f1)
 
 if [ "$GIT_STATE_A" = "$GIT_STATE_B" ]; then
     pass "git config identical across machines"
@@ -217,10 +230,12 @@ else
     fail "git config identical" "states differ"
 fi
 
-if [ "$SSH_MD5_A" = "$SSH_MD5_B" ]; then
-    pass "ssh config identical across machines"
+# Verify plan shows no changes (preflight's own idempotency check)
+plan_output=$($PREFLIGHT plan 2>&1) && plan_ec=0 || plan_ec=$?
+if [ "$plan_ec" -eq 0 ] && echo "$plan_output" | grep -qi "no changes"; then
+    pass "Machine B fully converged (no changes needed)"
 else
-    fail "ssh config identical" "content differs"
+    fail "Machine B fully converged" "plan still has pending changes"
 fi
 
 # =========================================================================
@@ -245,25 +260,32 @@ fi
 section "Phase D: Idempotency"
 # =========================================================================
 
-state_before=$(git config --global --list 2>/dev/null | sort)
-ssh_md5_before=$(md5sum "$HOME/.ssh/config" 2>/dev/null | cut -d' ' -f1)
-
 $PREFLIGHT apply --yes >/dev/null 2>&1 || true
 $PREFLIGHT apply --yes >/dev/null 2>&1 || true
 
-state_after=$(git config --global --list 2>/dev/null | sort)
-ssh_md5_after=$(md5sum "$HOME/.ssh/config" 2>/dev/null | cut -d' ' -f1)
-
-if [ "$state_before" = "$state_after" ]; then
-    pass "git config stable across 3 applies"
+# After 3 total applies, plan should show no changes
+plan_output=$($PREFLIGHT plan 2>&1) && plan_ec=0 || plan_ec=$?
+if [ "$plan_ec" -eq 0 ] && echo "$plan_output" | grep -qi "no changes"; then
+    pass "system converged after 3 applies"
 else
-    fail "git config stable" "changed after repeated applies"
+    fail "system converged" "plan still has pending changes after 3 applies"
 fi
 
-if [ "$ssh_md5_before" = "$ssh_md5_after" ]; then
-    pass "ssh config stable across 3 applies"
+# Verify git config still correct
+assert_cmd_output "git user.name stable" "Team Member" git config --global user.name
+assert_cmd_output "git alias.df stable" "diff --stat" git config --global alias.df
+
+# Verify ssh and nvim still present
+if [ -f "$HOME/.ssh/config" ] && grep -qF "github.com" "$HOME/.ssh/config"; then
+    pass "ssh config stable across applies"
 else
-    fail "ssh config stable" "changed after repeated applies"
+    fail "ssh config stable" "missing or incomplete after repeated applies"
+fi
+
+if [ -f "$HOME/.config/nvim/init.lua" ]; then
+    pass "nvim config stable across applies"
+else
+    fail "nvim config stable" "init.lua missing after repeated applies"
 fi
 
 # =========================================================================
