@@ -189,7 +189,29 @@ RUN chmod +x /app/test/e2e/test_all_commands.sh
 CMD ["/app/test/e2e/test_all_commands.sh"]
 
 # =============================================================================
-# Stage 8: Coverage report generation
+# Stage 8: Use-case E2E tests (fresh install + reproducibility)
+# =============================================================================
+FROM go-base AS e2e-usecases
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    zsh \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY . .
+
+# Build the binary
+RUN go build -o /app/bin/preflight ./cmd/preflight
+
+ENV PREFLIGHT_BINARY=/app/bin/preflight
+
+RUN chmod +x /app/test/e2e/test_usecase_fresh_install.sh \
+    /app/test/e2e/test_usecase_reproducible.sh
+
+CMD ["bash", "-c", "(export HOME=/root && /app/test/e2e/test_usecase_fresh_install.sh) && (export HOME=/root && /app/test/e2e/test_usecase_reproducible.sh)"]
+
+# =============================================================================
+# Stage 9: Coverage report generation
 # =============================================================================
 FROM go-base AS coverage
 

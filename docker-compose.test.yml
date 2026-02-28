@@ -171,6 +171,38 @@ services:
     command: ["/app/test/e2e/test_all_commands.sh"]
 
   # ==========================================================================
+  # Use Case E2E: Fresh Install + Reproducibility
+  # ==========================================================================
+  e2e-usecases:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: e2e-usecases
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+
+  e2e-fresh-install:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: e2e-usecases
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    command: ["/app/test/e2e/test_usecase_fresh_install.sh"]
+
+  e2e-reproducible:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: e2e-usecases
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    command: ["/app/test/e2e/test_usecase_reproducible.sh"]
+
+  # ==========================================================================
   # Lint (golangci-lint)
   # ==========================================================================
   lint:
