@@ -158,6 +158,19 @@ services:
              go tool cover -func=/coverage/coverage.out"
 
   # ==========================================================================
+  # CLI Smoke Tests (all commands)
+  # ==========================================================================
+  cli-smoke:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: cli-smoke
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    command: ["/app/test/e2e/test_all_commands.sh"]
+
+  # ==========================================================================
   # Lint (golangci-lint)
   # ==========================================================================
   lint:

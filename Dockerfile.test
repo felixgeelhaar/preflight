@@ -172,7 +172,24 @@ ENV PREFLIGHT_BINARY=/app/bin/preflight
 CMD ["go", "test", "-v", "-tags=e2e", "./test/e2e/..."]
 
 # =============================================================================
-# Stage 7: Coverage report generation
+# Stage 7: CLI smoke tests (all commands)
+# =============================================================================
+FROM go-base AS cli-smoke
+
+COPY . .
+
+# Build the binary
+RUN go build -o /app/bin/preflight ./cmd/preflight
+
+ENV PREFLIGHT_BINARY=/app/bin/preflight
+
+# Make test script executable
+RUN chmod +x /app/test/e2e/test_all_commands.sh
+
+CMD ["/app/test/e2e/test_all_commands.sh"]
+
+# =============================================================================
+# Stage 8: Coverage report generation
 # =============================================================================
 FROM go-base AS coverage
 
