@@ -472,23 +472,14 @@ func TestCovFinal_GenerateLayerForPreset_AllPresets(t *testing.T) {
 
 func TestCovFinal_DetectAIProvider_NoEnv(t *testing.T) {
 	// Save and clear all AI-related env vars
-	oldAnth := os.Getenv("ANTHROPIC_API_KEY")
-	oldGemini := os.Getenv("GEMINI_API_KEY")
-	oldGoogle := os.Getenv("GOOGLE_API_KEY")
-	oldOpenAI := os.Getenv("OPENAI_API_KEY")
+	t.Setenv("ANTHROPIC_API_KEY", "")
+	t.Setenv("GEMINI_API_KEY", "")
+	t.Setenv("GOOGLE_API_KEY", "")
+	t.Setenv("OPENAI_API_KEY", "")
 	oldProvider := aiProvider
 	defer func() {
-		os.Setenv("ANTHROPIC_API_KEY", oldAnth)
-		os.Setenv("GEMINI_API_KEY", oldGemini)
-		os.Setenv("GOOGLE_API_KEY", oldGoogle)
-		os.Setenv("OPENAI_API_KEY", oldOpenAI)
 		aiProvider = oldProvider
 	}()
-
-	os.Unsetenv("ANTHROPIC_API_KEY")
-	os.Unsetenv("GEMINI_API_KEY")
-	os.Unsetenv("GOOGLE_API_KEY")
-	os.Unsetenv("OPENAI_API_KEY")
 	aiProvider = ""
 
 	provider := detectAIProvider()

@@ -622,6 +622,7 @@ func TestDeepCov_RunMarketplaceInfo_NonexistentPackage(t *testing.T) {
 
 //nolint:tparallel
 func TestDeepCov_RunPluginSearch_EmptyQuery(t *testing.T) {
+	t.Log("exercising empty query path for runPluginSearch")
 	oldType := searchType
 	oldMinStars := searchMinStars
 	oldLimit := searchLimit
@@ -1117,9 +1118,9 @@ func TestDeepCov_ExtractEnvVars(t *testing.T) {
 
 	config := map[string]interface{}{
 		"env": map[string]interface{}{
-			"EDITOR":    "nvim",
+			"EDITOR":     "nvim",
 			"SECRET_KEY": "secret://vault/key",
-			"PATH_ADD":  "/usr/local/bin",
+			"PATH_ADD":   "/usr/local/bin",
 		},
 	}
 
@@ -1436,7 +1437,7 @@ func TestDeepCov_RemoveOrphans_Formula(t *testing.T) {
 	}
 
 	output := captureStdout(t, func() {
-		removed, failed := removeOrphans(nil, orphans)
+		removed, failed := removeOrphans(context.Background(), orphans)
 		assert.Equal(t, 1, removed)
 		assert.Equal(t, 0, failed)
 	})
@@ -1451,7 +1452,7 @@ func TestDeepCov_RemoveOrphans_Cask(t *testing.T) {
 	}
 
 	output := captureStdout(t, func() {
-		removed, failed := removeOrphans(nil, orphans)
+		removed, failed := removeOrphans(context.Background(), orphans)
 		assert.Equal(t, 1, removed)
 		assert.Equal(t, 0, failed)
 	})
@@ -1466,7 +1467,7 @@ func TestDeepCov_RemoveOrphans_VSCode(t *testing.T) {
 	}
 
 	output := captureStdout(t, func() {
-		removed, failed := removeOrphans(nil, orphans)
+		removed, failed := removeOrphans(context.Background(), orphans)
 		assert.Equal(t, 1, removed)
 		assert.Equal(t, 0, failed)
 	})
@@ -1500,6 +1501,7 @@ func TestDeepCov_PrintJSONOutput(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeepCov_WriteEnvFile(t *testing.T) {
+	t.Log("exercising WriteEnvFile with mixed vars and secrets")
 	// WriteEnvFile writes to ~/.preflight/env.sh
 	// We'll just verify it doesn't panic and handles secrets correctly
 	vars := []EnvVar{
@@ -2889,7 +2891,7 @@ func TestDeepCov_HandleRemove_DryRun_Text(t *testing.T) {
 	cleanupJSON = false
 
 	output := captureStdout(t, func() {
-		err := handleRemove(nil, nil, []string{"go@1.24"})
+		err := handleRemove(context.Background(), nil, []string{"go@1.24"})
 		assert.NoError(t, err)
 	})
 	assert.Contains(t, output, "Would remove")
@@ -2908,7 +2910,7 @@ func TestDeepCov_HandleRemove_DryRun_JSON(t *testing.T) {
 	cleanupJSON = true
 
 	output := captureStdout(t, func() {
-		err := handleRemove(nil, nil, []string{"go@1.24"})
+		err := handleRemove(context.Background(), nil, []string{"go@1.24"})
 		assert.NoError(t, err)
 	})
 	assert.Contains(t, output, "go@1.24")
@@ -2935,7 +2937,7 @@ func TestDeepCov_HandleCleanupAll_Empty(t *testing.T) {
 		},
 	}
 	output := captureStdout(t, func() {
-		err := handleCleanupAll(nil, nil, result)
+		err := handleCleanupAll(context.Background(), nil, result)
 		assert.NoError(t, err)
 	})
 	assert.Contains(t, output, "Nothing to clean up")
@@ -2958,7 +2960,7 @@ func TestDeepCov_HandleCleanupAll_DryRun(t *testing.T) {
 		},
 	}
 	output := captureStdout(t, func() {
-		err := handleCleanupAll(nil, nil, result)
+		err := handleCleanupAll(context.Background(), nil, result)
 		assert.NoError(t, err)
 	})
 	assert.Contains(t, output, "Would remove 1 package(s)")
@@ -3535,7 +3537,7 @@ func TestDeepCov_RunClean_ValidConfig(t *testing.T) {
 
 func TestDeepCov_ListSnapshots(t *testing.T) {
 	output := captureStdout(t, func() {
-		err := listSnapshots(nil, nil, nil)
+		err := listSnapshots(context.Background(), nil, nil)
 		assert.NoError(t, err)
 	})
 
@@ -4734,11 +4736,11 @@ type mockWatchPreflight struct{}
 func (m *mockWatchPreflight) Plan(_ context.Context, _ string, _ string) (*execution.Plan, error) {
 	return nil, nil
 }
-func (m *mockWatchPreflight) PrintPlan(_ *execution.Plan)                                {}
+func (m *mockWatchPreflight) PrintPlan(_ *execution.Plan) {}
 func (m *mockWatchPreflight) Apply(_ context.Context, _ *execution.Plan, _ bool) ([]execution.StepResult, error) {
 	return nil, nil
 }
-func (m *mockWatchPreflight) PrintResults(_ []execution.StepResult)                      {}
+func (m *mockWatchPreflight) PrintResults(_ []execution.StepResult)                {}
 func (m *mockWatchPreflight) WithMode(_ config.ReproducibilityMode) watchPreflight { return m }
 
 // ---------------------------------------------------------------------------
@@ -4916,7 +4918,7 @@ func TestDeepCov_EnvSetGetUnset(t *testing.T) {
 
 	// Get - exercises the code path; LoadMergedConfig may not surface the var
 	// from the raw layer, so we tolerate an error here.
-	output = captureStdout(t, func() {
+	_ = captureStdout(t, func() {
 		_ = runEnvGet(nil, []string{"MY_VAR"})
 	})
 
@@ -6145,7 +6147,7 @@ func TestDeepCov_RunToolAnalysis_BadPath(t *testing.T) {
 
 	// runToolAnalysis with no config should error
 	output := captureStdout(t, func() {
-		err := runToolAnalysis(nil, nil)
+		err := runToolAnalysis(context.Background(), nil)
 		// May error if no config found
 		_ = err
 	})
@@ -6588,6 +6590,7 @@ func TestDeepCov_ResolveAge_NotFound(t *testing.T) {
 }
 
 func TestDeepCov_ResolveSecret_Keychain(t *testing.T) {
+	t.Log("exercising keychain backend for resolveSecret")
 	// resolveSecret with keychain backend
 	_, err := resolveSecret("keychain", "nonexistent-preflight-test-secret")
 	// May succeed or error depending on keychain state

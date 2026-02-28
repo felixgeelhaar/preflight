@@ -204,7 +204,7 @@ func TestBatch4_toVulnerabilitiesJSON(t *testing.T) {
 	assert.Equal(t, "pkg1", result[0].Package)
 	assert.Equal(t, "1.0", result[0].Version)
 	assert.Equal(t, "high", result[0].Severity)
-	assert.Equal(t, 7.5, result[0].CVSS)
+	assert.InDelta(t, 7.5, result[0].CVSS, 0)
 	assert.Equal(t, "1.1", result[0].FixedIn)
 	assert.Equal(t, "Test vuln", result[0].Title)
 	assert.Equal(t, "http://example.com", result[0].Reference)

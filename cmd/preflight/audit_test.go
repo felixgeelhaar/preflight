@@ -274,13 +274,13 @@ func TestOutputSecurityEventsTable(t *testing.T) {
 			Success:   false,
 		},
 		{
-			ID:        "sec-2",
-			Timestamp: now.Add(time.Minute),
-			Type:      audit.EventCapabilityDenied,
-			Severity:  audit.SeverityWarning,
-			Catalog:   "untrusted-catalog",
+			ID:                 "sec-2",
+			Timestamp:          now.Add(time.Minute),
+			Type:               audit.EventCapabilityDenied,
+			Severity:           audit.SeverityWarning,
+			Catalog:            "untrusted-catalog",
 			CapabilitiesDenied: []string{"network", "filesystem"},
-			Success:   false,
+			Success:            false,
 		},
 		{
 			ID:        "sec-3",
@@ -391,7 +391,7 @@ func TestOutputJSON(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "value", parsed["key"])
-	assert.Equal(t, float64(42), parsed["count"])
+	assert.InDelta(t, float64(42), parsed["count"], 0)
 	nested := parsed["nested"].(map[string]interface{})
 	assert.Equal(t, "data", nested["inner"])
 }

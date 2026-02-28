@@ -591,8 +591,8 @@ func TestBoostC_PrintDeprecatedTable(t *testing.T) {
 
 	assert.Contains(t, out, "old-tool")
 	assert.Contains(t, out, "no-version")
-	assert.Contains(t, out, "-") // empty version or message replaced with "-"
-	assert.Contains(t, out, "...")   // truncated long message
+	assert.Contains(t, out, "-")   // empty version or message replaced with "-"
+	assert.Contains(t, out, "...") // truncated long message
 }
 
 // ===========================================================================

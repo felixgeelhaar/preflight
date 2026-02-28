@@ -265,8 +265,8 @@ func TestPrintJSONOutput(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "concurrent (merge needed)", parsed["relation"])
-	assert.Equal(t, float64(2), parsed["total_conflicts"])
-	assert.Equal(t, float64(1), parsed["auto_resolvable"])
+	assert.InDelta(t, float64(2), parsed["total_conflicts"], 0)
+	assert.InDelta(t, float64(1), parsed["auto_resolvable"], 0)
 	assert.Equal(t, true, parsed["needs_merge"])
 
 	manualConflicts := parsed["manual_conflicts"].([]interface{})
@@ -300,8 +300,8 @@ func TestPrintJSONOutput_Empty(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "equal (in sync)", parsed["relation"])
-	assert.Equal(t, float64(0), parsed["total_conflicts"])
-	assert.Equal(t, float64(0), parsed["auto_resolvable"])
+	assert.InDelta(t, float64(0), parsed["total_conflicts"], 0)
+	assert.InDelta(t, float64(0), parsed["auto_resolvable"], 0)
 	assert.Equal(t, false, parsed["needs_merge"])
 
 	manualConflicts := parsed["manual_conflicts"].([]interface{})

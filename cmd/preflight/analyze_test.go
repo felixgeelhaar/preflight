@@ -661,8 +661,8 @@ func TestOutputAnalyzeJSON_WithReport(t *testing.T) {
 	assert.Len(t, layers, 2)
 
 	// Verify totals
-	assert.Equal(t, float64(8), parsed["total_packages"])
-	assert.Equal(t, float64(1), parsed["total_recommendations"])
+	assert.InDelta(t, float64(8), parsed["total_packages"], 0)
+	assert.InDelta(t, float64(1), parsed["total_recommendations"], 0)
 
 	// Verify cross-layer issues
 	issues, ok := parsed["cross_layer_issues"].([]interface{})
@@ -829,9 +829,9 @@ func TestOutputToolAnalysisJSON_WithResult(t *testing.T) {
 	err := json.Unmarshal([]byte(output), &parsed)
 	require.NoError(t, err, "output should be valid JSON")
 
-	assert.Equal(t, float64(5), parsed["tools_analyzed"])
-	assert.Equal(t, float64(1), parsed["issues_found"])
-	assert.Equal(t, float64(0), parsed["consolidations"])
+	assert.InDelta(t, float64(5), parsed["tools_analyzed"], 0)
+	assert.InDelta(t, float64(1), parsed["issues_found"], 0)
+	assert.InDelta(t, float64(0), parsed["consolidations"], 0)
 
 	findings, ok := parsed["findings"].([]interface{})
 	require.True(t, ok, "should have findings array")
@@ -853,7 +853,7 @@ func TestOutputToolAnalysisJSON_WithError(t *testing.T) {
 	require.NoError(t, err, "output should be valid JSON")
 
 	assert.Equal(t, "analysis failed: missing knowledge base", parsed["error"])
-	assert.Equal(t, float64(0), parsed["tools_analyzed"])
+	assert.InDelta(t, float64(0), parsed["tools_analyzed"], 0)
 }
 
 func TestOutputToolAnalysisText_WithFindings(t *testing.T) {

@@ -373,20 +373,25 @@ func TestBatch5_IsValidOpenPGPPacket_Comprehensive(t *testing.T) {
 		{"bit7_not_set", []byte{0x00, 0x00}, false},
 		{"bit7_not_set_with_data", []byte{0x3F, 0xFF}, false},
 		// New format (bit 6 set): tag = data[0] & 0x3f
-		{"new_format_tag2_signature", []byte{0xC2, 0x00}, true},   // 0xC0 | 2
-		{"new_format_tag5_secret_key", []byte{0xC5, 0x00}, true},  // 0xC0 | 5
-		{"new_format_tag6_public_key", []byte{0xC6, 0x00}, true},  // 0xC0 | 6
-		{"new_format_tag7_secret_sub", []byte{0xC7, 0x00}, true},  // 0xC0 | 7
-		{"new_format_tag14_pub_sub", []byte{0xCE, 0x00}, true},    // 0xC0 | 14
-		{"new_format_tag0_invalid", []byte{0xC0, 0x00}, false},    // tag 0 not valid
-		{"new_format_tag1_invalid", []byte{0xC1, 0x00}, false},    // tag 1 (session key) not valid
-		{"new_format_tag3_invalid", []byte{0xC3, 0x00}, false},    // tag 3 not in valid set
+		{"new_format_tag2_signature", []byte{0xC2, 0x00}, true},  // 0xC0 | 2
+		{"new_format_tag5_secret_key", []byte{0xC5, 0x00}, true}, // 0xC0 | 5
+		{"new_format_tag6_public_key", []byte{0xC6, 0x00}, true}, // 0xC0 | 6
+		{"new_format_tag7_secret_sub", []byte{0xC7, 0x00}, true}, // 0xC0 | 7
+		{"new_format_tag14_pub_sub", []byte{0xCE, 0x00}, true},   // 0xC0 | 14
+		{"new_format_tag0_invalid", []byte{0xC0, 0x00}, false},   // tag 0 not valid
+		{"new_format_tag1_invalid", []byte{0xC1, 0x00}, false},   // tag 1 (session key) not valid
+		{"new_format_tag3_invalid", []byte{0xC3, 0x00}, false},   // tag 3 not in valid set
 		// Old format: tag = (data[0] & 0x3c) >> 2
-		{"old_format_tag6_public_key", []byte{0x98, 0x00}, true},  // (6 << 2) | 0x80 = 0x98
-		{"old_format_tag2_signature", []byte{0x88, 0x00}, true},   // (2 << 2) | 0x80 = 0x88
-		{"old_format_tag5_secret_key", []byte{0x94, 0x00}, true},  // (5 << 2) | 0x80 = 0x94
-		{"old_format_tag0_invalid", []byte{0x80, 0x00}, false},    // (0 << 2) | 0x80 = 0x80
-		{"old_format_tag1_invalid", []byte{0x84, 0x00}, false},    // (1 << 2) | 0x80 = 0x84
+		// tag6 public key: hex 0x98
+		{"old_format_tag6_public_key", []byte{0x98, 0x00}, true},
+		// tag2 signature: hex 0x88
+		{"old_format_tag2_signature", []byte{0x88, 0x00}, true},
+		// tag5 secret key: hex 0x94
+		{"old_format_tag5_secret_key", []byte{0x94, 0x00}, true},
+		// tag0 invalid: hex 0x80
+		{"old_format_tag0_invalid", []byte{0x80, 0x00}, false},
+		// tag1 invalid: hex 0x84
+		{"old_format_tag1_invalid", []byte{0x84, 0x00}, false},
 	}
 
 	for _, tt := range tests {

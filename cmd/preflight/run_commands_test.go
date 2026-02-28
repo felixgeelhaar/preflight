@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -1111,7 +1112,7 @@ func TestHandleRemove_DryRun(t *testing.T) { //nolint:tparallel // modifies glob
 	}()
 
 	output := captureStdout(t, func() {
-		err := handleRemove(nil, nil, []string{"test-package"})
+		err := handleRemove(context.Background(), nil, []string{"test-package"})
 		require.NoError(t, err)
 	})
 
@@ -1130,7 +1131,7 @@ func TestHandleRemove_DryRun_JSON(t *testing.T) { //nolint:tparallel // modifies
 	}()
 
 	output := captureStdout(t, func() {
-		err := handleRemove(nil, nil, []string{"pkg1", "pkg2"})
+		err := handleRemove(context.Background(), nil, []string{"pkg1", "pkg2"})
 		require.NoError(t, err)
 	})
 
@@ -1159,7 +1160,7 @@ func TestHandleCleanupAll_EmptyRedundancies(t *testing.T) { //nolint:tparallel /
 	}
 
 	output := captureStdout(t, func() {
-		err := handleCleanupAll(nil, nil, result)
+		err := handleCleanupAll(context.Background(), nil, result)
 		require.NoError(t, err)
 	})
 
@@ -1188,7 +1189,7 @@ func TestHandleCleanupAll_DryRun(t *testing.T) { //nolint:tparallel // modifies 
 	}
 
 	output := captureStdout(t, func() {
-		err := handleCleanupAll(nil, nil, result)
+		err := handleCleanupAll(context.Background(), nil, result)
 		require.NoError(t, err)
 	})
 

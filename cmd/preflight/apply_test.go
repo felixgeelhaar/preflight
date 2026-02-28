@@ -74,11 +74,11 @@ func TestRunApply_NoChangesSkipsApply(t *testing.T) {
 	plan := execution.NewExecutionPlan()
 	plan.Add(execution.NewPlanEntry(newDummyStep("files:link:bashrc"), compiler.StatusSatisfied, compiler.Diff{}))
 
-	fake := newFakePreflightClient(plan, nil, nil)
+	fake := newFakePreflightClient(plan, nil)
 	restore := overrideNewPreflight(fake)
 	defer restore()
 
-	reset := setApplyFlags(t, false, false, false)
+	reset := setApplyFlags(t, false, false)
 	defer reset()
 
 	err := runApply(&cobra.Command{}, nil)
@@ -98,11 +98,11 @@ func TestRunApply_AppliesAndUpdatesLock(t *testing.T) {
 		execution.NewStepResult(step.ID(), compiler.StatusSatisfied, nil),
 	}
 
-	fake := newFakePreflightClient(plan, results, nil)
+	fake := newFakePreflightClient(plan, results)
 	restore := overrideNewPreflight(fake)
 	defer restore()
 
-	reset := setApplyFlags(t, false, true, false)
+	reset := setApplyFlags(t, false, true)
 	defer reset()
 
 	err := runApply(&cobra.Command{}, nil)
@@ -118,14 +118,14 @@ func overrideNewPreflight(client *fakePreflightClient) func() {
 	return func() { newPreflight = prev }
 }
 
-func setApplyFlags(t *testing.T, dryRun, updateLock, rollback bool) func() {
+func setApplyFlags(t *testing.T, dryRun, updateLock bool) func() {
 	t.Helper()
 	prevDryRun := applyDryRun
 	prevUpdateLock := applyUpdateLock
 	prevRollback := applyRollback
 	applyDryRun = dryRun
 	applyUpdateLock = updateLock
-	applyRollback = rollback
+	applyRollback = false
 	return func() {
 		applyDryRun = prevDryRun
 		applyUpdateLock = prevUpdateLock
@@ -144,11 +144,10 @@ type fakePreflightClient struct {
 	updateLockCalled   bool
 }
 
-func newFakePreflightClient(plan *execution.Plan, results []execution.StepResult, applyErr error) *fakePreflightClient {
+func newFakePreflightClient(plan *execution.Plan, results []execution.StepResult) *fakePreflightClient {
 	return &fakePreflightClient{
 		planResult: plan,
 		results:    results,
-		applyErr:   applyErr,
 	}
 }
 

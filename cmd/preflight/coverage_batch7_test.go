@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -692,10 +693,10 @@ func TestBatch7_ParseDuration(t *testing.T) {
 		{"7d", 7 * 24 * time.Hour, false},
 		{"2w", 2 * 7 * 24 * time.Hour, false},
 		{"1m", 1 * 30 * 24 * time.Hour, false},
-		{"x", 0, true},           // too short
-		{"abc", 0, true},         // invalid number
-		{"1x", 0, true},          // unknown unit
-		{"3s", 0, true},          // unknown unit 's'
+		{"x", 0, true},   // too short
+		{"abc", 0, true}, // invalid number
+		{"1x", 0, true},  // unknown unit
+		{"3s", 0, true},  // unknown unit 's'
 		{"12h", 12 * time.Hour, false},
 	}
 
@@ -851,13 +852,13 @@ func TestBatch7_GetPatternIcon(t *testing.T) {
 		patternType discover.PatternType
 		expected    string
 	}{
-		{discover.PatternTypeShell, "\xf0\x9f\x90\x9a"},         // crab emoji
-		{discover.PatternTypeEditor, "\xf0\x9f\x93\x9d"},        // memo emoji
-		{discover.PatternTypeGit, "\xf0\x9f\x93\xa6"},           // package emoji
-		{discover.PatternTypeSSH, "\xf0\x9f\x94\x90"},           // lock emoji
-		{discover.PatternTypeTmux, "\xf0\x9f\x96\xa5"},          // desktop emoji (partial)
+		{discover.PatternTypeShell, "\xf0\x9f\x90\x9a"},          // crab emoji
+		{discover.PatternTypeEditor, "\xf0\x9f\x93\x9d"},         // memo emoji
+		{discover.PatternTypeGit, "\xf0\x9f\x93\xa6"},            // package emoji
+		{discover.PatternTypeSSH, "\xf0\x9f\x94\x90"},            // lock emoji
+		{discover.PatternTypeTmux, "\xf0\x9f\x96\xa5"},           // desktop emoji (partial)
 		{discover.PatternTypePackageManager, "\xf0\x9f\x93\xa6"}, // package emoji
-		{discover.PatternType("other"), "\xe2\x80\xa2"},           // bullet
+		{discover.PatternType("other"), "\xe2\x80\xa2"},          // bullet
 	}
 
 	for _, tc := range tests {
@@ -1389,7 +1390,7 @@ func TestBatch7_RemoveOrphans(t *testing.T) {
 	}
 
 	out := captureStdout(t, func() {
-		removed, failed := removeOrphans(nil, orphans)
+		removed, failed := removeOrphans(context.Background(), orphans)
 		assert.Equal(t, 3, removed)
 		assert.Equal(t, 0, failed)
 	})
@@ -1495,7 +1496,7 @@ func TestBatch7_ToVulnerabilitiesJSON(t *testing.T) {
 	require.Len(t, result, 2)
 	assert.Equal(t, "CVE-1", result[0].ID)
 	assert.Equal(t, "p1", result[0].Package)
-	assert.Equal(t, 7.5, result[0].CVSS)
+	assert.InDelta(t, 7.5, result[0].CVSS, 0)
 	assert.Equal(t, "1.1", result[0].FixedIn)
 	assert.Equal(t, "https://example.com", result[0].Reference)
 

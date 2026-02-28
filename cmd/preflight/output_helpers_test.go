@@ -1206,13 +1206,13 @@ func TestOutputHelpers_GetPatternIcon(t *testing.T) {
 		patternType discover.PatternType
 		expect      string
 	}{
-		{discover.PatternTypeShell, "\U0001f41a"},        // crab emoji
-		{discover.PatternTypeEditor, "\U0001f4dd"},       // memo emoji
-		{discover.PatternTypeGit, "\U0001f4e6"},          // package emoji
-		{discover.PatternTypeSSH, "\U0001f510"},          // lock emoji
-		{discover.PatternTypeTmux, "\U0001f5a5\ufe0f"},   // desktop emoji
+		{discover.PatternTypeShell, "\U0001f41a"},      // crab emoji
+		{discover.PatternTypeEditor, "\U0001f4dd"},     // memo emoji
+		{discover.PatternTypeGit, "\U0001f4e6"},        // package emoji
+		{discover.PatternTypeSSH, "\U0001f510"},        // lock emoji
+		{discover.PatternTypeTmux, "\U0001f5a5\ufe0f"}, // desktop emoji
 		{discover.PatternTypePackageManager, "\U0001f4e6"},
-		{discover.PatternType("other"), "\u2022"},         // bullet
+		{discover.PatternType("other"), "\u2022"}, // bullet
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.patternType), func(t *testing.T) {

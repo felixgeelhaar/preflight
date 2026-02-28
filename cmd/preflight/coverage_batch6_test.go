@@ -897,6 +897,7 @@ func TestBatch6_RunLockFreeze_NoConfig(t *testing.T) {
 
 //nolint:tparallel // modifies global cfgFile
 func TestBatch6_RunLockUpdate_EmptyCfgFile(t *testing.T) {
+	t.Log("exercising empty cfgFile path for runLockUpdate")
 	savedCfgFile := cfgFile
 	defer func() { cfgFile = savedCfgFile }()
 
@@ -912,6 +913,7 @@ func TestBatch6_RunLockUpdate_EmptyCfgFile(t *testing.T) {
 
 //nolint:tparallel // modifies global cfgFile
 func TestBatch6_RunLockFreeze_EmptyCfgFile(t *testing.T) {
+	t.Log("exercising empty cfgFile path for runLockFreeze")
 	savedCfgFile := cfgFile
 	defer func() { cfgFile = savedCfgFile }()
 

@@ -3272,6 +3272,7 @@ func TestPushCov_HandleCleanupAll_NothingToRemove_JSON(t *testing.T) { //nolint:
 // ---------------------------------------------------------------------------
 
 func TestPushCov_RunMarketplaceRecommend_NoKeywords(t *testing.T) { //nolint:tparallel
+	t.Log("exercising recommend path with no keywords")
 	oldOffline := mpOfflineMode
 	oldKeywords := mpKeywords
 	oldType := mpRecommendType

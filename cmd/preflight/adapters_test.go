@@ -33,9 +33,7 @@ func TestPreflightAdapter_WithMode_Locked(t *testing.T) {
 	result := adapter.WithMode(config.ModeLocked)
 
 	assert.NotNil(t, result)
-	// The result should implement preflightClient
-	_, ok := result.(preflightClient)
-	assert.True(t, ok)
+	// The result already has type preflightClient via the interface method signature
 }
 
 func TestPreflightAdapter_WithMode_Frozen(t *testing.T) {
@@ -179,11 +177,8 @@ func TestValidatePreflightAdapter_WithMode_ReturnsValidateClient(t *testing.T) {
 	t.Parallel()
 
 	adapter := &validatePreflightAdapter{app.New(os.Stdout)}
-	result := adapter.WithMode(config.ModeIntent)
-
-	// Confirm it satisfies the validatePreflightClient interface
-	_, ok := result.(validatePreflightClient)
-	assert.True(t, ok)
+	// The returned value already satisfies validatePreflightClient via the interface method signature
+	assert.NotNil(t, adapter.WithMode(config.ModeIntent))
 }
 
 // ---------------------------------------------------------------------------
@@ -224,11 +219,8 @@ func TestWatchPreflightAdapter_WithMode_ReturnsWatchPreflight(t *testing.T) {
 	t.Parallel()
 
 	adapter := &watchPreflightAdapter{app.New(os.Stdout)}
-	result := adapter.WithMode(config.ModeIntent)
-
-	// Confirm it satisfies the watchPreflight interface
-	_, ok := result.(watchPreflight)
-	assert.True(t, ok)
+	// The returned value already satisfies watchPreflight via the interface method signature
+	assert.NotNil(t, adapter.WithMode(config.ModeIntent))
 }
 
 // ---------------------------------------------------------------------------
@@ -352,40 +344,32 @@ func TestNewPreflight_ReturnsPreflightClient(t *testing.T) {
 	t.Parallel()
 
 	client := newPreflight(os.Stdout)
+	// newPreflight returns preflightClient, no type assertion needed
 	assert.NotNil(t, client)
-
-	_, ok := client.(preflightClient)
-	assert.True(t, ok)
 }
 
 func TestNewPlanPreflight_ReturnsPreflightClient(t *testing.T) {
 	t.Parallel()
 
 	client := newPlanPreflight(os.Stdout)
+	// newPlanPreflight returns preflightClient, no type assertion needed
 	assert.NotNil(t, client)
-
-	_, ok := client.(preflightClient)
-	assert.True(t, ok)
 }
 
 func TestNewValidatePreflight_ReturnsValidateClient(t *testing.T) {
 	t.Parallel()
 
 	client := newValidatePreflight(os.Stdout)
+	// newValidatePreflight returns validatePreflightClient, no type assertion needed
 	assert.NotNil(t, client)
-
-	_, ok := client.(validatePreflightClient)
-	assert.True(t, ok)
 }
 
 func TestNewWatchApp_ReturnsWatchPreflight(t *testing.T) {
 	t.Parallel()
 
 	client := newWatchApp(os.Stdout)
+	// newWatchApp returns watchPreflight, no type assertion needed
 	assert.NotNil(t, client)
-
-	_, ok := client.(watchPreflight)
-	assert.True(t, ok)
 }
 
 // ---------------------------------------------------------------------------

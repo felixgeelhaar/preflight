@@ -557,8 +557,8 @@ func TestBatch1_OutputAnalyzeJSON_WithFullReport(t *testing.T) {
 	var parsed map[string]interface{}
 	err := json.Unmarshal([]byte(output), &parsed)
 	require.NoError(t, err)
-	assert.Equal(t, float64(5), parsed["total_packages"])
-	assert.Equal(t, float64(1), parsed["total_recommendations"])
+	assert.InDelta(t, float64(5), parsed["total_packages"], 0)
+	assert.InDelta(t, float64(1), parsed["total_recommendations"], 0)
 	layers := parsed["layers"].([]interface{})
 	require.Len(t, layers, 1)
 }
@@ -1592,8 +1592,8 @@ func TestBatch1_CompareConfigs_MixedTypesInProviders(t *testing.T) {
 	for _, d := range diffs {
 		typeCount[d.Type]++
 	}
-	assert.Equal(t, 1, typeCount["removed"])  // removed-provider
-	assert.Equal(t, 1, typeCount["added"])    // new-provider
+	assert.Equal(t, 1, typeCount["removed"])          // removed-provider
+	assert.Equal(t, 1, typeCount["added"])            // new-provider
 	assert.GreaterOrEqual(t, typeCount["changed"], 2) // string-provider + map-provider.k
 }
 

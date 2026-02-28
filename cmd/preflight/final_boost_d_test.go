@@ -346,7 +346,6 @@ func TestBoostD_RunEnvUnset_RemovesFromLayer(t *testing.T) {
 	require.NoError(t, err)
 }
 
-
 // ===========================================================================
 // init.go - runInitNonInteractive (early error paths)
 // ===========================================================================
@@ -410,7 +409,6 @@ func TestBoostD_FindRepoRoot_NotInRepo(t *testing.T) {
 	// Should fail since tmpDir is not a git repo
 	require.Error(t, err)
 }
-
 
 // ===========================================================================
 // env.go - runEnvExport and runEnvDiff branches

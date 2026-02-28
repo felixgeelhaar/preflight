@@ -141,9 +141,9 @@ func TestOutputDeprecatedJSON_WithResults(t *testing.T) {
 
 	summary, ok := parsed["summary"].(map[string]interface{})
 	require.True(t, ok)
-	assert.Equal(t, float64(2), summary["total"])
-	assert.Equal(t, float64(1), summary["deprecated"])
-	assert.Equal(t, float64(1), summary["disabled"])
+	assert.InDelta(t, float64(2), summary["total"], 0)
+	assert.InDelta(t, float64(1), summary["deprecated"], 0)
+	assert.InDelta(t, float64(1), summary["disabled"], 0)
 }
 
 func TestOutputDeprecatedJSON_WithError(t *testing.T) {

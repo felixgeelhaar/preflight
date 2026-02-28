@@ -502,11 +502,11 @@ func TestCoverBoost_RunApply_DryRunSkipsApply(t *testing.T) {
 	plan.Add(execution.NewPlanEntry(step, compiler.StatusNeedsApply,
 		compiler.NewDiff(compiler.DiffTypeAdd, "files", "link", "", "")))
 
-	fake := newFakePreflightClient(plan, nil, nil)
+	fake := newFakePreflightClient(plan, nil)
 	restore := overrideNewPreflight(fake)
 	defer restore()
 
-	reset := setApplyFlags(t, true, false, false)
+	reset := setApplyFlags(t, true, false)
 	defer reset()
 
 	output := captureStdout(t, func() {
@@ -527,7 +527,7 @@ func TestCoverBoost_RunApply_PlanFailureReturnsError(t *testing.T) {
 	restore := overrideNewPreflight(fake)
 	defer restore()
 
-	reset := setApplyFlags(t, false, false, false)
+	reset := setApplyFlags(t, false, false)
 	defer reset()
 
 	err := runApply(&cobra.Command{}, nil)
@@ -546,11 +546,11 @@ func TestCoverBoost_RunApply_StepFailureReturnsError(t *testing.T) {
 		execution.NewStepResult(step.ID(), compiler.StatusUnknown, errors.New("install failed")),
 	}
 
-	fake := newFakePreflightClient(plan, results, nil)
+	fake := newFakePreflightClient(plan, results)
 	restore := overrideNewPreflight(fake)
 	defer restore()
 
-	reset := setApplyFlags(t, false, false, false)
+	reset := setApplyFlags(t, false, false)
 	defer reset()
 
 	output := captureStdout(t, func() {
@@ -576,7 +576,7 @@ func TestCoverBoost_RunApply_ApplyErrorReturnsError(t *testing.T) {
 	restore := overrideNewPreflight(fake)
 	defer restore()
 
-	reset := setApplyFlags(t, false, false, false)
+	reset := setApplyFlags(t, false, false)
 	defer reset()
 
 	captureStdout(t, func() {

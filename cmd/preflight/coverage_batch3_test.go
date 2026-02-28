@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -452,7 +453,7 @@ func TestBatch3_HandleRemove_DryRunJSON(t *testing.T) {
 	cleanupJSON = true
 
 	output := captureStdout(t, func() {
-		err := handleRemove(nil, nil, []string{"pkg1", "pkg2"})
+		err := handleRemove(context.Background(), nil, []string{"pkg1", "pkg2"})
 		assert.NoError(t, err)
 	})
 	assert.Contains(t, output, "pkg1")
@@ -470,7 +471,7 @@ func TestBatch3_HandleRemove_DryRunText(t *testing.T) {
 	cleanupJSON = false
 
 	output := captureStdout(t, func() {
-		err := handleRemove(nil, nil, []string{"pkg1"})
+		err := handleRemove(context.Background(), nil, []string{"pkg1"})
 		assert.NoError(t, err)
 	})
 	assert.Contains(t, output, "Would remove")
@@ -498,7 +499,7 @@ func TestBatch3_HandleCleanupAll_DryRunJSON(t *testing.T) {
 		},
 	}
 	output := captureStdout(t, func() {
-		err := handleCleanupAll(nil, nil, result)
+		err := handleCleanupAll(context.Background(), nil, result)
 		assert.NoError(t, err)
 	})
 	assert.Contains(t, output, "go@1.24")
@@ -522,7 +523,7 @@ func TestBatch3_HandleCleanupAll_DryRunText(t *testing.T) {
 		},
 	}
 	output := captureStdout(t, func() {
-		err := handleCleanupAll(nil, nil, result)
+		err := handleCleanupAll(context.Background(), nil, result)
 		assert.NoError(t, err)
 	})
 	assert.Contains(t, output, "Would remove")
@@ -659,20 +660,10 @@ func TestBatch3_GenerateLayerForPreset_AllCases(t *testing.T) {
 
 func TestBatch3_DetectAIProvider_NoKeys(t *testing.T) {
 	// Save and clear AI-related env vars
-	oldAP := os.Getenv("ANTHROPIC_API_KEY")
-	oldGM := os.Getenv("GEMINI_API_KEY")
-	oldGA := os.Getenv("GOOGLE_API_KEY")
-	oldOA := os.Getenv("OPENAI_API_KEY")
-	defer func() {
-		os.Setenv("ANTHROPIC_API_KEY", oldAP)
-		os.Setenv("GEMINI_API_KEY", oldGM)
-		os.Setenv("GOOGLE_API_KEY", oldGA)
-		os.Setenv("OPENAI_API_KEY", oldOA)
-	}()
-	os.Setenv("ANTHROPIC_API_KEY", "")
-	os.Setenv("GEMINI_API_KEY", "")
-	os.Setenv("GOOGLE_API_KEY", "")
-	os.Setenv("OPENAI_API_KEY", "")
+	t.Setenv("ANTHROPIC_API_KEY", "")
+	t.Setenv("GEMINI_API_KEY", "")
+	t.Setenv("GOOGLE_API_KEY", "")
+	t.Setenv("OPENAI_API_KEY", "")
 
 	oldProvider := aiProvider
 	defer func() { aiProvider = oldProvider }()
@@ -692,32 +683,22 @@ func TestBatch3_GetProviderByName_UnknownProvider(t *testing.T) {
 }
 
 func TestBatch3_GetProviderByName_AnthropicNoKey(t *testing.T) {
-	old := os.Getenv("ANTHROPIC_API_KEY")
-	defer os.Setenv("ANTHROPIC_API_KEY", old)
-	os.Setenv("ANTHROPIC_API_KEY", "")
+	t.Setenv("ANTHROPIC_API_KEY", "")
 
 	result := getProviderByName("anthropic")
 	assert.Nil(t, result)
 }
 
 func TestBatch3_GetProviderByName_GeminiNoKey(t *testing.T) {
-	oldG := os.Getenv("GEMINI_API_KEY")
-	oldGA := os.Getenv("GOOGLE_API_KEY")
-	defer func() {
-		os.Setenv("GEMINI_API_KEY", oldG)
-		os.Setenv("GOOGLE_API_KEY", oldGA)
-	}()
-	os.Setenv("GEMINI_API_KEY", "")
-	os.Setenv("GOOGLE_API_KEY", "")
+	t.Setenv("GEMINI_API_KEY", "")
+	t.Setenv("GOOGLE_API_KEY", "")
 
 	result := getProviderByName("gemini")
 	assert.Nil(t, result)
 }
 
 func TestBatch3_GetProviderByName_OpenAINoKey(t *testing.T) {
-	old := os.Getenv("OPENAI_API_KEY")
-	defer os.Setenv("OPENAI_API_KEY", old)
-	os.Setenv("OPENAI_API_KEY", "")
+	t.Setenv("OPENAI_API_KEY", "")
 
 	result := getProviderByName("openai")
 	assert.Nil(t, result)
@@ -752,10 +733,10 @@ func TestBatch3_ExtractEnvVars_WithSecrets(t *testing.T) {
 	t.Parallel()
 	config := map[string]interface{}{
 		"env": map[string]interface{}{
-			"EDITOR":     "nvim",
-			"API_KEY":    "secret://vault/key",
-			"DEBUG":      true,
-			"THRESHOLD":  42,
+			"EDITOR":    "nvim",
+			"API_KEY":   "secret://vault/key",
+			"DEBUG":     true,
+			"THRESHOLD": 42,
 		},
 	}
 	vars := extractEnvVars(config)
@@ -935,7 +916,7 @@ func TestBatch3_ListSnapshots_WithSets(t *testing.T) {
 	}
 
 	output := captureStdout(t, func() {
-		err := listSnapshots(nil, nil, sets)
+		err := listSnapshots(context.Background(), nil, sets)
 		assert.NoError(t, err)
 	})
 	assert.Contains(t, output, "abcdef12")

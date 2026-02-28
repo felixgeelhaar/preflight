@@ -49,6 +49,8 @@ func TestInitCmd_YesShorthand(t *testing.T) {
 // --- Batch 3: Generation and non-interactive init tests ---
 
 func TestGenerateManifestForPreset(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		preset string
@@ -79,6 +81,8 @@ func TestGenerateManifestForPreset(t *testing.T) {
 }
 
 func TestGenerateLayerForPreset_AllPresets(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name             string
 		preset           string

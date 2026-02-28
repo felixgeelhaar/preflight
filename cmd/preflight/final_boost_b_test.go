@@ -1730,7 +1730,7 @@ hosts:
 	var summary map[string]interface{}
 	err = json.Unmarshal([]byte(output), &summary)
 	require.NoError(t, err)
-	assert.Equal(t, float64(2), summary["host_count"])
+	assert.InDelta(t, float64(2), summary["host_count"], 0)
 }
 
 //nolint:tparallel // Test modifies global state (fleetInventoryFile)

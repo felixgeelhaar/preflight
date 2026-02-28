@@ -78,11 +78,11 @@ func (m *fcMockWatchPreflight) Plan(_ context.Context, _, _ string) (*execution.
 	return m.plan, nil
 }
 
-func (m *fcMockWatchPreflight) PrintPlan(_ *execution.Plan)                                          {}
+func (m *fcMockWatchPreflight) PrintPlan(_ *execution.Plan) {}
 func (m *fcMockWatchPreflight) Apply(_ context.Context, _ *execution.Plan, _ bool) ([]execution.StepResult, error) {
 	return nil, nil
 }
-func (m *fcMockWatchPreflight) PrintResults(_ []execution.StepResult)                                {}
+func (m *fcMockWatchPreflight) PrintResults(_ []execution.StepResult)                {}
 func (m *fcMockWatchPreflight) WithMode(_ config.ReproducibilityMode) watchPreflight { return m }
 
 // fcMockWatchMode is a fake watch mode that returns immediately.
@@ -1673,6 +1673,7 @@ func TestFinalCov_FormatInstallAge_OlderThan30Days(t *testing.T) {
 
 //nolint:tparallel // modifies global search flags
 func TestFinalCov_RunPluginSearch_ConfigType(t *testing.T) {
+	t.Log("exercising config type path for runPluginSearch")
 	origType := searchType
 	origLimit := searchLimit
 	origMinStars := searchMinStars
@@ -1698,6 +1699,7 @@ func TestFinalCov_RunPluginSearch_ConfigType(t *testing.T) {
 
 //nolint:tparallel // modifies global search flags
 func TestFinalCov_RunPluginSearch_ProviderType(t *testing.T) {
+	t.Log("exercising provider type path for runPluginSearch")
 	origType := searchType
 	origLimit := searchLimit
 	origMinStars := searchMinStars
@@ -1720,6 +1722,7 @@ func TestFinalCov_RunPluginSearch_ProviderType(t *testing.T) {
 
 //nolint:tparallel // modifies global search flags
 func TestFinalCov_RunPluginSearch_EmptyType(t *testing.T) {
+	t.Log("exercising empty type path for runPluginSearch")
 	origType := searchType
 	origLimit := searchLimit
 	origMinStars := searchMinStars

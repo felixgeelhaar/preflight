@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/security"
@@ -229,9 +228,9 @@ func TestOutputOutdatedJSON_WithResults(t *testing.T) {
 
 	summary, ok := parsed["summary"].(map[string]interface{})
 	require.True(t, ok)
-	assert.Equal(t, float64(2), summary["total"])
-	assert.Equal(t, float64(1), summary["major"])
-	assert.Equal(t, float64(1), summary["minor"])
+	assert.InDelta(t, float64(2), summary["total"], 0)
+	assert.InDelta(t, float64(1), summary["major"], 0)
+	assert.InDelta(t, float64(1), summary["minor"], 0)
 }
 
 func TestOutputOutdatedJSON_WithError(t *testing.T) {
@@ -515,8 +514,8 @@ func TestOutputUpgradeText_WithSkippedAndFailed(t *testing.T) {
 
 	// Summary
 	assert.Contains(t, output, "Upgraded 1 package(s)")
-	assert.True(t, strings.Contains(output, "1 skipped"))
-	assert.True(t, strings.Contains(output, "1 failed"))
+	assert.Contains(t, output, "1 skipped")
+	assert.Contains(t, output, "1 failed")
 
 	// Hint for major upgrades
 	assert.Contains(t, output, "--major")
