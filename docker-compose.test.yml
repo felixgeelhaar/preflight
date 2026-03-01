@@ -202,6 +202,36 @@ services:
       - go-build-cache:/root/.cache/go-build
     command: ["/app/test/e2e/test_usecase_reproducible.sh"]
 
+  e2e-config-evolution:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: e2e-usecases
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    command: ["/app/test/e2e/test_usecase_config_evolution.sh"]
+
+  e2e-multi-target:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: e2e-usecases
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    command: ["/app/test/e2e/test_usecase_multi_target.sh"]
+
+  e2e-operations:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: e2e-usecases
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    command: ["/app/test/e2e/test_usecase_operations.sh"]
+
   # ==========================================================================
   # Lint (golangci-lint)
   # ==========================================================================

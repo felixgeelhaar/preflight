@@ -761,6 +761,289 @@ preflight version 4.0.0
 
 ---
 
+## Operational Commands
+
+### preflight compare
+
+Compare two targets side-by-side.
+
+```bash
+preflight compare <target1> <target2> [flags]
+```
+
+**Examples:**
+
+```bash
+# Compare work and personal targets
+preflight compare work personal
+```
+
+---
+
+### preflight export
+
+Export merged configuration for a target.
+
+```bash
+preflight export [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--target <name>` | Target to export |
+| `--format <fmt>` | Output format: yaml, json |
+
+**Examples:**
+
+```bash
+# Export as YAML
+preflight export --target work --format yaml
+
+# Export as JSON
+preflight export --target personal --format json
+```
+
+---
+
+### preflight profile
+
+Manage configuration profiles (targets).
+
+```bash
+preflight profile <command> [flags]
+```
+
+**Subcommands:**
+
+| Command | Description |
+|---------|-------------|
+| `list` | List all profiles |
+| `create <name>` | Create a new profile |
+| `switch <name>` | Switch to a profile |
+| `current` | Show current profile |
+| `delete <name>` | Delete a profile |
+
+**Flags (create):**
+
+| Flag | Description |
+|------|-------------|
+| `--from <name>` | Create profile based on existing target |
+
+**Examples:**
+
+```bash
+# List profiles
+preflight profile list
+
+# Create from existing target
+preflight profile create meeting --from work
+
+# Switch profile
+preflight profile switch work
+
+# Show current
+preflight profile current
+
+# Delete profile
+preflight profile delete meeting
+```
+
+---
+
+### preflight audit
+
+View operation audit trail.
+
+```bash
+preflight audit [command] [flags]
+```
+
+**Subcommands:**
+
+| Command | Description |
+|---------|-------------|
+| `show` | Show detailed audit log |
+| `summary` | Summarize audit events |
+| `security` | Security-focused audit view |
+| `clean` | Clean old audit entries |
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON |
+
+**Examples:**
+
+```bash
+# View audit trail
+preflight audit
+
+# JSON output
+preflight audit --json
+
+# Show details
+preflight audit show
+```
+
+---
+
+### preflight history
+
+View and manage operation history.
+
+```bash
+preflight history [command] [flags]
+```
+
+**Subcommands:**
+
+| Command | Description |
+|---------|-------------|
+| `clear` | Clear operation history |
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON |
+| `--yes` | Skip confirmation for clear |
+
+**Examples:**
+
+```bash
+# View history
+preflight history
+
+# JSON output
+preflight history --json
+
+# Clear history
+preflight history clear --yes
+```
+
+---
+
+### preflight compliance
+
+Check configuration compliance against policies.
+
+```bash
+preflight compliance [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON |
+
+**Examples:**
+
+```bash
+# Check compliance
+preflight compliance
+
+# JSON output for CI
+preflight compliance --json
+```
+
+---
+
+### preflight analyze
+
+Analyze configuration health and structure.
+
+```bash
+preflight analyze [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON |
+| `--no-ai` | Skip AI-powered recommendations |
+| `--recommend` | Include AI recommendations |
+
+**Examples:**
+
+```bash
+# Basic analysis
+preflight analyze --no-ai
+
+# JSON output
+preflight analyze --json --no-ai
+
+# With AI recommendations
+preflight analyze --recommend
+```
+
+---
+
+### preflight secrets
+
+Scan configuration for exposed secrets.
+
+```bash
+preflight secrets [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON |
+
+**Examples:**
+
+```bash
+# Scan for secrets
+preflight secrets
+
+# JSON output for CI
+preflight secrets --json
+```
+
+---
+
+### preflight env
+
+Manage environment variables in configuration.
+
+```bash
+preflight env <command> [args]
+```
+
+**Subcommands:**
+
+| Command | Description |
+|---------|-------------|
+| `list` | List configured environment variables |
+| `set <key> <value>` | Set an environment variable |
+| `unset <key>` | Remove an environment variable |
+| `export` | Generate shell export statements |
+
+**Examples:**
+
+```bash
+# List env vars
+preflight env list
+
+# Set a variable
+preflight env set MY_EDITOR vim
+
+# Export for shell sourcing
+preflight env export
+
+# Remove a variable
+preflight env unset MY_EDITOR
+```
+
+---
+
 ## v4.0 Commands
 
 ### preflight sync

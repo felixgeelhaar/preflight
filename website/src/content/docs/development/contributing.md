@@ -207,6 +207,23 @@ func TestFunction(t *testing.T) {
 }
 ```
 
+### End-to-End Tests
+
+Preflight includes 6 E2E test suites (281 total assertions) that run in Docker containers:
+
+```bash
+# Run all E2E suites
+docker compose -f docker-compose.test.yml up --build
+
+# Run individual suites
+docker compose -f docker-compose.test.yml run e2e-cli-smoke
+docker compose -f docker-compose.test.yml run e2e-config-evolution
+docker compose -f docker-compose.test.yml run e2e-multi-target
+docker compose -f docker-compose.test.yml run e2e-operations
+```
+
+See [TDD Workflow](/preflight/development/tdd/) for details on E2E test coverage and how to write new tests.
+
 ## Commit Messages
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/):

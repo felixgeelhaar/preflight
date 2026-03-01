@@ -724,9 +724,47 @@ go-mutesting ./internal/domain/config/...
 
 ---
 
+## End-to-End Test Coverage
+
+In addition to unit and integration tests, Preflight includes **6 comprehensive E2E test suites** with **281 total assertions** that run in Docker containers with isolated HOME directories.
+
+### E2E Test Suites
+
+| Suite | File | Assertions | Description |
+|-------|------|-----------|-------------|
+| CLI Smoke | `test_cli_smoke.sh` | 72 | Core CLI commands, flags, exit codes |
+| Fresh Install | `test_usecase_fresh_install.sh` | 32 | Clean machine → init → plan → apply → verify |
+| Reproducible | `test_usecase_reproducible.sh` | 35 | Idempotency and deterministic output |
+| Config Evolution | `test_usecase_config_evolution.sh` | 40 | Modify config after apply, re-plan, re-apply |
+| Multi-Target | `test_usecase_multi_target.sh` | 49 | Target isolation, layer overrides, profiles |
+| Operations | `test_usecase_operations.sh` | 43 | Rollback, audit, env, lockfile, compliance |
+
+### What E2E Tests Verify
+
+**Config Evolution (UC3)**: Tests the workflow of modifying configuration after initial apply — adding git aliases, changing email, adding SSH hosts, adding a second layer, and verifying that re-plan correctly detects changes and re-apply converges to the desired state.
+
+**Multi-Target (UC4)**: Tests work vs personal targets sharing a base layer. Verifies scalar last-wins semantics (editor override), map deep-merge (base aliases survive), target isolation (work SSH hosts absent from personal), compare, export per target, and the full profile lifecycle (create from target, switch, list, delete).
+
+**Operations (UC5)**: Tests day-to-day operational commands — rollback/snapshot listing, audit trail with JSON output, environment variable management (set/list/export/unset), diff, lockfile lifecycle (update, locked mode apply, plan convergence), compliance/analyze/secrets commands, nvim preset idempotency, history management, and doctor health checks.
+
+### Running E2E Tests
+
+```bash
+# All suites
+docker compose -f docker-compose.test.yml up --build
+
+# Individual suites
+docker compose -f docker-compose.test.yml run e2e-cli-smoke
+docker compose -f docker-compose.test.yml run e2e-config-evolution
+docker compose -f docker-compose.test.yml run e2e-multi-target
+docker compose -f docker-compose.test.yml run e2e-operations
+```
+
+---
+
 ## Conclusion
 
-The preflight codebase demonstrates **strong test-first development practices** with excellent coverage in core business logic domains. The primary weakness is in the **application and CLI layers**, which represent the user-facing surface of the application.
+The preflight codebase demonstrates **strong test-first development practices** with excellent coverage in core business logic domains. The primary weakness is in the **application and CLI layers**, which represent the user-facing surface of the application. This is supplemented by **281 E2E assertions** across 6 Docker-based test suites that verify complete CLI workflows end-to-end.
 
 **Immediate Actions Required**:
 1. Increase `internal/app/` coverage from 31.6% to 80% (CRITICAL)

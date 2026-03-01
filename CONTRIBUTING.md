@@ -150,6 +150,50 @@ type Step interface {
 }
 ```
 
+## End-to-End Testing
+
+Preflight includes comprehensive E2E test suites that run in Docker containers with isolated HOME directories. These verify complete CLI workflows from configuration through apply and verification.
+
+### Running E2E Tests
+
+```bash
+# Run all E2E suites
+docker compose -f docker-compose.test.yml up --build
+
+# Run individual suites
+docker compose -f docker-compose.test.yml run e2e-cli-smoke
+docker compose -f docker-compose.test.yml run e2e-fresh-install
+docker compose -f docker-compose.test.yml run e2e-reproducible
+docker compose -f docker-compose.test.yml run e2e-config-evolution
+docker compose -f docker-compose.test.yml run e2e-multi-target
+docker compose -f docker-compose.test.yml run e2e-operations
+```
+
+### E2E Test Suites (281 total assertions)
+
+| Suite | File | Description |
+|-------|------|-------------|
+| CLI Smoke | `test/e2e/test_cli_smoke.sh` | Core CLI commands, flags, exit codes |
+| Fresh Install | `test/e2e/test_usecase_fresh_install.sh` | Clean machine → init → plan → apply → verify |
+| Reproducible | `test/e2e/test_usecase_reproducible.sh` | Idempotency and deterministic output |
+| Config Evolution | `test/e2e/test_usecase_config_evolution.sh` | Modify config after apply, re-plan, re-apply |
+| Multi-Target | `test/e2e/test_usecase_multi_target.sh` | Target isolation, layer overrides, profiles |
+| Operations | `test/e2e/test_usecase_operations.sh` | Rollback, audit, env, lockfile, compliance |
+
+### Writing E2E Tests
+
+E2E tests are shell scripts in `test/e2e/`. They follow a standard pattern:
+
+1. Create a temporary directory with `preflight.yaml` and layers
+2. Run preflight commands and assert exit codes and output
+3. Verify side effects (git config, file contents, etc.)
+4. Report pass/fail counts
+
+To add a new E2E test:
+1. Create `test/e2e/test_your_test.sh`
+2. Add `chmod +x` in `Dockerfile.test`
+3. Add a service in `docker-compose.test.yml`
+
 ## Getting Help
 
 - Open an issue for bugs or feature requests

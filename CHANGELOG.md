@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Comprehensive E2E Test Suites**: 3 new end-to-end use case tests bringing total to 281 assertions across 6 suites
+  - **Config Evolution** (UC3): Tests additive changes, config updates, multi-layer merge, and idempotency after config modifications
+  - **Multi-Target & Layer Override** (UC4): Tests work/personal target isolation, scalar last-wins semantics, map deep-merge, compare, export, and profile lifecycle (create/switch/list/delete)
+  - **Operational Workflows** (UC5): Tests rollback/snapshots, audit trail, env management, diff, lockfile lifecycle, compliance, analyze, secrets scanning, nvim preset idempotency, and history
+  - All E2E suites run in Docker containers with isolated HOME directories
+
+### Fixed
+
+- **SSH Provider Deterministic Merge**: Sorted map-to-slice conversions in merger to ensure deterministic SSH config output across runs
+- **Test Infrastructure Race Condition**: Rewrote `captureStdout` test helper with `syscall.Dup2` for fd-level stdout redirection, eliminating data races with parallel goroutines. Added concurrent pipe draining to prevent deadlock when output exceeds OS pipe buffer (~64KB)
+- **MCP Test Isolation**: Removed `t.Parallel` from MCP tests that use process-global `os.Chdir`
+
 ## [4.5.0] - 2026-01-01
 
 ### Added

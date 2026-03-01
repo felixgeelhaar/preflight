@@ -349,6 +349,55 @@ Run with:
 go test -tags=integration ./...
 ```
 
+## End-to-End Tests
+
+Preflight includes 6 comprehensive E2E test suites (281 total assertions) that run in Docker containers with isolated HOME directories. These verify complete CLI workflows end-to-end.
+
+### E2E Test Suites
+
+| Suite | Assertions | Description |
+|-------|-----------|-------------|
+| CLI Smoke | 72 | Core CLI command validation |
+| Fresh Install | 32 | Clean machine setup workflow |
+| Reproducible | 35 | Idempotency and reproducibility |
+| Config Evolution | 40 | Config changes after initial apply |
+| Multi-Target | 49 | Target isolation and layer override semantics |
+| Operations | 43 | Day-to-day operational workflows |
+
+### Running E2E Tests
+
+```bash
+# Run all suites
+docker compose -f docker-compose.test.yml up --build
+
+# Run individual suites
+docker compose -f docker-compose.test.yml run e2e-cli-smoke
+docker compose -f docker-compose.test.yml run e2e-config-evolution
+docker compose -f docker-compose.test.yml run e2e-multi-target
+docker compose -f docker-compose.test.yml run e2e-operations
+```
+
+### What E2E Tests Cover
+
+- **Config Evolution**: Add aliases → change email → add SSH hosts → add layers → verify merge semantics and idempotency
+- **Multi-Target**: Work vs personal targets sharing base layers, scalar last-wins override, map deep-merge, profile lifecycle (create/switch/list/delete), compare, export
+- **Operations**: Rollback/snapshots, audit trail, env var management, diff, lockfile lifecycle (update/locked mode), compliance, analyze, secrets scanning, nvim preset idempotency, history
+
+### Writing E2E Tests
+
+E2E tests are shell scripts in `test/e2e/`. They use standard assertion helpers:
+
+```bash
+assert_exit_code "test name" 0 $PREFLIGHT validate
+assert_cmd_output "git user.name" "Alice" git config --global user.name
+assert_file_contains "$HOME/.ssh/config" "github.com" "ssh has github"
+```
+
+To add a new test:
+1. Create `test/e2e/test_your_test.sh`
+2. Add `chmod +x` in `Dockerfile.test`
+3. Add a service in `docker-compose.test.yml`
+
 ## What's Next?
 
 - [Contributing](/preflight/development/contributing/) — How to contribute

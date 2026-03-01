@@ -7,6 +7,23 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Comprehensive E2E Test Suites**: 3 new end-to-end use case tests bringing total to 281 assertions across 6 suites
+  - **Config Evolution** (UC3): Tests additive changes, config updates, multi-layer merge, and idempotency after config modifications
+  - **Multi-Target & Layer Override** (UC4): Tests work/personal target isolation, scalar last-wins semantics, map deep-merge, compare, export, and profile lifecycle
+  - **Operational Workflows** (UC5): Tests rollback/snapshots, audit trail, env management, diff, lockfile lifecycle, compliance, analyze, secrets scanning, nvim preset idempotency, and history
+
+### Fixed
+
+- **SSH Provider Deterministic Merge**: Sorted map-to-slice conversions in merger to ensure deterministic SSH config output across runs
+- **Test Infrastructure Race Condition**: Rewrote `captureStdout` test helper with `syscall.Dup2` for fd-level stdout redirection and concurrent pipe draining
+- **MCP Test Isolation**: Removed `t.Parallel` from MCP tests using process-global `os.Chdir`
+
+---
+
 ## [4.9.0] - 2026-01-08
 
 ### Added

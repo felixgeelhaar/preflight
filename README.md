@@ -140,13 +140,25 @@ shell:
 | `preflight plan` | Preview changes without applying |
 | `preflight apply` | Apply the configuration |
 | `preflight doctor` | Check system health and detect drift |
-| `preflight rollback` | Restore files from automatic snapshots |
 | `preflight validate` | Validate config for CI/CD pipelines |
-| `preflight plugin list` | List installed plugins |
-| `preflight plugin search` | Search for community plugins |
-| `preflight plugin install` | Install a plugin from path or Git URL |
-| `preflight marketplace search` | Search community package registry |
-| `preflight trust list` | List trusted publishers |
+| `preflight diff` | Show differences between config and machine |
+| `preflight compare` | Compare two targets side-by-side |
+| `preflight export` | Export merged config (yaml/json) |
+| `preflight rollback` | Restore files from automatic snapshots |
+| `preflight lock` | Manage lockfile (update, freeze, status) |
+| `preflight audit` | View operation audit trail |
+| `preflight history` | View and manage operation history |
+| `preflight compliance` | Check configuration compliance |
+| `preflight analyze` | Analyze configuration health |
+| `preflight secrets` | Scan for exposed secrets |
+| `preflight env` | Manage environment variables (set/list/export/unset) |
+| `preflight profile` | Manage profiles (list/create/switch/delete) |
+| `preflight plugin` | Plugin management (list/search/install) |
+| `preflight marketplace` | Browse community package registry |
+| `preflight sync` | Synchronize config across machines |
+| `preflight agent` | Background reconciliation agent |
+| `preflight fleet` | Multi-machine fleet management |
+| `preflight trust` | Manage trusted publishers |
 | `preflight tour` | Interactive guided walkthroughs |
 | `preflight version` | Show version information |
 
@@ -214,7 +226,28 @@ make coverage-check
 
 # Run linter
 make lint
+
+# Run E2E tests (requires Docker)
+docker compose -f docker-compose.test.yml run e2e-cli-smoke
+docker compose -f docker-compose.test.yml run e2e-fresh-install
+docker compose -f docker-compose.test.yml run e2e-reproducible
+docker compose -f docker-compose.test.yml run e2e-config-evolution
+docker compose -f docker-compose.test.yml run e2e-multi-target
+docker compose -f docker-compose.test.yml run e2e-operations
 ```
+
+### E2E Test Suites
+
+Preflight includes 6 end-to-end test suites (281 total assertions) that run in Docker containers with isolated HOME directories:
+
+| Suite | Assertions | Description |
+|-------|-----------|-------------|
+| CLI Smoke | 72 | Core CLI command validation |
+| Fresh Install | 32 | Clean machine setup workflow |
+| Reproducible | 35 | Idempotency and reproducibility |
+| Config Evolution | 40 | Config changes after initial apply |
+| Multi-Target | 49 | Target isolation and layer override semantics |
+| Operations | 43 | Day-to-day operational workflows |
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 

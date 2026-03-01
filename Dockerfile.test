@@ -207,9 +207,12 @@ RUN go build -o /app/bin/preflight ./cmd/preflight
 ENV PREFLIGHT_BINARY=/app/bin/preflight
 
 RUN chmod +x /app/test/e2e/test_usecase_fresh_install.sh \
-    /app/test/e2e/test_usecase_reproducible.sh
+    /app/test/e2e/test_usecase_reproducible.sh \
+    /app/test/e2e/test_usecase_config_evolution.sh \
+    /app/test/e2e/test_usecase_multi_target.sh \
+    /app/test/e2e/test_usecase_operations.sh
 
-CMD ["bash", "-c", "(export HOME=/root && /app/test/e2e/test_usecase_fresh_install.sh) && (export HOME=/root && /app/test/e2e/test_usecase_reproducible.sh)"]
+CMD ["bash", "-c", "(export HOME=/root && /app/test/e2e/test_usecase_fresh_install.sh) && (export HOME=/root && /app/test/e2e/test_usecase_reproducible.sh) && (export HOME=/root && /app/test/e2e/test_usecase_config_evolution.sh) && (export HOME=/root && /app/test/e2e/test_usecase_multi_target.sh) && (export HOME=/root && /app/test/e2e/test_usecase_operations.sh)"]
 
 # =============================================================================
 # Stage 9: Coverage report generation
