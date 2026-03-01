@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"testing"
@@ -641,94 +640,39 @@ func TestCompletionCommand_PowershellViaRoot(t *testing.T) {
 
 // Test completion RunE directly to ensure coverage
 func TestCompletionRunE_Bash(t *testing.T) {
-	// Call RunE directly to ensure coverage is tracked
-	// Use a bytes.Buffer instead of pipe to avoid deadlock with large outputs
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	// Read concurrently to avoid pipe buffer deadlock
-	done := make(chan struct{})
-	go func() {
-		_, _ = io.Copy(&buf, r)
-		close(done)
-	}()
-
-	err := completionCmd.RunE(completionCmd, []string{"bash"})
-
-	_ = w.Close()
-	os.Stdout = oldStdout
-	<-done // Wait for read to complete
-
+	var err error
+	output := captureStdout(t, func() {
+		err = completionCmd.RunE(completionCmd, []string{"bash"})
+	})
 	require.NoError(t, err)
-	assert.Contains(t, buf.String(), "bash")
+	assert.Contains(t, output, "bash")
 }
 
 func TestCompletionRunE_Zsh(t *testing.T) {
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	done := make(chan struct{})
-	go func() {
-		_, _ = io.Copy(&buf, r)
-		close(done)
-	}()
-
-	err := completionCmd.RunE(completionCmd, []string{"zsh"})
-
-	_ = w.Close()
-	os.Stdout = oldStdout
-	<-done
-
+	var err error
+	output := captureStdout(t, func() {
+		err = completionCmd.RunE(completionCmd, []string{"zsh"})
+	})
 	require.NoError(t, err)
-	assert.Contains(t, buf.String(), "zsh")
+	assert.Contains(t, output, "zsh")
 }
 
 func TestCompletionRunE_Fish(t *testing.T) {
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	done := make(chan struct{})
-	go func() {
-		_, _ = io.Copy(&buf, r)
-		close(done)
-	}()
-
-	err := completionCmd.RunE(completionCmd, []string{"fish"})
-
-	_ = w.Close()
-	os.Stdout = oldStdout
-	<-done
-
+	var err error
+	output := captureStdout(t, func() {
+		err = completionCmd.RunE(completionCmd, []string{"fish"})
+	})
 	require.NoError(t, err)
-	assert.Contains(t, buf.String(), "fish")
+	assert.Contains(t, output, "fish")
 }
 
 func TestCompletionRunE_Powershell(t *testing.T) {
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	done := make(chan struct{})
-	go func() {
-		_, _ = io.Copy(&buf, r)
-		close(done)
-	}()
-
-	err := completionCmd.RunE(completionCmd, []string{"powershell"})
-
-	_ = w.Close()
-	os.Stdout = oldStdout
-	<-done
-
+	var err error
+	output := captureStdout(t, func() {
+		err = completionCmd.RunE(completionCmd, []string{"powershell"})
+	})
 	require.NoError(t, err)
-	assert.NotEmpty(t, buf.String())
+	assert.NotEmpty(t, output)
 }
 
 func TestCompletionRunE_UnknownShell(t *testing.T) {
@@ -1838,18 +1782,9 @@ files:
 	applyDryRun = true // Use dry-run to test the dry-run code path
 
 	// Capture stdout to see plan output
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err = runApply(nil, nil)
-
-	_ = w.Close()
-	os.Stdout = oldStdout
-
-	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		err = runApply(nil, nil)
+	})
 
 	// Should succeed with dry-run showing plan
 	require.NoError(t, err)
@@ -1915,21 +1850,12 @@ files:
 	applyDryRun = false // Execute actual apply
 
 	// Capture stdout
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err = runApply(nil, nil)
-
-	_ = w.Close()
-	os.Stdout = oldStdout
-
-	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
-
+	applyOutput := captureStdout(t, func() {
+		err = runApply(nil, nil)
+	})
 	// Should succeed and apply changes
 	if err != nil {
-		t.Logf("Apply output: %s", buf.String())
+		t.Logf("Apply output: %s", applyOutput)
 		t.Logf("Apply error: %v", err)
 	}
 

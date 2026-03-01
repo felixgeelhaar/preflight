@@ -1326,18 +1326,9 @@ func TestOutputOrphansText(t *testing.T) {
 	}
 
 	// Capture stdout
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputOrphansText(orphans)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputOrphansText(orphans)
+	})
 
 	assert.Contains(t, output, "Found 2 orphaned items")
 	assert.Contains(t, output, "brew")
@@ -1349,36 +1340,18 @@ func TestOutputOrphansText(t *testing.T) {
 func TestOutputOrphansText_Empty(t *testing.T) {
 	// NOTE: Not running in parallel due to stdout capture
 	// Capture stdout
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputOrphansText(nil)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputOrphansText(nil)
+	})
 
 	assert.Contains(t, output, "Found 0 orphaned items")
 }
 
 func TestOutputCompareText_NoDiffs(t *testing.T) {
 	// NOTE: Not running in parallel due to stdout capture
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputCompareText("source.yaml", "dest.yaml", nil)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputCompareText("source.yaml", "dest.yaml", nil)
+	})
 
 	assert.Contains(t, output, "No differences")
 }
@@ -1391,18 +1364,9 @@ func TestOutputCompareText_WithDiffs(t *testing.T) {
 		{Type: "changed", Provider: "git", Key: "user.name", Source: "Old", Dest: "New"},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputCompareText("source.yaml", "dest.yaml", diffs)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputCompareText("source.yaml", "dest.yaml", diffs)
+	})
 
 	assert.Contains(t, output, "Comparing source.yaml → dest.yaml")
 	assert.Contains(t, output, "added")
@@ -1417,20 +1381,11 @@ func TestOutputCompareJSON(t *testing.T) {
 		{Type: "added", Provider: "brew", Key: "formulae"},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := outputCompareJSON(diffs)
-
-	_ = w.Close()
-	os.Stdout = old
-
+	var err error
+	output := captureStdout(t, func() {
+		err = outputCompareJSON(diffs)
+	})
 	require.NoError(t, err)
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
 
 	assert.Contains(t, output, "added")
 	assert.Contains(t, output, "brew")
@@ -1450,18 +1405,9 @@ func TestOutputHistoryText(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputHistoryText(entries)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputHistoryText(entries)
+	})
 
 	assert.Contains(t, output, "apply")
 	assert.Contains(t, output, "success")
@@ -1469,36 +1415,18 @@ func TestOutputHistoryText(t *testing.T) {
 
 func TestOutputHistoryText_Empty(t *testing.T) {
 	// NOTE: Not running in parallel due to stdout capture
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputHistoryText(nil)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputHistoryText(nil)
+	})
 
 	assert.Contains(t, output, "Showing 0 entries")
 }
 
 func TestOutputComplianceError(t *testing.T) {
 	// NOTE: Not running in parallel due to stdout capture
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputComplianceError(errors.New("test error message"))
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputComplianceError(errors.New("test error message"))
+	})
 
 	assert.Contains(t, output, "error")
 	assert.Contains(t, output, "test error message")
@@ -1520,18 +1448,9 @@ func TestOutputComplianceJSON(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputComplianceJSON(report)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputComplianceJSON(report)
+	})
 
 	assert.Contains(t, output, "test-policy")
 	assert.Contains(t, output, "status")
@@ -1553,18 +1472,9 @@ func TestOutputComplianceText(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputComplianceText(report)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputComplianceText(report)
+	})
 
 	assert.Contains(t, output, "test-policy")
 }
@@ -1595,18 +1505,9 @@ func TestOutputComplianceText_WithExpiringOverrides(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputComplianceText(report)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputComplianceText(report)
+	})
 
 	assert.Contains(t, output, "test-policy")
 	assert.Contains(t, output, "expiring")
@@ -1634,18 +1535,9 @@ func TestOutputHistoryText_Verbose(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputHistoryText(entries)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputHistoryText(entries)
+	})
 
 	assert.Contains(t, output, "test-1")
 	assert.Contains(t, output, "Command:  apply")
@@ -1671,18 +1563,9 @@ func TestOutputHistoryText_VerboseWithError(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputHistoryText(entries)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputHistoryText(entries)
+	})
 
 	assert.Contains(t, output, "test-fail")
 	assert.Contains(t, output, "Error:    connection timeout")
@@ -2003,18 +1886,10 @@ func TestListSnapshots_Empty(t *testing.T) {
 	ctx := context.Background()
 	var sets []snapshot.Set
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := listSnapshots(ctx, nil, sets)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = listSnapshots(ctx, nil, sets)
+	})
 
 	assert.NoError(t, err)
 	assert.Contains(t, output, "Available Snapshots")
@@ -2044,18 +1919,10 @@ func TestListSnapshots_WithSets(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := listSnapshots(ctx, nil, sets)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = listSnapshots(ctx, nil, sets)
+	})
 
 	assert.NoError(t, err)
 	assert.Contains(t, output, "abc12345") // short ID
@@ -2069,17 +1936,10 @@ func TestApplyGitConfig_Empty(t *testing.T) {
 	// NOTE: Not running in parallel due to stdout capture
 	git := map[string]interface{}{}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := applyGitConfig(git)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
+	var err error
+	captureStdout(t, func() {
+		err = applyGitConfig(git)
+	})
 
 	assert.NoError(t, err)
 }
@@ -2090,18 +1950,10 @@ func TestApplyGitConfig_WithName(t *testing.T) {
 		"name": "Test User",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := applyGitConfig(git)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = applyGitConfig(git)
+	})
 
 	assert.NoError(t, err)
 	assert.Contains(t, output, "user.name")
@@ -2114,18 +1966,10 @@ func TestApplyGitConfig_WithEmail(t *testing.T) {
 		"email": "test@example.com",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := applyGitConfig(git)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = applyGitConfig(git)
+	})
 
 	assert.NoError(t, err)
 	assert.Contains(t, output, "user.email")
@@ -2138,18 +1982,10 @@ func TestApplyGitConfig_WithSigningKey(t *testing.T) {
 		"signing_key": "ABC123",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := applyGitConfig(git)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = applyGitConfig(git)
+	})
 
 	assert.NoError(t, err)
 	assert.Contains(t, output, "user.signingkey")
@@ -2164,18 +2000,10 @@ func TestApplyGitConfig_AllFields(t *testing.T) {
 		"signing_key": "KEY123",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := applyGitConfig(git)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = applyGitConfig(git)
+	})
 
 	assert.NoError(t, err)
 	assert.Contains(t, output, "user.name")
@@ -2197,18 +2025,10 @@ func TestOutputValidationResult_Valid(t *testing.T) {
 		Path:    "/path/to/plugin",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := outputValidationResult(result)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = outputValidationResult(result)
+	})
 
 	assert.NoError(t, err)
 	assert.Contains(t, output, "Plugin validated")
@@ -2227,18 +2047,10 @@ func TestOutputValidationResult_Invalid(t *testing.T) {
 		Path:   "/path/to/plugin",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := outputValidationResult(result)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = outputValidationResult(result)
+	})
 
 	assert.Error(t, err)
 	assert.Contains(t, output, "Validation failed")
@@ -2260,18 +2072,10 @@ func TestOutputValidationResult_WithWarnings(t *testing.T) {
 		Path:     "/path/to/plugin",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := outputValidationResult(result)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = outputValidationResult(result)
+	})
 
 	assert.NoError(t, err)
 	assert.Contains(t, output, "Plugin validated")
@@ -2292,18 +2096,10 @@ func TestOutputValidationResult_JSON(t *testing.T) {
 		Path:    "/path/to/plugin",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := outputValidationResult(result)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = outputValidationResult(result)
+	})
 
 	assert.NoError(t, err)
 	assert.Contains(t, output, `"valid": true`)
@@ -2416,18 +2212,9 @@ func TestOutputComplianceJSON_Full(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputComplianceJSON(report)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputComplianceJSON(report)
+	})
 
 	assert.Contains(t, output, "test-policy")
 	assert.Contains(t, output, "compliant")
@@ -2437,18 +2224,9 @@ func TestOutputCompareText_NoChanges(t *testing.T) {
 	// NOTE: Not running in parallel due to stdout capture
 	diffs := []configDiff{}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputCompareText("source.yaml", "dest.yaml", diffs)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputCompareText("source.yaml", "dest.yaml", diffs)
+	})
 
 	assert.Contains(t, output, "No differences")
 }
@@ -2574,18 +2352,9 @@ func TestOutputCompareText_WithChanges(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputCompareText("source.yaml", "dest.yaml", diffs)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputCompareText("source.yaml", "dest.yaml", diffs)
+	})
 
 	assert.Contains(t, output, "brew")
 	assert.Contains(t, output, "formulae")
@@ -2635,18 +2404,10 @@ func TestOutputValidationText_MoreCases(t *testing.T) {
 		Path:     "/path/to/plugin",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := outputValidationResult(result)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = outputValidationResult(result)
+	})
 
 	assert.NoError(t, err)
 	assert.Contains(t, output, "valid")
@@ -2719,18 +2480,9 @@ func TestSaveHistoryEntry_NewEntry(t *testing.T) {
 func TestOutputComplianceError_Output(t *testing.T) {
 	// NOTE: Not running in parallel due to stdout capture
 	// outputComplianceError outputs JSON to stdout
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputComplianceError(errors.New("test compliance error"))
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputComplianceError(errors.New("test compliance error"))
+	})
 
 	assert.Contains(t, output, "test compliance error")
 }
@@ -2751,18 +2503,9 @@ func TestOutputComplianceText_Output(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputComplianceText(report)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputComplianceText(report)
+	})
 
 	assert.Contains(t, output, "test-policy")
 }
@@ -2790,18 +2533,9 @@ func TestOutputRecommendations(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputRecommendations(recs)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputRecommendations(recs)
+	})
 
 	assert.Contains(t, output, "NAME")
 	assert.Contains(t, output, "TYPE")
@@ -2832,18 +2566,9 @@ func TestOutputRecommendations_LongReason(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputRecommendations(recs)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputRecommendations(recs)
+	})
 
 	// Long reason list should be truncated with "..."
 	assert.Contains(t, output, "...")
@@ -2995,18 +2720,9 @@ func TestGetRegistry_LoadsBuiltin(t *testing.T) {
 
 func TestOutputCompareText_NoDifferences(t *testing.T) {
 	// NOTE: Not using t.Parallel() due to stdout capture
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputCompareText("source.yaml", "dest.yaml", nil)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputCompareText("source.yaml", "dest.yaml", nil)
+	})
 
 	assert.Contains(t, output, "No differences")
 }
@@ -3028,18 +2744,9 @@ func TestOutputCompareText_WithDifferences(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputCompareText("source.yaml", "dest.yaml", diffs)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputCompareText("source.yaml", "dest.yaml", diffs)
+	})
 
 	assert.Contains(t, output, "brew")
 	assert.Contains(t, output, "git")
@@ -3048,18 +2755,9 @@ func TestOutputCompareText_WithDifferences(t *testing.T) {
 
 func TestOutputHistoryText_NoEntries(t *testing.T) {
 	// NOTE: Not using t.Parallel() due to stdout capture
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputHistoryText(nil)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputHistoryText(nil)
+	})
 
 	// Empty entries show header and "Showing 0 entries"
 	assert.Contains(t, output, "Showing 0 entries")
@@ -3077,18 +2775,9 @@ func TestOutputCompareText_WithChangedType(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputCompareText("source.yaml", "dest.yaml", diffs)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputCompareText("source.yaml", "dest.yaml", diffs)
+	})
 
 	assert.Contains(t, output, "changed")
 	assert.Contains(t, output, "git")
@@ -3105,18 +2794,9 @@ func TestOutputCompareText_WithEmptyKey(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputCompareText("source.yaml", "dest.yaml", diffs)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputCompareText("source.yaml", "dest.yaml", diffs)
+	})
 
 	assert.Contains(t, output, "(entire section)")
 }
@@ -3180,18 +2860,10 @@ func TestApplyGitConfig_PartialFields(t *testing.T) {
 		"email": "partial@example.com",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := applyGitConfig(git)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = applyGitConfig(git)
+	})
 
 	require.NoError(t, err)
 	assert.Contains(t, output, "user.email")
@@ -3389,18 +3061,10 @@ func TestApplyGitConfig_FullConfig(t *testing.T) {
 		"signing_key": "ABC123DEF456",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := applyGitConfig(git)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = applyGitConfig(git)
+	})
 
 	require.NoError(t, err)
 	assert.Contains(t, output, "user.name")
@@ -3412,18 +3076,10 @@ func TestApplyGitConfig_FullConfig(t *testing.T) {
 func TestApplyGitConfig_EmptyConfig(t *testing.T) {
 	git := map[string]interface{}{}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := applyGitConfig(git)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = applyGitConfig(git)
+	})
 
 	require.NoError(t, err)
 	assert.Empty(t, output)
@@ -3449,18 +3105,9 @@ func TestOutputHistoryText_VerboseMode(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputHistoryText(entries)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputHistoryText(entries)
+	})
 
 	assert.Contains(t, output, "test-verbose-1")
 	assert.Contains(t, output, "apply")
@@ -3487,18 +3134,9 @@ func TestOutputHistoryText_VerboseModeWithError(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputHistoryText(entries)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputHistoryText(entries)
+	})
 
 	assert.Contains(t, output, "Error:")
 	assert.Contains(t, output, "something went wrong")
@@ -3606,18 +3244,9 @@ func TestOutputComplianceText_Expiring(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputComplianceText(report)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputComplianceText(report)
+	})
 
 	assert.Contains(t, output, "expiring within 7 days")
 }
@@ -3627,35 +3256,18 @@ func TestOutputComplianceText_NotExpiring(t *testing.T) {
 		PolicyName: "test-policy",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputComplianceText(report)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputComplianceText(report)
+	})
 
 	assert.NotContains(t, output, "expiring")
 }
 
 func TestRunGitConfigSet_Email(t *testing.T) {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := runGitConfigSet("user.email", "test@example.com")
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = runGitConfigSet("user.email", "test@example.com")
+	})
 
 	require.NoError(t, err)
 	assert.Contains(t, output, "git config --global user.email")
@@ -3726,18 +3338,9 @@ func TestOutputHistoryText_MultipleEntries(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputHistoryText(entries)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		outputHistoryText(entries)
+	})
 
 	assert.Contains(t, output, "apply")
 	assert.Contains(t, output, "doctor")
@@ -3801,18 +3404,10 @@ func TestApplyGitConfig_IncludingSigningKey(t *testing.T) {
 		"signing_key": "ABC123DEF456",
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := applyGitConfig(config)
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	var err error
+	output := captureStdout(t, func() {
+		err = applyGitConfig(config)
+	})
 
 	require.NoError(t, err)
 	assert.Contains(t, output, "user.name")
@@ -3972,18 +3567,9 @@ func TestTourCmd_HasListFlag(t *testing.T) {
 }
 
 func TestPrintTourTopics(t *testing.T) {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	printTourTopics()
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		printTourTopics()
+	})
 
 	assert.Contains(t, output, "Available tour topics")
 	assert.Contains(t, output, "preflight tour")
@@ -4956,7 +4542,7 @@ provides:
 	require.NoError(t, err)
 
 	output := captureStdout(t, func() {
-		err := runPluginValidate(tmpDir)
+		err = runPluginValidate(tmpDir)
 		assert.NoError(t, err)
 	})
 
@@ -5229,14 +4815,15 @@ func TestOutputValidationResult_JSONMode(t *testing.T) {
 		Path:    "/test/path",
 	}
 
+	var err error
 	output := captureStdout(t, func() {
-		err := outputValidationResult(result)
+		err = outputValidationResult(result)
 		assert.NoError(t, err)
 	})
 
 	// Should be valid JSON
 	var parsed map[string]interface{}
-	err := json.Unmarshal([]byte(output), &parsed)
+	err = json.Unmarshal([]byte(output), &parsed)
 	assert.NoError(t, err)
 	assert.Equal(t, true, parsed["valid"])
 	assert.Equal(t, "test-plugin", parsed["plugin"])
@@ -5356,8 +4943,9 @@ func TestRunTour_ListFlag_Direct(t *testing.T) {
 
 	tourListFlag = true
 
+	var err error
 	output := captureStdout(t, func() {
-		err := runTour(nil, []string{})
+		err = runTour(nil, []string{})
 		assert.NoError(t, err)
 	})
 

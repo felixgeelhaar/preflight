@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -40,20 +38,7 @@ func TestPluginInfoCmd_Exists(t *testing.T) {
 
 func capturePluginStdout(t *testing.T, f func()) string {
 	t.Helper()
-	old := os.Stdout
-	r, w, err := os.Pipe()
-	require.NoError(t, err)
-	os.Stdout = w
-
-	f()
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, r)
-	require.NoError(t, err)
-	return buf.String()
+	return captureStdout(t, f)
 }
 
 func TestRunPluginList_Empty(t *testing.T) {

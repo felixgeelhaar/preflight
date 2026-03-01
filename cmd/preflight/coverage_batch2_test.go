@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,27 +18,10 @@ import (
 )
 
 // batch2CaptureStdout captures stdout during function execution.
-// Uses the shared stdoutMu mutex defined in validate_test.go.
+// Delegates to the shared captureStdout defined in validate_test.go.
 func batch2CaptureStdout(t *testing.T, f func()) string {
 	t.Helper()
-
-	stdoutMu.Lock()
-	defer stdoutMu.Unlock()
-
-	old := os.Stdout
-	r, w, err := os.Pipe()
-	require.NoError(t, err)
-	os.Stdout = w
-
-	f()
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, r)
-	require.NoError(t, err)
-	return buf.String()
+	return captureStdout(t, f)
 }
 
 // ---------------------------------------------------------------------------

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"syscall"
 	"testing"
 
 	"github.com/felixgeelhaar/preflight/internal/app"
@@ -16,8 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// stdoutMu protects os.Stdout during capture operations to prevent race conditions
-// when multiple parallel tests try to capture stdout simultaneously.
+// stdoutMu serializes stdout capture operations. All code that redirects
+// file descriptor 1 must hold this lock.
 var stdoutMu sync.Mutex
 
 func TestValidateCommand_UseAndShort(t *testing.T) {
@@ -58,27 +59,49 @@ func TestValidateCommand_IsRegistered(t *testing.T) {
 }
 
 // captureStdout captures stdout during the execution of f.
-// It uses a mutex to prevent race conditions when multiple parallel tests
-// try to capture stdout simultaneously.
+//
+// It redirects file descriptor 1 at the OS level using syscall.Dup2 instead
+// of swapping the os.Stdout Go variable. This avoids a data race with any
+// parallel goroutine that reads os.Stdout (e.g. exec.Cmd, app.New(os.Stdout)).
 func captureStdout(t *testing.T, f func()) string {
 	t.Helper()
 
 	stdoutMu.Lock()
 	defer stdoutMu.Unlock()
 
-	old := os.Stdout
+	// Create a pipe to capture output.
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
-	os.Stdout = w
+	defer r.Close()
+
+	// Save the original fd 1 so we can restore it.
+	origFd, err := syscall.Dup(int(os.Stdout.Fd()))
+	require.NoError(t, err)
+	defer syscall.Close(origFd)
+
+	// Redirect fd 1 to the pipe write end. This does NOT modify
+	// the os.Stdout Go variable, so no data race with readers.
+	require.NoError(t, syscall.Dup2(int(w.Fd()), int(os.Stdout.Fd())))
+
+	// Drain the pipe concurrently to avoid deadlock when output exceeds
+	// the OS pipe buffer (~64 KB on macOS). Without this, f() blocks on
+	// write and we never reach the io.Copy below.
+	var buf bytes.Buffer
+	done := make(chan error, 1)
+	go func() {
+		_, copyErr := io.Copy(&buf, r)
+		done <- copyErr
+	}()
 
 	f()
 
-	_ = w.Close()
-	os.Stdout = old
+	// Restore fd 1 to the original destination.
+	require.NoError(t, syscall.Dup2(origFd, int(os.Stdout.Fd())))
 
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, r)
-	require.NoError(t, err)
+	// Close the pipe write end so the goroutine's io.Copy sees EOF.
+	w.Close()
+
+	require.NoError(t, <-done)
 	return buf.String()
 }
 

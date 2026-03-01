@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -140,19 +139,10 @@ hosts:
 	fleetJSON = false
 
 	// Capture output
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err = runFleetList(nil, nil)
-
-	_ = w.Close()
-	os.Stdout = oldStdout
-	_, _ = buf.ReadFrom(r)
-
+	output := captureStdout(t, func() {
+		err = runFleetList(nil, nil)
+	})
 	require.NoError(t, err)
-	output := buf.String()
 	assert.Contains(t, output, "server01")
 	assert.Contains(t, output, "10.0.0.1")
 	assert.Contains(t, output, "admin")
@@ -187,19 +177,10 @@ hosts:
 	fleetTarget = "@all"
 	fleetJSON = true
 
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err = runFleetList(nil, nil)
-
-	_ = w.Close()
-	os.Stdout = oldStdout
-	_, _ = buf.ReadFrom(r)
-
+	output := captureStdout(t, func() {
+		err = runFleetList(nil, nil)
+	})
 	require.NoError(t, err)
-	output := buf.String()
 	assert.True(t, strings.HasPrefix(output, "["))
 	assert.Contains(t, output, "\"id\": \"server01\"")
 }
@@ -235,19 +216,10 @@ groups:
 	fleetInventoryFile = invPath
 	fleetJSON = false
 
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err = runFleetStatus(nil, nil)
-
-	_ = w.Close()
-	os.Stdout = oldStdout
-	_, _ = buf.ReadFrom(r)
-
+	output := captureStdout(t, func() {
+		err = runFleetStatus(nil, nil)
+	})
 	require.NoError(t, err)
-	output := buf.String()
 	assert.Contains(t, output, "Total hosts:  2")
 	assert.Contains(t, output, "Total groups: 1")
 }
@@ -424,19 +396,10 @@ hosts:
 	fleetInventoryFile = invPath
 	fleetJSON = true
 
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err = runFleetStatus(nil, nil)
-
-	_ = w.Close()
-	os.Stdout = oldStdout
-	_, _ = buf.ReadFrom(r)
-
+	output := captureStdout(t, func() {
+		err = runFleetStatus(nil, nil)
+	})
 	require.NoError(t, err)
-	output := buf.String()
 	assert.Contains(t, output, "\"host_count\"")
 	assert.Contains(t, output, "\"group_count\"")
 }
