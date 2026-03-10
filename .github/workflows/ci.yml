@@ -79,7 +79,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Run unit tests in Docker
         run: make docker-test-unit
@@ -97,7 +97,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Run E2E tests in Docker
         run: docker compose -f docker-compose.test.yml run --rm e2e
