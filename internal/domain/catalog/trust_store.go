@@ -328,6 +328,8 @@ func (ts *TrustStore) Stats() TrustStoreStats {
 			stats.SSHKeys++
 		case SignatureTypeSigstore:
 			stats.SigstoreKeys++
+		case SignatureTypeAttestation:
+			// Attestation keys are counted but not tracked separately
 		}
 
 		switch key.TrustLevel() {

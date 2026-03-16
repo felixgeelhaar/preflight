@@ -256,6 +256,61 @@ func TestEventType_Constants(t *testing.T) {
 	assert.Equal(t, audit.EventCapabilityDenied, audit.EventType("capability_denied"))
 	assert.Equal(t, audit.EventSandboxViolation, audit.EventType("sandbox_violation"))
 	assert.Equal(t, audit.EventSecurityAudit, audit.EventType("security_audit"))
+
+	// Marketplace events
+	assert.Equal(t, audit.EventMarketplaceScanCompleted, audit.EventType("marketplace_scan_completed"))
+	assert.Equal(t, audit.EventMarketplaceScanBlocked, audit.EventType("marketplace_scan_blocked"))
+
+	// Identity events
+	assert.Equal(t, audit.EventIdentityLogin, audit.EventType("identity_login"))
+	assert.Equal(t, audit.EventIdentityLogout, audit.EventType("identity_logout"))
+	assert.Equal(t, audit.EventIdentityRefresh, audit.EventType("identity_refresh"))
+}
+
+func TestEvent_MarketplaceScanCompleted(t *testing.T) {
+	t.Parallel()
+
+	event := audit.NewEvent(audit.EventMarketplaceScanCompleted).
+		WithSeverity(audit.SeverityInfo).
+		AddDetail("package_id", "my-package").
+		AddDetail("version", "1.0.0").
+		AddDetail("scanner", "grype").
+		AddDetail("vulnerabilities", 0).
+		Build()
+
+	assert.Equal(t, audit.EventMarketplaceScanCompleted, event.Type)
+	assert.Equal(t, "my-package", event.Details["package_id"])
+	assert.Equal(t, "grype", event.Details["scanner"])
+}
+
+func TestEvent_MarketplaceScanBlocked(t *testing.T) {
+	t.Parallel()
+
+	event := audit.NewEvent(audit.EventMarketplaceScanBlocked).
+		WithSeverity(audit.SeverityError).
+		AddDetail("package_id", "risky-package").
+		AddDetail("version", "2.0.0").
+		AddDetail("critical_count", 3).
+		AddDetail("block_reason", "critical vulnerabilities found").
+		Build()
+
+	assert.Equal(t, audit.EventMarketplaceScanBlocked, event.Type)
+	assert.Equal(t, audit.SeverityError, event.Severity)
+	assert.Equal(t, 3, event.Details["critical_count"])
+}
+
+func TestEvent_IdentityLogin(t *testing.T) {
+	t.Parallel()
+
+	event := audit.NewEvent(audit.EventIdentityLogin).
+		WithUser("user@company.com").
+		AddDetail("provider", "corporate").
+		AddDetail("type", "oidc").
+		Build()
+
+	assert.Equal(t, audit.EventIdentityLogin, event.Type)
+	assert.Equal(t, "user@company.com", event.User)
+	assert.Equal(t, "corporate", event.Details["provider"])
 }
 
 func TestSeverity_Constants(t *testing.T) {

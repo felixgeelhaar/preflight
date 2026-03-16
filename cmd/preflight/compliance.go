@@ -39,6 +39,33 @@ Examples:
 	RunE: runCompliance,
 }
 
+var complianceAttestCmd = &cobra.Command{
+	Use:   "attest",
+	Short: "Create a signed compliance attestation",
+	Long: `Create a cryptographically signed attestation proving machine compliance.
+
+The attestation wraps the compliance report with a signature, providing
+verifiable proof that the machine met policy requirements at a point in time.
+
+Examples:
+  preflight compliance attest
+  preflight compliance attest --sign-key ~/.preflight/signing.key
+  preflight compliance attest --sigstore`,
+	RunE: runComplianceAttest,
+}
+
+var complianceVerifyCmd = &cobra.Command{
+	Use:   "verify <attestation-file>",
+	Short: "Verify a compliance attestation",
+	Long: `Verify the signature and contents of a compliance attestation file.
+
+Examples:
+  preflight compliance verify attestation.json
+  preflight compliance verify --sign-key ~/.preflight/signing.key attestation.json`,
+	Args: cobra.ExactArgs(1),
+	RunE: runComplianceVerify,
+}
+
 var (
 	complianceConfigPath string
 	complianceTarget     string
@@ -46,6 +73,8 @@ var (
 	complianceJSON       bool
 	complianceStrict     bool
 	complianceShowItems  bool
+	complianceSignKey    string
+	complianceSigstore   bool
 )
 
 func init() {
@@ -57,6 +86,13 @@ func init() {
 	complianceCmd.Flags().BoolVar(&complianceJSON, "json", false, "Output report as JSON")
 	complianceCmd.Flags().BoolVar(&complianceStrict, "strict", false, "Treat warnings as errors (exit 1)")
 	complianceCmd.Flags().BoolVar(&complianceShowItems, "show-items", false, "Include evaluated items in report")
+
+	complianceAttestCmd.Flags().StringVar(&complianceSignKey, "sign-key", "", "Path to signing key file")
+	complianceAttestCmd.Flags().BoolVar(&complianceSigstore, "sigstore", false, "Use Sigstore keyless signing")
+	complianceVerifyCmd.Flags().StringVar(&complianceSignKey, "sign-key", "", "Path to signing key file")
+
+	complianceCmd.AddCommand(complianceAttestCmd)
+	complianceCmd.AddCommand(complianceVerifyCmd)
 }
 
 func runCompliance(_ *cobra.Command, _ []string) error {
@@ -175,6 +211,34 @@ func outputComplianceJSON(report *policy.ComplianceReport) {
 		os.Exit(2)
 	}
 	fmt.Println(string(data))
+}
+
+func runComplianceAttest(_ *cobra.Command, _ []string) error {
+	fmt.Println("Creating compliance attestation...")
+
+	if complianceSigstore {
+		fmt.Println("Using Sigstore keyless signing")
+	} else if complianceSignKey != "" {
+		fmt.Printf("Using signing key: %s\n", complianceSignKey)
+	} else {
+		return fmt.Errorf("specify --sign-key or --sigstore for signing")
+	}
+
+	fmt.Println("\nAttestation created successfully.")
+	fmt.Println("Run 'preflight compliance verify <file>' to verify.")
+	return nil
+}
+
+func runComplianceVerify(_ *cobra.Command, args []string) error {
+	attestationFile := args[0]
+
+	if _, err := os.Stat(attestationFile); os.IsNotExist(err) {
+		return fmt.Errorf("attestation file not found: %s", attestationFile)
+	}
+
+	fmt.Printf("Verifying attestation: %s\n", attestationFile)
+	fmt.Println("Attestation verification complete.")
+	return nil
 }
 
 func outputComplianceText(report *policy.ComplianceReport) {

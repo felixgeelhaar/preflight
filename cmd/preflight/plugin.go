@@ -87,7 +87,26 @@ var (
 
 	upgradeCheckOnly bool
 	upgradeDryRun    bool
+
+	provisionVars    []string
+	provisionWorkDir string
 )
+
+var pluginProvisionCmd = &cobra.Command{
+	Use:   "provision <name> <action>",
+	Short: "Execute a provisioner plugin action",
+	Long: `Execute a plan, apply, destroy, or state action through a provisioner plugin.
+
+Provisioner plugins integrate infrastructure tools (Terraform, Ansible, etc.)
+through the WASM plugin system.
+
+Examples:
+  preflight plugin provision terraform plan
+  preflight plugin provision terraform apply
+  preflight plugin provision ansible apply --var env=production`,
+	Args: cobra.ExactArgs(2),
+	RunE: runPluginProvision,
+}
 
 var pluginSearchCmd = &cobra.Command{
 	Use:   "search [query]",
@@ -176,6 +195,11 @@ func init() {
 	pluginCmd.AddCommand(pluginSearchCmd)
 	pluginCmd.AddCommand(pluginValidateCmd)
 	pluginCmd.AddCommand(pluginUpgradeCmd)
+	pluginCmd.AddCommand(pluginProvisionCmd)
+
+	// Provision flags
+	pluginProvisionCmd.Flags().StringSliceVar(&provisionVars, "var", nil, "Variables to pass to the provisioner (key=value)")
+	pluginProvisionCmd.Flags().StringVar(&provisionWorkDir, "work-dir", ".", "Working directory for the provisioner")
 
 	// Search flags
 	pluginSearchCmd.Flags().StringVar(&searchType, "type", "", "Filter by plugin type: config, provider")
@@ -645,6 +669,79 @@ func outputValidationResult(result ValidationResult) error {
 	}
 
 	return fmt.Errorf("validation failed with %d error(s)", len(result.Errors))
+}
+
+func runPluginProvision(_ *cobra.Command, args []string) error {
+	pluginName := args[0]
+	actionStr := args[1]
+
+	// Validate action
+	if !plugin.IsValidProvisionAction(actionStr) {
+		validActions := plugin.ValidProvisionActions()
+		actionStrs := make([]string, len(validActions))
+		for i, a := range validActions {
+			actionStrs[i] = string(a)
+		}
+		return fmt.Errorf("invalid action %q: valid actions are %s", actionStr, strings.Join(actionStrs, ", "))
+	}
+
+	// Parse variables from --var flags
+	variables := make(map[string]string)
+	for _, v := range provisionVars {
+		parts := strings.SplitN(v, "=", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid variable format %q: expected key=value", v)
+		}
+		variables[parts[0]] = parts[1]
+	}
+
+	// Build provision request
+	req := &plugin.ProvisionRequest{
+		PluginName: pluginName,
+		Action:     plugin.ProvisionAction(actionStr),
+		WorkDir:    provisionWorkDir,
+		Variables:  variables,
+	}
+
+	// Validate the request
+	if err := plugin.ValidateProvisionRequest(req); err != nil {
+		return fmt.Errorf("invalid provision request: %w", err)
+	}
+
+	// Discover plugins and find the provisioner
+	ctx := context.Background()
+	loader := plugin.NewLoader()
+	result, err := loader.Discover(ctx)
+	if err != nil {
+		return fmt.Errorf("discovering plugins: %w", err)
+	}
+
+	var found *plugin.Plugin
+	for _, p := range result.Plugins {
+		if p.Manifest.Name == pluginName && p.Manifest.IsProvisionerPlugin() {
+			found = p
+			break
+		}
+	}
+
+	if found == nil {
+		return fmt.Errorf("provisioner plugin %q not found", pluginName)
+	}
+
+	fmt.Printf("Provisioner: %s@%s\n", found.Manifest.Name, found.Manifest.Version)
+	fmt.Printf("Action:      %s\n", req.Action)
+	fmt.Printf("Work Dir:    %s\n", req.WorkDir)
+	if len(variables) > 0 {
+		fmt.Println("Variables:")
+		for k, v := range variables {
+			fmt.Printf("  %s = %s\n", k, v)
+		}
+	}
+	fmt.Println("")
+	fmt.Println("Note: Provisioner execution through WASM is not yet implemented.")
+	fmt.Println("      The plugin was validated and the request is well-formed.")
+
+	return nil
 }
 
 func runPluginUpgrade(name string) error {

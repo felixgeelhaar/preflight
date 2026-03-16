@@ -186,3 +186,82 @@ func TestParsePackageKey(t *testing.T) {
 		})
 	}
 }
+
+func TestAttestationRef_IsZero(t *testing.T) {
+	t.Parallel()
+
+	assert.True(t, AttestationRef{}.IsZero())
+	assert.False(t, AttestationRef{BundleURI: "rekor://abc"}.IsZero())
+}
+
+func TestAttestationRef_String(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, "", AttestationRef{}.String())
+	ref := AttestationRef{
+		BundleURI: "rekor://abc",
+		Digest:    "sha256:def",
+	}
+	assert.Contains(t, ref.String(), "rekor://abc")
+	assert.Contains(t, ref.String(), "sha256:def")
+}
+
+func TestPackageLock_AttestationRef_None(t *testing.T) {
+	t.Parallel()
+
+	hash := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	integrity, _ := NewIntegrity("sha256", hash)
+	lock, err := NewPackageLock("brew", "ripgrep", "14.1.0", integrity, time.Now())
+	require.NoError(t, err)
+
+	assert.Nil(t, lock.AttestationRef())
+	assert.False(t, lock.HasAttestation())
+}
+
+func TestPackageLock_WithAttestation(t *testing.T) {
+	t.Parallel()
+
+	hash := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	integrity, _ := NewIntegrity("sha256", hash)
+	lock, err := NewPackageLock("brew", "ripgrep", "14.1.0", integrity, time.Now())
+	require.NoError(t, err)
+
+	ref := AttestationRef{
+		BundleURI:     "rekor://entry/12345",
+		Digest:        "sha256:abc123",
+		PredicateType: "https://slsa.dev/provenance/v1",
+	}
+
+	withAtt := lock.WithAttestation(ref)
+
+	// Original unchanged
+	assert.False(t, lock.HasAttestation())
+
+	// New lock has attestation
+	assert.True(t, withAtt.HasAttestation())
+	assert.Equal(t, "rekor://entry/12345", withAtt.AttestationRef().BundleURI)
+	assert.Equal(t, "sha256:abc123", withAtt.AttestationRef().Digest)
+	assert.Equal(t, "https://slsa.dev/provenance/v1", withAtt.AttestationRef().PredicateType)
+
+	// Other fields preserved
+	assert.Equal(t, "brew", withAtt.Provider())
+	assert.Equal(t, "ripgrep", withAtt.Name())
+	assert.Equal(t, "14.1.0", withAtt.Version())
+}
+
+func TestPackageLock_AttestationRef_Immutable(t *testing.T) {
+	t.Parallel()
+
+	hash := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	integrity, _ := NewIntegrity("sha256", hash)
+	lock, err := NewPackageLock("brew", "ripgrep", "14.1.0", integrity, time.Now())
+	require.NoError(t, err)
+
+	ref := AttestationRef{BundleURI: "rekor://original"}
+	withAtt := lock.WithAttestation(ref)
+
+	// Modifying the returned ref should not affect the lock
+	gotRef := withAtt.AttestationRef()
+	gotRef.BundleURI = "modified"
+	assert.Equal(t, "rekor://original", withAtt.AttestationRef().BundleURI)
+}

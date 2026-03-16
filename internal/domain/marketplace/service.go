@@ -18,6 +18,8 @@ var (
 	ErrAlreadyInstalled = errors.New("package already installed")
 	ErrNotInstalled     = errors.New("package not installed")
 	ErrInstallFailed    = errors.New("installation failed")
+	ErrScanBlocked      = errors.New("security scan blocked installation")
+	ErrScanFailed       = errors.New("security scan failed")
 )
 
 // ServiceConfig configures the marketplace service.
@@ -45,9 +47,10 @@ func DefaultServiceConfig() ServiceConfig {
 
 // Service provides marketplace operations.
 type Service struct {
-	config ServiceConfig
-	client *Client
-	cache  *Cache
+	config  ServiceConfig
+	client  *Client
+	cache   *Cache
+	scanner *Scanner
 }
 
 // NewService creates a new marketplace service.
@@ -57,6 +60,12 @@ func NewService(config ServiceConfig) *Service {
 		client: NewClient(config.ClientConfig),
 		cache:  NewCache(config.CacheConfig),
 	}
+}
+
+// WithScanner sets the marketplace scanner for security scanning during install.
+func (s *Service) WithScanner(scanner *Scanner) *Service {
+	s.scanner = scanner
+	return s
 }
 
 // Search finds packages matching the query.
@@ -138,6 +147,19 @@ func (s *Service) Install(ctx context.Context, id PackageID, version string) (*I
 		return nil, err
 	}
 
+	// Security scan (after checksum, before extraction)
+	var scanStatus ScanStatus
+	if s.scanner != nil {
+		scanResult, scanErr := s.scanner.ScanPackage(ctx, id, pkgVersion.Version, data)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		scanStatus = scanResult.Status
+		if scanResult.Blocked {
+			return nil, fmt.Errorf("%w: %s", ErrScanBlocked, scanResult.BlockReason)
+		}
+	}
+
 	// Extract to install path
 	installPath := filepath.Join(s.config.InstallPath, id.String(), pkgVersion.Version)
 	if err := s.extractPackage(data, installPath); err != nil {
@@ -151,6 +173,7 @@ func (s *Service) Install(ctx context.Context, id PackageID, version string) (*I
 		InstalledAt: time.Now(),
 		Path:        installPath,
 		AutoUpdate:  false,
+		ScanStatus:  scanStatus,
 	}
 
 	if err := s.cache.AddInstalled(installed); err != nil {

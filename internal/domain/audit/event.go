@@ -46,6 +46,19 @@ const (
 	EventSecurityAudit     EventType = "security_audit"
 )
 
+// Event types for marketplace operations.
+const (
+	EventMarketplaceScanCompleted EventType = "marketplace_scan_completed"
+	EventMarketplaceScanBlocked   EventType = "marketplace_scan_blocked"
+)
+
+// Event types for identity operations.
+const (
+	EventIdentityLogin   EventType = "identity_login"
+	EventIdentityLogout  EventType = "identity_logout"
+	EventIdentityRefresh EventType = "identity_refresh"
+)
+
 // Severity represents the importance level of an event.
 type Severity string
 

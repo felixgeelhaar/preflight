@@ -24,9 +24,10 @@ type SignatureType string
 
 // SignatureType constants.
 const (
-	SignatureTypeGPG      SignatureType = "gpg"
-	SignatureTypeSSH      SignatureType = "ssh"
-	SignatureTypeSigstore SignatureType = "sigstore"
+	SignatureTypeGPG         SignatureType = "gpg"
+	SignatureTypeSSH         SignatureType = "ssh"
+	SignatureTypeSigstore    SignatureType = "sigstore"
+	SignatureTypeAttestation SignatureType = "attestation"
 )
 
 // TrustLevel represents the trust level of a catalog.

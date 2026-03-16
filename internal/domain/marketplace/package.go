@@ -230,11 +230,12 @@ func isValidPackageType(t string) bool {
 
 // InstalledPackage represents a package that has been installed locally.
 type InstalledPackage struct {
-	Package     Package   `json:"package" yaml:"package"`
-	Version     string    `json:"version" yaml:"version"`
-	InstalledAt time.Time `json:"installed_at" yaml:"installed_at"`
-	Path        string    `json:"path" yaml:"path"`
-	AutoUpdate  bool      `json:"auto_update" yaml:"auto_update"`
+	Package     Package    `json:"package" yaml:"package"`
+	Version     string     `json:"version" yaml:"version"`
+	InstalledAt time.Time  `json:"installed_at" yaml:"installed_at"`
+	Path        string     `json:"path" yaml:"path"`
+	AutoUpdate  bool       `json:"auto_update" yaml:"auto_update"`
+	ScanStatus  ScanStatus `json:"scan_status,omitempty" yaml:"scan_status,omitempty"`
 }
 
 // NeedsUpdate returns true if a newer version is available.

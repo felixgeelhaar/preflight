@@ -1,6 +1,7 @@
 package fleet
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"sync"
@@ -14,6 +15,7 @@ type Inventory struct {
 	hosts    map[HostID]*Host
 	groups   map[GroupName]*Group
 	defaults SSHConfig
+	sources  []InventorySource
 }
 
 // NewInventory creates a new empty inventory.
@@ -26,6 +28,7 @@ func NewInventory() *Inventory {
 			User:           "root",
 			ConnectTimeout: 30 * time.Second,
 		},
+		sources: make([]InventorySource, 0),
 	}
 }
 
@@ -282,6 +285,92 @@ func (i *Inventory) resolveGroupPoliciesLocked(name GroupName, visited map[Group
 	}
 
 	return policies
+}
+
+// AddSource registers an inventory source.
+func (i *Inventory) AddSource(source InventorySource) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.sources = append(i.sources, source)
+}
+
+// Sources returns registered inventory sources.
+func (i *Inventory) Sources() []InventorySource {
+	i.mu.RLock()
+	defer i.mu.RUnlock()
+	result := make([]InventorySource, len(i.sources))
+	copy(result, i.sources)
+	return result
+}
+
+// RefreshFromSources discovers hosts from all registered available sources and adds them.
+// Returns the number of hosts discovered and any errors encountered.
+func (i *Inventory) RefreshFromSources(ctx context.Context) (int, []error) {
+	i.mu.RLock()
+	sources := make([]InventorySource, len(i.sources))
+	copy(sources, i.sources)
+	i.mu.RUnlock()
+
+	var totalAdded int
+	var errs []error
+
+	for _, source := range sources {
+		if !source.Available() {
+			continue
+		}
+
+		hosts, err := source.Discover(ctx)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("source %q: %w", source.Name(), err))
+			continue
+		}
+
+		for _, host := range hosts {
+			if err := i.AddHost(host); err != nil {
+				// Skip duplicates silently — they are expected during refresh.
+				continue
+			}
+			totalAdded++
+		}
+	}
+
+	return totalAdded, errs
+}
+
+// RefreshFromSource discovers hosts from a specific named source.
+func (i *Inventory) RefreshFromSource(ctx context.Context, sourceName string) (int, error) {
+	i.mu.RLock()
+	var source InventorySource
+	for _, s := range i.sources {
+		if s.Name() == sourceName {
+			source = s
+			break
+		}
+	}
+	i.mu.RUnlock()
+
+	if source == nil {
+		return 0, fmt.Errorf("source %q not found", sourceName)
+	}
+
+	if !source.Available() {
+		return 0, fmt.Errorf("source %q is not available", sourceName)
+	}
+
+	hosts, err := source.Discover(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("source %q: %w", sourceName, err)
+	}
+
+	var added int
+	for _, host := range hosts {
+		if err := i.AddHost(host); err != nil {
+			continue
+		}
+		added++
+	}
+
+	return added, nil
 }
 
 // InventorySummary is a read-only summary of the inventory.

@@ -158,6 +158,21 @@ Examples:
 	RunE: runMarketplaceFeatured,
 }
 
+// Scan subcommand
+var marketplaceScanCmd = &cobra.Command{
+	Use:   "scan <package>",
+	Short: "Security scan an installed package",
+	Long: `Run a security vulnerability scan on an installed marketplace package.
+
+Uses available scanners (Grype, Trivy) to check for known vulnerabilities.
+
+Examples:
+  preflight marketplace scan nvim-pro
+  preflight marketplace scan nvim-pro --min-severity high`,
+	Args: cobra.ExactArgs(1),
+	RunE: runMarketplaceScan,
+}
+
 // Popular subcommand
 var marketplacePopularCmd = &cobra.Command{
 	Use:   "popular",
@@ -172,18 +187,20 @@ Examples:
 
 // Flags
 var (
-	mpSearchType    string
-	mpSearchLimit   int
-	mpInstallVer    string
-	mpOfflineMode   bool
-	mpRefreshIndex  bool
-	mpCheckUpdates  bool
-	mpRecommendType string
-	mpKeywords      string
-	mpSimilarTo     string
-	mpRecommendMax  int
-	mpPopularType   string
-	mpFeaturedType  string
+	mpSearchType      string
+	mpSearchLimit     int
+	mpInstallVer      string
+	mpOfflineMode     bool
+	mpRefreshIndex    bool
+	mpCheckUpdates    bool
+	mpRecommendType   string
+	mpKeywords        string
+	mpSimilarTo       string
+	mpRecommendMax    int
+	mpPopularType     string
+	mpFeaturedType    string
+	mpScanSeverity    string
+	mpInstallSkipScan bool
 )
 
 func init() {
@@ -213,6 +230,12 @@ func init() {
 	// Popular flags
 	marketplacePopularCmd.Flags().StringVar(&mpPopularType, "type", "", "Filter by type")
 
+	// Scan flags
+	marketplaceScanCmd.Flags().StringVar(&mpScanSeverity, "min-severity", "medium", "Minimum severity to report (critical, high, medium, low)")
+
+	// Install skip-scan flag
+	marketplaceInstallCmd.Flags().BoolVar(&mpInstallSkipScan, "skip-scan", false, "Skip security scan during install")
+
 	// Add subcommands
 	marketplaceCmd.AddCommand(marketplaceSearchCmd)
 	marketplaceCmd.AddCommand(marketplaceInstallCmd)
@@ -223,6 +246,7 @@ func init() {
 	marketplaceCmd.AddCommand(marketplaceRecommendCmd)
 	marketplaceCmd.AddCommand(marketplaceFeaturedCmd)
 	marketplaceCmd.AddCommand(marketplacePopularCmd)
+	marketplaceCmd.AddCommand(marketplaceScanCmd)
 
 	rootCmd.AddCommand(marketplaceCmd)
 }
@@ -812,5 +836,65 @@ func runMarketplacePopular(_ *cobra.Command, _ []string) error {
 	}
 
 	_ = w.Flush()
+	return nil
+}
+
+func runMarketplaceScan(_ *cobra.Command, args []string) error {
+	ctx := context.Background()
+	svc := newMarketplaceService()
+
+	pkgID, err := marketplace.NewPackageID(args[0])
+	if err != nil {
+		return fmt.Errorf("invalid package ID: %w", err)
+	}
+
+	// Check if package is installed
+	installed, listErr := svc.List()
+	if listErr != nil {
+		return fmt.Errorf("listing packages: %w", listErr)
+	}
+
+	var installedPkg *marketplace.InstalledPackage
+	for i := range installed {
+		if installed[i].Package.ID.Equals(pkgID) {
+			installedPkg = &installed[i]
+			break
+		}
+	}
+
+	if installedPkg == nil {
+		return fmt.Errorf("package %s is not installed", pkgID)
+	}
+
+	fmt.Printf("Scanning %s@%s...\n", pkgID, installedPkg.Version)
+
+	// Create scanner with default policy
+	scanner := marketplace.NewScanner(nil, marketplace.DefaultScanPolicy())
+
+	result, scanErr := scanner.ScanPackage(ctx, pkgID, installedPkg.Version, nil)
+	if scanErr != nil {
+		return fmt.Errorf("scan failed: %w", scanErr)
+	}
+
+	// Display results
+	fmt.Printf("Status:  %s\n", result.Status)
+	fmt.Printf("Scanner: %s\n", result.Scanner)
+
+	summary := result.Summary
+	if summary.TotalVulnerabilities > 0 {
+		fmt.Printf("\nVulnerabilities found:\n")
+		fmt.Printf("  Critical:   %d\n", summary.Critical)
+		fmt.Printf("  High:       %d\n", summary.High)
+		fmt.Printf("  Medium:     %d\n", summary.Medium)
+		fmt.Printf("  Low:        %d\n", summary.Low)
+		fmt.Printf("  Fixable:    %d\n", summary.FixableCount)
+	} else {
+		fmt.Println("No vulnerabilities found.")
+	}
+
+	if result.Blocked {
+		return fmt.Errorf("scan blocked: %s", result.BlockReason)
+	}
+
 	return nil
 }

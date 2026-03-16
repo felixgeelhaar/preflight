@@ -119,10 +119,17 @@ func (m *Manifest) IsProviderPlugin() bool {
 	return m.Type == TypeProvider
 }
 
+// IsProvisionerPlugin returns true if this is a WASM provisioner plugin.
+func (m *Manifest) IsProvisionerPlugin() bool {
+	return m.Type == TypeProvisioner
+}
+
 // Capabilities describes what a plugin provides.
 type Capabilities struct {
 	// Providers are custom provider implementations
 	Providers []ProviderSpec `yaml:"providers,omitempty"`
+	// Provisioners are provisioner-specific capabilities
+	Provisioners []ProvisionerCapability `yaml:"provisioners,omitempty"`
 	// Presets are catalog presets
 	Presets []string `yaml:"presets,omitempty"`
 	// CapabilityPacks are catalog capability packs
@@ -309,24 +316,22 @@ func ValidateManifest(m *Manifest) error {
 	}
 
 	// Validate type-specific requirements
-	if m.IsProviderPlugin() {
-		if err := validateProviderManifest(m); err != nil {
-			// Merge validation errors
-			var verr *ValidationError
-			if errors.As(err, &verr) {
-				ve.Errors = append(ve.Errors, verr.Errors...)
-			} else {
-				ve.Add(err.Error())
-			}
-		}
-	} else {
-		if err := validateConfigManifest(m); err != nil {
-			var verr *ValidationError
-			if errors.As(err, &verr) {
-				ve.Errors = append(ve.Errors, verr.Errors...)
-			} else {
-				ve.Add(err.Error())
-			}
+	var typeErr error
+	switch {
+	case m.IsProviderPlugin():
+		typeErr = validateProviderManifest(m)
+	case m.IsProvisionerPlugin():
+		typeErr = validateProvisionerManifest(m)
+	default:
+		typeErr = validateConfigManifest(m)
+	}
+
+	if typeErr != nil {
+		var verr *ValidationError
+		if errors.As(typeErr, &verr) {
+			ve.Errors = append(ve.Errors, verr.Errors...)
+		} else {
+			ve.Add(typeErr.Error())
 		}
 	}
 
@@ -576,6 +581,20 @@ func (c Capabilities) Clone() Capabilities {
 	if c.Providers != nil {
 		clone.Providers = make([]ProviderSpec, len(c.Providers))
 		copy(clone.Providers, c.Providers)
+	}
+
+	if c.Provisioners != nil {
+		clone.Provisioners = make([]ProvisionerCapability, len(c.Provisioners))
+		for i, p := range c.Provisioners {
+			clone.Provisioners[i] = ProvisionerCapability{
+				Name:        p.Name,
+				Description: p.Description,
+			}
+			if p.SupportedActions != nil {
+				clone.Provisioners[i].SupportedActions = make([]string, len(p.SupportedActions))
+				copy(clone.Provisioners[i].SupportedActions, p.SupportedActions)
+			}
+		}
 	}
 
 	if c.Presets != nil {

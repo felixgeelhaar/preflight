@@ -218,6 +218,55 @@ func (l *Lockfile) IsEmpty() bool {
 	return len(l.packages) == 0
 }
 
+// AttestationStatus describes the attestation state of a package.
+type AttestationStatus struct {
+	Key            string
+	HasAttestation bool
+	BundleURI      string
+	Digest         string
+	PredicateType  string
+}
+
+// PackagesWithAttestations returns all packages that have attestation references.
+func (l *Lockfile) PackagesWithAttestations() []PackageLock {
+	var result []PackageLock
+	for _, pkg := range l.packages {
+		if pkg.HasAttestation() {
+			result = append(result, pkg)
+		}
+	}
+	return result
+}
+
+// PackagesWithoutAttestations returns all packages that lack attestation references.
+func (l *Lockfile) PackagesWithoutAttestations() []PackageLock {
+	var result []PackageLock
+	for _, pkg := range l.packages {
+		if !pkg.HasAttestation() {
+			result = append(result, pkg)
+		}
+	}
+	return result
+}
+
+// AttestationSummary returns the attestation status for all packages.
+func (l *Lockfile) AttestationSummary() []AttestationStatus {
+	result := make([]AttestationStatus, 0, len(l.packages))
+	for _, pkg := range l.packages {
+		status := AttestationStatus{
+			Key:            pkg.Key(),
+			HasAttestation: pkg.HasAttestation(),
+		}
+		if ref := pkg.AttestationRef(); ref != nil {
+			status.BundleURI = ref.BundleURI
+			status.Digest = ref.Digest
+			status.PredicateType = ref.PredicateType
+		}
+		result = append(result, status)
+	}
+	return result
+}
+
 // Clear removes all packages from the lockfile.
 func (l *Lockfile) Clear() {
 	l.packages = make(map[string]PackageLock)

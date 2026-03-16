@@ -27,6 +27,7 @@ var (
 	fleetDryRun        bool
 	fleetJSON          bool
 	fleetStopOnError   bool
+	fleetSource        string
 )
 
 var fleetCmd = &cobra.Command{
@@ -82,6 +83,17 @@ var fleetStatusCmd = &cobra.Command{
 	RunE:  runFleetStatus,
 }
 
+var fleetDiscoverCmd = &cobra.Command{
+	Use:   "discover",
+	Short: "Discover hosts from cloud inventory sources",
+	Long: `Discover hosts from configured cloud inventory sources (AWS, Azure, GCP).
+
+Examples:
+  preflight fleet discover
+  preflight fleet discover --source aws`,
+	RunE: runFleetDiscover,
+}
+
 func init() {
 	// Common flags
 	fleetCmd.PersistentFlags().StringVar(&fleetInventoryFile, "inventory", "fleet.yaml", "inventory file")
@@ -101,12 +113,16 @@ func init() {
 	// Ping specific flags
 	fleetPingCmd.Flags().DurationVar(&fleetTimeout, "timeout", 30*time.Second, "connection timeout")
 
+	// Discover specific flags
+	fleetDiscoverCmd.Flags().StringVar(&fleetSource, "source", "", "discover from a specific source (e.g., aws)")
+
 	// Add subcommands
 	fleetCmd.AddCommand(fleetListCmd)
 	fleetCmd.AddCommand(fleetPingCmd)
 	fleetCmd.AddCommand(fleetPlanCmd)
 	fleetCmd.AddCommand(fleetApplyCmd)
 	fleetCmd.AddCommand(fleetStatusCmd)
+	fleetCmd.AddCommand(fleetDiscoverCmd)
 
 	// Add to root
 	rootCmd.AddCommand(fleetCmd)
@@ -559,6 +575,49 @@ func runFleetApply(_ *cobra.Command, _ []string) error {
 	}
 
 	return nil
+}
+
+func runFleetDiscover(_ *cobra.Command, _ []string) error {
+	if err := requireExperimental("fleet"); err != nil {
+		return err
+	}
+	inv, err := loadFleetInventory()
+	if err != nil {
+		return err
+	}
+
+	// Register available sources. Currently sources must be configured
+	// externally; this is a placeholder for future cloud provider integration.
+	sources := inv.Sources()
+	if len(sources) == 0 {
+		fmt.Println("No inventory sources configured.")
+		fmt.Println("Configure cloud sources in your fleet.yaml or register them programmatically.")
+		return nil
+	}
+
+	if fleetSource != "" {
+		count, err := inv.RefreshFromSource(context.Background(), fleetSource)
+		if err != nil {
+			return fmt.Errorf("discovery failed: %w", err)
+		}
+		fmt.Printf("Discovered %d hosts from source %q\n", count, fleetSource)
+	} else {
+		count, errs := inv.RefreshFromSources(context.Background())
+		if len(errs) > 0 {
+			for _, e := range errs {
+				fmt.Fprintf(os.Stderr, "Warning: %v\n", e)
+			}
+		}
+		fmt.Printf("Discovered %d hosts from %d sources\n", count, len(sources))
+	}
+
+	// Display discovered hosts
+	hosts := inv.AllHosts()
+	if fleetJSON {
+		return printHostsJSON(hosts)
+	}
+
+	return printHostsTable(hosts)
 }
 
 func runFleetStatus(_ *cobra.Command, _ []string) error {

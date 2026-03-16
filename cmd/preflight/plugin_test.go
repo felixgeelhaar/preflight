@@ -36,6 +36,58 @@ func TestPluginInfoCmd_Exists(t *testing.T) {
 	assert.Equal(t, "info <name>", pluginInfoCmd.Use)
 }
 
+func TestPluginProvisionCmd_Exists(t *testing.T) {
+	assert.NotNil(t, pluginProvisionCmd)
+	assert.Equal(t, "provision <name> <action>", pluginProvisionCmd.Use)
+}
+
+func TestPluginProvisionCmd_Flags(t *testing.T) {
+	varFlag := pluginProvisionCmd.Flags().Lookup("var")
+	assert.NotNil(t, varFlag)
+
+	workDirFlag := pluginProvisionCmd.Flags().Lookup("work-dir")
+	assert.NotNil(t, workDirFlag)
+	assert.Equal(t, ".", workDirFlag.DefValue)
+}
+
+func TestRunPluginProvision_InvalidAction(t *testing.T) {
+	err := runPluginProvision(pluginProvisionCmd, []string{"terraform", "rollback"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid action")
+	assert.Contains(t, err.Error(), "rollback")
+}
+
+func TestRunPluginProvision_InvalidVarFormat(t *testing.T) {
+	// Save and restore
+	oldVars := provisionVars
+	defer func() { provisionVars = oldVars }()
+
+	provisionVars = []string{"invalid-format"}
+	err := runPluginProvision(pluginProvisionCmd, []string{"terraform", "plan"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid variable format")
+}
+
+func TestRunPluginProvision_PluginNotFound(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	// Save and restore
+	oldVars := provisionVars
+	oldWorkDir := provisionWorkDir
+	defer func() {
+		provisionVars = oldVars
+		provisionWorkDir = oldWorkDir
+	}()
+
+	provisionVars = nil
+	provisionWorkDir = "/tmp"
+
+	err := runPluginProvision(pluginProvisionCmd, []string{"terraform", "plan"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
+}
+
 func capturePluginStdout(t *testing.T, f func()) string {
 	t.Helper()
 	return captureStdout(t, f)

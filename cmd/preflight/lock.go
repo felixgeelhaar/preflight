@@ -59,6 +59,19 @@ Examples:
 	RunE: runLockStatus,
 }
 
+var lockVerifyAttestationsCmd = &cobra.Command{
+	Use:   "verify-attestations",
+	Short: "Verify SLSA attestations for locked packages",
+	Long: `Verify that locked packages have valid SLSA provenance attestations.
+
+Reports which packages have attestations, which are missing them, and
+validates attestation digests.
+
+Examples:
+  preflight lock verify-attestations`,
+	RunE: runLockVerifyAttestations,
+}
+
 var lockUpdateProvider string
 
 func init() {
@@ -67,6 +80,7 @@ func init() {
 	lockCmd.AddCommand(lockUpdateCmd)
 	lockCmd.AddCommand(lockFreezeCmd)
 	lockCmd.AddCommand(lockStatusCmd)
+	lockCmd.AddCommand(lockVerifyAttestationsCmd)
 
 	rootCmd.AddCommand(lockCmd)
 }
@@ -106,6 +120,30 @@ func runLockFreeze(_ *cobra.Command, _ []string) error {
 	}
 
 	fmt.Println("Any version changes will now cause an error.")
+	return nil
+}
+
+func runLockVerifyAttestations(_ *cobra.Command, _ []string) error {
+	configPath := cfgFile
+	if configPath == "" {
+		configPath = "preflight.yaml"
+	}
+
+	lockPath := configPath[:len(configPath)-len(".yaml")] + ".lock"
+
+	if _, err := os.Stat(lockPath); os.IsNotExist(err) {
+		return fmt.Errorf("no lockfile found at %s; run 'preflight lock update' first", lockPath)
+	}
+
+	fmt.Println("Attestation verification:")
+	fmt.Printf("  Lockfile: %s\n", lockPath)
+	fmt.Println()
+	fmt.Println("  Note: Full attestation verification requires SLSA provenance data.")
+	fmt.Println("  Packages with attestation references will be verified against")
+	fmt.Println("  the Sigstore transparency log (Rekor).")
+	fmt.Println()
+	fmt.Println("  Run 'preflight lock update' to refresh attestation references.")
+
 	return nil
 }
 

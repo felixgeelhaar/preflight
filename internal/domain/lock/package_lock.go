@@ -17,14 +17,39 @@ var (
 	ErrInvalidPackageKey  = errors.New("invalid package key format")
 )
 
+// AttestationRef is an optional reference to a SLSA provenance attestation.
+// It is an immutable value object.
+type AttestationRef struct {
+	// BundleURI is the URI to the attestation bundle (e.g., Rekor log entry).
+	BundleURI string
+	// Digest is the SHA256 digest of the attestation bundle.
+	Digest string
+	// PredicateType is the attestation predicate type (e.g., "https://slsa.dev/provenance/v1").
+	PredicateType string
+}
+
+// IsZero returns true if this is a zero-value AttestationRef.
+func (a AttestationRef) IsZero() bool {
+	return a.BundleURI == "" && a.Digest == "" && a.PredicateType == ""
+}
+
+// String returns a human-readable representation.
+func (a AttestationRef) String() string {
+	if a.IsZero() {
+		return ""
+	}
+	return fmt.Sprintf("%s (digest: %s)", a.BundleURI, a.Digest)
+}
+
 // PackageLock represents a locked package version with integrity verification.
 // It is an immutable value object.
 type PackageLock struct {
-	provider    string
-	name        string
-	version     string
-	integrity   Integrity
-	installedAt time.Time
+	provider       string
+	name           string
+	version        string
+	integrity      Integrity
+	installedAt    time.Time
+	attestationRef *AttestationRef // optional SLSA provenance reference
 }
 
 // NewPackageLock creates a new PackageLock value object.
@@ -82,6 +107,28 @@ func (p PackageLock) Integrity() Integrity {
 // InstalledAt returns when this version was installed.
 func (p PackageLock) InstalledAt() time.Time {
 	return p.installedAt
+}
+
+// AttestationRef returns the optional attestation reference, or nil if not set.
+func (p PackageLock) AttestationRef() *AttestationRef {
+	if p.attestationRef == nil {
+		return nil
+	}
+	// Return a copy to maintain immutability
+	ref := *p.attestationRef
+	return &ref
+}
+
+// HasAttestation returns true if an attestation reference is attached.
+func (p PackageLock) HasAttestation() bool {
+	return p.attestationRef != nil && !p.attestationRef.IsZero()
+}
+
+// WithAttestation returns a new PackageLock with the given attestation reference.
+func (p PackageLock) WithAttestation(ref AttestationRef) PackageLock {
+	clone := p
+	clone.attestationRef = &ref
+	return clone
 }
 
 // Key returns the unique key for this package (provider:name).

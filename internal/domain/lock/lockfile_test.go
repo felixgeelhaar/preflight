@@ -352,3 +352,55 @@ func TestLockfile_V1CompatibleWithV2(t *testing.T) {
 	assert.Equal(t, 2, v2.Version())
 	assert.False(t, v2.SyncMetadata().IsZero())
 }
+
+func TestLockfile_PackagesWithAttestations(t *testing.T) {
+	t.Parallel()
+
+	lockfile := NewLockfile(config.ModeLocked, createTestMachineInfo(t))
+
+	pkg1 := createTestPackageLock(t, "brew", "ripgrep", "14.0.0")
+	pkg2 := createTestPackageLock(t, "brew", "fd", "9.0.0").WithAttestation(AttestationRef{
+		BundleURI:     "rekor://entry/abc",
+		Digest:        "sha256:abc",
+		PredicateType: "https://slsa.dev/provenance/v1",
+	})
+
+	require.NoError(t, lockfile.AddPackage(pkg1))
+	require.NoError(t, lockfile.AddPackage(pkg2))
+
+	withAtt := lockfile.PackagesWithAttestations()
+	assert.Len(t, withAtt, 1)
+	assert.Equal(t, "fd", withAtt[0].Name())
+
+	withoutAtt := lockfile.PackagesWithoutAttestations()
+	assert.Len(t, withoutAtt, 1)
+	assert.Equal(t, "ripgrep", withoutAtt[0].Name())
+}
+
+func TestLockfile_AttestationSummary(t *testing.T) {
+	t.Parallel()
+
+	lockfile := NewLockfile(config.ModeLocked, createTestMachineInfo(t))
+
+	pkg1 := createTestPackageLock(t, "brew", "ripgrep", "14.0.0")
+	pkg2 := createTestPackageLock(t, "brew", "fd", "9.0.0").WithAttestation(AttestationRef{
+		BundleURI:     "rekor://entry/abc",
+		Digest:        "sha256:abc",
+		PredicateType: "https://slsa.dev/provenance/v1",
+	})
+
+	require.NoError(t, lockfile.AddPackage(pkg1))
+	require.NoError(t, lockfile.AddPackage(pkg2))
+
+	summary := lockfile.AttestationSummary()
+	assert.Len(t, summary, 2)
+
+	attested := 0
+	for _, s := range summary {
+		if s.HasAttestation {
+			attested++
+			assert.Equal(t, "rekor://entry/abc", s.BundleURI)
+		}
+	}
+	assert.Equal(t, 1, attested)
+}
