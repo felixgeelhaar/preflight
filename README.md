@@ -50,6 +50,12 @@ Define your workstation configuration once, apply it anywhere.
 - **WASM Sandbox**: Secure plugin execution with capability-based permissions
 - **Capture Review TUI**: Interactive review with search/filter, layer reassignment, and undo/redo
 - **Three-Way Merge**: Automatic conflict detection with git-style conflict markers
+- **Enterprise Identity**: OIDC device authorization flow for enterprise trust chains
+- **Marketplace Scanning**: Automated security scanning during package install (Grype/Trivy)
+- **SLSA Attestation**: Reproducible build verification with in-toto statements and Sigstore
+- **Cloud Inventory**: Auto-discover fleet hosts from AWS EC2 (Azure/GCP planned)
+- **Compliance Attestation**: Cryptographic proof of machine compliance with signed attestations
+- **Provisioner Plugins**: Infrastructure provisioning via WASM plugins (Terraform/Ansible integration)
 
 ## Installation
 
@@ -146,18 +152,24 @@ shell:
 | `preflight export` | Export merged config (yaml/json) |
 | `preflight rollback` | Restore files from automatic snapshots |
 | `preflight lock` | Manage lockfile (update, freeze, status) |
+| `preflight lock verify-attestations` | Verify SLSA attestations for locked packages |
 | `preflight audit` | View operation audit trail |
 | `preflight history` | View and manage operation history |
 | `preflight compliance` | Check configuration compliance |
+| `preflight compliance attest` | Create signed compliance attestation |
+| `preflight compliance verify` | Verify compliance attestation signature |
 | `preflight analyze` | Analyze configuration health |
 | `preflight secrets` | Scan for exposed secrets |
 | `preflight env` | Manage environment variables (set/list/export/unset) |
 | `preflight profile` | Manage profiles (list/create/switch/delete) |
 | `preflight plugin` | Plugin management (list/search/install) |
+| `preflight plugin provision` | Execute provisioner plugin actions |
 | `preflight marketplace` | Browse community package registry |
 | `preflight sync` | Synchronize config across machines |
 | `preflight agent` | Background reconciliation agent |
+| `preflight identity` | Enterprise identity provider management (OIDC) |
 | `preflight fleet` | Multi-machine fleet management |
+| `preflight fleet discover` | Discover hosts from cloud inventory sources |
 | `preflight trust` | Manage trusted publishers |
 | `preflight tour` | Interactive guided walkthroughs |
 | `preflight version` | Show version information |
@@ -186,6 +198,10 @@ internal/
     marketplace/         # Community package registry
     catalog/             # Presets and capability packs
     policy/              # Security policies and constraints
+    identity/            # Enterprise identity (OIDC/SAML)
+    attestation/         # SLSA provenance verification
+    fleet/               # Multi-machine fleet management
+      cloud/             # Cloud inventory sources (AWS, Azure, GCP)
     platform/            # OS/WSL/Docker detection
   provider/              # System integration adapters
     brew/                # Homebrew packages

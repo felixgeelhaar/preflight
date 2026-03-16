@@ -84,6 +84,17 @@ System integration adapters that compile config into executable steps:
 - **nvim** — Neovim setup
 - **vscode** — VSCode configuration
 
+## Enterprise Features
+
+Starting with v5.0, Preflight includes enterprise-grade capabilities for organizations managing fleets of workstations:
+
+- **Enterprise Identity (OIDC)** — Authenticate with corporate identity providers using device authorization flow, with tokens stored securely in the OS keychain
+- **SLSA Attestation** — Verify that locked packages were built by trusted builders with reproducible processes, using Sigstore keyless signing
+- **Cloud Fleet Discovery** — Auto-discover hosts from AWS EC2, Azure VMs, and GCP Compute Engine instead of maintaining static inventory files
+- **Compliance Attestation** — Generate cryptographic proof that machines met policy requirements at a point in time
+- **Provisioner Plugins** — Extend Preflight with infrastructure provisioning via WASM plugins (Terraform, Pulumi, etc.)
+- **Marketplace Security Scanning** — Automated vulnerability scanning of marketplace packages during installation
+
 ## What's Next?
 
 - [Installation](/preflight/getting-started/installation/) — Get Preflight on your machine

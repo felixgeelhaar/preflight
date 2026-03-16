@@ -1280,6 +1280,171 @@ defaults:
 
 ---
 
+### preflight fleet discover
+
+Discover hosts from cloud inventory sources.
+
+```bash
+preflight fleet discover [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--source <name>` | Discover from specific source (aws, azure, gcp) |
+
+**Examples:**
+
+```bash
+# Discover from all sources
+preflight fleet discover
+
+# Discover from AWS only
+preflight fleet discover --source aws
+```
+
+---
+
+## v5.0 Commands
+
+### preflight identity
+
+Manage enterprise identity providers.
+
+```bash
+preflight identity <subcommand> [flags]
+```
+
+| Subcommand | Description |
+|------------|-------------|
+| `login` | Authenticate with an identity provider |
+| `logout` | Remove stored credentials |
+| `status` | Show authentication status for all providers |
+| `whoami` | Display current authenticated identity claims |
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--provider <name>` | Identity provider name |
+
+**Examples:**
+
+```bash
+# Login with default provider
+preflight identity login
+
+# Login with specific provider
+preflight identity login --provider corporate
+
+# Check auth status
+preflight identity status
+
+# Show identity claims
+preflight identity whoami
+```
+
+---
+
+### preflight compliance attest
+
+Create a signed compliance attestation.
+
+```bash
+preflight compliance attest [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--sign-key <path>` | Path to signing key file |
+| `--sigstore` | Use Sigstore keyless signing |
+
+### preflight compliance verify
+
+Verify a compliance attestation signature.
+
+```bash
+preflight compliance verify <attestation-file> [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--sign-key <path>` | Path to signing key for verification |
+
+---
+
+### preflight lock verify-attestations
+
+Verify SLSA attestations for locked packages.
+
+```bash
+preflight lock verify-attestations
+```
+
+Checks that locked packages have valid SLSA provenance attestations and verifies attestation digests against the Sigstore transparency log.
+
+---
+
+### preflight plugin provision
+
+Execute a provisioner plugin action.
+
+```bash
+preflight plugin provision <name> <action> [flags]
+```
+
+**Actions:** `plan`, `apply`, `destroy`, `state`
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--var <key=value>` | Set variable (repeatable) |
+| `--work-dir <path>` | Working directory for the provisioner |
+
+**Examples:**
+
+```bash
+# Plan infrastructure changes
+preflight plugin provision terraform plan
+
+# Apply with variables
+preflight plugin provision terraform apply --var env=production
+
+# Check state
+preflight plugin provision terraform state
+```
+
+---
+
+### preflight marketplace scan
+
+Security scan an installed marketplace package.
+
+```bash
+preflight marketplace scan <package> [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--min-severity <level>` | Minimum severity to report (critical, high, medium, low) |
+
+**Examples:**
+
+```bash
+preflight marketplace scan nvim-pro
+preflight marketplace scan nvim-pro --min-severity high
+```
+
+---
+
 ## Global Flags
 
 Available on all commands:

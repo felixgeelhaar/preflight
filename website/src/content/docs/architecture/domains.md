@@ -31,6 +31,12 @@ Preflight is organized around bounded contexts following Domain-Driven Design pr
 │ Capability  │  │   Sandbox   │  │   Trust     │
 │   Domain    │  │   Domain    │  │   Domain    │
 └─────────────┘  └─────────────┘  └─────────────┘
+       │                                 │
+       ▼                                 ▼
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│  Identity   │  │ Attestation │  │   Fleet/    │
+│   Domain    │  │   Domain    │  │   Cloud     │
+└─────────────┘  └─────────────┘  └─────────────┘
 ```
 
 ## Config Domain
@@ -535,6 +541,162 @@ type Signature struct {
 | `verified` | Signed by known key |
 | `community` | Hash-verified only |
 | `untrusted` | No verification |
+
+---
+
+## Identity Domain
+
+**Responsibility:** Enterprise identity provider integration and token management.
+
+### Entities
+
+**Provider** — OIDC identity provider configuration
+
+```go
+type Provider struct {
+    Name         string
+    Issuer       string
+    ClientID     string
+    Scopes       []string
+    DeviceAuthURL string
+}
+```
+
+### Value Objects
+
+**Token** — OAuth2 token with expiration
+
+```go
+type Token struct {
+    AccessToken  string
+    RefreshToken string
+    IDToken      string
+    ExpiresAt    time.Time
+}
+```
+
+**Claims** — Parsed identity claims
+
+```go
+type Claims struct {
+    Subject  string
+    Email    string
+    Groups   []string
+    Issuer   string
+    IssuedAt time.Time
+}
+```
+
+### Services
+
+**DeviceFlow** — RFC 8628 device authorization grant
+
+```go
+type DeviceFlow struct {
+    provider *Provider
+    client   *http.Client
+}
+
+func (f *DeviceFlow) Authorize(ctx context.Context) (*Token, error)
+```
+
+**TokenStore** — OS keychain-backed token persistence
+
+```go
+type TokenStore interface {
+    Save(provider string, token *Token) error
+    Load(provider string) (*Token, error)
+    Delete(provider string) error
+}
+```
+
+Adapters: macOS Keychain, Linux secret-service, Windows Credential Manager, file-based fallback.
+
+---
+
+## Attestation Domain
+
+**Responsibility:** SLSA provenance verification and compliance attestation.
+
+### Value Objects
+
+**InTotoStatement** — In-toto attestation envelope
+
+```go
+type InTotoStatement struct {
+    Type          string
+    Subject       []Subject
+    PredicateType string
+    Predicate     json.RawMessage
+}
+```
+
+**SLSAProvenance** — SLSA v1.0 provenance predicate
+
+```go
+type SLSAProvenance struct {
+    BuildDefinition BuildDefinition
+    RunDetails      RunDetails
+}
+```
+
+### Services
+
+**AttestationVerifier** — Verify SLSA attestations
+
+```go
+type AttestationVerifier struct {
+    policy  *AttestationPolicy
+    keyring sigstore.Keyring
+}
+
+func (v *AttestationVerifier) Verify(ctx context.Context, stmt *InTotoStatement) (*VerificationResult, error)
+```
+
+**AttestationPolicy** — Policy for attestation verification
+
+```go
+type AttestationPolicy struct {
+    MinSLSALevel   int          // L0-L4
+    TrustedBuilders []string
+    MaxAge         time.Duration
+    RequireSigstore bool
+}
+```
+
+### Compliance Attestation
+
+**ComplianceAttestation** — Signed proof of compliance
+
+```go
+type ComplianceAttestation struct {
+    Report    *ComplianceReport
+    Signature []byte
+    SignedAt  time.Time
+    Attester  string
+}
+```
+
+**Attester** — Signing interface
+
+```go
+type Attester interface {
+    Attest(report *ComplianceReport) (*ComplianceAttestation, error)
+    Verify(attestation *ComplianceAttestation) error
+}
+```
+
+Implementations: `LocalKeyAttester` (HMAC-SHA256), `SigstoreAttester` (keyless signing).
+
+**AttestationStore** — JSON persistence at `~/.preflight/attestations/`
+
+```go
+type AttestationStore interface {
+    Save(attestation *ComplianceAttestation) error
+    Load(id string) (*ComplianceAttestation, error)
+    List() ([]*ComplianceAttestation, error)
+}
+```
 
 ---
 

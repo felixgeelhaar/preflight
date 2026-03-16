@@ -269,6 +269,108 @@ preflight fleet apply
 preflight fleet sync --push
 ```
 
+## Cloud-Native Inventory Sources
+
+Preflight can auto-discover fleet hosts from cloud provider APIs, eliminating the need to manually maintain `fleet.yaml` for dynamic infrastructure.
+
+### Supported Sources
+
+| Source | Description |
+|--------|-------------|
+| AWS EC2 | Discover instances by tags, VPC, or filters |
+| Azure VMs | Discover virtual machines by resource group |
+| GCP Compute | Discover instances by project and zone |
+
+### Configuration
+
+Add inventory sources to your `fleet.yaml`:
+
+```yaml
+version: 1
+
+sources:
+  - name: aws-production
+    type: aws-ec2
+    config:
+      region: us-east-1
+      filters:
+        - name: "tag:Environment"
+          values: ["production"]
+        - name: "instance-state-name"
+          values: ["running"]
+      tag_mapping:
+        Name: hostname
+        Team: group
+        Role: tag
+
+  - name: aws-staging
+    type: aws-ec2
+    config:
+      region: us-west-2
+      filters:
+        - name: "tag:Environment"
+          values: ["staging"]
+
+hosts:
+  # Static hosts alongside cloud-discovered hosts
+  bastion:
+    hostname: bastion.example.com
+    user: admin
+
+defaults:
+  user: ec2-user
+  ssh_timeout: 30s
+```
+
+### Discovery Commands
+
+```bash
+# Discover from all configured sources
+preflight fleet discover
+
+# Discover from a specific source
+preflight fleet discover --source aws-production
+
+# List hosts after discovery (includes discovered hosts)
+preflight fleet list
+```
+
+### How It Works
+
+1. `preflight fleet discover` queries each configured `InventorySource`
+2. Cloud APIs return instance metadata (hostname, IP, tags)
+3. Tag mappings convert cloud tags to fleet host properties (groups, tags)
+4. Discovered hosts are merged with static hosts from `fleet.yaml`
+5. Duplicate detection prevents conflicts between static and discovered entries
+
+### AWS EC2 Discovery
+
+The AWS EC2 adapter uses the standard AWS SDK credential chain:
+
+- Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
+- Shared credentials file (`~/.aws/credentials`)
+- IAM instance profile (when running on EC2)
+
+Required IAM permissions:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeTags"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+---
+
 ## Troubleshooting
 
 ### Connection Issues

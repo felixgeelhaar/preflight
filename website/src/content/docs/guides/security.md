@@ -252,6 +252,123 @@ capabilities:
 
 ---
 
+## SLSA Attestation Verification
+
+Preflight can verify SLSA provenance for locked packages, ensuring that packages were built by trusted builders using reproducible processes.
+
+### Verification Process
+
+```bash
+# Verify all locked packages have valid attestations
+preflight lock verify-attestations
+```
+
+This checks:
+
+1. Each `PackageLock` entry has an `AttestationRef`
+2. The in-toto statement is valid and well-formed
+3. The SLSA provenance predicate meets the configured policy level (L0-L4)
+4. Sigstore bundle signatures are verified against the transparency log
+5. Builder identity matches the list of trusted builders
+
+### Attestation Policy
+
+Configure attestation requirements in `preflight.yaml`:
+
+```yaml
+security:
+  attestation:
+    min_slsa_level: 2          # Require at least SLSA L2
+    trusted_builders:
+      - https://github.com/actions/runner
+      - https://github.com/slsa-framework/slsa-github-generator
+    max_age: 720h              # Reject attestations older than 30 days
+    require_sigstore: true     # Require Sigstore keyless signatures
+```
+
+### SLSA Levels
+
+| Level | Requirements |
+|-------|-------------|
+| L0 | No guarantees |
+| L1 | Build process documented |
+| L2 | Signed provenance, hosted build |
+| L3 | Hardened build platform |
+| L4 | Two-party review, hermetic builds |
+
+---
+
+## Identity-Based Trust Elevation
+
+Enterprise OIDC identity extends the existing Sigstore trust model. When a user authenticates via `preflight identity login`, their identity claims can be used to:
+
+- **Elevate plugin trust levels** — Plugins signed by a verified corporate identity are automatically trusted
+- **Gate fleet operations** — Require authenticated identity before fleet apply
+- **Audit attribution** — All operations are attributed to the authenticated identity
+
+### Configuration
+
+```yaml
+identity:
+  providers:
+    corporate:
+      issuer: https://login.company.com
+      client_id: preflight-cli
+      scopes: [openid, profile, email, groups]
+```
+
+### Trust Chain
+
+```
+OIDC Provider → Device Auth Flow → ID Token → Sigstore Keyless → Attestation
+```
+
+When Sigstore keyless signing is used, the OIDC identity token becomes the basis for signing. This creates a verifiable chain from enterprise identity to package attestation.
+
+---
+
+## Marketplace Security Scanning
+
+Preflight can automatically scan marketplace packages for vulnerabilities during installation using Grype or Trivy.
+
+### Automatic Scanning
+
+```bash
+# Install with automatic security scan
+preflight marketplace install nvim-pro
+
+# Skip scanning (not recommended)
+preflight marketplace install nvim-pro --skip-scan
+```
+
+### Manual Scanning
+
+```bash
+# Scan an installed package
+preflight marketplace scan nvim-pro
+
+# Only report high and critical vulnerabilities
+preflight marketplace scan nvim-pro --min-severity high
+```
+
+### Scan Policy
+
+Configure scan behavior in `preflight.yaml`:
+
+```yaml
+security:
+  marketplace_scan:
+    enabled: true
+    scanner: grype              # grype or trivy
+    block_severity: critical    # Block install if severity >= threshold
+    skip_patterns:
+      - "test-*"               # Skip scanning test packages
+```
+
+If no scanner binary is available on the system, Preflight logs a warning and continues without scanning (graceful fallback).
+
+---
+
 ## Security Auditing
 
 ### Audit External Catalogs

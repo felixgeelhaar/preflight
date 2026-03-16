@@ -7,6 +7,55 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - 2026-03-16
+
+### Added
+
+- **Enterprise Identity Providers (OIDC)**: New `identity` domain with device authorization grant flow (RFC 8628), token store, and OS keychain adapters (macOS Keychain, Linux secret-service, Windows Credential Manager, file-based fallback)
+  - `preflight identity login/logout/status/whoami` CLI commands
+  - Configurable via `identity.providers` in `preflight.yaml`
+
+- **Marketplace Security Scanning**: Automated vulnerability scanning during package install using Grype/Trivy
+  - `ScanPolicy` with severity thresholds and skip patterns
+  - `preflight marketplace scan <pkg>` and `--skip-scan` flag on install
+  - Graceful fallback when no scanner is available
+
+- **SLSA Provenance Verification**: New `attestation` domain for reproducible build verification
+  - In-toto Statement and SLSA v1.0 Provenance value objects
+  - AttestationVerifier with Sigstore bundle support
+  - AttestationPolicy with SLSA levels (L0-L4), trusted builders, max age
+  - `preflight lock verify-attestations` CLI command
+  - `AttestationRef` on lockfile `PackageLock` entries
+
+- **Cloud-Native Inventory Sources**: Auto-discover fleet hosts from cloud APIs
+  - `InventorySource` interface with `SourceRegistry`
+  - AWS EC2 discovery adapter with tag mapping and filters
+  - `preflight fleet discover` CLI command
+  - `Inventory.RefreshFromSources()` for bulk discovery
+
+- **Compliance Attestation**: Cryptographic proof of machine compliance
+  - `ComplianceAttestation` wrapping compliance reports with signatures
+  - `LocalKeyAttester` (HMAC-SHA256) and `SigstoreAttester` (keyless)
+  - `AttestationStore` for JSON persistence at `~/.preflight/attestations/`
+  - `preflight compliance attest` and `preflight compliance verify` CLI commands
+
+- **Provisioner Plugin API**: Infrastructure provisioning via WASM plugins
+  - `TypeProvisioner` plugin type with `ProvisionerCapability`
+  - `ProvisionRequest/Result` types with plan/apply/destroy/state actions
+  - WASM host functions for provisioner plugins
+  - `preflight plugin provision <name> <action>` CLI command
+
+- **New Audit Events**: `marketplace_scan_completed`, `marketplace_scan_blocked`, `identity_login`, `identity_logout`, `identity_refresh`
+
+- **Catalog Signature Type**: Added `SignatureTypeAttestation` for SLSA provenance signatures
+
+### Security
+
+- **GitHub Actions Pinned to SHA**: All workflow actions pinned to commit SHAs to prevent supply chain attacks
+- **Updated Security Baseline**: nox scan shows 0 findings (1,009 suppressed false positives)
+
+---
+
 ## [Unreleased]
 
 ### Added

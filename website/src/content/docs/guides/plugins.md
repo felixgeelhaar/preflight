@@ -13,6 +13,7 @@ Preflight has a **two-tier plugin architecture** designed for security and simpl
 |------|-------------|--------|-------------|
 | **Config** | Presets, capability packs, YAML configs | Pure YAML | Safe by design |
 | **Provider** | Custom providers with executable logic | WASM + YAML | Sandboxed execution |
+| **Provisioner** | Infrastructure provisioning (v5.0+) | WASM + YAML | Sandboxed execution |
 
 **Config plugins** are the recommended choice for most use cases. They can share presets, capability packs, and provider configurations without any executable code.
 
@@ -493,6 +494,108 @@ wasm:
       justification: Run docker CLI commands
     - name: files:write
       justification: Write Docker daemon.json config
+```
+
+---
+
+## Provisioner Plugins
+
+Provisioner plugins are a third plugin type introduced in v5.0 that enable infrastructure provisioning through WASM plugins. Unlike provider plugins that configure workstations, provisioner plugins manage external infrastructure.
+
+### Plugin Type
+
+| Type | Description | Format | Use Case |
+|------|-------------|--------|----------|
+| **Provisioner** | Infrastructure provisioning | WASM + YAML | Terraform, Pulumi, CloudFormation |
+
+### ProvisionerCapability
+
+Provisioner plugins declare a `ProvisionerCapability` that defines the actions they support:
+
+| Action | Description |
+|--------|-------------|
+| `plan` | Preview infrastructure changes |
+| `apply` | Apply infrastructure changes |
+| `destroy` | Tear down infrastructure |
+| `state` | Query current infrastructure state |
+
+### Provisioner Plugin Manifest
+
+```yaml
+apiVersion: v1
+type: provisioner
+name: terraform
+version: 1.0.0
+description: Terraform infrastructure provisioner
+author: Infrastructure Team
+license: Apache-2.0
+
+provides:
+  provisioner:
+    name: terraform
+    description: Provision infrastructure with Terraform
+    actions: [plan, apply, destroy, state]
+
+wasm:
+  module: provisioner.wasm
+  checksum: sha256:abc123def456...
+  capabilities:
+    - name: shell:execute
+      justification: Run terraform CLI commands
+    - name: files:read
+      justification: Read Terraform configuration files
+    - name: files:write
+      justification: Write Terraform state files
+    - name: network:fetch
+      justification: Download provider plugins
+```
+
+### WASM Host Functions for Provisioners
+
+In addition to the standard host functions, provisioner plugins have access to:
+
+```go
+// Provisioner-specific host functions
+preflight.provision_plan(config)       // Generate execution plan
+preflight.provision_apply(plan)        // Apply planned changes
+preflight.provision_destroy(state)     // Destroy managed resources
+preflight.provision_get_state()        // Read current state
+preflight.provision_set_var(key, val)  // Set input variable
+```
+
+### Usage
+
+```bash
+# Plan infrastructure changes
+preflight plugin provision terraform plan
+
+# Apply with variables
+preflight plugin provision terraform apply --var env=production --var region=us-east-1
+
+# Check current state
+preflight plugin provision terraform state
+
+# Tear down infrastructure
+preflight plugin provision terraform destroy
+```
+
+### Request/Result Types
+
+```go
+type ProvisionRequest struct {
+    Action   string            // plan, apply, destroy, state
+    WorkDir  string            // Working directory
+    Vars     map[string]string // Input variables
+}
+
+type ProvisionResult struct {
+    Action   string
+    Status   string     // success, failed, no-changes
+    Plan     string     // Human-readable plan output
+    State    []byte     // Serialized state (for state action)
+    Changes  int        // Number of resources changed
+    Errors   []string
+}
 ```
 
 ---
