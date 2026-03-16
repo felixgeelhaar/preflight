@@ -329,7 +329,7 @@ When Sigstore keyless signing is used, the OIDC identity token becomes the basis
 
 ## Marketplace Security Scanning
 
-Preflight can automatically scan marketplace packages for vulnerabilities during installation using Grype or Trivy.
+Preflight can automatically scan marketplace packages for vulnerabilities during installation using nox (with Grype or Trivy as fallbacks).
 
 ### Automatic Scanning
 
@@ -359,7 +359,7 @@ Configure scan behavior in `preflight.yaml`:
 security:
   marketplace_scan:
     enabled: true
-    scanner: grype              # grype or trivy
+    scanner: nox                # nox (primary), grype, or trivy
     block_severity: critical    # Block install if severity >= threshold
     skip_patterns:
       - "test-*"               # Skip scanning test packages

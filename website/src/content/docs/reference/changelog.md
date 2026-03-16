@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - `preflight identity login/logout/status/whoami` CLI commands
   - Configurable via `identity.providers` in `preflight.yaml`
 
-- **Marketplace Security Scanning**: Automated vulnerability scanning during package install using Grype/Trivy
+- **Marketplace Security Scanning**: Automated vulnerability scanning during package install using nox (with Grype/Trivy fallback)
   - `ScanPolicy` with severity thresholds and skip patterns
   - `preflight marketplace scan <pkg>` and `--skip-scan` flag on install
   - Graceful fallback when no scanner is available

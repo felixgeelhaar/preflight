@@ -38,7 +38,7 @@ func TestScanner_ScanPackage_SkippedByPolicy(t *testing.T) {
 	t.Parallel()
 
 	registry := security.NewScannerRegistry()
-	registry.Register(&mockScanner{name: "grype", available: true})
+	registry.Register(&mockScanner{name: "nox", available: true})
 
 	policy := ScanPolicy{
 		Enabled:         false,
@@ -58,7 +58,7 @@ func TestScanner_ScanPackage_SkippedByPattern(t *testing.T) {
 	t.Parallel()
 
 	registry := security.NewScannerRegistry()
-	registry.Register(&mockScanner{name: "grype", available: true})
+	registry.Register(&mockScanner{name: "nox", available: true})
 
 	policy := ScanPolicy{
 		Enabled:         true,
@@ -78,7 +78,7 @@ func TestScanner_ScanPackage_NoScannerAvailable(t *testing.T) {
 	t.Parallel()
 
 	registry := security.NewScannerRegistry()
-	registry.Register(&mockScanner{name: "grype", available: false})
+	registry.Register(&mockScanner{name: "nox", available: false})
 
 	policy := DefaultScanPolicy()
 	scanner := NewScanner(registry, policy)
@@ -110,11 +110,11 @@ func TestScanner_ScanPackage_CleanResult(t *testing.T) {
 
 	registry := security.NewScannerRegistry()
 	registry.Register(&mockScanner{
-		name:      "grype",
+		name:      "nox",
 		available: true,
 		result: &security.ScanResult{
-			Scanner:         "grype",
-			Version:         "1.0.0",
+			Scanner:         "nox",
+			Version:         "0.7.0",
 			Vulnerabilities: security.Vulnerabilities{},
 			PackagesScanned: 5,
 		},
@@ -128,7 +128,7 @@ func TestScanner_ScanPackage_CleanResult(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.Equal(t, ScanStatusClean, result.Status)
-	assert.Equal(t, "grype", result.Scanner)
+	assert.Equal(t, "nox", result.Scanner)
 	assert.False(t, result.Blocked)
 	assert.Equal(t, 0, result.Summary.TotalVulnerabilities)
 }
@@ -168,11 +168,11 @@ func TestScanner_ScanPackage_BlockedResult(t *testing.T) {
 
 	registry := security.NewScannerRegistry()
 	registry.Register(&mockScanner{
-		name:      "grype",
+		name:      "nox",
 		available: true,
 		result: &security.ScanResult{
-			Scanner: "grype",
-			Version: "1.0.0",
+			Scanner: "nox",
+			Version: "0.7.0",
 			Vulnerabilities: security.Vulnerabilities{
 				{ID: "CVE-2024-9999", Severity: security.SeverityCritical, Title: "RCE vulnerability"},
 			},
@@ -199,7 +199,7 @@ func TestScanner_ScanPackage_ScannerError(t *testing.T) {
 	scanErr := errors.New("scanner exploded")
 	registry := security.NewScannerRegistry()
 	registry.Register(&mockScanner{
-		name:      "grype",
+		name:      "nox",
 		available: true,
 		result:    nil,
 		err:       scanErr,
@@ -219,11 +219,11 @@ func TestScanner_ScanPackage_TrustVerified(t *testing.T) {
 
 	registry := security.NewScannerRegistry()
 	registry.Register(&mockScanner{
-		name:      "grype",
+		name:      "nox",
 		available: true,
 		result: &security.ScanResult{
-			Scanner:         "grype",
-			Version:         "1.0.0",
+			Scanner:         "nox",
+			Version:         "0.7.0",
 			Vulnerabilities: security.Vulnerabilities{},
 			PackagesScanned: 1,
 		},
@@ -254,7 +254,7 @@ func TestScanner_ScanPackage_BlockedOnHigh(t *testing.T) {
 		available: true,
 		result: &security.ScanResult{
 			Scanner: "grype",
-			Version: "1.0.0",
+			Version: "0.74.0",
 			Vulnerabilities: security.Vulnerabilities{
 				{ID: "CVE-2024-0010", Severity: security.SeverityHigh},
 			},

@@ -51,7 +51,7 @@ Define your workstation configuration once, apply it anywhere.
 - **Capture Review TUI**: Interactive review with search/filter, layer reassignment, and undo/redo
 - **Three-Way Merge**: Automatic conflict detection with git-style conflict markers
 - **Enterprise Identity**: OIDC device authorization flow for enterprise trust chains
-- **Marketplace Scanning**: Automated security scanning during package install (Grype/Trivy)
+- **Marketplace Scanning**: Automated security scanning during package install (nox, with Grype/Trivy fallback)
 - **SLSA Attestation**: Reproducible build verification with in-toto statements and Sigstore
 - **Cloud Inventory**: Auto-discover fleet hosts from AWS EC2 (Azure/GCP planned)
 - **Compliance Attestation**: Cryptographic proof of machine compliance with signed attestations
