@@ -1,0 +1,5 @@
+# Transient nox scan output — not source code
+findings.json
+
+# Baseline file contains SHA fingerprints that trigger false positive SEC-569
+.nox/baseline.json
