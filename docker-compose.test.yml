@@ -232,6 +232,16 @@ services:
       - go-build-cache:/root/.cache/go-build
     command: ["/app/test/e2e/test_usecase_operations.sh"]
 
+  e2e-machine-migration:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: e2e-usecases
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    command: ["/app/test/e2e/test_usecase_machine_migration.sh"]
+
   # ==========================================================================
   # Lint (golangci-lint)
   # ==========================================================================
