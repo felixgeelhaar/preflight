@@ -150,6 +150,12 @@ func TestGetCommitDiff_InvalidRemote(t *testing.T) {
 	cmd := exec.Command("git", "init", tmpDir)
 	require.NoError(t, cmd.Run())
 
+	// Configure user identity for Docker environments where global git config is absent.
+	for _, kv := range [][2]string{{"user.name", "test"}, {"user.email", "test@test"}} {
+		cmd = exec.Command("git", "-C", tmpDir, "config", kv[0], kv[1])
+		require.NoError(t, cmd.Run())
+	}
+
 	cmd = exec.Command("git", "-C", tmpDir, "commit", "--allow-empty", "-m", "init")
 	require.NoError(t, cmd.Run())
 

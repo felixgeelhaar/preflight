@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"syscall"
 	"testing"
@@ -63,6 +64,11 @@ func TestValidateCommand_IsRegistered(t *testing.T) {
 // It redirects file descriptor 1 at the OS level using syscall.Dup2 instead
 // of swapping the os.Stdout Go variable. This avoids a data race with any
 // parallel goroutine that reads os.Stdout (e.g. exec.Cmd, app.New(os.Stdout)).
+//
+// In verbose test mode (-v), Go's test framework writes "=== RUN/CONT/PAUSE"
+// lines directly to fd 1, which may leak into the captured output. The
+// captured string is post-processed to strip these lines so callers get
+// only the output produced by f().
 func captureStdout(t *testing.T, f func()) string {
 	t.Helper()
 
@@ -102,7 +108,24 @@ func captureStdout(t *testing.T, f func()) string {
 	w.Close() //nolint:errcheck // must close write-end to signal EOF to reader goroutine
 
 	require.NoError(t, <-done)
-	return buf.String()
+
+	// Strip Go test framework lines that leak through fd 1 in verbose mode.
+	return stripTestFrameworkNoise(buf.String())
+}
+
+// stripTestFrameworkNoise removes Go test framework output lines (=== RUN,
+// === CONT, === PAUSE, --- PASS, --- FAIL) that may leak into fd-level
+// stdout capture during parallel test execution with -v.
+func stripTestFrameworkNoise(s string) string {
+	var clean []string
+	for _, line := range strings.Split(s, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "=== ") || strings.HasPrefix(trimmed, "--- ") {
+			continue
+		}
+		clean = append(clean, line)
+	}
+	return strings.Join(clean, "\n")
 }
 
 func TestOutputValidationJSON_WithError(t *testing.T) {
