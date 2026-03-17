@@ -216,11 +216,12 @@ func outputComplianceJSON(report *policy.ComplianceReport) {
 func runComplianceAttest(_ *cobra.Command, _ []string) error {
 	fmt.Println("Creating compliance attestation...")
 
-	if complianceSigstore {
+	switch {
+	case complianceSigstore:
 		fmt.Println("Using Sigstore keyless signing")
-	} else if complianceSignKey != "" {
+	case complianceSignKey != "":
 		fmt.Printf("Using signing key: %s\n", complianceSignKey)
-	} else {
+	default:
 		return fmt.Errorf("specify --sign-key or --sigstore for signing")
 	}
 

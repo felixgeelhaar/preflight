@@ -1,4 +1,4 @@
-.PHONY: build test lint coverage clean install release-local security \
+.PHONY: build test lint coverage clean install release-local security hooks \
 	docker-test docker-test-unit docker-test-apt docker-test-brew docker-test-full \
 	docker-test-files docker-test-e2e docker-coverage docker-lint docker-build docker-clean \
 	test-e2e
@@ -77,6 +77,10 @@ release-local:
 security:
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 	govulncheck ./...
+
+## hooks: Install git pre-commit hooks
+hooks:
+	./scripts/setup-hooks.sh
 
 ## help: Show this help
 help:

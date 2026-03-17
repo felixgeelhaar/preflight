@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# Pre-commit hook for preflight
+# Install: make hooks or ./scripts/setup-hooks.sh
+set -euo pipefail
+
+# Colors (disabled if not a terminal)
+if [ -t 1 ]; then
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[0;33m'
+  NC='\033[0m'
+else
+  RED='' GREEN='' YELLOW='' NC=''
+fi
+
+pass() { printf "${GREEN}✓${NC} %s\n" "$1"; }
+fail() { printf "${RED}✗${NC} %s\n" "$1"; }
+warn() { printf "${YELLOW}!${NC} %s\n" "$1"; }
+
+errors=0
+
+# 1. Format check — only staged .go files
+staged_go_files=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' || true)
+if [ -n "$staged_go_files" ]; then
+  unformatted=$(echo "$staged_go_files" | xargs gofmt -l 2>/dev/null || true)
+  if [ -n "$unformatted" ]; then
+    fail "gofmt: unformatted files (run 'gofmt -w' on these):"
+    echo "$unformatted" | sed 's/^/  /'
+    errors=$((errors + 1))
+  else
+    pass "gofmt"
+  fi
+else
+  pass "gofmt (no staged .go files)"
+fi
+
+# 2. Go vet
+if go vet ./... 2>/dev/null; then
+  pass "go vet"
+else
+  fail "go vet"
+  errors=$((errors + 1))
+fi
+
+# 3. Lint
+if command -v golangci-lint &>/dev/null; then
+  if golangci-lint run --timeout 2m 2>/dev/null; then
+    pass "golangci-lint"
+  else
+    fail "golangci-lint"
+    errors=$((errors + 1))
+  fi
+else
+  warn "golangci-lint not installed — skipping"
+fi
+
+# 4. Tests with race detection
+if go test -race -count=1 ./... >/dev/null 2>&1; then
+  pass "go test -race"
+else
+  fail "go test -race"
+  errors=$((errors + 1))
+fi
+
+# 5. Coverage threshold (uses coverctl's own test runner to avoid duplicate runs)
+if command -v coverctl &>/dev/null; then
+  if coverctl check -o brief 2>/dev/null; then
+    pass "coverage threshold"
+  else
+    fail "coverage threshold (>80% per domain required)"
+    errors=$((errors + 1))
+  fi
+else
+  warn "coverctl not installed — skipping coverage check"
+fi
+
+# 6. Security scan (nox) — only fail on NEW findings vs baseline
+if command -v nox &>/dev/null; then
+  nox_output=$(nox diff 2>&1)
+  if [ $? -eq 0 ]; then
+    pass "nox security scan (no new findings)"
+  else
+    fail "nox security scan — new findings detected"
+    echo "$nox_output" | sed 's/^/  /'
+    errors=$((errors + 1))
+  fi
+else
+  warn "nox not installed — skipping security scan"
+fi
+
+# 7. Go mod tidy check
+go_mod_backup=$(mktemp)
+go_sum_backup=$(mktemp)
+cp go.mod "$go_mod_backup" && cp go.sum "$go_sum_backup"
+if go mod tidy 2>/dev/null && diff -q go.mod "$go_mod_backup" >/dev/null 2>&1 && diff -q go.sum "$go_sum_backup" >/dev/null 2>&1; then
+  pass "go mod tidy"
+else
+  fail "go mod tidy produced changes — run 'go mod tidy' and stage the result"
+  cp "$go_mod_backup" go.mod && cp "$go_sum_backup" go.sum
+  errors=$((errors + 1))
+fi
+rm -f "$go_mod_backup" "$go_sum_backup"
+
+# Result
+echo ""
+if [ $errors -gt 0 ]; then
+  fail "Pre-commit failed with $errors error(s). Fix issues and try again."
+  exit 1
+else
+  pass "All pre-commit checks passed."
+fi

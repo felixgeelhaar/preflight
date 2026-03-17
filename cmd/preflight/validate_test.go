@@ -72,12 +72,12 @@ func captureStdout(t *testing.T, f func()) string {
 	// Create a pipe to capture output.
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
-	defer r.Close()
+	defer r.Close() //nolint:errcheck // best-effort cleanup in test helper
 
 	// Save the original fd 1 so we can restore it.
 	origFd, err := syscall.Dup(int(os.Stdout.Fd()))
 	require.NoError(t, err)
-	defer syscall.Close(origFd)
+	defer syscall.Close(origFd) //nolint:errcheck // best-effort cleanup in test helper
 
 	// Redirect fd 1 to the pipe write end. This does NOT modify
 	// the os.Stdout Go variable, so no data race with readers.
@@ -99,7 +99,7 @@ func captureStdout(t *testing.T, f func()) string {
 	require.NoError(t, syscall.Dup2(origFd, int(os.Stdout.Fd())))
 
 	// Close the pipe write end so the goroutine's io.Copy sees EOF.
-	w.Close()
+	w.Close() //nolint:errcheck // must close write-end to signal EOF to reader goroutine
 
 	require.NoError(t, <-done)
 	return buf.String()
