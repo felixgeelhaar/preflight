@@ -95,7 +95,7 @@ func (s *AWSSource) Discover(ctx context.Context) ([]*fleet.Host, error) {
 		return nil, fmt.Errorf("AWS EC2 describe instances: %w", err)
 	}
 
-	var hosts []*fleet.Host
+	hosts := make([]*fleet.Host, 0, len(instances))
 	for _, inst := range instances {
 		if inst.State != "running" {
 			continue

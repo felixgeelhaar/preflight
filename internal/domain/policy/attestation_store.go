@@ -53,7 +53,7 @@ func (s *AttestationStore) Load(machineID string) ([]*ComplianceAttestation, err
 		return nil, fmt.Errorf("reading attestation directory: %w", err)
 	}
 
-	var attestations []*ComplianceAttestation
+	attestations := make([]*ComplianceAttestation, 0, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasPrefix(entry.Name(), prefix) || !strings.HasSuffix(entry.Name(), ".json") {
 			continue
