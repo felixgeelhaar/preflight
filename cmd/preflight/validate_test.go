@@ -117,8 +117,9 @@ func captureStdout(t *testing.T, f func()) string {
 // === CONT, === PAUSE, --- PASS, --- FAIL) that may leak into fd-level
 // stdout capture during parallel test execution with -v.
 func stripTestFrameworkNoise(s string) string {
-	var clean []string
-	for _, line := range strings.Split(s, "\n") {
+	lines := strings.Split(s, "\n")
+	clean := make([]string, 0, len(lines))
+	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "=== ") || strings.HasPrefix(trimmed, "--- ") {
 			continue
