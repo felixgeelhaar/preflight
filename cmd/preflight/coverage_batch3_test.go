@@ -801,12 +801,14 @@ func TestBatch3_BuildUserContext_NoKeywords(t *testing.T) {
 // ===========================================================================
 
 func TestBatch3_FindRepoRoot_InGitRepo(t *testing.T) {
+	skipIfNoGitRepo(t)
 	root, err := findRepoRoot()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, root)
 }
 
 func TestBatch3_GetCurrentBranch(t *testing.T) {
+	skipIfNoGitRepo(t)
 	root, err := findRepoRoot()
 	require.NoError(t, err)
 	branch, err := getCurrentBranch(root)

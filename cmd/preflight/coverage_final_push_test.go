@@ -1412,13 +1412,14 @@ func TestCovFinal_RunMarketplaceRecommend_Empty(t *testing.T) {
 // ===========================================================================
 
 func TestCovFinal_FindRepoRoot(t *testing.T) {
-	// We're in a git repo, so this should work
+	skipIfNoGitRepo(t)
 	root, err := findRepoRoot()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, root)
 }
 
 func TestCovFinal_GetCurrentBranch(t *testing.T) {
+	skipIfNoGitRepo(t)
 	root, err := findRepoRoot()
 	require.NoError(t, err)
 	branch, err := getCurrentBranch(root)
@@ -1427,6 +1428,7 @@ func TestCovFinal_GetCurrentBranch(t *testing.T) {
 }
 
 func TestCovFinal_HasUncommittedChanges(t *testing.T) {
+	skipIfNoGitRepo(t)
 	root, err := findRepoRoot()
 	require.NoError(t, err)
 	// Just test it doesn't error

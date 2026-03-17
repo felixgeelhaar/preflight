@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -20,6 +21,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// skipIfNoGitRepo skips the test when not running inside a git repository
+// (e.g. Docker CI containers where the source is mounted without .git).
+func skipIfNoGitRepo(t *testing.T) {
+	t.Helper()
+	if err := exec.Command("git", "rev-parse", "--git-dir").Run(); err != nil {
+		t.Skip("skipping: not inside a git repository")
+	}
+}
 
 func TestEqualValues(t *testing.T) {
 	t.Parallel()

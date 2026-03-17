@@ -73,12 +73,7 @@ func runSync(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	// Find repository root
-	repoRoot, err := findRepoRoot()
-	if err != nil {
-		return fmt.Errorf("not in a git repository: %w", err)
-	}
-
+	// Validate inputs before touching git state
 	if err := validation.ValidateGitRemoteName(syncRemote); err != nil {
 		return fmt.Errorf("invalid remote name: %w", err)
 	}
@@ -86,6 +81,12 @@ func runSync(cmd *cobra.Command, _ []string) error {
 		if err := validation.ValidateGitBranch(syncBranch); err != nil {
 			return fmt.Errorf("invalid branch: %w", err)
 		}
+	}
+
+	// Find repository root
+	repoRoot, err := findRepoRoot()
+	if err != nil {
+		return fmt.Errorf("not in a git repository: %w", err)
 	}
 
 	// Check for uncommitted changes

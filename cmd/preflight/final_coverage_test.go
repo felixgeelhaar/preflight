@@ -872,13 +872,14 @@ func TestFinalCov_ConfirmBootstrap_AllowBootstrapFlag(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFinalCov_FindRepoRoot(t *testing.T) {
-	// We're running inside the preflight repo, so this should succeed.
+	skipIfNoGitRepo(t)
 	root, err := findRepoRoot()
 	require.NoError(t, err)
 	assert.NotEmpty(t, root)
 }
 
 func TestFinalCov_HasUncommittedChanges(t *testing.T) {
+	skipIfNoGitRepo(t)
 	root, err := findRepoRoot()
 	require.NoError(t, err)
 
@@ -888,6 +889,7 @@ func TestFinalCov_HasUncommittedChanges(t *testing.T) {
 }
 
 func TestFinalCov_GetCurrentBranch(t *testing.T) {
+	skipIfNoGitRepo(t)
 	root, err := findRepoRoot()
 	require.NoError(t, err)
 
