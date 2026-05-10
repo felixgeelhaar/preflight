@@ -657,46 +657,67 @@ func TestExecutor_RollbackDuration(t *testing.T) {
 	}
 }
 
-// TestExecutor_ApplyHonorsContextCancellation verifies that even if a step's
-// Apply does not internally observe the context, the executor returns when
-// the context is cancelled. The step's goroutine continues until Apply
-// returns; the executor must not block on it.
+// TestExecutor_ApplyHonorsContextCancellation verifies that applyWithCancellation
+// actually unblocks the executor when ctx is cancelled MID-Apply. The step's
+// goroutine continues until Apply returns; the executor must not block on it.
+//
+// The earlier version of this test cancelled ctx BEFORE Execute ran, which
+// short-circuited at the loop's pre-iteration select{} and never reached
+// applyWithCancellation. This version signals "Apply has started" via an
+// unbuffered channel, then cancels — guaranteeing the cancellation takes
+// effect inside applyWithCancellation.
 func TestExecutor_ApplyHonorsContextCancellation(t *testing.T) {
 	executor := NewExecutor()
 	plan := NewExecutionPlan()
 
-	// Step that ignores ctx and sleeps long enough that we'd notice if executor
-	// blocked on it. Use a buffered channel to release the goroutine after the
-	// test so the runner doesn't leak between cases.
+	applyStarted := make(chan struct{})
 	release := make(chan struct{})
 	t.Cleanup(func() { close(release) })
 
 	stuck := newConfigurableStep("step:stuck")
 	stuck.applyFn = func(_ compiler.RunContext) error {
-		<-release
+		close(applyStarted)
+		<-release // Apply blocks until test releases
 		return nil
 	}
 
 	plan.Add(NewPlanEntry(stuck, compiler.StatusNeedsApply, compiler.Diff{}))
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // already cancelled
-
-	deadline := time.After(2 * time.Second)
-	doneCh := make(chan []StepResult, 1)
+	doneCh := make(chan struct {
+		results []StepResult
+		err     error
+	}, 1)
 	go func() {
-		results, _ := executor.Execute(ctx, plan)
-		doneCh <- results
+		results, err := executor.Execute(ctx, plan)
+		doneCh <- struct {
+			results []StepResult
+			err     error
+		}{results, err}
 	}()
 
+	// Wait until Apply has actually started, then cancel.
+	<-applyStarted
+	cancel()
+
 	select {
-	case results := <-doneCh:
-		if len(results) > 0 && results[0].Status() == compiler.StatusFailed {
-			if !errors.Is(results[0].Error(), context.Canceled) {
-				t.Errorf("expected context.Canceled in step error, got %v", results[0].Error())
-			}
+	case got := <-doneCh:
+		// applyWithCancellation must have raced ctx.Done() and produced a
+		// failed step result with context.Canceled.
+		if len(got.results) != 1 {
+			t.Fatalf("results len = %d, want 1", len(got.results))
 		}
-	case <-deadline:
-		t.Fatal("Execute did not return within 2s after ctx was cancelled — cancellation not honored")
+		r := got.results[0]
+		if r.Status() != compiler.StatusFailed {
+			t.Errorf("status = %v, want StatusFailed (cancellation)", r.Status())
+		}
+		if !errors.Is(r.Error(), context.Canceled) {
+			t.Errorf("step error = %v, want it to wrap context.Canceled", r.Error())
+		}
+		if got.err == nil {
+			t.Error("Execute must return non-nil error when a step is cancelled")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Execute did not return within 2s after ctx was cancelled mid-Apply — applyWithCancellation broken")
 	}
 }
