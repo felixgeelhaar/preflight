@@ -70,6 +70,9 @@ var inspectCommands = map[string]struct{}{
 	"discover": {},
 	"explain":  {},
 	"env":      {},
+	"analyze":  {},
+	"watch":    {},
+	"feedback": {},
 }
 
 var configCommands = map[string]struct{}{

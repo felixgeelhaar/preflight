@@ -11,6 +11,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
+	"github.com/felixgeelhaar/preflight/internal/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -154,6 +155,11 @@ func runApply(cmd *cobra.Command, _ []string) error {
 			Underlying: err,
 		}
 	}
+
+	// First successful apply — record activation event for the North Star
+	// metric (Time-to-First-Successful-Apply). Recorder is opt-in and a no-op
+	// until the user has granted consent.
+	recordEvent(telemetry.EventApplyFirstOK)
 
 	if applyUpdateLock {
 		if err := preflight.UpdateLockFromPlan(ctx, applyConfigPath, plan); err != nil {

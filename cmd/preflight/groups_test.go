@@ -61,3 +61,28 @@ func TestOrganizeCommandGroups_LeavesUnknownsUngrouped(t *testing.T) {
 		}
 	}
 }
+
+// TestOrganizeCommandGroups_RealRootIsFullyCategorized walks the actual
+// rootCmd (after package init() registrations) and asserts every subcommand
+// is either grouped or in the explicit allow-list of intentionally-ungrouped
+// utilities. New top-level commands that forget to add themselves to a group
+// will fail this test instead of silently appearing under "Additional".
+func TestOrganizeCommandGroups_RealRootIsFullyCategorized(t *testing.T) {
+	// Not parallel: organizeCommandGroups mutates rootCmd's groups state.
+	allowUngrouped := map[string]struct{}{
+		"version":    {},
+		"completion": {},
+		"help":       {},
+	}
+
+	organizeCommandGroups(rootCmd)
+
+	for _, cmd := range rootCmd.Commands() {
+		if _, ok := allowUngrouped[cmd.Name()]; ok {
+			continue
+		}
+		if cmd.GroupID == "" {
+			t.Errorf("command %q has no GroupID — add it to coreCommands / inspectCommands / configCommands / enterpriseCommands in root.go", cmd.Name())
+		}
+	}
+}

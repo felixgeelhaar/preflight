@@ -12,6 +12,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor/anthropic"
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor/gemini"
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor/openai"
+	"github.com/felixgeelhaar/preflight/internal/telemetry"
 	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/spf13/cobra"
 )
@@ -126,6 +127,7 @@ func runInit(_ *cobra.Command, _ []string) error {
 	fmt.Println("  preflight plan   - Review the execution plan")
 	fmt.Println("  preflight apply  - Apply the configuration")
 
+	recordEvent(telemetry.EventInitCompleted)
 	return nil
 }
 
@@ -164,6 +166,7 @@ func runInitNonInteractive(configPath string) error {
 	fmt.Println("  preflight plan   - Review the execution plan")
 	fmt.Println("  preflight apply  - Apply the configuration")
 
+	recordEvent(telemetry.EventInitCompleted)
 	return nil
 }
 
