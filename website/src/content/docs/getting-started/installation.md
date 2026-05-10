@@ -55,10 +55,10 @@ sudo mv preflight /usr/local/bin/
 preflight version
 ```
 
-You should see output like:
+You should see version output:
 
 ```
-preflight version 1.3.0
+preflight version 4.11.0
 ```
 
 ## Shell Completion

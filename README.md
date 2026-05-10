@@ -235,6 +235,7 @@ internal/
     fleet/               # Multi-machine fleet management
       cloud/             # Cloud inventory sources (AWS, Azure, GCP)
     platform/            # OS/WSL/Docker detection
+    telemetry/           # Opt-in activation telemetry (North Star metric)
   provider/              # System integration adapters
     brew/                # Homebrew packages
     apt/                 # Apt packages
@@ -301,6 +302,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
 ## Documentation
 
+- [Core Foundation](docs/core-foundation.md) — Architecture decisions, bounded contexts, and error taxonomy
+- [Core Foundation Guardrails](docs/core-foundation-guardrails.md) — Extension guide and CI quality gates
 - [Product Requirements](docs/prd.md)
 - [CLI Design](docs/cli.md)
 - [TDD Workflow](docs/tdd.md)
