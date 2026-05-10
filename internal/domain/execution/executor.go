@@ -2,6 +2,8 @@ package execution
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
@@ -52,9 +54,23 @@ type RollbackResult struct {
 
 // Execute runs all steps in the plan in order.
 // Returns results for each step, including failures and skipped steps.
+// If any step failed, the returned error is the joined set of step errors so
+// callers cannot mistake a partial run for a clean one.
 func (e *Executor) Execute(ctx context.Context, plan *Plan) ([]StepResult, error) {
 	result := e.ExecuteWithRollback(ctx, plan)
-	return result.Results, nil
+	var errs []error
+	for _, r := range result.Results {
+		if r.Status() == compiler.StatusFailed {
+			err := r.Error()
+			if err == nil {
+				err = fmt.Errorf("step %s failed", r.StepID())
+			} else {
+				err = fmt.Errorf("step %s: %w", r.StepID(), err)
+			}
+			errs = append(errs, err)
+		}
+	}
+	return result.Results, errors.Join(errs...)
 }
 
 // ExecuteWithRollback runs all steps and returns detailed execution results.
@@ -89,8 +105,9 @@ func (e *Executor) ExecuteWithRollback(ctx context.Context, plan *Plan) ExecuteR
 			if e.rollbackOnFailure {
 				break
 			}
-		} else if result.Status() == compiler.StatusSatisfied && !e.dryRun {
-			// Track successfully applied steps
+		} else if result.Applied() {
+			// Track only steps that actually mutated the system in this run.
+			// Already-satisfied (no-op) steps must not be rolled back.
 			appliedSteps = append(appliedSteps, entry.Step())
 		}
 	}
@@ -174,9 +191,12 @@ func (e *Executor) executeEntry(entry PlanEntry, ctx compiler.RunContext, failed
 		return NewStepResult(stepID, entry.Status(), nil).WithDiff(entry.Diff())
 	}
 
-	// Apply the step
+	// Apply the step. We wrap Apply in a goroutine and select on ctx.Done()
+	// so cancellation is honored even by steps that don't internally observe
+	// the context. The step's goroutine continues until Apply returns; the
+	// executor returns control to the caller immediately on cancel.
 	start := time.Now()
-	err := step.Apply(ctx)
+	err := applyWithCancellation(ctx, step)
 	duration := time.Since(start)
 
 	if err != nil {
@@ -185,5 +205,28 @@ func (e *Executor) executeEntry(entry PlanEntry, ctx compiler.RunContext, failed
 
 	return NewStepResult(stepID, compiler.StatusSatisfied, nil).
 		WithDuration(duration).
-		WithDiff(entry.Diff())
+		WithDiff(entry.Diff()).
+		WithApplied(true)
+}
+
+// applyWithCancellation runs step.Apply and races it against the run context's
+// Done channel. If the context is cancelled before Apply returns, the
+// cancellation error is returned even if the step itself doesn't honor ctx.
+//
+// The step's goroutine is leaked until Apply finishes — that is intentional:
+// the alternative (force-killing) would leave the system in an inconsistent
+// state. Steps remain responsible for honoring ctx for prompt termination;
+// this wrapper ensures the executor's caller is unblocked regardless.
+func applyWithCancellation(ctx compiler.RunContext, step compiler.Step) error {
+	done := make(chan error, 1)
+	go func() {
+		done <- step.Apply(ctx)
+	}()
+
+	select {
+	case <-ctx.Context().Done():
+		return ctx.Context().Err()
+	case err := <-done:
+		return err
+	}
 }

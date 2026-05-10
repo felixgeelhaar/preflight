@@ -39,13 +39,46 @@ var (
 	ErrUnauthorized  = advisor.ErrUnauthorized
 )
 
+// DefaultModel is the current default Claude model used by the advisor.
+// Refreshed 2026-05; previous default (claude-3-5-sonnet-20241022) was 14+
+// months stale. Sonnet 4.6 is the cost/latency sweet spot for advisory work.
+const DefaultModel = "claude-sonnet-4-6"
+
 // API request types.
+//
+// system is encoded as a slice of cacheable blocks rather than a plain string
+// so we can mark the static system prompt with cache_control: ephemeral and
+// take advantage of Anthropic's prompt cache (~90% cost reduction on repeated
+// runs of init/analyze that share the same system prompt).
 type messagesRequest struct {
-	Model       string    `json:"model"`
-	MaxTokens   int       `json:"max_tokens"`
-	System      string    `json:"system,omitempty"`
-	Messages    []message `json:"messages"`
-	Temperature float64   `json:"temperature,omitempty"`
+	Model       string        `json:"model"`
+	MaxTokens   int           `json:"max_tokens"`
+	System      []systemBlock `json:"system,omitempty"`
+	Messages    []message     `json:"messages"`
+	Temperature float64       `json:"temperature,omitempty"`
+}
+
+// systemBlock is a single segment of the system prompt. Setting CacheControl
+// to a non-nil ephemeral marker tells the API to cache this prefix for ~5
+// minutes; subsequent calls with an identical prefix avoid re-billing it.
+type systemBlock struct {
+	Type         string        `json:"type"` // always "text"
+	Text         string        `json:"text"`
+	CacheControl *cacheControl `json:"cache_control,omitempty"`
+}
+
+type cacheControl struct {
+	Type string `json:"type"` // always "ephemeral"
+}
+
+// newCacheableSystemBlock builds a system block whose prefix the server may
+// cache. Use for the static system prompt; do NOT use for per-request content.
+func newCacheableSystemBlock(text string) systemBlock {
+	return systemBlock{
+		Type:         "text",
+		Text:         text,
+		CacheControl: &cacheControl{Type: "ephemeral"},
+	}
 }
 
 type message struct {
@@ -108,11 +141,11 @@ type Provider struct {
 	client   *http.Client
 }
 
-// NewProvider creates a new Anthropic provider.
+// NewProvider creates a new Anthropic provider with DefaultModel.
 func NewProvider(apiKey string) *Provider {
 	return &Provider{
 		apiKey:   apiKey,
-		model:    "claude-3-5-sonnet-20241022",
+		model:    DefaultModel,
 		endpoint: "https://api.anthropic.com",
 		client: &http.Client{
 			Timeout:   DefaultTimeout,
@@ -174,11 +207,17 @@ func (p *Provider) Complete(ctx context.Context, prompt advisor.Prompt) (advisor
 		return advisor.Response{}, ErrNotConfigured
 	}
 
-	// Build request
+	// Build request. The static system prompt is sent as a cacheable block so
+	// repeated calls (init wizard, analyze) hit Anthropic's prompt cache.
+	var systemBlocks []systemBlock
+	if sp := prompt.SystemPrompt(); sp != "" {
+		systemBlocks = []systemBlock{newCacheableSystemBlock(sp)}
+	}
+
 	reqBody := messagesRequest{
 		Model:       p.model,
 		MaxTokens:   prompt.MaxTokens(),
-		System:      prompt.SystemPrompt(),
+		System:      systemBlocks,
 		Temperature: prompt.Temperature(),
 		Messages: []message{
 			{

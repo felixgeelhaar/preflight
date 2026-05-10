@@ -2855,7 +2855,7 @@ func TestPushCov_RunClean_NonexistentConfig(t *testing.T) { //nolint:tparallel
 
 	err := runClean(nil, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load configuration")
+	assert.Contains(t, err.Error(), "could not load configuration")
 }
 
 // ---------------------------------------------------------------------------
@@ -3060,7 +3060,8 @@ func TestPushCov_RunApply_MockPlanError(t *testing.T) { //nolint:tparallel
 
 	err := runApply(&cobra.Command{}, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "plan failed")
+	// New UserError message; underlying plan failure is unwrappable.
+	assert.Contains(t, err.Error(), "could not generate plan")
 }
 
 // ---------------------------------------------------------------------------

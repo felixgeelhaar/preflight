@@ -10,6 +10,7 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/adapters/filesystem"
 	"github.com/felixgeelhaar/preflight/internal/app"
+	"github.com/felixgeelhaar/preflight/internal/telemetry"
 	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/spf13/cobra"
 )
@@ -197,6 +198,11 @@ func runCapture(_ *cobra.Command, _ []string) error {
 		fmt.Println("Run 'preflight plan' to review the changes.")
 	}
 
+	// Capture completed successfully — record activation event for the
+	// portable-bootstrap loop. RecordOnce: only the first capture per machine
+	// counts toward the activation funnel. Recorder is opt-in and a no-op
+	// until consent.
+	recordOnce(telemetry.EventCaptureCompleted)
 	return nil
 }
 

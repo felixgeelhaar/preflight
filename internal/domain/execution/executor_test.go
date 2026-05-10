@@ -3,8 +3,10 @@ package execution
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/felixgeelhaar/preflight/internal/domain/compiler"
 )
@@ -97,9 +99,13 @@ func TestExecutor_ApplyError(t *testing.T) {
 	plan.Add(NewPlanEntry(step, compiler.StatusNeedsApply, compiler.Diff{}))
 
 	results, err := executor.Execute(context.Background(), plan)
-	// Execute should not fail, but the step result should indicate failure
-	if err != nil {
-		t.Fatalf("Execute() should not return error, got %v", err)
+	// Execute must surface a non-nil error so callers cannot mistake a partial
+	// run for a clean one. The result slice still describes per-step status.
+	if err == nil {
+		t.Fatal("Execute() must return error when a step fails")
+	}
+	if !strings.Contains(err.Error(), "apply failed") {
+		t.Errorf("Execute() error = %q, want it to wrap %q", err, "apply failed")
 	}
 
 	if len(results) != 1 {
@@ -187,8 +193,12 @@ func TestExecutor_SkipsAfterFailure(t *testing.T) {
 	plan.Add(NewPlanEntry(step2, compiler.StatusNeedsApply, compiler.Diff{}))
 
 	results, err := executor.Execute(context.Background(), plan)
-	if err != nil {
-		t.Fatalf("Execute() error = %v", err)
+	// First step fails; Execute must surface that error.
+	if err == nil {
+		t.Fatal("Execute() must return error when a step fails")
+	}
+	if !strings.Contains(err.Error(), "first failed") {
+		t.Errorf("Execute() error = %q, want it to wrap %q", err, "first failed")
 	}
 
 	if applied {
@@ -368,6 +378,57 @@ func TestExecutor_RollbackOnFailure_RollsBackAppliedSteps(t *testing.T) {
 		if !rr.Success {
 			t.Errorf("rollback of %s should succeed", rr.StepID)
 		}
+	}
+}
+
+// TestExecutor_RollbackOnFailure_SkipsAlreadySatisfiedSteps verifies that
+// pre-existing satisfied steps (which Apply did not touch) are NOT rolled back
+// when a later step fails. Only steps actually mutated in the current run
+// should be reverted.
+func TestExecutor_RollbackOnFailure_SkipsAlreadySatisfiedSteps(t *testing.T) {
+	executor := NewExecutor().WithRollbackOnFailure(true)
+	plan := NewExecutionPlan()
+
+	var mu sync.Mutex
+	rolledBack := make([]string, 0)
+
+	// Step 1: already satisfied — must NOT be rolled back even though it has rollback support.
+	step1 := newRollbackableStep("step:already-good")
+	step1.applyFn = func(_ compiler.RunContext) error {
+		t.Error("Apply should not be invoked on an already-satisfied step")
+		return nil
+	}
+	step1.rollbackFn = func(_ compiler.RunContext) error {
+		mu.Lock()
+		rolledBack = append(rolledBack, "already-good")
+		mu.Unlock()
+		return nil
+	}
+
+	// Step 2: actually applied this run — should be rolled back.
+	step2 := newRollbackableStep("step:applied-now", "step:already-good")
+	step2.rollbackFn = func(_ compiler.RunContext) error {
+		mu.Lock()
+		rolledBack = append(rolledBack, "applied-now")
+		mu.Unlock()
+		return nil
+	}
+
+	// Step 3: fails, triggering rollback.
+	step3 := newConfigurableStep("step:failing", "step:applied-now")
+	step3.applyFn = func(_ compiler.RunContext) error { return errors.New("boom") }
+
+	plan.Add(NewPlanEntry(step1, compiler.StatusSatisfied, compiler.Diff{}))
+	plan.Add(NewPlanEntry(step2, compiler.StatusNeedsApply, compiler.Diff{}))
+	plan.Add(NewPlanEntry(step3, compiler.StatusNeedsApply, compiler.Diff{}))
+
+	result := executor.ExecuteWithRollback(context.Background(), plan)
+
+	if !result.RolledBack {
+		t.Fatal("RolledBack should be true")
+	}
+	if len(rolledBack) != 1 || rolledBack[0] != "applied-now" {
+		t.Errorf("rolledBack = %v, want only [applied-now]", rolledBack)
 	}
 }
 
@@ -593,5 +654,70 @@ func TestExecutor_RollbackDuration(t *testing.T) {
 		if rr.Success && rr.Duration < 0 {
 			t.Error("Successful rollback should have non-negative duration")
 		}
+	}
+}
+
+// TestExecutor_ApplyHonorsContextCancellation verifies that applyWithCancellation
+// actually unblocks the executor when ctx is cancelled MID-Apply. The step's
+// goroutine continues until Apply returns; the executor must not block on it.
+//
+// The earlier version of this test cancelled ctx BEFORE Execute ran, which
+// short-circuited at the loop's pre-iteration select{} and never reached
+// applyWithCancellation. This version signals "Apply has started" via an
+// unbuffered channel, then cancels — guaranteeing the cancellation takes
+// effect inside applyWithCancellation.
+func TestExecutor_ApplyHonorsContextCancellation(t *testing.T) {
+	executor := NewExecutor()
+	plan := NewExecutionPlan()
+
+	applyStarted := make(chan struct{})
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+
+	stuck := newConfigurableStep("step:stuck")
+	stuck.applyFn = func(_ compiler.RunContext) error {
+		close(applyStarted)
+		<-release // Apply blocks until test releases
+		return nil
+	}
+
+	plan.Add(NewPlanEntry(stuck, compiler.StatusNeedsApply, compiler.Diff{}))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	doneCh := make(chan struct {
+		results []StepResult
+		err     error
+	}, 1)
+	go func() {
+		results, err := executor.Execute(ctx, plan)
+		doneCh <- struct {
+			results []StepResult
+			err     error
+		}{results, err}
+	}()
+
+	// Wait until Apply has actually started, then cancel.
+	<-applyStarted
+	cancel()
+
+	select {
+	case got := <-doneCh:
+		// applyWithCancellation must have raced ctx.Done() and produced a
+		// failed step result with context.Canceled.
+		if len(got.results) != 1 {
+			t.Fatalf("results len = %d, want 1", len(got.results))
+		}
+		r := got.results[0]
+		if r.Status() != compiler.StatusFailed {
+			t.Errorf("status = %v, want StatusFailed (cancellation)", r.Status())
+		}
+		if !errors.Is(r.Error(), context.Canceled) {
+			t.Errorf("step error = %v, want it to wrap context.Canceled", r.Error())
+		}
+		if got.err == nil {
+			t.Error("Execute must return non-nil error when a step is cancelled")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Execute did not return within 2s after ctx was cancelled mid-Apply — applyWithCancellation broken")
 	}
 }

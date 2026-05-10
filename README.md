@@ -5,8 +5,8 @@
 <h1 align="center">Preflight</h1>
 
 <p align="center">
-  <strong>Deterministic workstation compiler</strong><br>
-  A Go CLI/TUI tool that compiles declarative configuration into reproducible machine setups.
+  <strong>Set up a new Mac in 10 minutes — from one YAML file you keep in git.</strong><br>
+  Capture your current machine, push to GitHub, bootstrap any new laptop with three commands.
 </p>
 
 <p align="center">
@@ -24,13 +24,27 @@
 
 ## Overview
 
-Preflight follows a compiler model to transform declarative YAML configuration into executable, idempotent machine setups:
+Preflight is the missing piece between your dotfiles repo and a usable laptop. The killer loop:
 
 ```
-Intent → Merge → Plan → Apply → Verify
+preflight capture     # snapshot current machine to YAML
+git push              # versioned in your dotfiles repo
+preflight apply       # bootstrap any new machine deterministically
 ```
 
-Define your workstation configuration once, apply it anywhere.
+Under the hood it follows a compiler model: **Intent → Merge → Plan → Apply → Verify**. Same config, same result, every time.
+
+## Why Preflight (vs. alternatives)
+
+| Tool        | Packages | Dotfiles | Plan/diff | Cross-platform | One repo end-to-end |
+|-------------|:--------:|:--------:|:---------:|:--------------:|:-------------------:|
+| **Preflight** | ✅       | ✅       | ✅        | macOS / Linux / Windows | ✅ |
+| chezmoi     | ❌       | ✅       | ✅        | ✅             | ❌ (dotfiles only)  |
+| Brewfile    | ✅       | ❌       | ❌        | macOS / Linux  | ❌ (packages only)  |
+| nix-darwin  | ✅       | ✅       | ✅        | macOS / Linux  | ✅ (Nix learning curve) |
+| Ansible     | ✅       | ✅       | ⚠️ check mode | ✅          | ✅ (heavyweight)    |
+
+Preflight unifies what chezmoi and Brewfile each do half of, without the Nix learning curve.
 
 ## Features
 
@@ -59,18 +73,36 @@ Define your workstation configuration once, apply it anywhere.
 
 ## Installation
 
+**macOS / Linux (Homebrew):**
+
+```bash
+brew tap felixgeelhaar/tap
+brew install preflight
+```
+
+**Linux / macOS (release binary):**
+
+Download a prebuilt binary from the [latest release](https://github.com/felixgeelhaar/preflight/releases/latest), or:
+
+```bash
+curl -fsSL https://github.com/felixgeelhaar/preflight/releases/latest/download/preflight-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz | tar -xz
+sudo mv preflight /usr/local/bin/
+```
+
+**Windows:** see the [installation guide](https://felixgeelhaar.github.io/preflight/getting-started/installation/) for `winget`, `scoop`, and `choco` instructions.
+
+<details>
+<summary>For contributors / from source</summary>
+
 ```bash
 go install github.com/felixgeelhaar/preflight@latest
-```
-
-Or build from source:
-
-```bash
+# or
 git clone https://github.com/felixgeelhaar/preflight.git
-cd preflight
-make build
+cd preflight && make build
 ./bin/preflight version
 ```
+
+</details>
 
 ## Quick Start
 

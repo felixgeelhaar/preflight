@@ -100,6 +100,10 @@ func (c Config) Validate() error {
 	return nil
 }
 
+// DefaultModel is the current default OpenAI model used by the advisor.
+// Refreshed 2026-05; previous default (gpt-4o) was 14+ months stale.
+const DefaultModel = "gpt-4.1"
+
 // Provider implements the AIProvider interface for OpenAI.
 type Provider struct {
 	apiKey   string
@@ -108,11 +112,11 @@ type Provider struct {
 	client   *http.Client
 }
 
-// NewProvider creates a new OpenAI provider.
+// NewProvider creates a new OpenAI provider with DefaultModel.
 func NewProvider(apiKey string) *Provider {
 	return &Provider{
 		apiKey:   apiKey,
-		model:    "gpt-4o",
+		model:    DefaultModel,
 		endpoint: "https://api.openai.com/v1",
 		client: &http.Client{
 			Timeout:   DefaultTimeout,

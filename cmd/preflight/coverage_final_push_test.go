@@ -1469,7 +1469,7 @@ func TestCovFinal_RunClean_NonexistentConfig(t *testing.T) {
 
 	err := runClean(nil, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load configuration")
+	assert.Contains(t, err.Error(), "could not load configuration")
 }
 
 // ===========================================================================

@@ -398,7 +398,7 @@ func TestDeepCov_RunClean_BadConfig(t *testing.T) {
 
 	err := runClean(nil, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load configuration")
+	assert.Contains(t, err.Error(), "could not load configuration")
 }
 
 // ---------------------------------------------------------------------------
@@ -494,7 +494,7 @@ func TestDeepCov_RunEnvList_BadConfig(t *testing.T) {
 
 	err := runEnvList(nil, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load configuration")
+	assert.Contains(t, err.Error(), "could not load configuration")
 }
 
 // ---------------------------------------------------------------------------

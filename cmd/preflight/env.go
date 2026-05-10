@@ -12,6 +12,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/felixgeelhaar/preflight/internal/app"
+	pfconfig "github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -119,7 +120,12 @@ func runEnvList(_ *cobra.Command, _ []string) error {
 
 	config, err := preflight.LoadMergedConfig(ctx, envConfigPath, envTarget)
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return &pfconfig.UserError{
+			Code:       "CONFIG_LOAD_FAILED",
+			Message:    "could not load configuration for env list",
+			Suggestion: "Run 'preflight validate' to verify the config, or pass --config <path> if preflight.yaml lives elsewhere.",
+			Underlying: err,
+		}
 	}
 
 	vars := extractEnvVars(config)
@@ -172,7 +178,13 @@ func runEnvSet(_ *cobra.Command, args []string) error {
 	layerData := make(map[string]interface{})
 	if data, err := os.ReadFile(layerPath); err == nil {
 		if err := yaml.Unmarshal(data, &layerData); err != nil {
-			return fmt.Errorf("failed to parse layer: %w", err)
+			return &pfconfig.UserError{
+				Code:       pfconfig.ErrCodeConfigParse,
+				Message:    fmt.Sprintf("failed to parse layer %s: invalid YAML", layer),
+				Context:    layerPath,
+				Suggestion: "Open the file and check indentation. YAML is sensitive to tabs and missing colons.",
+				Underlying: err,
+			}
 		}
 	}
 
@@ -193,15 +205,30 @@ func runEnvSet(_ *cobra.Command, args []string) error {
 	// Write back
 	data, err := yaml.Marshal(layerData)
 	if err != nil {
-		return fmt.Errorf("failed to marshal layer: %w", err)
+		return &pfconfig.UserError{
+			Code:       "MARSHAL_FAILED",
+			Message:    fmt.Sprintf("failed to marshal layer %s as YAML", layer),
+			Suggestion: "This usually indicates a programming bug. File a report with the variable name and value.",
+			Underlying: err,
+		}
 	}
 
 	if err := os.MkdirAll(filepath.Dir(layerPath), 0o755); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
+		return &pfconfig.UserError{
+			Code:       "MKDIR_FAILED",
+			Message:    fmt.Sprintf("failed to create layers directory at %s", filepath.Dir(layerPath)),
+			Suggestion: "Check directory permissions on the parent path.",
+			Underlying: err,
+		}
 	}
 
 	if err := os.WriteFile(layerPath, data, 0o644); err != nil {
-		return fmt.Errorf("failed to write layer: %w", err)
+		return &pfconfig.UserError{
+			Code:       "WRITE_FAILED",
+			Message:    fmt.Sprintf("failed to write layer %s", layerPath),
+			Suggestion: "Check file permissions on the layer file and disk space.",
+			Underlying: err,
+		}
 	}
 
 	fmt.Printf("Set %s=%s in layer %s\n", name, value, layer)
@@ -228,7 +255,11 @@ func runEnvGet(_ *cobra.Command, args []string) error {
 		}
 	}
 
-	return fmt.Errorf("variable '%s' not found", name)
+	return &pfconfig.UserError{
+		Code:       "ENV_VAR_NOT_FOUND",
+		Message:    fmt.Sprintf("variable '%s' not found in any layer", name),
+		Suggestion: fmt.Sprintf("List defined variables with 'preflight env list', or set this one with 'preflight env set %s <value>'.", name),
+	}
 }
 
 func runEnvUnset(_ *cobra.Command, args []string) error {
@@ -244,21 +275,40 @@ func runEnvUnset(_ *cobra.Command, args []string) error {
 	// Load existing layer
 	data, err := os.ReadFile(layerPath)
 	if err != nil {
-		return fmt.Errorf("layer not found: %w", err)
+		return &pfconfig.UserError{
+			Code:       "LAYER_NOT_FOUND",
+			Message:    fmt.Sprintf("layer not found: %s", layerPath),
+			Suggestion: "Pass --layer with an existing layer name, or run 'preflight env list' to see what is defined.",
+			Underlying: err,
+		}
 	}
 
 	layerData := make(map[string]interface{})
 	if err := yaml.Unmarshal(data, &layerData); err != nil {
-		return fmt.Errorf("failed to parse layer: %w", err)
+		return &pfconfig.UserError{
+			Code:       pfconfig.ErrCodeConfigParse,
+			Message:    fmt.Sprintf("failed to parse layer %s: invalid YAML", layer),
+			Context:    layerPath,
+			Suggestion: "Open the file and check indentation. YAML is sensitive to tabs and missing colons.",
+			Underlying: err,
+		}
 	}
 
 	env, ok := layerData["env"].(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("no env section in layer %s", layer)
+		return &pfconfig.UserError{
+			Code:       "ENV_SECTION_MISSING",
+			Message:    fmt.Sprintf("no env section in layer %s", layer),
+			Suggestion: fmt.Sprintf("Add an env section with 'preflight env set <NAME> <VALUE> --layer %s' first.", layer),
+		}
 	}
 
 	if _, exists := env[name]; !exists {
-		return fmt.Errorf("variable '%s' not found in layer %s", name, layer)
+		return &pfconfig.UserError{
+			Code:       "ENV_VAR_NOT_FOUND",
+			Message:    fmt.Sprintf("variable '%s' not found in layer %s", name, layer),
+			Suggestion: fmt.Sprintf("Run 'preflight env list --layer %s' to see what is defined there.", layer),
+		}
 	}
 
 	delete(env, name)
@@ -266,11 +316,21 @@ func runEnvUnset(_ *cobra.Command, args []string) error {
 	// Write back
 	data, err = yaml.Marshal(layerData)
 	if err != nil {
-		return fmt.Errorf("failed to marshal layer: %w", err)
+		return &pfconfig.UserError{
+			Code:       "MARSHAL_FAILED",
+			Message:    fmt.Sprintf("failed to marshal layer %s as YAML", layer),
+			Suggestion: "This usually indicates a programming bug. File a report including the variable name being removed.",
+			Underlying: err,
+		}
 	}
 
 	if err := os.WriteFile(layerPath, data, 0o644); err != nil {
-		return fmt.Errorf("failed to write layer: %w", err)
+		return &pfconfig.UserError{
+			Code:       "WRITE_FAILED",
+			Message:    fmt.Sprintf("failed to write layer %s", layerPath),
+			Suggestion: "Check file permissions on the layer file and disk space.",
+			Underlying: err,
+		}
 	}
 
 	fmt.Printf("Removed %s from layer %s\n", name, layer)
@@ -313,7 +373,11 @@ func runEnvExport(_ *cobra.Command, _ []string) error {
 			fmt.Printf("export %s=%q\n", v.Name, v.Value)
 		}
 	default:
-		return fmt.Errorf("unsupported shell: %s", envShell)
+		return &pfconfig.UserError{
+			Code:       "UNSUPPORTED_SHELL",
+			Message:    fmt.Sprintf("unsupported shell: %s", envShell),
+			Suggestion: "Use --shell with one of: bash, zsh, fish.",
+		}
 	}
 
 	return nil
@@ -328,12 +392,22 @@ func runEnvDiff(_ *cobra.Command, args []string) error {
 
 	config1, err := preflight.LoadMergedConfig(ctx, envConfigPath, target1)
 	if err != nil {
-		return fmt.Errorf("failed to load target %s: %w", target1, err)
+		return &pfconfig.UserError{
+			Code:       "TARGET_LOAD_FAILED",
+			Message:    fmt.Sprintf("failed to load target %s", target1),
+			Suggestion: "Check the target name with 'preflight validate' and ensure it is defined in preflight.yaml.",
+			Underlying: err,
+		}
 	}
 
 	config2, err := preflight.LoadMergedConfig(ctx, envConfigPath, target2)
 	if err != nil {
-		return fmt.Errorf("failed to load target %s: %w", target2, err)
+		return &pfconfig.UserError{
+			Code:       "TARGET_LOAD_FAILED",
+			Message:    fmt.Sprintf("failed to load target %s", target2),
+			Suggestion: "Check the target name with 'preflight validate' and ensure it is defined in preflight.yaml.",
+			Underlying: err,
+		}
 	}
 
 	vars1 := extractEnvVarsMap(config1)

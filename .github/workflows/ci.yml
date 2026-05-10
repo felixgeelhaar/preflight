@@ -30,10 +30,13 @@ jobs:
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Check coverage threshold
+        # Reuse coverage.out from the Test step so we measure the same run
+        # the developer can reproduce locally. Without --from-profile,
+        # coverctl re-runs tests with its own coverpkg flags and produces
+        # different numbers — historically a source of CI/local drift.
         run: |
           go install github.com/felixgeelhaar/coverctl@latest
-          go clean -testcache
-          coverctl check
+          coverctl check --from-profile --profile coverage.out
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0

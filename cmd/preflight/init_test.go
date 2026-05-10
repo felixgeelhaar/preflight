@@ -324,3 +324,72 @@ func TestRunInitNonInteractive_CreatesNestedDirs(t *testing.T) {
 
 	_ = strings.Contains(output, "Configuration created:")
 }
+
+// TestRunInit_MinimalFlag verifies `preflight init --minimal` is equivalent to
+// `--non-interactive --preset shell:minimal` and creates a working config without
+// requiring TUI or any other flag. Documented in website/.../quickstart.md.
+func TestRunInit_MinimalFlag(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	prevMinimal := initMinimal
+	prevNonInteractive := initNonInteractive
+	prevPreset := initPreset
+	prevOutputDir := initOutputDir
+	t.Cleanup(func() {
+		initMinimal = prevMinimal
+		initNonInteractive = prevNonInteractive
+		initPreset = prevPreset
+		initOutputDir = prevOutputDir
+	})
+
+	initMinimal = true
+	initNonInteractive = false
+	initPreset = ""
+	initOutputDir = tmpDir
+
+	output := captureStdout(t, func() {
+		err := runInit(nil, nil)
+		require.NoError(t, err)
+	})
+
+	configPath := filepath.Join(tmpDir, "preflight.yaml")
+	_, err := os.Stat(configPath)
+	require.NoError(t, err, "preflight.yaml should exist")
+
+	layerPath := filepath.Join(tmpDir, "layers", "base.yaml")
+	layerData, err := os.ReadFile(layerPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(layerData), "shell:")
+	assert.Contains(t, string(layerData), "default: zsh")
+
+	assert.Contains(t, output, "Configuration created:")
+}
+
+// TestRunInit_MinimalRespectsExplicitPreset ensures --minimal does not override
+// an explicitly-supplied --preset.
+func TestRunInit_MinimalRespectsExplicitPreset(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	prevMinimal := initMinimal
+	prevNonInteractive := initNonInteractive
+	prevPreset := initPreset
+	prevOutputDir := initOutputDir
+	t.Cleanup(func() {
+		initMinimal = prevMinimal
+		initNonInteractive = prevNonInteractive
+		initPreset = prevPreset
+		initOutputDir = prevOutputDir
+	})
+
+	initMinimal = true
+	initNonInteractive = false
+	initPreset = "git:minimal"
+	initOutputDir = tmpDir
+
+	require.NoError(t, runInit(nil, nil))
+
+	layerPath := filepath.Join(tmpDir, "layers", "base.yaml")
+	layerData, err := os.ReadFile(layerPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(layerData), "git:")
+}

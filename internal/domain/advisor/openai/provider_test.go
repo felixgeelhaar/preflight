@@ -43,7 +43,7 @@ func TestProvider_Model(t *testing.T) {
 
 	p := NewProvider("sk-test-key")
 
-	assert.Equal(t, "gpt-4o", p.Model())
+	assert.Equal(t, DefaultModel, p.Model())
 }
 
 func TestProvider_WithModel(t *testing.T) {

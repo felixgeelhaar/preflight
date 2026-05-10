@@ -35,7 +35,106 @@ explainable local setup using the compiler model:
 
 // Execute runs the root command.
 func Execute() error {
+	organizeCommandGroups(rootCmd)
 	return rootCmd.Execute()
+}
+
+// Command-group identifiers shown in `preflight --help`. Picking 6 core verbs
+// follows Hick's Law — every other command is reachable but does not pollute
+// the new-user surface.
+const (
+	groupCore       = "core"
+	groupInspect    = "inspect"
+	groupConfig     = "config"
+	groupEnterprise = "enterprise"
+)
+
+// coreCommands are the 6 verbs that drive the daily workflow. Promoting them
+// keeps the first-run experience scannable.
+var coreCommands = map[string]struct{}{
+	"init":    {},
+	"plan":    {},
+	"apply":   {},
+	"doctor":  {},
+	"capture": {},
+	"sync":    {},
+}
+
+var inspectCommands = map[string]struct{}{
+	"diff":     {},
+	"validate": {},
+	"compare":  {},
+	"history":  {},
+	"outdated": {},
+	"audit":    {},
+	"discover": {},
+	"explain":  {},
+	"env":      {},
+	"analyze":  {},
+	"watch":    {},
+	"feedback": {},
+}
+
+var configCommands = map[string]struct{}{
+	"catalog":  {},
+	"lock":     {},
+	"profile":  {},
+	"repo":     {},
+	"rollback": {},
+	"clean":    {},
+	"cleanup":  {},
+	"export":   {},
+	"tour":     {},
+	"secrets":  {},
+}
+
+// enterpriseCommands are advanced / enterprise features hidden from default
+// --help output. Reachable directly via `preflight <name>` and discoverable
+// with `preflight help --all`.
+var enterpriseCommands = map[string]struct{}{
+	"fleet":        {},
+	"identity":     {},
+	"compliance":   {},
+	"marketplace":  {},
+	"plugin":       {},
+	"mcp":          {},
+	"trust":        {},
+	"security":     {},
+	"agent":        {},
+	"experimental": {},
+	"deprecated":   {},
+}
+
+// organizeCommandGroups adds named groups to the root command and assigns
+// each subcommand to one of them. Enterprise commands are hidden from the
+// default help listing but still callable.
+func organizeCommandGroups(root *cobra.Command) {
+	root.AddGroup(
+		&cobra.Group{ID: groupCore, Title: "Core workflow:"},
+		&cobra.Group{ID: groupInspect, Title: "Inspect & verify:"},
+		&cobra.Group{ID: groupConfig, Title: "Configuration & maintenance:"},
+		&cobra.Group{ID: groupEnterprise, Title: "Advanced / enterprise:"},
+	)
+
+	for _, cmd := range root.Commands() {
+		name := cmd.Name()
+		switch {
+		case isIn(name, coreCommands):
+			cmd.GroupID = groupCore
+		case isIn(name, inspectCommands):
+			cmd.GroupID = groupInspect
+		case isIn(name, configCommands):
+			cmd.GroupID = groupConfig
+		case isIn(name, enterpriseCommands):
+			cmd.GroupID = groupEnterprise
+			cmd.Hidden = true
+		}
+	}
+}
+
+func isIn(name string, set map[string]struct{}) bool {
+	_, ok := set[name]
+	return ok
 }
 
 func init() {

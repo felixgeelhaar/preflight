@@ -11,6 +11,7 @@ import (
 	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/felixgeelhaar/preflight/internal/domain/execution"
+	"github.com/felixgeelhaar/preflight/internal/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -88,7 +89,12 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	// Create the plan
 	plan, err := preflight.Plan(ctx, applyConfigPath, applyTarget)
 	if err != nil {
-		return fmt.Errorf("plan failed: %w", err)
+		return (&config.UserError{
+			Code:       config.ErrCodeValidationFailed,
+			Message:    "could not generate plan from your configuration",
+			Suggestion: "Run 'preflight validate' to check your config for issues, or 'preflight diff' to see what differs.",
+			Underlying: err,
+		})
 	}
 
 	// Show the plan first
@@ -107,7 +113,11 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	if app.RequiresBootstrapConfirmation(plan) {
 		steps := app.BootstrapSteps(plan)
 		if !confirmBootstrap(steps) {
-			return fmt.Errorf("aborted bootstrap steps")
+			return &config.UserError{
+				Code:       "BOOTSTRAP_DECLINED",
+				Message:    "bootstrap steps declined; nothing was applied",
+				Suggestion: "Re-run 'preflight apply' and confirm the bootstrap prompt, or pass --allow-bootstrap to skip the prompt.",
+			}
 		}
 	}
 
@@ -115,23 +125,51 @@ func runApply(cmd *cobra.Command, _ []string) error {
 
 	// Execute the plan
 	results, err := preflight.Apply(ctx, plan, applyDryRun)
-	if err != nil {
-		return fmt.Errorf("apply failed: %w", err)
-	}
-
-	// Print results
+	// Print results before deciding what to return so the user always sees
+	// per-step status, even on partial failure.
 	preflight.PrintResults(results)
 
-	// Check for failures
+	// Collect per-step failures regardless of whether Apply itself returned an
+	// error — Execute now joins step errors but legacy callers / fakes may
+	// return (results, nil) with errored results inside.
+	failedIDs := make([]string, 0, len(results))
 	for i := range results {
 		if results[i].Error() != nil {
-			return fmt.Errorf("some steps failed")
+			failedIDs = append(failedIDs, results[i].StepID().String())
 		}
 	}
 
+	if err != nil || len(failedIDs) > 0 {
+		suggestion := "Inspect the failing step's output above. Run 'preflight rollback' to restore the previous state, or 'preflight doctor' to diagnose the underlying issue."
+		if len(failedIDs) == 1 {
+			suggestion = fmt.Sprintf("Step %q failed. Run 'preflight rollback' to restore previous state, or 'preflight doctor --verbose' to diagnose.", failedIDs[0])
+		}
+		msg := "apply failed: some steps failed"
+		if len(failedIDs) > 0 {
+			msg = fmt.Sprintf("apply failed: %d step(s) did not complete", len(failedIDs))
+		}
+		return &config.UserError{
+			Code:       "APPLY_FAILED",
+			Message:    msg,
+			Suggestion: suggestion,
+			Underlying: err,
+		}
+	}
+
+	// First successful apply — record activation event for the North Star
+	// metric (Time-to-First-Successful-Apply). RecordOnce fires only on the
+	// first successful apply per machine; subsequent applies are no-ops.
+	// Recorder is opt-in and a no-op until the user has granted consent.
+	recordOnce(telemetry.EventApplyFirstOK)
+
 	if applyUpdateLock {
 		if err := preflight.UpdateLockFromPlan(ctx, applyConfigPath, plan); err != nil {
-			return fmt.Errorf("update lockfile failed: %w", err)
+			return &config.UserError{
+				Code:       "LOCK_UPDATE_FAILED",
+				Message:    "could not update preflight.lock after apply",
+				Suggestion: "Apply succeeded; only the lockfile update failed. Re-run 'preflight lock --update' once write access to the file is restored.",
+				Underlying: err,
+			}
 		}
 	}
 

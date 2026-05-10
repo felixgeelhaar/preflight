@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/felixgeelhaar/preflight/internal/domain/advisor"
+	"github.com/felixgeelhaar/preflight/internal/domain/catalog/embedded"
 	"github.com/felixgeelhaar/preflight/internal/tui/components"
 	"github.com/felixgeelhaar/preflight/internal/tui/ui"
 )
@@ -54,9 +55,13 @@ type interviewCompleteMsg struct {
 	skipped        bool
 }
 
-// aiResponseMsg carries the AI response.
+// aiResponseMsg carries the AI response. droppedPresets / droppedLayers list
+// any preset or layer IDs the AI named that are NOT in the active catalog —
+// these are surfaced to the user for explicit confirmation per CLAUDE.md.
 type aiResponseMsg struct {
 	recommendation *advisor.AIRecommendation
+	droppedPresets []string
+	droppedLayers  []string
 	err            error
 }
 
@@ -257,13 +262,50 @@ func (m interviewModel) requestSuggestion() tea.Cmd {
 			return aiResponseMsg{err: err}
 		}
 
-		rec, err := advisor.ParseRecommendations(resp.Content())
+		// Filter the AI's recommendation against the active catalog so the
+		// CLAUDE.md guarantee ("AI outputs map to known presets or require
+		// user confirmation") is enforced at the boundary. If the catalog
+		// is unavailable for any reason, fall back to unfiltered output —
+		// the AI advice still goes through plan/apply confirmation, so this
+		// degrades to the previous behavior rather than blocking the user.
+		knownPresets, knownLayers := loadCatalogIDs()
+		rec, droppedPresets, droppedLayers, err := advisor.ParseAndFilterRecommendations(
+			resp.Content(),
+			knownPresets,
+			knownLayers,
+		)
 		if err != nil {
 			return aiResponseMsg{err: err}
 		}
 
-		return aiResponseMsg{recommendation: rec}
+		return aiResponseMsg{
+			recommendation: rec,
+			droppedPresets: droppedPresets,
+			droppedLayers:  droppedLayers,
+		}
 	}
+}
+
+// loadCatalogIDs returns the known preset and layer ID slices for catalog
+// whitelisting. Returns (nil, nil) on any load failure so the caller falls
+// back to the no-catalog passthrough rather than rejecting all output.
+//
+// Layers are not present in the embedded catalog yet, so the second return
+// is always empty until a layer catalog ships. The signature is intentional
+// to keep the FilterAIRecommendation contract symmetric across both fields.
+//
+//nolint:unparam // layerIDs will populate once the layer catalog ships.
+func loadCatalogIDs() (presetIDs, layerIDs []string) {
+	cat, err := embedded.LoadCatalog()
+	if err != nil {
+		return nil, nil
+	}
+	presets := cat.ListPresets()
+	presetIDs = make([]string, 0, len(presets))
+	for _, p := range presets {
+		presetIDs = append(presetIDs, p.ID().String())
+	}
+	return presetIDs, layerIDs
 }
 
 func (m interviewModel) View() string {
