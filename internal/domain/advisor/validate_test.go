@@ -52,3 +52,89 @@ func TestFilterRecommendations_EmptyCatalogDropsAll(t *testing.T) {
 		t.Errorf("unknown should be 1 when catalog is empty, got %d", len(unknown))
 	}
 }
+
+func TestFilterPresetIDs_PartitionsAndIsCaseInsensitive(t *testing.T) {
+	t.Parallel()
+
+	known, unknown := FilterPresetIDs(
+		[]string{"shell:minimal", "NVIM:KICKSTART", "made-up:thing"},
+		[]string{"shell:minimal", "nvim:kickstart"},
+	)
+	if len(known) != 2 || len(unknown) != 1 {
+		t.Fatalf("partition wrong: known=%v unknown=%v", known, unknown)
+	}
+	if unknown[0] != "made-up:thing" {
+		t.Errorf("unexpected unknown ID: %q", unknown[0])
+	}
+}
+
+func TestFilterAIRecommendation_FiltersBothFields(t *testing.T) {
+	t.Parallel()
+
+	rec := AIRecommendation{
+		Presets:     []string{"shell:minimal", "fake:preset"},
+		Layers:      []string{"base", "phantom-layer"},
+		Explanation: "because",
+	}
+	filtered, droppedP, droppedL := FilterAIRecommendation(
+		rec,
+		[]string{"shell:minimal"},
+		[]string{"base"},
+	)
+	if len(filtered.Presets) != 1 || filtered.Presets[0] != "shell:minimal" {
+		t.Errorf("filtered presets = %v, want [shell:minimal]", filtered.Presets)
+	}
+	if len(filtered.Layers) != 1 || filtered.Layers[0] != "base" {
+		t.Errorf("filtered layers = %v, want [base]", filtered.Layers)
+	}
+	if len(droppedP) != 1 || droppedP[0] != "fake:preset" {
+		t.Errorf("droppedPresets = %v, want [fake:preset]", droppedP)
+	}
+	if len(droppedL) != 1 || droppedL[0] != "phantom-layer" {
+		t.Errorf("droppedLayers = %v, want [phantom-layer]", droppedL)
+	}
+	if filtered.Explanation != "because" {
+		t.Errorf("explanation lost: %q", filtered.Explanation)
+	}
+}
+
+// TestFilterAIRecommendation_NoCatalogReturnsAsIs documents the safety hatch:
+// if no catalog is supplied, the recommendation passes through untouched so
+// existing call sites are not broken before they wire in a catalog.
+func TestFilterAIRecommendation_NoCatalogReturnsAsIs(t *testing.T) {
+	t.Parallel()
+	rec := AIRecommendation{
+		Presets: []string{"anything"},
+		Layers:  []string{"goes"},
+	}
+	filtered, dp, dl := FilterAIRecommendation(rec, nil, nil)
+	if len(filtered.Presets) != 1 || len(filtered.Layers) != 1 {
+		t.Errorf("expected no-op, got %+v", filtered)
+	}
+	if len(dp) != 0 || len(dl) != 0 {
+		t.Errorf("expected no drops, got %v / %v", dp, dl)
+	}
+}
+
+func TestParseAndFilterRecommendations_DropsUnknownPresets(t *testing.T) {
+	t.Parallel()
+
+	response := `{"presets":["shell:minimal","fake:preset"],"layers":["base"],"explanation":"x"}`
+	rec, droppedP, droppedL, err := ParseAndFilterRecommendations(
+		response,
+		[]string{"shell:minimal"},
+		[]string{"base"},
+	)
+	if err != nil {
+		t.Fatalf("ParseAndFilterRecommendations: %v", err)
+	}
+	if len(rec.Presets) != 1 || rec.Presets[0] != "shell:minimal" {
+		t.Errorf("filtered presets = %v, want [shell:minimal]", rec.Presets)
+	}
+	if len(droppedP) != 1 || droppedP[0] != "fake:preset" {
+		t.Errorf("droppedPresets = %v, want [fake:preset]", droppedP)
+	}
+	if len(droppedL) != 0 {
+		t.Errorf("droppedLayers should be empty, got %v", droppedL)
+	}
+}

@@ -15,10 +15,7 @@ func FilterRecommendations(recs []Recommendation, presetIDs []string) (known, un
 	if len(recs) == 0 {
 		return nil, nil
 	}
-	allowed := make(map[string]struct{}, len(presetIDs))
-	for _, id := range presetIDs {
-		allowed[normalizePresetID(id)] = struct{}{}
-	}
+	allowed := buildAllowedSet(presetIDs)
 	for _, r := range recs {
 		if _, ok := allowed[normalizePresetID(r.PresetID())]; ok {
 			known = append(known, r)
@@ -27,6 +24,52 @@ func FilterRecommendations(recs []Recommendation, presetIDs []string) (known, un
 		}
 	}
 	return known, unknown
+}
+
+// FilterPresetIDs partitions a slice of preset/layer identifier strings (the
+// shape returned in AIRecommendation.Presets / .Layers) into known and
+// unknown, using the same normalization rules as FilterRecommendations. Use
+// this on raw AI output before constructing domain Recommendation values so
+// the catalog whitelist is enforced at the boundary.
+func FilterPresetIDs(ids, allowedIDs []string) (known, unknown []string) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	allowed := buildAllowedSet(allowedIDs)
+	for _, id := range ids {
+		if _, ok := allowed[normalizePresetID(id)]; ok {
+			known = append(known, id)
+		} else {
+			unknown = append(unknown, id)
+		}
+	}
+	return known, unknown
+}
+
+// FilterAIRecommendation partitions Presets and Layers fields of an AI
+// response against the supplied catalog. Returns a filtered copy plus the
+// dropped IDs. Callers should surface non-empty dropped slices to the user
+// (TUI) for explicit confirmation per CLAUDE.md.
+//
+// If both knownPresets and knownLayers are empty, the recommendation is
+// returned untouched. This makes the function safe to wire into call sites
+// that have not yet connected a real catalog.
+func FilterAIRecommendation(rec AIRecommendation, knownPresets, knownLayers []string) (filtered AIRecommendation, droppedPresets, droppedLayers []string) {
+	if len(knownPresets) == 0 && len(knownLayers) == 0 {
+		return rec, nil, nil
+	}
+	filtered.Explanation = rec.Explanation
+	filtered.Presets, droppedPresets = FilterPresetIDs(rec.Presets, knownPresets)
+	filtered.Layers, droppedLayers = FilterPresetIDs(rec.Layers, knownLayers)
+	return filtered, droppedPresets, droppedLayers
+}
+
+func buildAllowedSet(ids []string) map[string]struct{} {
+	out := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		out[normalizePresetID(id)] = struct{}{}
+	}
+	return out
 }
 
 func normalizePresetID(id string) string {

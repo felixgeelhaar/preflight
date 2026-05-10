@@ -115,7 +115,9 @@ func BuildInterviewPrompt(profile InterviewProfile) Prompt {
 		WithTemperature(0.3)
 }
 
-// ParseRecommendations parses AI response into recommendations.
+// ParseRecommendations parses AI response into recommendations. The returned
+// AIRecommendation is unfiltered; callers should pass it through
+// FilterAIRecommendation with the active catalog before acting on it.
 func ParseRecommendations(response string) (*AIRecommendation, error) {
 	// Try to extract JSON from the response
 	jsonStart := strings.Index(response, "{")
@@ -133,6 +135,20 @@ func ParseRecommendations(response string) (*AIRecommendation, error) {
 	}
 
 	return &rec, nil
+}
+
+// ParseAndFilterRecommendations parses the raw AI response and filters its
+// Presets/Layers against the supplied catalog. Returns the filtered
+// recommendation plus the dropped IDs so the caller can surface them. This is
+// the API call sites should use to enforce the CLAUDE.md guarantee that AI
+// outputs map to known presets or require user confirmation.
+func ParseAndFilterRecommendations(response string, knownPresets, knownLayers []string) (*AIRecommendation, []string, []string, error) {
+	rec, err := ParseRecommendations(response)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	filtered, droppedPresets, droppedLayers := FilterAIRecommendation(*rec, knownPresets, knownLayers)
+	return &filtered, droppedPresets, droppedLayers, nil
 }
 
 // ExperienceQuestionPrompt generates a prompt to ask about experience level.
