@@ -486,7 +486,7 @@ func TestBoostB_RunEnvList_InvalidConfig(t *testing.T) {
 
 	err := runEnvList(nil, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load configuration")
+	assert.Contains(t, err.Error(), "could not load configuration")
 }
 
 //nolint:tparallel // Test modifies global state (envConfigPath, envTarget, envLayer)
