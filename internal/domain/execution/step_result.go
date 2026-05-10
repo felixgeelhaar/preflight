@@ -14,6 +14,7 @@ type StepResult struct {
 	err      error
 	duration time.Duration
 	diff     compiler.Diff
+	applied  bool
 }
 
 // NewStepResult creates a new StepResult.
@@ -69,5 +70,19 @@ func (r StepResult) WithDuration(d time.Duration) StepResult {
 // WithDiff returns a new StepResult with diff set.
 func (r StepResult) WithDiff(d compiler.Diff) StepResult {
 	r.diff = d
+	return r
+}
+
+// Applied reports whether this step actually mutated the system in this run.
+// True only when Apply was invoked and returned without error; false for
+// already-satisfied, dry-run, skipped, or failed results. Used to gate rollback
+// so pre-existing satisfied steps are not rolled back alongside newly applied ones.
+func (r StepResult) Applied() bool {
+	return r.applied
+}
+
+// WithApplied returns a new StepResult marking whether the step mutated the system.
+func (r StepResult) WithApplied(applied bool) StepResult {
+	r.applied = applied
 	return r
 }
