@@ -79,6 +79,74 @@ func (s *StatefulCommandRunner) Run(_ context.Context, command string, args ...s
 	s.mu.Lock()
 	s.calls = append(s.calls, ports.CommandCall{Command: command, Args: append([]string(nil), args...)})
 
+	// Built-in: gem.
+	if command == "gem" && len(args) > 0 {
+		switch args[0] {
+		case "list":
+			// `gem list -i <name>`: exit 0 if installed, 1 otherwise.
+			// `gem list <name> --exact`: stdout contains name when installed.
+			var pkg string
+			for _, a := range args[1:] {
+				if !strings.HasPrefix(a, "-") {
+					pkg = a
+					break
+				}
+			}
+			if pkg != "" && s.isInstalled("gem", pkg) {
+				if hasFlag(args, "-i") {
+					s.mu.Unlock()
+					return ports.CommandResult{Stdout: "true\n", ExitCode: 0}, nil
+				}
+				s.mu.Unlock()
+				return ports.CommandResult{Stdout: pkg + " (1.0)\n", ExitCode: 0}, nil
+			}
+			if hasFlag(args, "-i") {
+				s.mu.Unlock()
+				return ports.CommandResult{Stdout: "false\n", ExitCode: 1}, nil
+			}
+			s.mu.Unlock()
+			return ports.CommandResult{Stdout: "", ExitCode: 0}, nil
+		case "install":
+			// `gem install <name>` or `gem install --user-install <name>`.
+			for _, a := range args[1:] {
+				if !strings.HasPrefix(a, "-") {
+					s.markInstalled("gem", a)
+					break
+				}
+			}
+			s.mu.Unlock()
+			return ports.CommandResult{ExitCode: 0}, nil
+		}
+	}
+
+	// Built-in: pip / pip3.
+	if command == "pip" || command == "pip3" {
+		if len(args) > 0 {
+			switch args[0] {
+			case "show":
+				// `pip show <name>`: exit 0 with stdout if installed.
+				if len(args) >= 2 && s.isInstalled("pip", args[1]) {
+					s.mu.Unlock()
+					return ports.CommandResult{Stdout: "Name: " + args[1] + "\nVersion: 1.0\n", ExitCode: 0}, nil
+				}
+				s.mu.Unlock()
+				return ports.CommandResult{ExitCode: 1, Stderr: "Package not found"}, nil
+			case "install":
+				for _, a := range args[1:] {
+					if strings.HasPrefix(a, "-") {
+						continue
+					}
+					if idx := strings.IndexAny(a, "=<>"); idx > 0 {
+						a = a[:idx]
+					}
+					s.markInstalled("pip", a)
+				}
+				s.mu.Unlock()
+				return ports.CommandResult{ExitCode: 0}, nil
+			}
+		}
+	}
+
 	// Built-in: brew.
 	if command == "brew" && len(args) > 0 {
 		switch args[0] {
@@ -200,6 +268,15 @@ func (s *StatefulCommandRunner) listTaps() string {
 		fmt.Fprintln(&b, tap)
 	}
 	return b.String()
+}
+
+func hasFlag(args []string, flag string) bool {
+	for _, a := range args {
+		if a == flag {
+			return true
+		}
+	}
+	return false
 }
 
 // Compile-time interface check.

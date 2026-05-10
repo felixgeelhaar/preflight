@@ -90,6 +90,50 @@ func TestStatefulCommandRunner_HandlerOverride(t *testing.T) {
 	}
 }
 
+func TestStatefulCommandRunner_GemListReflectsInstall(t *testing.T) {
+	t.Parallel()
+	r := NewStatefulCommandRunner()
+	ctx := context.Background()
+
+	// Before install: gem list -i returns 1.
+	res, _ := r.Run(ctx, "gem", "list", "-i", "rails")
+	if res.Success() {
+		t.Fatal("gem list -i must fail before install")
+	}
+
+	if _, err := r.Run(ctx, "gem", "install", "rails"); err != nil {
+		t.Fatalf("install: %v", err)
+	}
+
+	res, err := r.Run(ctx, "gem", "list", "-i", "rails")
+	if err != nil || !res.Success() {
+		t.Errorf("gem list -i must succeed after install, got %+v err=%v", res, err)
+	}
+}
+
+func TestStatefulCommandRunner_PipShowReflectsInstall(t *testing.T) {
+	t.Parallel()
+	r := NewStatefulCommandRunner()
+	ctx := context.Background()
+
+	res, _ := r.Run(ctx, "pip", "show", "black")
+	if res.Success() {
+		t.Fatal("pip show must fail before install")
+	}
+
+	if _, err := r.Run(ctx, "pip", "install", "--user", "black"); err != nil {
+		t.Fatalf("install: %v", err)
+	}
+
+	res, err := r.Run(ctx, "pip", "show", "black")
+	if err != nil || !res.Success() {
+		t.Errorf("pip show must succeed after install, got %+v err=%v", res, err)
+	}
+	if !strings.Contains(res.Stdout, "black") {
+		t.Errorf("pip show stdout missing package name: %q", res.Stdout)
+	}
+}
+
 func TestStatefulCommandRunner_RecordsCalls(t *testing.T) {
 	t.Parallel()
 	r := NewStatefulCommandRunner()
