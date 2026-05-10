@@ -43,7 +43,7 @@ func TestProvider_Model(t *testing.T) {
 
 	p := NewProvider("sk-ant-test-key")
 
-	assert.Equal(t, "claude-3-5-sonnet-20241022", p.Model())
+	assert.Equal(t, DefaultModel, p.Model())
 }
 
 func TestProvider_WithModel(t *testing.T) {
