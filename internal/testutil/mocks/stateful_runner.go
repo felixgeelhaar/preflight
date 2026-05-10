@@ -121,6 +121,53 @@ func (s *StatefulCommandRunner) Run(_ context.Context, command string, args ...s
 		return ports.CommandResult{ExitCode: 0}, nil
 	}
 
+	// Built-in: choco / choco.exe (WSL).
+	if (command == "choco" || command == "choco.exe") && len(args) > 0 {
+		switch args[0] {
+		case "list":
+			// `choco list --local-only --exact <name>` -> stdout contains <name> if installed.
+			var pkg string
+			for _, a := range args[1:] {
+				if !strings.HasPrefix(a, "-") {
+					pkg = a
+					break
+				}
+			}
+			if pkg != "" && s.isInstalled("choco", pkg) {
+				s.mu.Unlock()
+				return ports.CommandResult{Stdout: pkg + " 1.0.0\n", ExitCode: 0}, nil
+			}
+			s.mu.Unlock()
+			return ports.CommandResult{ExitCode: 0}, nil
+		case "install":
+			for _, a := range args[1:] {
+				if !strings.HasPrefix(a, "-") {
+					s.markInstalled("choco", a)
+					break
+				}
+			}
+			s.mu.Unlock()
+			return ports.CommandResult{ExitCode: 0}, nil
+		case "source":
+			if len(args) >= 2 && args[1] == "list" {
+				s.mu.Unlock()
+				return ports.CommandResult{Stdout: s.listChocoSources(), ExitCode: 0}, nil
+			}
+			if len(args) >= 4 && args[1] == "add" {
+				name := flagValue(args, "--name")
+				url := flagValue(args, "--source")
+				if name != "" {
+					if s.packages["choco_source"] == nil {
+						s.packages["choco_source"] = make(map[string]struct{})
+					}
+					s.packages["choco_source"][name+"|"+url] = struct{}{}
+				}
+			}
+			s.mu.Unlock()
+			return ports.CommandResult{ExitCode: 0}, nil
+		}
+	}
+
 	// Built-in: winget / winget.exe (WSL).
 	if (command == "winget" || command == "winget.exe") && len(args) > 0 {
 		switch args[0] {
@@ -389,6 +436,23 @@ func (s *StatefulCommandRunner) npmListJSON() string {
 		fmt.Fprintf(&b, `%q:{"version":"1.0"}`, pkg)
 	}
 	b.WriteString(`}}`)
+	return b.String()
+}
+
+// listChocoSources returns the text format of `choco source list`:
+//
+//	<name> - <url> | Priority: <n>
+func (s *StatefulCommandRunner) listChocoSources() string {
+	var b strings.Builder
+	for entry := range s.packages["choco_source"] {
+		// entry is "name|url"
+		parts := strings.SplitN(entry, "|", 2)
+		name, url := parts[0], ""
+		if len(parts) > 1 {
+			url = parts[1]
+		}
+		fmt.Fprintf(&b, "%s - %s | Priority: 0\n", name, url)
+	}
 	return b.String()
 }
 
