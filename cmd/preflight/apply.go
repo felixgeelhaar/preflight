@@ -132,28 +132,10 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	// Collect per-step failures regardless of whether Apply itself returned an
 	// error — Execute now joins step errors but legacy callers / fakes may
 	// return (results, nil) with errored results inside.
-	failedIDs := make([]string, 0, len(results))
-	for i := range results {
-		if results[i].Error() != nil {
-			failedIDs = append(failedIDs, results[i].StepID().String())
-		}
-	}
+	failedIDs := failedStepIDs(results)
 
 	if err != nil || len(failedIDs) > 0 {
-		suggestion := "Inspect the failing step's output above. Run 'preflight rollback' to restore the previous state, or 'preflight doctor' to diagnose the underlying issue."
-		if len(failedIDs) == 1 {
-			suggestion = fmt.Sprintf("Step %q failed. Run 'preflight rollback' to restore previous state, or 'preflight doctor --verbose' to diagnose.", failedIDs[0])
-		}
-		msg := "apply failed: some steps failed"
-		if len(failedIDs) > 0 {
-			msg = fmt.Sprintf("apply failed: %d step(s) did not complete", len(failedIDs))
-		}
-		return &config.UserError{
-			Code:       "APPLY_FAILED",
-			Message:    msg,
-			Suggestion: suggestion,
-			Underlying: err,
-		}
+		return newApplyFailedUserError("apply", failedIDs, err)
 	}
 
 	// First successful apply — record activation event for the North Star

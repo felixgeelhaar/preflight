@@ -3,15 +3,6 @@
   "spec_id": "preflight",
   "tasks": [
     {
-      "id": "task-core-foundation",
-      "title": "Implement Core Foundation",
-      "description": "Implement the feature: Core Foundation. The essential building blocks of the project.",
-      "priority": "medium",
-      "estimate": "",
-      "depends_on": [],
-      "feature_id": "core-foundation"
-    },
-    {
       "id": "task-fix-quickstart---minimal-flag-mismatch",
       "title": "Implement Fix quickstart --minimal flag mismatch",
       "description": "Implement the feature: Fix quickstart --minimal flag mismatch. website/src/content/docs/getting-started/quickstart.md:21 documents `preflight init --minimal` but cmd/preflight/init.go:48-54 only registers --provider, --preset, --non-interactive. Either add --minimal as alias for `--non-interactive --preset shell:minimal`, or update quickstart to use the actual flags. Source: UX expert finding #2. First-run users hit \"unknown flag\" error and abandon. Acceptance: copy-paste from quickstart succeeds end-to-end.",
@@ -127,9 +118,72 @@
       "estimate": "",
       "depends_on": [],
       "feature_id": "parallelize-dag-execution-with-context-cancellation"
+    },
+    {
+      "id": "task-core-foundation-scope-and-adr",
+      "title": "Define core foundation scope and ADR",
+      "description": "Define the minimum architecture and scope boundaries for v1 core foundation: core domains, package boundaries, public interfaces, and non-goals. Deliverable: docs/core-foundation.md with architecture decisions and acceptance checklist.",
+      "priority": "high",
+      "estimate": "2h",
+      "depends_on": [],
+      "feature_id": "core-foundation"
+    },
+    {
+      "id": "task-core-foundation-domain-contracts",
+      "title": "Stabilize domain contracts and invariants",
+      "description": "Harden core execution contracts: finalize step/status invariants, context-cancellation guarantees, idempotency guarantees, and rollback semantics at the domain boundary. Deliverable: updated domain interfaces and tests proving invariants.",
+      "priority": "high",
+      "estimate": "3h",
+      "depends_on": [
+        "task-core-foundation-scope-and-adr"
+      ],
+      "feature_id": "core-foundation"
+    },
+    {
+      "id": "task-core-foundation-adapter-alignment",
+      "title": "Align adapters/providers with core contract",
+      "description": "Consolidate provider/adapters around the core contract (compile, plan, execute), remove duplication hotspots, and enforce shared error taxonomy for CLI/TUI surfaces.",
+      "priority": "medium",
+      "estimate": "4h",
+      "depends_on": [
+        "task-core-foundation-domain-contracts"
+      ],
+      "feature_id": "core-foundation"
+    },
+    {
+      "id": "task-core-foundation-verification-harness",
+      "title": "Build core foundation verification harness",
+      "description": "Create a foundation verification harness covering critical paths (init-\u003eplan-\u003eapply-\u003edoctor), deterministic fixtures, and regression checks for idempotency/cancellation behavior.",
+      "priority": "high",
+      "estimate": "3h",
+      "depends_on": [
+        "task-core-foundation-domain-contracts"
+      ],
+      "feature_id": "core-foundation"
+    },
+    {
+      "id": "task-core-foundation-docs-and-guardrails",
+      "title": "Publish foundation docs and guardrails",
+      "description": "Ship foundation docs and developer guardrails: architecture map, extension guide for new providers, and a CI quality gate checklist tied to core invariants.",
+      "priority": "medium",
+      "estimate": "2h",
+      "depends_on": [
+        "task-core-foundation-adapter-alignment",
+        "task-core-foundation-verification-harness"
+      ],
+      "feature_id": "core-foundation"
+    },
+    {
+      "id": "task-core-foundation",
+      "title": "Implement Core Foundation",
+      "description": "Implement the feature: Core Foundation. The essential building blocks of the project.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "core-foundation"
     }
   ],
   "approval_status": "approved",
   "created_at": "2026-05-10T09:28:31.088416+02:00",
-  "updated_at": "2026-05-10T09:28:31.088416+02:00"
+  "updated_at": "2026-05-10T12:29:57.578745+02:00"
 }

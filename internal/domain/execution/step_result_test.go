@@ -75,3 +75,17 @@ func TestStepResult_Skipped(t *testing.T) {
 		t.Error("Skipped() should be true")
 	}
 }
+
+func TestStepResult_AppliedFlag(t *testing.T) {
+	stepID, _ := compiler.NewStepID("brew:install:git")
+
+	notApplied := NewStepResult(stepID, compiler.StatusSatisfied, nil)
+	if notApplied.Applied() {
+		t.Error("Applied() should default to false")
+	}
+
+	applied := notApplied.WithApplied(true)
+	if !applied.Applied() {
+		t.Error("Applied() should be true after WithApplied(true)")
+	}
+}

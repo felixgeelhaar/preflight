@@ -220,6 +220,35 @@ func TestExecutor_SkipsAfterFailure(t *testing.T) {
 	}
 }
 
+func TestExecutor_Execute_JoinsMultipleStepFailures(t *testing.T) {
+	executor := NewExecutor()
+	plan := NewExecutionPlan()
+
+	step1 := newConfigurableStep("step:first")
+	step1.applyFn = func(_ compiler.RunContext) error { return errors.New("first failed") }
+
+	step2 := newConfigurableStep("step:second")
+	step2.applyFn = func(_ compiler.RunContext) error { return errors.New("second failed") }
+
+	plan.Add(NewPlanEntry(step1, compiler.StatusNeedsApply, compiler.Diff{}))
+	plan.Add(NewPlanEntry(step2, compiler.StatusNeedsApply, compiler.Diff{}))
+
+	results, err := executor.Execute(context.Background(), plan)
+	if err == nil {
+		t.Fatal("Execute() must return joined error when multiple steps fail")
+	}
+	if !strings.Contains(err.Error(), "step step:first") || !strings.Contains(err.Error(), "step step:second") {
+		t.Errorf("joined error = %q, want both step ids", err.Error())
+	}
+
+	if len(results) != 2 {
+		t.Fatalf("results len = %d, want 2", len(results))
+	}
+	if results[0].Status() != compiler.StatusFailed || results[1].Status() != compiler.StatusFailed {
+		t.Errorf("statuses = [%v %v], want [StatusFailed StatusFailed]", results[0].Status(), results[1].Status())
+	}
+}
+
 func TestExecutor_DryRun(t *testing.T) {
 	executor := NewExecutor().WithDryRun(true)
 	plan := NewExecutionPlan()

@@ -156,16 +156,11 @@ func runWatch(cmd *cobra.Command, _ []string) error {
 		fmt.Println("\nApplying changes...")
 
 		results, err := preflight.Apply(ctx, plan, false)
-		if err != nil {
-			return fmt.Errorf("apply failed: %w", err)
-		}
-
 		preflight.PrintResults(results)
 
-		for i := range results {
-			if results[i].Error() != nil {
-				return fmt.Errorf("some steps failed")
-			}
+		failedIDs := failedStepIDs(results)
+		if err != nil || len(failedIDs) > 0 {
+			return newApplyFailedUserError("watch apply", failedIDs, err)
 		}
 
 		return nil
