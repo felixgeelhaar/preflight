@@ -9,6 +9,7 @@ import (
 
 	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/domain/config"
+	"github.com/felixgeelhaar/preflight/internal/telemetry"
 	"github.com/felixgeelhaar/preflight/internal/tui"
 	"github.com/spf13/cobra"
 )
@@ -131,6 +132,8 @@ func runDoctor(_ *cobra.Command, _ []string) error {
 		}
 	case result.Issues == 0:
 		fmt.Println("No issues found. Your system is in sync.")
+		// First green doctor for the North Star metric (TTFSA).
+		recordOnce(telemetry.EventDoctorGreen)
 	case appReport.FixableCount() > 0:
 		fmt.Println("\nRun 'preflight doctor --fix' to automatically fix issues.")
 	case appReport.HasPatches():
