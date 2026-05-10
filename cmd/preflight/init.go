@@ -28,6 +28,7 @@ The wizard will guide you through:
 
 Examples:
   preflight init                    # Interactive wizard
+  preflight init --minimal          # Minimal shell:minimal config (no TUI)
   preflight init --provider nvim    # Start with nvim provider
   preflight init --preset balanced  # Use balanced preset
   preflight init --yes              # Accept defaults`,
@@ -41,6 +42,7 @@ var (
 	initYes            bool
 	initNoAI           bool
 	initNonInteractive bool
+	initMinimal        bool
 	initOutputDir      string
 )
 
@@ -51,12 +53,21 @@ func init() {
 	initCmd.Flags().BoolVarP(&initYes, "yes", "y", false, "Accept all defaults")
 	initCmd.Flags().BoolVar(&initNoAI, "no-ai", false, "Skip AI-guided interview")
 	initCmd.Flags().BoolVar(&initNonInteractive, "non-interactive", false, "Run without TUI (requires --preset)")
+	initCmd.Flags().BoolVar(&initMinimal, "minimal", false, "Create a minimal shell:minimal configuration without TUI")
 	initCmd.Flags().StringVarP(&initOutputDir, "output", "o", ".", "Output directory for configuration")
 
 	rootCmd.AddCommand(initCmd)
 }
 
 func runInit(_ *cobra.Command, _ []string) error {
+	// --minimal is a shorthand for --non-interactive --preset shell:minimal
+	if initMinimal {
+		initNonInteractive = true
+		if initPreset == "" {
+			initPreset = "shell:minimal"
+		}
+	}
+
 	// Determine config path
 	configPath := filepath.Join(initOutputDir, "preflight.yaml")
 
