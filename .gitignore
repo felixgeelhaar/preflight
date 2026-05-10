@@ -52,3 +52,9 @@ coverfunc.txt
 
 # Nox scan output
 findings.json
+
+# Roady: spec/plan/policy are committed; runtime state is local-only
+.roady/events.jsonl
+.roady/state.json
+.roady/usage.json
+.roady/spec.lock.json

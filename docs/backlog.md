@@ -1,0 +1,78 @@
+
+## Fix quickstart --minimal flag mismatch
+
+website/src/content/docs/getting-started/quickstart.md:21 documents `preflight init --minimal` but cmd/preflight/init.go:48-54 only registers --provider, --preset, --non-interactive. Either add --minimal as alias for `--non-interactive --preset shell:minimal`, or update quickstart to use the actual flags. Source: UX expert finding #2. First-run users hit "unknown flag" error and abandon. Acceptance: copy-paste from quickstart succeeds end-to-end.
+
+---
+
+## Fix Homebrew tap version drift
+
+homebrew/preflight.rb:6 pins version "0.1.1" while GitHub releases are at v4.10.0. Anyone installing via tap gets a 16-month-old binary. Either delete in-repo formula and rely on goreleaser's homebrew-tap publishing, or wire the formula version into the release pipeline so it stays current. Source: GTM expert finding #4. Acceptance: `brew install felixgeelhaar/tap/preflight` installs latest release.
+
+---
+
+## Promote brew/curl install to primary in README
+
+README.md:62 currently leads with `go install` which requires Go toolchain — non-starter for the "fresh Mac" use case the PRD claims to serve. Replace primary install instruction with `brew install felixgeelhaar/tap/preflight` and add a `curl -sSL get.preflight.dev | sh` fallback. Demote `go install` to a "for contributors" subsection. Source: Product finding #6, GTM finding #3. Acceptance: README hero install block is brew-first; non-engineer can install without Go.
+
+---
+
+## Add idempotency contract test for Apply
+
+Product's #1 guarantee is "re-running apply is always safe". Zero TestApply_Twice tests exist on the executor or any provider. Add a contract test in internal/domain/execution/ that runs every registered provider's compiled steps through Apply→Apply and asserts second pass produces zero diff and zero side-effects on the mock command runner. Source: Quality finding #1. Acceptance: new test file with parameterized cases per provider; second Apply yields StatusSatisfied across the board.
+
+---
+
+## Fix executor error swallowing and rollback misclassification
+
+Two correctness bugs in internal/domain/execution/executor.go: (1) Execute returns (results, nil) even when steps failed — error return is permanently nil; callers can't distinguish success from failure. Fix: return errors.Join of all failed step errors. (2) Rollback gating at line 92-95 uses StatusSatisfied which fires both for already-satisfied (no-op) AND post-Apply success — pre-existing satisfied steps get rolled back along with newly applied ones. Fix: introduce StatusApplied or explicit applied bool on StepResult. Source: Engineering findings #1 and #3. Acceptance: failing-step run returns non-nil error; rollback only touches steps that were actually mutated.
+
+---
+
+## Enforce AI catalog whitelist and secret redaction
+
+CLAUDE.md guarantees "AI outputs map to known presets" and "Secrets never leave the machine" — currently neither enforced. (1) advisor.NewSuggestion accepts any preset/layer string; ParseRecommendations passes AI output straight through. Fix: in advisor.Suggest post-processor, drop or flag any preset/layer not in internal/domain/catalog; surface unknown-preset count to TUI for explicit confirmation. (2) capture_prompts.go:79-126 sends raw paths and email domains to AI provider with no redaction. Fix: introduce advisor.Redact() that scrubs path basenames against a denylist (id_rsa, credentials, .env*, *token*) and hashes email domains; gate Complete on Redact having run; add unit test that fails if known secret pattern reaches HTTP body. Source: AI findings #6 and #7. Acceptance: contract tests cover both invariants.
+
+---
+
+## Refresh AI default models and add structured outputs + prompt caching
+
+internal/domain/advisor/anthropic/provider.go:115 defaults to claude-3-5-sonnet-20241022 (14+ months stale); openai/provider.go:115 defaults to gpt-4o. (1) Update defaults to claude-sonnet-4-6 (Anthropic) and current OpenAI flagship; add models.go registry with deprecation dates. (2) Add Anthropic prompt caching: change System string to []systemBlock with cache_control on static system prompt and catalog block. (3) Replace JSON string-scrape extraction (prompts.go:119-136) with structured outputs: OpenAI response_format with JSON schema; Anthropic tool-use forcing record_recommendation tool. (4) Pin temperature 0.0-0.2 for preset/layer recommendations; pass OpenAI seed for determinism. Source: AI findings #1, #2, #3, #4. Acceptance: cost-per-call drops measurably on cached prefix; JSON-parse failures eliminated.
+
+---
+
+## Group CLI commands and hide advanced surface from --help
+
+35+ top-level commands in cmd/preflight/ (init, plan, apply, doctor, capture, validate, diff, fleet, identity, marketplace, mcp, agent, ...). Hick's Law collapse: first-time user can't tell which commands matter. Promote 6 verbs (init/plan/apply/doctor/capture/sync) to a "Core" group via cobra Groups() API. Group inspect commands (diff/validate/explain). Hide enterprise commands behind `preflight enterprise *` namespace or set Hidden:true on `experimental` and `deprecated`. Source: UX finding #1, Product finding #4. Acceptance: `preflight --help` shows ≤8 grouped sections; full list still reachable via `preflight --help --all`.
+
+---
+
+## Migrate fmt.Errorf returns to UserError with Suggestion
+
+config.UserError machinery in cmd/preflight/root.go:60-76 exists but is barely used. 30+ fmt.Errorf("failed to ...") returns in env.go, clean.go, fleet.go, apply.go give no actionable next step. Convert each to config.UserError with Suggestion: field. Highest impact: apply.go:128 "some steps failed" should print which step and `preflight rollback` hint. Source: UX finding #6. Acceptance: every error path the user can hit returns UserError with a non-empty Suggestion; lint rule rejects bare fmt.Errorf in cmd/.
+
+---
+
+## Add property/fuzz tests for layer merge
+
+Layer merge is the compiler's parser-equivalent. Spec says "scalars last-wins, maps deep-merge, lists set-union" — algebraic properties that hand-crafted examples in internal/domain/config/merger_test.go can't fully cover. Add native FuzzMerge plus invariant tests: Merge(a, Empty) == a, Merge(a, a) == a (idempotency), list-add-then-remove cancels, associativity for ordered layers. Use testing/quick or pgregory.net/rapid. Source: Quality finding #2. Acceptance: 4 invariant property tests + Go native fuzz target with ≥10k seed cases.
+
+---
+
+## Reposition messaging around capture-to-portable-bootstrap wedge
+
+Killer feature (Capture → portable repo → bootstrap on new machine) is buried 11th in README command table; website hero leads with abstract "Declarative Configuration" not the universal struggling moment ("I just got a new MacBook"). No competitor (Brewfile, chezmoi, Nix) does this end-to-end. Reposition: (1) README hero copy outcome-led ("Set up a new Mac in 5 minutes from one YAML file"); (2) website hero same; (3) demo gif/video showing capture→push→bootstrap loop; (4) `vs chezmoi/Brewfile/Nix` comparison table near top of README. Source: Product finding #3, GTM findings #1, #2. Acceptance: hero rewritten on README and website index; comparison table added; demo gif featured prominently.
+
+---
+
+## Define North Star metric and ship opt-in telemetry
+
+No North Star metric defined; v5 enterprise pivot was made on zero PMF evidence in repo. Pick NSM: Time-to-First-Successful-Apply OR % of `init` runs that reach a green `doctor` within 7 days. Ship opt-in `~/.preflight/telemetry.yaml` with 4 events: init.completed, apply.first_success, doctor.green, capture.completed. Add `preflight feedback` command opening a GitHub Discussion template. Source: Product findings #1 and #5. Acceptance: docs/north-star.md defines NSM with measurement; opt-in telemetry implemented with explicit consent prompt; feedback command lands.
+
+---
+
+## Parallelize DAG execution with context cancellation
+
+internal/domain/execution/executor.go:72 + planner.go:32: StepGraph builds a DAG with dependedBy reverse edges, but Plan flattens to topo-sorted slice and Execute runs strictly sequentially. The DAG is dead structure at runtime. FleetExecutor.go:100 already shows the worker-pool pattern — pull it down into core execution. Also enforce context cancellation: wrap Apply in a goroutine selecting on ctx.Done(), or formalize Step contract that Apply MUST respect ctx (add lint check). Source: Engineering findings #2 and #7. Acceptance: independent steps run concurrently bounded by --max-parallel flag; cancel mid-apply stops in-flight steps within ~1s.
+
+---
