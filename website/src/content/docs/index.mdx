@@ -1,9 +1,9 @@
 ---
 title: Preflight
-description: Deterministic workstation compiler - compile declarative configuration into reproducible machine setups.
+description: Set up a new Mac in 10 minutes from one YAML file. Capture your machine, push to git, bootstrap any new laptop deterministically.
 template: splash
 hero:
-  tagline: Define your workstation configuration once, apply it anywhere.
+  tagline: Set up a new Mac in 10 minutes — from one YAML file you keep in git.
   actions:
     - text: Get Started
       link: /preflight/getting-started/introduction/
@@ -16,20 +16,30 @@ hero:
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
+## The killer loop
+
+```bash
+preflight capture     # snapshot current machine to YAML
+git push              # versioned in your dotfiles repo
+preflight apply       # bootstrap any new laptop deterministically
+```
+
+Preflight is the missing piece between your dotfiles repo and a usable laptop — packages, dotfiles, shell, editor, all in one config.
+
 ## Why Preflight?
 
 <CardGrid stagger>
-  <Card title="Declarative Configuration" icon="document">
-    Define your setup in `preflight.yaml` with composable layer overlays. No more imperative scripts.
+  <Card title="Capture → Bootstrap" icon="rocket">
+    Snapshot your current setup, commit to git, restore on any new machine. End-to-end loop no other tool ships out of the box.
   </Card>
   <Card title="Plan Before Apply" icon="approve-check">
     Always preview changes before executing. Every action is explained with context and documentation.
   </Card>
-  <Card title="Deterministic Execution" icon="rocket">
+  <Card title="Deterministic Execution" icon="document">
     Same config always produces the same result. Re-running apply is always safe.
   </Card>
   <Card title="Multi-Platform" icon="laptop">
-    macOS (Homebrew) and Linux (apt) package management with editor support for Neovim and VSCode.
+    macOS (Homebrew), Linux (apt), Windows (winget/scoop/choco). Editor support for Neovim and VSCode.
   </Card>
 </CardGrid>
 
