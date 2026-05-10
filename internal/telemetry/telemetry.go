@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -112,7 +111,7 @@ func (r *Recorder) Record(name string) {
 	// O_NOFOLLOW refuses to open if the path is a symlink. A pre-positioned
 	// symlink at the log path could otherwise let a local attacker redirect
 	// JSON-line writes to an arbitrary user-writable file.
-	f, err := os.OpenFile(r.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY|syscall.O_NOFOLLOW, 0o600)
+	f, err := os.OpenFile(r.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY|openFlagNoFollow, 0o600)
 	if err != nil {
 		return
 	}
@@ -157,7 +156,7 @@ func alreadyFired(markerPath, name string) bool {
 }
 
 func appendMarker(markerPath, name string) error {
-	f, err := os.OpenFile(markerPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY|syscall.O_NOFOLLOW, 0o600)
+	f, err := os.OpenFile(markerPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY|openFlagNoFollow, 0o600)
 	if err != nil {
 		return err
 	}
@@ -188,7 +187,7 @@ func GrantConsent(dir string) (string, error) {
 // with O_NOFOLLOW|O_CREATE|O_TRUNC so a pre-positioned symlink at path causes
 // an error rather than redirected write.
 func writeFileNoFollow(path string, data []byte, perm os.FileMode) error {
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|syscall.O_NOFOLLOW, perm)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|openFlagNoFollow, perm)
 	if err != nil {
 		return err
 	}
@@ -258,7 +257,7 @@ func loadOrCreateMachineID(dir string) string {
 }
 
 func readFileNoFollow(path string) ([]byte, error) {
-	f, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	f, err := os.OpenFile(path, os.O_RDONLY|openFlagNoFollow, 0)
 	if err != nil {
 		return nil, err
 	}
