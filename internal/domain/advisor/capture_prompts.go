@@ -76,7 +76,12 @@ type QualityScore struct {
 }
 
 // BuildCaptureAnalysisPrompt creates a prompt to analyze captured configuration.
+// Sensitive paths (id_rsa, credentials, .env*, *.pem, *.key, ...) are replaced
+// with a redaction placeholder before the prompt leaves the machine, honoring
+// the CLAUDE.md guarantee that secrets never leave the machine.
 func BuildCaptureAnalysisPrompt(req CaptureAnalysisRequest) Prompt {
+	req.Items = RedactCapturedItems(req.Items)
+
 	var parts []string
 
 	parts = append(parts, "Analyze the following captured configuration and provide recommendations:")
