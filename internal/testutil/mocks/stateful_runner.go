@@ -121,6 +121,63 @@ func (s *StatefulCommandRunner) Run(_ context.Context, command string, args ...s
 		return ports.CommandResult{ExitCode: 0}, nil
 	}
 
+	// Built-in: winget / winget.exe (WSL).
+	if (command == "winget" || command == "winget.exe") && len(args) > 0 {
+		switch args[0] {
+		case "list":
+			// `winget list --id <ID> --exact ...`: stdout must contain ID if installed.
+			id := flagValue(args, "--id")
+			if id != "" && s.isInstalled("winget", id) {
+				s.mu.Unlock()
+				return ports.CommandResult{Stdout: id + "\t1.0.0\n", ExitCode: 0}, nil
+			}
+			s.mu.Unlock()
+			return ports.CommandResult{ExitCode: 0}, nil
+		case "install":
+			id := flagValue(args, "--id")
+			if id != "" {
+				s.markInstalled("winget", id)
+			}
+			s.mu.Unlock()
+			return ports.CommandResult{ExitCode: 0}, nil
+		}
+	}
+
+	// Built-in: scoop / scoop.cmd (WSL).
+	if (command == "scoop" || command == "scoop.cmd") && len(args) > 0 {
+		switch args[0] {
+		case "list":
+			s.mu.Unlock()
+			return ports.CommandResult{Stdout: s.listPackages("scoop"), ExitCode: 0}, nil
+		case "install":
+			for _, a := range args[1:] {
+				if strings.HasPrefix(a, "-") {
+					continue
+				}
+				name := a
+				if idx := strings.LastIndex(a, "@"); idx > 0 {
+					name = a[:idx]
+				}
+				s.markInstalled("scoop", name)
+			}
+			s.mu.Unlock()
+			return ports.CommandResult{ExitCode: 0}, nil
+		case "bucket":
+			if len(args) >= 2 && args[1] == "list" {
+				s.mu.Unlock()
+				return ports.CommandResult{Stdout: s.listScoopBuckets(), ExitCode: 0}, nil
+			}
+			if len(args) >= 3 && args[1] == "add" {
+				if s.packages["scoop_bucket"] == nil {
+					s.packages["scoop_bucket"] = make(map[string]struct{})
+				}
+				s.packages["scoop_bucket"][args[2]] = struct{}{}
+			}
+			s.mu.Unlock()
+			return ports.CommandResult{ExitCode: 0}, nil
+		}
+	}
+
 	// Built-in: gem.
 	if command == "gem" && len(args) > 0 {
 		switch args[0] {
@@ -335,6 +392,16 @@ func (s *StatefulCommandRunner) npmListJSON() string {
 	return b.String()
 }
 
+// listScoopBuckets returns the text format of `scoop bucket list`. Scoop
+// emits one line per bucket with the bucket name in the first column.
+func (s *StatefulCommandRunner) listScoopBuckets() string {
+	var b strings.Builder
+	for name := range s.packages["scoop_bucket"] {
+		fmt.Fprintf(&b, "%s\thttps://example/%s\n", name, name)
+	}
+	return b.String()
+}
+
 // cargoListOutput returns the text format of `cargo install --list`:
 //
 //	<name> v<version>:
@@ -354,6 +421,20 @@ func hasFlag(args []string, flag string) bool {
 		}
 	}
 	return false
+}
+
+// flagValue returns the value following `flag` in args, or "" if not found.
+// Supports both `--flag value` and `--flag=value` forms.
+func flagValue(args []string, flag string) string {
+	for i, a := range args {
+		if a == flag && i+1 < len(args) {
+			return args[i+1]
+		}
+		if strings.HasPrefix(a, flag+"=") {
+			return a[len(flag)+1:]
+		}
+	}
+	return ""
 }
 
 // Compile-time interface check.
