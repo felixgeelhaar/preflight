@@ -141,7 +141,8 @@ func TestFinalCov_RunApply_PlanFails(t *testing.T) {
 
 	err := runApply(&cobra.Command{}, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "plan failed")
+	// New UserError wraps the underlying plan failure with an actionable suggestion.
+	assert.Contains(t, err.Error(), "could not generate plan")
 }
 
 //nolint:tparallel // modifies global state
@@ -264,7 +265,8 @@ func TestFinalCov_RunApply_StepFailure(t *testing.T) {
 	captureStdout(t, func() {
 		err := runApply(&cobra.Command{}, nil)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "some steps failed")
+		// New UserError message format: "apply failed: N step(s) did not complete".
+		assert.Contains(t, err.Error(), "apply failed")
 	})
 }
 
@@ -300,7 +302,8 @@ func TestFinalCov_RunApply_UpdateLockFails(t *testing.T) {
 	captureStdout(t, func() {
 		err := runApply(&cobra.Command{}, nil)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "update lockfile failed")
+		// UserError now reads "could not update preflight.lock after apply".
+		assert.Contains(t, err.Error(), "could not update preflight.lock")
 	})
 }
 

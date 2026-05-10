@@ -532,7 +532,9 @@ func TestCoverBoost_RunApply_PlanFailureReturnsError(t *testing.T) {
 
 	err := runApply(&cobra.Command{}, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "plan failed")
+	// UserError now wraps the plan failure with an actionable suggestion;
+	// the underlying error remains accessible via errors.Unwrap.
+	assert.Contains(t, err.Error(), "could not generate plan")
 }
 
 //nolint:tparallel // modifies global apply flags
@@ -556,7 +558,9 @@ func TestCoverBoost_RunApply_StepFailureReturnsError(t *testing.T) {
 	output := captureStdout(t, func() {
 		err := runApply(&cobra.Command{}, nil)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "some steps failed")
+		// New UserError message format; legacy "some steps failed" text is part
+		// of the fallback message and the per-step suggestion.
+		assert.Contains(t, err.Error(), "apply failed")
 	})
 
 	assert.Contains(t, output, "Applying changes")

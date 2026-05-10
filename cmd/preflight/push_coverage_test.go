@@ -3060,7 +3060,8 @@ func TestPushCov_RunApply_MockPlanError(t *testing.T) { //nolint:tparallel
 
 	err := runApply(&cobra.Command{}, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "plan failed")
+	// New UserError message; underlying plan failure is unwrappable.
+	assert.Contains(t, err.Error(), "could not generate plan")
 }
 
 // ---------------------------------------------------------------------------

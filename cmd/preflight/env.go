@@ -12,6 +12,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/felixgeelhaar/preflight/internal/app"
+	pfconfig "github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -228,7 +229,11 @@ func runEnvGet(_ *cobra.Command, args []string) error {
 		}
 	}
 
-	return fmt.Errorf("variable '%s' not found", name)
+	return &pfconfig.UserError{
+		Code:       "ENV_VAR_NOT_FOUND",
+		Message:    fmt.Sprintf("variable '%s' not found in any layer", name),
+		Suggestion: fmt.Sprintf("List defined variables with 'preflight env list', or set this one with 'preflight env set %s <value>'.", name),
+	}
 }
 
 func runEnvUnset(_ *cobra.Command, args []string) error {
@@ -244,21 +249,40 @@ func runEnvUnset(_ *cobra.Command, args []string) error {
 	// Load existing layer
 	data, err := os.ReadFile(layerPath)
 	if err != nil {
-		return fmt.Errorf("layer not found: %w", err)
+		return &pfconfig.UserError{
+			Code:       "LAYER_NOT_FOUND",
+			Message:    fmt.Sprintf("layer not found: %s", layerPath),
+			Suggestion: "Pass --layer with an existing layer name, or run 'preflight env list' to see what is defined.",
+			Underlying: err,
+		}
 	}
 
 	layerData := make(map[string]interface{})
 	if err := yaml.Unmarshal(data, &layerData); err != nil {
-		return fmt.Errorf("failed to parse layer: %w", err)
+		return &pfconfig.UserError{
+			Code:       pfconfig.ErrCodeConfigParse,
+			Message:    fmt.Sprintf("failed to parse layer %s: invalid YAML", layer),
+			Context:    layerPath,
+			Suggestion: "Open the file and check indentation. YAML is sensitive to tabs and missing colons.",
+			Underlying: err,
+		}
 	}
 
 	env, ok := layerData["env"].(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("no env section in layer %s", layer)
+		return &pfconfig.UserError{
+			Code:       "ENV_SECTION_MISSING",
+			Message:    fmt.Sprintf("no env section in layer %s", layer),
+			Suggestion: fmt.Sprintf("Add an env section with 'preflight env set <NAME> <VALUE> --layer %s' first.", layer),
+		}
 	}
 
 	if _, exists := env[name]; !exists {
-		return fmt.Errorf("variable '%s' not found in layer %s", name, layer)
+		return &pfconfig.UserError{
+			Code:       "ENV_VAR_NOT_FOUND",
+			Message:    fmt.Sprintf("variable '%s' not found in layer %s", name, layer),
+			Suggestion: fmt.Sprintf("Run 'preflight env list --layer %s' to see what is defined there.", layer),
+		}
 	}
 
 	delete(env, name)
@@ -313,7 +337,11 @@ func runEnvExport(_ *cobra.Command, _ []string) error {
 			fmt.Printf("export %s=%q\n", v.Name, v.Value)
 		}
 	default:
-		return fmt.Errorf("unsupported shell: %s", envShell)
+		return &pfconfig.UserError{
+			Code:       "UNSUPPORTED_SHELL",
+			Message:    fmt.Sprintf("unsupported shell: %s", envShell),
+			Suggestion: "Use --shell with one of: bash, zsh, fish.",
+		}
 	}
 
 	return nil
