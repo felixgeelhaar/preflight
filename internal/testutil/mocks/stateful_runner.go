@@ -79,6 +79,48 @@ func (s *StatefulCommandRunner) Run(_ context.Context, command string, args ...s
 	s.mu.Lock()
 	s.calls = append(s.calls, ports.CommandCall{Command: command, Args: append([]string(nil), args...)})
 
+	// Built-in: npm.
+	if command == "npm" && len(args) > 0 {
+		switch args[0] {
+		case "list":
+			// `npm list -g --depth=0 --json` -> JSON with dependencies map.
+			s.mu.Unlock()
+			return ports.CommandResult{Stdout: s.npmListJSON(), ExitCode: 0}, nil
+		case "install":
+			// `npm install -g <name>` or `<name>@<version>`.
+			for _, a := range args[1:] {
+				if strings.HasPrefix(a, "-") {
+					continue
+				}
+				name := a
+				if idx := strings.LastIndex(a, "@"); idx > 0 {
+					name = a[:idx]
+				}
+				s.markInstalled("npm", name)
+			}
+			s.mu.Unlock()
+			return ports.CommandResult{ExitCode: 0}, nil
+		}
+	}
+
+	// Built-in: cargo.
+	if command == "cargo" && len(args) > 0 && args[0] == "install" {
+		// `cargo install --list` -> "<name> v<version>:" lines.
+		if hasFlag(args, "--list") {
+			s.mu.Unlock()
+			return ports.CommandResult{Stdout: s.cargoListOutput(), ExitCode: 0}, nil
+		}
+		// `cargo install <name>` -> mark installed.
+		for _, a := range args[1:] {
+			if strings.HasPrefix(a, "-") {
+				continue
+			}
+			s.markInstalled("cargo", a)
+		}
+		s.mu.Unlock()
+		return ports.CommandResult{ExitCode: 0}, nil
+	}
+
 	// Built-in: gem.
 	if command == "gem" && len(args) > 0 {
 		switch args[0] {
@@ -266,6 +308,41 @@ func (s *StatefulCommandRunner) listTaps() string {
 	var b strings.Builder
 	for tap := range s.taps {
 		fmt.Fprintln(&b, tap)
+	}
+	return b.String()
+}
+
+// npmListJSON returns a JSON document of the shape
+//
+//	{"dependencies":{"<name>":{"version":"1.0"}, ...}}
+//
+// matching what `npm list -g --depth=0 --json` produces.
+func (s *StatefulCommandRunner) npmListJSON() string {
+	if len(s.packages["npm"]) == 0 {
+		return `{"dependencies":{}}`
+	}
+	var b strings.Builder
+	b.WriteString(`{"dependencies":{`)
+	first := true
+	for pkg := range s.packages["npm"] {
+		if !first {
+			b.WriteString(",")
+		}
+		first = false
+		fmt.Fprintf(&b, `%q:{"version":"1.0"}`, pkg)
+	}
+	b.WriteString(`}}`)
+	return b.String()
+}
+
+// cargoListOutput returns the text format of `cargo install --list`:
+//
+//	<name> v<version>:
+//	    <binary>
+func (s *StatefulCommandRunner) cargoListOutput() string {
+	var b strings.Builder
+	for pkg := range s.packages["cargo"] {
+		fmt.Fprintf(&b, "%s v1.0.0:\n    %s\n", pkg, pkg)
 	}
 	return b.String()
 }

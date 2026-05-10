@@ -134,6 +134,52 @@ func TestStatefulCommandRunner_PipShowReflectsInstall(t *testing.T) {
 	}
 }
 
+func TestStatefulCommandRunner_NpmListReflectsInstall(t *testing.T) {
+	t.Parallel()
+	r := NewStatefulCommandRunner()
+	ctx := context.Background()
+
+	res, _ := r.Run(ctx, "npm", "list", "-g", "--depth=0", "--json")
+	if !strings.Contains(res.Stdout, `"dependencies":{}`) {
+		t.Errorf("npm list before install should be empty deps, got %q", res.Stdout)
+	}
+
+	if _, err := r.Run(ctx, "npm", "install", "-g", "typescript"); err != nil {
+		t.Fatalf("install: %v", err)
+	}
+
+	res, err := r.Run(ctx, "npm", "list", "-g", "--depth=0", "--json")
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if !strings.Contains(res.Stdout, `"typescript"`) {
+		t.Errorf("expected typescript in npm list deps, got %q", res.Stdout)
+	}
+}
+
+func TestStatefulCommandRunner_CargoListReflectsInstall(t *testing.T) {
+	t.Parallel()
+	r := NewStatefulCommandRunner()
+	ctx := context.Background()
+
+	res, _ := r.Run(ctx, "cargo", "install", "--list")
+	if res.Stdout != "" {
+		t.Errorf("cargo --list before install should be empty, got %q", res.Stdout)
+	}
+
+	if _, err := r.Run(ctx, "cargo", "install", "ripgrep"); err != nil {
+		t.Fatalf("install: %v", err)
+	}
+
+	res, err := r.Run(ctx, "cargo", "install", "--list")
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if !strings.Contains(res.Stdout, "ripgrep") {
+		t.Errorf("expected ripgrep in cargo --list output, got %q", res.Stdout)
+	}
+}
+
 func TestStatefulCommandRunner_RecordsCalls(t *testing.T) {
 	t.Parallel()
 	r := NewStatefulCommandRunner()
