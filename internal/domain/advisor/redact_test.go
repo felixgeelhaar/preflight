@@ -10,6 +10,7 @@ func TestRedactPath_SensitiveBasenames(t *testing.T) {
 	cases := []string{
 		"/home/alice/.ssh/id_rsa",
 		"/home/alice/.ssh/id_ed25519.pub",
+		"/home/alice/.ssh/id_xmss",
 		"/home/alice/.aws/credentials",
 		"/Users/bob/.env",
 		"/Users/bob/.env.local",
@@ -18,6 +19,24 @@ func TestRedactPath_SensitiveBasenames(t *testing.T) {
 		"/home/work/api_token",
 		"/home/work/MY_SECRET_KEY",
 		"/home/work/.netrc",
+		// Extended coverage added 2026-05.
+		"/home/alice/.gnupg/secring.gpg",
+		"/home/alice/keys/passwords.kdbx",
+		"/home/alice/certs/identity.p12",
+		"/home/alice/certs/server.pfx",
+		"/home/alice/.putty/work.ppk",
+		"/Users/alice/Library/Keychains/login.keychain-db",
+		"/Users/alice/Library/Application Support/Google/Chrome/Default/Cookies",
+		"/Users/alice/Library/Application Support/Google/Chrome/Default/Login Data",
+		"/home/alice/.docker/auth.json",
+		"/home/alice/.gcloud/application_default_credentials.json",
+		"/home/alice/dev/.npmrc",
+		"/home/alice/dev/.pypirc",
+		// Sensitive parent dir, non-matching basename.
+		"/home/alice/.ssh/work_deploy",
+		"/home/alice/.ssh/github_deploy",
+		"/home/alice/.gnupg/openpgp-revocs.d/A1B2C3D4.rev",
+		"/home/alice/.aws/cli/cache/some_cache",
 	}
 	for _, in := range cases {
 		out := RedactPath(in)
@@ -55,18 +74,43 @@ func TestIsSecretPath(t *testing.T) {
 	}
 }
 
-func TestHashEmailDomain_Stable(t *testing.T) {
+func TestHashEmailDomain_ShapeOnly(t *testing.T) {
 	t.Parallel()
-	a := HashEmailDomain("example.com")
-	b := HashEmailDomain("EXAMPLE.com")
-	if a != b {
-		t.Errorf("HashEmailDomain not case-insensitive: %q vs %q", a, b)
+	cases := []struct {
+		in   string
+		want string
+	}{
+		{"gmail.com", "personal"},
+		{"GMAIL.com", "personal"},
+		{"icloud.com", "personal"},
+		{"proton.me", "personal"},
+		{"anthropic.com", "work"},
+		{"acme-corp.io", "work"},
+		{"my-self-hosted.example", "work"},
+		{"", ""},
 	}
-	if !strings.HasPrefix(a, "domain-") {
-		t.Errorf("hash %q missing prefix", a)
+	for _, c := range cases {
+		if got := HashEmailDomain(c.in); got != c.want {
+			t.Errorf("HashEmailDomain(%q) = %q, want %q", c.in, got, c.want)
+		}
 	}
-	if HashEmailDomain("example.com") == HashEmailDomain("other.com") {
-		t.Error("different domains hashed to the same value")
+}
+
+// TestHashEmailDomain_DoesNotEchoDomain is the security-critical guarantee:
+// no part of the literal domain — even hashed/truncated — appears in the
+// output. The previous SHA-prefix implementation was reversible against an
+// enumeration of common domains; this test fails fast if a future refactor
+// reintroduces it.
+func TestHashEmailDomain_DoesNotEchoDomain(t *testing.T) {
+	t.Parallel()
+	for _, in := range []string{"anthropic.com", "very-secret-internal.example"} {
+		got := HashEmailDomain(in)
+		if strings.Contains(got, in) || strings.Contains(got, in[:5]) {
+			t.Errorf("HashEmailDomain(%q) = %q must not echo any prefix of input", in, got)
+		}
+		if len(got) > 16 {
+			t.Errorf("HashEmailDomain(%q) = %q is unexpectedly long; suggests hash leakage", in, got)
+		}
 	}
 }
 
