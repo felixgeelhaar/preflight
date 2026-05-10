@@ -60,6 +60,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+### Fixed
+
+## [4.11.0] - 2026-05-10
+
+### Added
+
+- **Core Foundation Milestone**: Production-grade hardening of Preflight's core engine
+  - **Unified Error Handling**: All apply/watch failures use a shared `UserError` pattern with actionable messages, failing step identification, and rollback guidance
+  - **Execution Domain Contracts**: Applied-flag semantics distinguish satisfied vs. applied steps for safe rollback gating; step errors are joined with context
+  - **Deterministic Integration Harness**: Regression-tested plan → apply → doctor flow with cancellation handling
+  - **Architecture Documentation**: Published ADRs, bounded contexts, error taxonomy, and extension guardrails
+  - **CI Quality Guardrails**: Domain-aware coverage thresholds enforced (execution ≥90%, overall ≥80%)
+
 - **Comprehensive E2E Test Suites**: 3 new end-to-end use case tests bringing total to 281 assertions across 6 suites
   - **Config Evolution** (UC3): Tests additive changes, config updates, multi-layer merge, and idempotency after config modifications
   - **Multi-Target & Layer Override** (UC4): Tests work/personal target isolation, scalar last-wins semantics, map deep-merge, compare, export, and profile lifecycle
@@ -70,6 +83,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **SSH Provider Deterministic Merge**: Sorted map-to-slice conversions in merger to ensure deterministic SSH config output across runs
 - **Test Infrastructure Race Condition**: Rewrote `captureStdout` test helper with `syscall.Dup2` for fd-level stdout redirection and concurrent pipe draining
 - **MCP Test Isolation**: Removed `t.Parallel` from MCP tests using process-global `os.Chdir`
+- **Inconsistent Apply Errors**: Standardized error messages across `preflight apply` and `preflight watch apply` commands to use the shared `UserError` pattern
 
 ---
 
@@ -1208,6 +1222,8 @@ policies:
 
 ---
 
+[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v4.11.0...HEAD
+[4.11.0]: https://github.com/felixgeelhaar/preflight/compare/v4.10.0...v4.11.0
 [4.9.0]: https://github.com/felixgeelhaar/preflight/compare/v4.8.0...v4.9.0
 [4.6.0]: https://github.com/felixgeelhaar/preflight/compare/v4.0.1...v4.6.0
 [4.0.1]: https://github.com/felixgeelhaar/preflight/compare/v4.0.0...v4.0.1

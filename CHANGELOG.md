@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Fixed
+
+## [4.11.0] - 2026-05-10
+
+### Added
+
+- **Core Foundation Milestone**: Production-grade hardening of Preflight's core engine
+  - **Unified Error Handling**: All apply/watch failures use a shared `UserError` pattern with actionable messages, failing step identification, and rollback guidance
+  - **Execution Domain Contracts**: Applied-flag semantics distinguish satisfied vs. applied steps for safe rollback gating; step errors are joined with context
+  - **Deterministic Integration Harness**: Regression-tested plan → apply → doctor flow with cancellation handling
+  - **Architecture Documentation**: Published ADRs, bounded contexts, error taxonomy, and extension guardrails
+  - **CI Quality Guardrails**: Domain-aware coverage thresholds enforced (execution ≥90%, overall ≥80%)
+
 - **Comprehensive E2E Test Suites**: 3 new end-to-end use case tests bringing total to 281 assertions across 6 suites
   - **Config Evolution** (UC3): Tests additive changes, config updates, multi-layer merge, and idempotency after config modifications
   - **Multi-Target & Layer Override** (UC4): Tests work/personal target isolation, scalar last-wins semantics, map deep-merge, compare, export, and profile lifecycle (create/switch/list/delete)
@@ -20,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SSH Provider Deterministic Merge**: Sorted map-to-slice conversions in merger to ensure deterministic SSH config output across runs
 - **Test Infrastructure Race Condition**: Rewrote `captureStdout` test helper with `syscall.Dup2` for fd-level stdout redirection, eliminating data races with parallel goroutines. Added concurrent pipe draining to prevent deadlock when output exceeds OS pipe buffer (~64KB)
 - **MCP Test Isolation**: Removed `t.Parallel` from MCP tests that use process-global `os.Chdir`
+- **Inconsistent Apply Errors**: Standardized error messages across `preflight apply` and `preflight watch apply` commands to use the shared `UserError` pattern
 
 ## [4.5.0] - 2026-01-01
 
@@ -813,7 +827,8 @@ capabilities:
 - Domain-Driven Design architecture
 - Test-Driven Development with >80% coverage requirement per domain
 
-[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v4.0.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/preflight/compare/v4.11.0...HEAD
+[4.11.0]: https://github.com/felixgeelhaar/preflight/compare/v4.10.0...v4.11.0
 [4.0.0]: https://github.com/felixgeelhaar/preflight/compare/v3.4.0...v4.0.0
 [3.4.0]: https://github.com/felixgeelhaar/preflight/compare/v3.3.2...v3.4.0
 [3.3.2]: https://github.com/felixgeelhaar/preflight/compare/v3.3.1...v3.3.2
