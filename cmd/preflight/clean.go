@@ -10,6 +10,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/felixgeelhaar/preflight/internal/app"
+	pfconfig "github.com/felixgeelhaar/preflight/internal/domain/config"
 	"github.com/spf13/cobra"
 )
 
@@ -76,13 +77,23 @@ func runClean(_ *cobra.Command, _ []string) error {
 	// Load configuration
 	config, err := preflight.LoadMergedConfig(ctx, cleanConfigPath, cleanTarget)
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return &pfconfig.UserError{
+			Code:       "CONFIG_LOAD_FAILED",
+			Message:    "could not load configuration for clean",
+			Suggestion: "Run 'preflight validate' to check the config, or pass --config with the path to a valid preflight.yaml.",
+			Underlying: err,
+		}
 	}
 
 	// Get current system state
 	systemState, err := preflight.CaptureSystemState(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to capture system state: %w", err)
+		return &pfconfig.UserError{
+			Code:       "CAPTURE_FAILED",
+			Message:    "could not capture current system state",
+			Suggestion: "Verify required tools (brew/apt/etc.) are on PATH, then re-run. Use --providers to limit scope if a specific provider is failing.",
+			Underlying: err,
+		}
 	}
 
 	// Parse filters

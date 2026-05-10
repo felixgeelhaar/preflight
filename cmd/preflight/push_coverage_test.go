@@ -2855,7 +2855,7 @@ func TestPushCov_RunClean_NonexistentConfig(t *testing.T) { //nolint:tparallel
 
 	err := runClean(nil, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load configuration")
+	assert.Contains(t, err.Error(), "could not load configuration")
 }
 
 // ---------------------------------------------------------------------------
