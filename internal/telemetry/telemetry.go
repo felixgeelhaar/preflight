@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -62,6 +63,7 @@ type Recorder struct {
 	enabled   bool
 	machineID string
 	logPath   string
+	dir       string
 }
 
 // NewRecorder loads consent state and returns a Recorder. dir is the
@@ -69,7 +71,10 @@ type Recorder struct {
 // or PREFLIGHT_TELEMETRY explicitly disables it, all subsequent Record calls
 // are no-ops.
 func NewRecorder(dir string) *Recorder {
-	r := &Recorder{logPath: filepath.Join(dir, "telemetry.jsonl")}
+	r := &Recorder{
+		dir:     dir,
+		logPath: filepath.Join(dir, "telemetry.jsonl"),
+	}
 
 	if isExplicitlyDisabled() {
 		return r
@@ -104,7 +109,10 @@ func (r *Recorder) Record(name string) {
 		return
 	}
 
-	f, err := os.OpenFile(r.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	// O_NOFOLLOW refuses to open if the path is a symlink. A pre-positioned
+	// symlink at the log path could otherwise let a local attacker redirect
+	// JSON-line writes to an arbitrary user-writable file.
+	f, err := os.OpenFile(r.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY|syscall.O_NOFOLLOW, 0o600)
 	if err != nil {
 		return
 	}
@@ -118,25 +126,84 @@ func (r *Recorder) Enabled() bool {
 	return r != nil && r.enabled
 }
 
+// RecordOnce records the named event only the first time it is observed for
+// this machine. Subsequent calls are no-ops. Use for activation events that
+// must fire exactly once (e.g. apply.first_success for the TTFSA metric).
+//
+// The "fired" set is persisted to telemetry-fired.jsonl alongside the event
+// log. If the marker file cannot be read, the call falls back to Record so
+// the event is not silently dropped on the first opt-in run.
+func (r *Recorder) RecordOnce(name string) {
+	if r == nil || !r.enabled {
+		return
+	}
+	if _, ok := allowedEvents[name]; !ok {
+		return
+	}
+	markerPath := filepath.Join(r.dir, "telemetry-fired.jsonl")
+	if alreadyFired(markerPath, name) {
+		return
+	}
+	r.Record(name)
+	_ = appendMarker(markerPath, name)
+}
+
+func alreadyFired(markerPath, name string) bool {
+	data, err := readFileNoFollow(markerPath)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(data), `"`+name+`"`)
+}
+
+func appendMarker(markerPath, name string) error {
+	f, err := os.OpenFile(markerPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY|syscall.O_NOFOLLOW, 0o600)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = f.Close() }()
+	_, err = fmt.Fprintf(f, `{"name":%q,"timestamp":%q}`+"\n", name, time.Now().UTC().Format(time.RFC3339))
+	return err
+}
+
 // GrantConsent writes the consent marker to dir. Subsequent NewRecorder
 // calls in dir return an enabled recorder. Returns the path of the marker.
+//
+// The directory is created with 0o700 (owner-only) and the marker with
+// O_NOFOLLOW so a pre-positioned symlink cannot redirect the write. The
+// previous 0o755 left the dir world-readable for no benefit.
 func GrantConsent(dir string) (string, error) {
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", fmt.Errorf("create config dir: %w", err)
 	}
 	path := consentPath(dir)
 	contents := fmt.Sprintf("granted_at: %s\nversion: 1\n", time.Now().UTC().Format(time.RFC3339))
-	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+	if err := writeFileNoFollow(path, []byte(contents), 0o600); err != nil {
 		return "", fmt.Errorf("write consent marker: %w", err)
 	}
 	return path, nil
+}
+
+// writeFileNoFollow is a symlink-safe replacement for os.WriteFile. It opens
+// with O_NOFOLLOW|O_CREATE|O_TRUNC so a pre-positioned symlink at path causes
+// an error rather than redirected write.
+func writeFileNoFollow(path string, data []byte, perm os.FileMode) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|syscall.O_NOFOLLOW, perm)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(data); err != nil {
+		_ = f.Close()
+		return err
+	}
+	return f.Close()
 }
 
 // RevokeConsent removes the consent marker and the local event log. Returns
 // nil if neither file exists.
 func RevokeConsent(dir string) error {
 	var errs []error
-	for _, name := range []string{"telemetry.yaml", "telemetry.jsonl", "machine_id"} {
+	for _, name := range []string{"telemetry.yaml", "telemetry.jsonl", "telemetry-fired.jsonl", "machine_id"} {
 		p := filepath.Join(dir, name)
 		if err := os.Remove(p); err != nil && !errors.Is(err, os.ErrNotExist) {
 			errs = append(errs, err)
@@ -165,11 +232,13 @@ func isExplicitlyDisabled() bool {
 }
 
 // loadOrCreateMachineID returns a stable, anonymous identifier rooted in a
-// random nonce. If reading or creating the file fails, returns "".
+// random nonce. If reading or creating the file fails, returns "". Reads via
+// O_NOFOLLOW so a symlink at the path causes a fresh ID instead of disclosing
+// arbitrary file content.
 func loadOrCreateMachineID(dir string) string {
 	path := filepath.Join(dir, "machine_id")
-	if existing, err := os.ReadFile(path); err == nil {
-		return strings.TrimSpace(string(existing))
+	if data, err := readFileNoFollow(path); err == nil {
+		return strings.TrimSpace(string(data))
 	}
 
 	nonce := make([]byte, 32)
@@ -179,11 +248,20 @@ func loadOrCreateMachineID(dir string) string {
 	sum := sha256.Sum256(nonce)
 	id := hex.EncodeToString(sum[:16])
 
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return ""
 	}
-	if err := os.WriteFile(path, []byte(id), 0o600); err != nil {
+	if err := writeFileNoFollow(path, []byte(id), 0o600); err != nil {
 		return ""
 	}
 	return id
+}
+
+func readFileNoFollow(path string) ([]byte, error) {
+	f, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = f.Close() }()
+	return io.ReadAll(f)
 }

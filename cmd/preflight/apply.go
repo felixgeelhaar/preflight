@@ -157,9 +157,10 @@ func runApply(cmd *cobra.Command, _ []string) error {
 	}
 
 	// First successful apply — record activation event for the North Star
-	// metric (Time-to-First-Successful-Apply). Recorder is opt-in and a no-op
-	// until the user has granted consent.
-	recordEvent(telemetry.EventApplyFirstOK)
+	// metric (Time-to-First-Successful-Apply). RecordOnce fires only on the
+	// first successful apply per machine; subsequent applies are no-ops.
+	// Recorder is opt-in and a no-op until the user has granted consent.
+	recordOnce(telemetry.EventApplyFirstOK)
 
 	if applyUpdateLock {
 		if err := preflight.UpdateLockFromPlan(ctx, applyConfigPath, plan); err != nil {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -106,7 +107,7 @@ func TestRevokeConsent_RemovesEverything(t *testing.T) {
 		t.Fatalf("RevokeConsent: %v", err)
 	}
 
-	for _, name := range []string{"telemetry.yaml", "telemetry.jsonl", "machine_id"} {
+	for _, name := range []string{"telemetry.yaml", "telemetry.jsonl", "telemetry-fired.jsonl", "machine_id"} {
 		if _, err := os.Stat(filepath.Join(dir, name)); !os.IsNotExist(err) {
 			t.Errorf("%s should be removed by RevokeConsent, stat err = %v", name, err)
 		}
@@ -141,5 +142,85 @@ func TestRecord_NeverLeaksPathOrPackageName(t *testing.T) {
 	}
 	if !strings.Contains(string(body), EventInitCompleted) {
 		t.Errorf("expected %q in log, got:\n%s", EventInitCompleted, body)
+	}
+}
+
+func TestRecordOnce_FiresOnlyOnce(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	if _, err := GrantConsent(dir); err != nil {
+		t.Fatalf("GrantConsent: %v", err)
+	}
+
+	r := NewRecorder(dir)
+	r.RecordOnce(EventApplyFirstOK)
+	r.RecordOnce(EventApplyFirstOK) // second call must be a no-op
+	r.RecordOnce(EventApplyFirstOK)
+
+	body, err := os.ReadFile(filepath.Join(dir, "telemetry.jsonl"))
+	if err != nil {
+		t.Fatalf("read log: %v", err)
+	}
+	count := strings.Count(string(body), `"`+EventApplyFirstOK+`"`)
+	if count != 1 {
+		t.Errorf("event written %d times, want 1\n%s", count, body)
+	}
+}
+
+func TestRecordOnce_IndependentEventsBothFire(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	if _, err := GrantConsent(dir); err != nil {
+		t.Fatalf("GrantConsent: %v", err)
+	}
+
+	r := NewRecorder(dir)
+	r.RecordOnce(EventApplyFirstOK)
+	r.RecordOnce(EventDoctorGreen)
+
+	body, err := os.ReadFile(filepath.Join(dir, "telemetry.jsonl"))
+	if err != nil {
+		t.Fatalf("read log: %v", err)
+	}
+	if !strings.Contains(string(body), EventApplyFirstOK) {
+		t.Errorf("expected %s in log:\n%s", EventApplyFirstOK, body)
+	}
+	if !strings.Contains(string(body), EventDoctorGreen) {
+		t.Errorf("expected %s in log:\n%s", EventDoctorGreen, body)
+	}
+}
+
+// TestRecord_RefusesSymlinkedLogPath verifies O_NOFOLLOW on the log open. A
+// pre-positioned symlink at telemetry.jsonl must NOT cause Record to write
+// through to the link target. (Skipped on Windows where O_NOFOLLOW semantics
+// differ.)
+func TestRecord_RefusesSymlinkedLogPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("O_NOFOLLOW semantics differ on Windows")
+	}
+	t.Parallel()
+	dir := t.TempDir()
+	if _, err := GrantConsent(dir); err != nil {
+		t.Fatalf("GrantConsent: %v", err)
+	}
+
+	target := filepath.Join(dir, "redirected.txt")
+	if err := os.WriteFile(target, []byte("original\n"), 0o600); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+	logPath := filepath.Join(dir, "telemetry.jsonl")
+	if err := os.Symlink(target, logPath); err != nil {
+		t.Fatalf("symlink: %v", err)
+	}
+
+	r := NewRecorder(dir)
+	r.Record(EventInitCompleted) // must not follow the symlink
+
+	body, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatalf("read target: %v", err)
+	}
+	if string(body) != "original\n" {
+		t.Errorf("symlink target was modified — O_NOFOLLOW not honored:\n%q", body)
 	}
 }
