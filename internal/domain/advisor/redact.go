@@ -34,6 +34,16 @@ var secretBasenamePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)^cookies$|^cookies\.sqlite$|^login data$`),                     // Browser cookies + Chrome login DB
 	regexp.MustCompile(`(?i)^auth\.json$|^\.dockercfg$`),                                   // Docker registry creds
 	regexp.MustCompile(`(?i)^\.npmrc$|^\.pypirc$|^application_default_credentials\.json$`), // pkg publish + GCP ADC
+	// Extended further (2026-05, second pass).
+	regexp.MustCompile(`(?i).*\.crt$|.*\.cert$|.*\.csr$`),              // Cert + CSR files
+	regexp.MustCompile(`(?i).*\.jks$|.*\.bks$`),                        // Java/BC keystores
+	regexp.MustCompile(`(?i).*\.vault$|.*\.mobileprovision$`),          // Ansible vault, iOS provisioning
+	regexp.MustCompile(`(?i)^wpa_supplicant\.conf$|^hostapd\.conf$`),   // Wi-Fi PSK config
+	regexp.MustCompile(`(?i)^signons\.sqlite$|^logins\.json$`),         // Firefox saved logins
+	regexp.MustCompile(`(?i)^web data$|^web data-journal$`),            // Chrome saved card/login DB
+	regexp.MustCompile(`(?i)^cookies\.sqlite-(wal|shm|journal)$`),      // Firefox cookies side-files
+	regexp.MustCompile(`(?i)^\.git-credentials$`),                      // git credential helper store
+	regexp.MustCompile(`(?i).*_(rsa|ed25519|ecdsa|dsa|xmss)(\.pub)?$`), // Non-id_-prefixed SSH keys (work_rsa etc.)
 }
 
 // secretParentDirs identifies directories whose contents are presumed sensitive

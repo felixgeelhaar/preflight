@@ -37,6 +37,26 @@ func TestRedactPath_SensitiveBasenames(t *testing.T) {
 		"/home/alice/.ssh/github_deploy",
 		"/home/alice/.gnupg/openpgp-revocs.d/A1B2C3D4.rev",
 		"/home/alice/.aws/cli/cache/some_cache",
+		// Extended patterns (2026-05 second pass).
+		"/home/alice/certs/server.crt",
+		"/home/alice/certs/server.csr",
+		"/home/alice/certs/server.cert",
+		"/home/alice/keystores/jvm.jks",
+		"/home/alice/keystores/jvm.bks",
+		"/home/alice/secrets/group_vars.vault",
+		"/home/alice/Library/MobileDevice/Provisioning Profiles/abcd.mobileprovision",
+		"/etc/wpa_supplicant.conf",
+		"/etc/hostapd.conf",
+		"/Users/alice/Library/Application Support/Firefox/Profiles/x/signons.sqlite",
+		"/Users/alice/Library/Application Support/Firefox/Profiles/x/logins.json",
+		"/Users/alice/Library/Application Support/Google/Chrome/Default/Web Data",
+		"/Users/alice/Library/Application Support/Google/Chrome/Default/Web Data-journal",
+		"/Users/alice/Library/Application Support/Firefox/Profiles/x/cookies.sqlite-wal",
+		"/home/alice/.git-credentials",
+		// Non-id_-prefixed SSH keys outside ~/.ssh.
+		"/home/alice/keys/work_rsa",
+		"/home/alice/keys/github_ed25519.pub",
+		"/home/alice/keys/deploy_ecdsa",
 	}
 	for _, in := range cases {
 		out := RedactPath(in)
