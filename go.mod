@@ -9,7 +9,7 @@ require (
 	github.com/felixgeelhaar/mcp-go v1.10.0
 	github.com/felixgeelhaar/statekit v1.3.0
 	github.com/google/uuid v1.6.0
-	github.com/pelletier/go-toml/v2 v2.2.4
+	github.com/pelletier/go-toml/v2 v2.3.1
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	github.com/tetratelabs/wazero v1.11.0
