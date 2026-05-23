@@ -3,11 +3,27 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  # macOS-native tests (Homebrew provider). 10x Actions-minutes cost on
+  # public repos — restricted to push-to-main + manual. PR validation
+  # runs through test-linux (Docker) below.
   test:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -43,6 +59,7 @@ jobs:
         with:
           name: coverage
           path: coverage.out
+          retention-days: 7
 
   lint:
     runs-on: ubuntu-latest
@@ -126,4 +143,5 @@ jobs:
         with:
           name: security-scan-results
           path: findings.json
+          retention-days: 7
         if: always()
