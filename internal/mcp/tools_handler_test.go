@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	mcp "github.com/felixgeelhaar/mcp-go"
 	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/domain/marketplace"
 	"github.com/felixgeelhaar/preflight/internal/domain/snapshot"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	mcp "go.klarlabs.de/mcp"
 )
 
 // createTestMarketplacePackage creates a marketplace.Package for testing.

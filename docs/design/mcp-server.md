@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the integration of `felixgeelhaar/mcp-go` to expose Preflight functionality to AI agents via the Model Context Protocol (MCP).
+This document outlines the integration of `go.klarlabs.de/mcp` to expose Preflight functionality to AI agents via the Model Context Protocol (MCP).
 
 ## Goals
 
@@ -89,7 +89,7 @@ package tools
 import (
     "context"
 
-    "github.com/felixgeelhaar/mcp-go"
+    "go.klarlabs.de/mcp"
     "github.com/felixgeelhaar/preflight/internal/app"
 )
 
@@ -206,7 +206,7 @@ MCP server configuration in `~/.config/claude-code/mcp.json`:
 
 ```go
 require (
-    github.com/felixgeelhaar/mcp-go v0.x.x
+    go.klarlabs.de/mcp v0.x.x
 )
 ```
 

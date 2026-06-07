@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/felixgeelhaar/statekit"
+	"go.klarlabs.de/statekit"
 )
 
 // State represents the agent's current state.

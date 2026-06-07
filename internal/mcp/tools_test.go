@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/felixgeelhaar/mcp-go"
 	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/domain/marketplace"
 	"github.com/felixgeelhaar/preflight/internal/domain/snapshot"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.klarlabs.de/mcp"
 )
 
 // testVersionInfo returns a VersionInfo for testing.

@@ -4,10 +4,10 @@ import (
 	"context"
 	"os"
 
-	"github.com/felixgeelhaar/mcp-go"
 	"github.com/felixgeelhaar/preflight/internal/app"
 	mcptools "github.com/felixgeelhaar/preflight/internal/mcp"
 	"github.com/spf13/cobra"
+	"go.klarlabs.de/mcp"
 )
 
 var mcpCmd = &cobra.Command{

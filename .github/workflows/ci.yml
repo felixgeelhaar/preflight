@@ -51,7 +51,7 @@ jobs:
         # coverctl re-runs tests with its own coverpkg flags and produces
         # different numbers — historically a source of CI/local drift.
         run: |
-          go install github.com/felixgeelhaar/coverctl@latest
+          go install go.klarlabs.de/coverctl@v1.17.0
           coverctl check --from-profile --profile coverage.out
 
       - name: Upload coverage artifact

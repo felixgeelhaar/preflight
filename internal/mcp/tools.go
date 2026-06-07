@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/felixgeelhaar/mcp-go"
 	"github.com/felixgeelhaar/preflight/internal/app"
 	"github.com/felixgeelhaar/preflight/internal/domain/catalog/tools"
 	"github.com/felixgeelhaar/preflight/internal/domain/marketplace"
 	"github.com/felixgeelhaar/preflight/internal/domain/security"
 	"github.com/felixgeelhaar/preflight/internal/domain/snapshot"
 	"github.com/felixgeelhaar/preflight/internal/tui"
+	"go.klarlabs.de/mcp"
 )
 
 // PlanInput is the input for the preflight_plan tool.

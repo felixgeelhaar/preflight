@@ -8,7 +8,7 @@ Thank you for your interest in contributing to Preflight! This document provides
 
 - Go 1.23 or later
 - golangci-lint
-- coverctl (`go install github.com/felixgeelhaar/coverctl@latest`)
+- coverctl (`go install go.klarlabs.de/coverctl@latest`)
 
 ### Getting Started
 
