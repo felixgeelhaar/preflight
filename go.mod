@@ -11,7 +11,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	github.com/tetratelabs/wazero v1.12.0
-	go.klarlabs.de/mcp v1.15.0
+	go.klarlabs.de/mcp v1.17.0
 	go.klarlabs.de/statekit v1.8.0
 	golang.org/x/crypto v0.52.0
 	golang.org/x/mod v0.36.0
