@@ -436,6 +436,7 @@ func registerPlanTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig, 
 	srv.Tool("preflight_plan").
 		Description("Show what changes preflight would make to your system. Creates an execution plan without making changes.").
 		ReadOnly().
+		OutputSchema(PlanOutput{}).
 		Handler(func(ctx context.Context, in PlanInput) (*PlanOutput, error) {
 			// Validate inputs
 			if err := ValidatePlanInput(&in); err != nil {
@@ -568,6 +569,7 @@ func registerDoctorTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig
 	srv.Tool("preflight_doctor").
 		Description("Verify system state against configuration and detect drift. Reports issues and suggests fixes.").
 		ReadOnly().
+		OutputSchema(DoctorOutput{}).
 		Handler(func(ctx context.Context, in DoctorInput) (*DoctorOutput, error) {
 			// Validate inputs
 			if err := ValidateDoctorInput(&in); err != nil {
@@ -628,6 +630,7 @@ func registerValidateTool(srv *mcp.Server, preflight *app.Preflight, defaultConf
 	srv.Tool("preflight_validate").
 		Description("Validate configuration without applying. Useful for CI/CD pipelines.").
 		ReadOnly().
+		OutputSchema(ValidateOutput{}).
 		Handler(func(ctx context.Context, in ValidateInput) (*ValidateOutput, error) {
 			// Validate inputs
 			if err := ValidateValidateInput(&in); err != nil {
@@ -676,6 +679,7 @@ func registerStatusTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig
 	srv.Tool("preflight_status").
 		Description("Get current preflight status including version info, config validity, and drift detection.").
 		ReadOnly().
+		OutputSchema(StatusOutput{}).
 		Handler(func(ctx context.Context, in StatusInput) (*StatusOutput, error) {
 			// Validate inputs
 			if err := ValidateStatusInput(&in); err != nil {
@@ -789,6 +793,7 @@ func registerDiffTool(srv *mcp.Server, preflight *app.Preflight, defaultConfig, 
 	srv.Tool("preflight_diff").
 		Description("Show differences between configuration and current system state.").
 		ReadOnly().
+		OutputSchema(DiffOutput{}).
 		Handler(func(ctx context.Context, in DiffInput) (*DiffOutput, error) {
 			// Validate inputs
 			if err := ValidateDiffInput(&in); err != nil {
@@ -832,6 +837,7 @@ func registerTourTool(srv *mcp.Server) {
 	srv.Tool("preflight_tour").
 		Description("List available interactive tour topics. Tours provide guided walkthroughs of preflight features.").
 		ReadOnly().
+		OutputSchema(TourOutput{}).
 		Handler(func(_ context.Context, _ TourInput) (*TourOutput, error) {
 			topics := tui.GetAllTopics()
 
@@ -857,6 +863,7 @@ func registerSecurityTool(srv *mcp.Server) {
 	srv.Tool("preflight_security").
 		Description("Scan for security vulnerabilities using Grype or Trivy. Reports CVEs with severity levels.").
 		ReadOnly().
+		OutputSchema(SecurityOutput{}).
 		Handler(func(ctx context.Context, in SecurityInput) (*SecurityOutput, error) {
 			registry := security.NewScannerRegistry()
 			registry.Register(security.NewGrypeScanner())
@@ -962,6 +969,7 @@ func registerOutdatedTool(srv *mcp.Server) {
 	srv.Tool("preflight_outdated").
 		Description("Check for outdated packages. Reports available updates with version information.").
 		ReadOnly().
+		OutputSchema(OutdatedOutput{}).
 		Handler(func(ctx context.Context, in OutdatedInput) (*OutdatedOutput, error) {
 			registry := security.NewOutdatedCheckerRegistry()
 			checker := security.NewBrewOutdatedChecker()
@@ -1232,6 +1240,7 @@ func registerMarketplaceTool(srv *mcp.Server) {
 	srv.Tool("preflight_marketplace").
 		Description("Browse and search the marketplace for presets, capability packs, and layer templates.").
 		ReadOnly().
+		OutputSchema(MarketplaceOutput{}).
 		Handler(func(ctx context.Context, in MarketplaceInput) (*MarketplaceOutput, error) {
 			svc := marketplace.NewService(marketplace.DefaultServiceConfig())
 
@@ -1322,6 +1331,7 @@ func registerToolAnalyzeTool(srv *mcp.Server) {
 	srv.Tool("preflight_analyze_tools").
 		Description("Analyze development tools for redundancy, deprecation warnings, and consolidation opportunities. Detects deprecated tools (golint → golangci-lint), redundant tools (grype + trivy → keep trivy), and consolidation opportunities ([grype, syft, gitleaks] → trivy).").
 		ReadOnly().
+		OutputSchema(ToolAnalyzeOutput{}).
 		Handler(func(ctx context.Context, in ToolAnalyzeInput) (*ToolAnalyzeOutput, error) {
 			// Validate inputs
 			if err := ValidateToolAnalyzeInput(&in); err != nil {
