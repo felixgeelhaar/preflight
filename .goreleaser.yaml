@@ -54,20 +54,21 @@ release:
   make_latest: true
   name_template: "v{{.Version}}"
 
-brews:
+homebrew_casks:
   - name: preflight
     repository:
       owner: felixgeelhaar
       name: homebrew-tap
       token: "{{ .Env.TAP_GITHUB_TOKEN }}"
-    directory: Formula
+    directory: Casks
     homepage: "https://github.com/felixgeelhaar/preflight"
     description: "Deterministic workstation compiler"
-    license: "MIT"
-    test: |
-      system "#{bin}/preflight", "version"
-    install: |
-      bin.install "preflight"
+    hooks:
+      post:
+        install: |
+          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/preflight"]
+          end
 
 changelog:
   disable: true  # We use relicta for changelogs
