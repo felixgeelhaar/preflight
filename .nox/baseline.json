@@ -7063,6 +7063,1602 @@
       "file_path": "website/package-lock.json",
       "severity": "critical",
       "created_at": "2026-03-16T18:07:26.92347Z"
+    },
+    {
+      "fingerprint": "80cc427437b4f57759f709fe8d22fc6a6424358a65f23e9d951283c0abc250cf",
+      "rule_id": "AI-006",
+      "file_path": "internal/domain/advisor/openai/provider.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "1de1ff80924ef9e339dfd9f3cced4543f2ba23e9118d754b161a58294ddeb4d8",
+      "rule_id": "AI-006",
+      "file_path": "internal/provider/shell/steps.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "11714d7968f702be7469786d295e068a53932b1cde80d7078075193088f9c1dd",
+      "rule_id": "AI-007",
+      "file_path": "cmd/preflight/analyze.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "96dbacf3f6a52f43f9454d9d0d8f0a775036d9d8a58297be218dbfe8e4c3503e",
+      "rule_id": "AI-031",
+      "file_path": "internal/domain/config/inheritance_test.go",
+      "severity": "low",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "b34ff495195de0cea75d008e29a72129ee4f4fbed9064742ecbf2c9286011ee4",
+      "rule_id": "AI-031",
+      "file_path": "internal/domain/config/raw_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "4aa973f9ffd7ce1beb2287372b946a443338f55e90dc06ec3c606f1aef8516c0",
+      "rule_id": "CONT-001",
+      "file_path": "Dockerfile.test",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "f5f555b6f79179fa29d9b138441be910e4c8b9d41e533b6f993710e58e14d20b",
+      "rule_id": "CONT-001",
+      "file_path": "Dockerfile.test",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "01767abab323a8a5257d53f4f658c8b220d8d24e0b20950d0b40f0e627cca62c",
+      "rule_id": "CONT-001",
+      "file_path": "Dockerfile.test",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "499702c65e213b6ff3c52be8f6d8c3d233ad7d0266f597f0f7845f268588e442",
+      "rule_id": "CONT-001",
+      "file_path": "Dockerfile.test",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "c872f85f9b6610c9a6f1ef6a4ca9e716d0d6a6c60a13060b24775acdcfede352",
+      "rule_id": "CONT-002",
+      "file_path": "Dockerfile.test",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "5253dea7d5935bf20c9f9a2fefb4ae81cf9deed19de7f84d1b240e1ce83b1661",
+      "rule_id": "CONT-002",
+      "file_path": "Dockerfile.test",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "4393c7949bca654f6548cf5f180b094c0bc15c284f0d572bcb67eb02651de75a",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/catalog_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "c265a7c0328f602a09cb9fb3d360990b5e81f97e4a1abf788575e3e537f67a36",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_batch1_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "16441ac54bf260fb0d6b32d2b0ea9b7b45fa80ea4080076174f21c4ff93ff66a",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_batch1_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "76c57b79195e27e7499d5f9103b91a78ca875f042b2bc775460137ea5a373ac0",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_batch2_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "7bc4a50a150af610b9aa6f88f8e1ee6bf4ac8992579cf0d9a1753ccee2b19d1f",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_batch2_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "66e854a2d061eaef5a3bfc6796c003c8824a85929a9af3fd59f73ce6235c36e2",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_batch5_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ac2a9afc9d3fb5f93c7e5e49a754668f00cc643fef8933b221fc84d01d208af7",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_batch5_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "0856a1ff20196476f125166ef2cb8e16ec2ab93e3bcadc07ffab246ac92825dd",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_batch5_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "b1519e3040615bdc000230d7ce523a5f3161d86d223b50771ebd9b79e3ffa0fe",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_batch5_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "dd06b5058ccd0003f19901ec9d23b459c0649b33e772a3dc6747a178106bfa8f",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_batch6_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "211e590e598ed4fd66b7336b4a989ad83122fcd7b7da9b085cfaa78b8774fb97",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_batch7_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "d0fa99eb747529e63c76a4f44b79370914bc4c9256fdc5b0ccb095e7229245c6",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_boost_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "186ba2b4779a785d16d6abeec6277fd1363ef7757e0af25fa5175587e3d1a1be",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_boost_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "75ab1910dc6bab071defafc86c1f5d2d19a4dc5f28c0978b240b6c17dfb664b7",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_boost_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "1b2730eac81318a2607ed510f2fe2defcd057cdd1b4449b85e882dca7d15862b",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_final_push_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "0196061d41e7a2e0a6366c10948cc88a42915b047ff5535a4a1dc90fb1e9b94c",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_final_push_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "a7e648720029fb7770d85626910663506c63de4dcc34547ac8ada21d1b7eacde",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/deep_coverage_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "41f39cc4292cd3f65354d5b73a513a24c49ecac9d634476119a0cba1ac996ef6",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/deep_coverage_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ed5aaa51cb97b5f4be2ac7fa0432504de583e05203aff47c9288d6f51e1cb046",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/helpers_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ec79dcdecbc9117ebb5aa1c7043187a885656b89ea7e01186025fee5b79d2109",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/helpers_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "89b3c6d3f571d682a03cc870ef4f7eb3780f03c4600319dce0838fd46564e5b0",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/helpers_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "88b63904436d672bb06d7fd79c04c3c0e89d772af6f0c21c182571d15e0a61dd",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/helpers_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "39bbdf19ab82947d57e4ec8759672fc0455064323d5e9eeb80aae9a2d3a57cfe",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/helpers_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "47cb1ccc5a65b855a3a76f073763858ad079ae5f4d1e11f19964db67166da369",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/helpers_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "09e3d86c04672eaca48da23089412263d395e3d3d0c4e86b5b1bfd6b8c1ee532",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/output_helpers_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "fcd842e3fc584cb2d043bd4d2ed43c4dc700f09ba5813d5618ee2c073c543acf",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/profile_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "a140787558f034019f79a05f4c247f8034fdeb14162c4ae08f932356a4eccd50",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/profile_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "4045547cf16597c104d9931fd68baf9b0725cc9aee08384e83f9bb35c9fff461",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/push_coverage_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "7454180181e0a6a4c5002b41df4b3026a7b031923f2b75a404dffb9b30134171",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/push_coverage_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "d96a3a06b53e387948c31826edc2dd882f0b18f39e5213e0d3cfcd46aabd5aaf",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/root_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "6ee2ef87eb8047ce45c0ba1622292fe4bdf6591c43c9c8f373a2b7385d84fef8",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/run_commands_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "1c0fbc0a07a1e3d6b8c312a0c4a954a86828b5049dbff297b4f6040c0a2da10e",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/run_commands_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "22173a8a793f08e2ec2e9b7b124ae00a56bd46bdb1f1eacabe092b71d90b55d9",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/secrets_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "f8031bb1ae445ce0853e512f65c7d340fd049f138d4154058b808213e82cb0a9",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/sync_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "d41b2a0b423bc76f0c3f062df2714be334e8b9dea0680de1b06033ffa6569ba3",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/trust_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "0b60c2c0ca1dcdbdd3ef8cd7cbc30a3eaaca3d34d46168da50023fc2db051945",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/trust_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "3bdb7ddf6d551d5fee683d9b24f9a3e09011ac8f9502911637bf6ae882c4dc93",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/trust_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "f74c0b2cfbeffead736060eac87098cf3beb24b32ad3709805d75f2c9ec4c272",
+      "rule_id": "DATA-001",
+      "file_path": "internal/adapters/github/client.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "18aefdfdc85c6d4f7272b7a0689b9b4a5057dac682c184dc86a10f9df1b2ad03",
+      "rule_id": "DATA-001",
+      "file_path": "internal/adapters/github/client_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "303ed9b30be8821b1329d128fd8fea8ff9b1da03bd2d448e84d8d56e14bedafa",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/coverage_boost_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "1aa04700c4c78e63baadcb4fc13e7f1e04dabb9b9ee369f2a1bfca8271e14088",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/dotfiles_capture_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "7408fb18a1b370a7d7e6cc013482f7d89395d56bd27281c22220c76b3ff72494",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/operations.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "b7f68cc34e85961b3941fb8c4caf45093f975461f7ea71121c053964ccff6733",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/operations_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "31e704130632907aaf4d089472e16560cfdbd42728c36c2005f37c1cb5aae98b",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/operations_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "d36f054d568938393ccfd42b9fe74ec8913c874304f72ec040e18df464027b98",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/operations_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ffef391dc0a37b0ae6a10e22000d66e0b26ef5cb0fd56c9df0fe0fc5008a134c",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/operations_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "67fa3b08a58ee806859ab39794707d13a81cca8e438e81dec7c498e56184b75a",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/preflight_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "5dc6cdeef6c35797817ffc731080b559d1601b133b7997b7b91e25f662ce7f50",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/preflight_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "afcc459790f4368f58d9b69887e3ee212dd2098b7e5dc1251fd5fa129b5571a3",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/types_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "cb553dd0ef619a2cc524995a443bc87886877007cd0542c72f3a4db01c8b7b31",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/advisor/inference_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "4bd91dd9e111c520fa54b2c07ccaa8c621ac97e5c5c1ef21eee41fd8c3b9156a",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/advisor/inference_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "db2995b27bb734ca069dbde4f87de4ef5db75423155c216d18425ca4cd3f0aaa",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/advisor/inference_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "59b016d82b2246ccf46f2efd4a9dcbab3412302fb176165a1db636533d5f4aaf",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/advisor/inference_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "d3dde9eb2e85bb88b90c90701b2aef2492519967b20a5697b8aa5c4e2ccee81a",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/advisor/inference_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ecf2d027269f012ed5a7f58d3c678e52cccc21b572abb24fb9b14a3c1285c04a",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/advisor/inference_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "6b48200074ac5cfe55e092314227f588139c9dd9127c47ab658d8b4d46c82b20",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/advisor/inference_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "d9e74c9cb43c6a80c91e767ce18e6093816f6f172890ad71520d3ef26a04783a",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/advisor/inference_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "0a81e85c2150688449b3cb5a7105a29a1ba134ec23a32899831adb17ee068bed",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/advisor/inference_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "4d902d4adb5c924a8a21472c4055c25f447a63c15caaefd945ba1e49cdb0ef52",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/advisor/inference_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ed495bab1fbb295926d18df122d06b3a843c53342cf11bce6cca141dc0cefa54",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/attestation/policy_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "f15a953945584a8437a159d32060379d94042e733fcb93f767555225bda10afd",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/attestation/policy_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "0b119d37811c958e8741923ab466afa94613d6d91951157e0a1a1727054a8900",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/attestation/provenance_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "cdc362285c6210ae4fb6908840929276c799d5c9eeb9f8219630b81d42dcb1eb",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/attestation/verifier_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "c7db3ef202309bb613047438b3338c5ffc5ebfdc1638bc14199fc9d6dedead0d",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/audit/event_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "c56ef0524149aca1e6453f58eb49cfae03f67a518b17e77fef792b7ee0f5cd71",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/audit/event_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "426208d8a08cbd3e9e1952bd2889421bb9cd9bb130298d68e9944a87361a6a4f",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/audit/event_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "b469ddb111017373dffb4c3d8227f33df7ac2bf23c6be87e7769d944cbd71588",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/audit/service_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "f40c86b31e105209f2f3019f14405dab787472779b89b7b2d55e0a5ff4075521",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/catalog/signature_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "828d4ebc32656a76fa3c6f96603451c1c74cbeefc73a4c200e46b75fbc294bc2",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/catalog/sigstore_verifier.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "f5a86c6867e0c4d0886e50e3aff94670157e976cc029b09fdf0d4c8b92dab9c8",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/catalog/sigstore_verifier_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "44077b7f8028798d1b15172cb1aa637adfd5b6b03006bb9c822a3ccbb3cd54f2",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/catalog/sigstore_verifier_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "98dfba5a9cde628bc084fca6b00dabc3b53881d6063bb88e0a1d40f910155200",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/catalog/trust_store_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "5a402da894f79d8502eecb077389b2999e749b17f12e1890b18e3c1e61f3b2ac",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/config/inheritance_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "6d1bd364560f379f3cbebf8a00aa4e6819979b01256681b26f5a1f89dd2d2a94",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/config/inheritance_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "78ab78037265f8c9bebe43a42351b5bc60494106e9d90c1a47e1e04d750d6257",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/config/loader_bench_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "17d3bb0b6fc9cc4fe3f4192e05f4b8e96ce25a2e4ebfdcc28ece9f1e0ac61334",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/config/loader_bench_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "e0b8440390be8a6428f26f07e23d78b251a31420fa82176a95093fa211f3d21d",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/config/merger_bench_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "8dae0bdb8821eca1961eeabec646ad4649fe01a218f6a46a8cab445f64f74262",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/config/merger_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "29966aa2ac8ca2be9f474d89e29d9bd0954060c4f13b887f7d1bf2842cc3ed58",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/config/merger_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "98e214f91ce3dd8413ec7a6c6d2d6856490a423bcc404055f348a6a62635e409",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/config/merger_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "9acfba8c18ee749ffe92fefd53a962f8fc9287e8bed697f239167ddb273b5bda",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/config/raw_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "88b48e33fb754311e186dd8a188a20318f4ee8939d803c50c929640efbd09511",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/discover/suggestions.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "2bbaa96f72ce1111b6d9a81a81ea3c7eaa31cc7509dabb8351ab38b279d81a62",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/identity/oidc_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "4d57424cb82e2b246a96d58b5e2adb075f2d3cb4d622ca500e3135342f055cc0",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/identity/service_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "4a8508a3f582759afe3e3ddb8991b9acd4163c4696791438b49564de8186906e",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/identity/store_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "32e0fb5d5b39d6b94587beb233980ea83b795cb87445a1dff72b4ede49ae9ddc",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/identity/token_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "2994cb2186a887394ea5702033389f1a4bfbd42ebcd3b6b5abffc3b1dc0cf79a",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/identity/token_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "99b2c0f4a12f0efcfe7d1d7bd65c014caac9b31793e1c28d0a131a6615f9368d",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/merge/merge_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "cb64889102d80231fe83ee9426459b7a3403330500707c9493334cdf677ace61",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/merge/merge_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "22679d367a6b46624da5c732cde3aaca6735459c87cc389a695a7760de4db7d8",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/merge/merge_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "57738bba61f371900118539dc57d5330b29c9c3889343695bdb231b976d7af73",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/plugin/plugin.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "f8b2fcd266639c5645259d0ea7ed017aabd473c313948ac01b1024589c56bba3",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/plugin/plugin_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "675dd98213a4679995b776d7dd77d4cc5e6354fef28f12bcecd9ea5ae6b7412f",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/plugin/plugin_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "01ff0f0711a12fad591c6810c1ee117ed954002dd233c87431a16edd88c542b6",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/plugin/plugin_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "82d7aafea6127089c5e1eae0f2b513750c9c2a39dbe4f615a60fbb6cb92a27bd",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/plugin/plugin_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "d1632e1eae49c70db260645fda664b7dd017db2b584cdd037608aad82851faa2",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/plugin/upgrade.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "8ce8f52623664312165f598ba6fec698d06049b866023aa1ce779b54ed5e17f5",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/plugin/upgrade_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "9b377a8fb70d93047982d0087b2c160fc27be3fdab3dd0f02bf42e0b03f1c7e7",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/policy/compliance_report_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "64b3cc7adc4d1f7deaaa66d59c988def2dd1115567c494200a7a7fd061443834",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/policy/org_loader_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "4c6b614eb94955d2edc11f2744d0c4f1b683d594d493ebfebe232a0f5544b3d9",
+      "rule_id": "DATA-001",
+      "file_path": "internal/integration/compiler_execution_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "3238c01bd8a05368ed68fc72bde151f71d30c16c5d8250007a76d8b0d7d0343b",
+      "rule_id": "DATA-001",
+      "file_path": "internal/integration/config_compiler_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "081dece57e49c599f17db3cec47ada0b001a68db7d40d095cbfba3ebc6c81a39",
+      "rule_id": "DATA-001",
+      "file_path": "internal/integration/config_compiler_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "130aa9deec458c67d3f24931999734668a38edc40fc81ea26d76ddc95d34ee0e",
+      "rule_id": "DATA-001",
+      "file_path": "internal/integration/full_pipeline_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "80bb5dd41d76fda67366db38b871bbe3d59c629c274cfa86f6e8e2b58d6f9bc5",
+      "rule_id": "DATA-001",
+      "file_path": "internal/integration/full_pipeline_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "05a606a90b16a9759ddce20a54ffde37efea42fee97dcf9a807ff617071c3f5e",
+      "rule_id": "DATA-001",
+      "file_path": "internal/integration/full_pipeline_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "eb6f114a6de2f8b44cd803ef0af13e8c64ebccd5722b80d730bb0d0477a25c03",
+      "rule_id": "DATA-001",
+      "file_path": "internal/mcp/tools_handler_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ea6148c3c52800a2ae52e2561ded5472f8634313df3c4ce1b6c15b70d643416d",
+      "rule_id": "DATA-001",
+      "file_path": "internal/provider/files/config_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "79fb7c45b89835b2ca2bd0fe2ae4b717cb60f1a84d007d1ed87209785a4d7788",
+      "rule_id": "DATA-001",
+      "file_path": "internal/provider/git/config_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "1eebc4039a50ad182fd539bf76d5c4738ff30cafbec708f0aba8276753897e61",
+      "rule_id": "DATA-001",
+      "file_path": "internal/provider/git/idempotency_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "78db02a77b3fed827adb7cc6762faabf646b23737cc766a1ca0dec2907450686",
+      "rule_id": "DATA-001",
+      "file_path": "internal/provider/git/provider_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "7f71c98fee09899a6e6b8c424d19bc5445fa9dbdae2d991f50d9ec8a05c3bdef",
+      "rule_id": "DATA-001",
+      "file_path": "internal/provider/git/steps_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "724d23de9ec2269a60316f0569d33e6d3a77c2c222ccc93a878e7ee1d8cc0ad8",
+      "rule_id": "DATA-001",
+      "file_path": "internal/provider/git/steps_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "039861074f8ebe48c7837da42bda81939f60d9c198b3d61e84cc9e94e4d10138",
+      "rule_id": "DATA-001",
+      "file_path": "internal/templates/templates_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "51ce33363c0a65788de8ab1f6f22a19683f709edde3e38e2d4518dc5731b1f49",
+      "rule_id": "DATA-001",
+      "file_path": "internal/testutil/builders_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "10e49aded35e9c3116fdac8bac789bcf553ae919c42e9875a4640c726fa8128d",
+      "rule_id": "DATA-001",
+      "file_path": "internal/tui/converters_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "4180614dbc9c3eeec0c0ee5769b6debc1db0433c95845c41b6232da7e98883f6",
+      "rule_id": "DATA-001",
+      "file_path": "internal/tui/tour_content.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "48cbe30675a92226bb3f271c52fa0456a850e18ecd01ae1d67d11a71752be971",
+      "rule_id": "DATA-001",
+      "file_path": "internal/tui/tour_content.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "2cbe21e7b6e3fe8784e85e2fe90eb16af0436dd6eb909745cea19bbe4b82d9ea",
+      "rule_id": "DATA-001",
+      "file_path": "internal/validation/git.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "57742600bf25ff14c02809c0778c2df06367cddec07d2c2308673619707a57cb",
+      "rule_id": "DATA-001",
+      "file_path": "internal/validation/git_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "7f7aa1b6ffe89fcbea2a2851d1ec8cf30f1d8eb993517d1f0802ed4fcac4e3f2",
+      "rule_id": "DATA-001",
+      "file_path": "internal/validation/validation_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "9589a32dfac040b00a03ecd00e6873003e5cbc47f7dc947ef5bc0e367424d47b",
+      "rule_id": "DATA-001",
+      "file_path": "scripts/record-demos.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "9eb6fcf7dddf4514ccee342d40d93f5f341dcc47b92a0b40835454b337bfe51f",
+      "rule_id": "DATA-001",
+      "file_path": "scripts/record-demos.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "06386a75749a58da83f8623cbf2c2d9c9220435322389989b5a32c0f90224197",
+      "rule_id": "DATA-001",
+      "file_path": "scripts/record-demos.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "355cf9347162e7ce11927596bc56035bcc934a589e87541f48afd832834b9c70",
+      "rule_id": "DATA-001",
+      "file_path": "scripts/record-demos.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "299d40c703a79810383ad9f5618434b45eae3a9732331d4a493ef40d8a0df8de",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/apply_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "8350f6137f2dc35f8edf005a306f2fa1af65d960d610b6cb9d7fa47ec98560a9",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/apply_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "7fcc0a3d4a0ff8907b782a14c7dd7af4d01756ef21d6d9368adbe9be4cef4ff1",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/apply_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ec551f548e247a4349383be1e7a28714597b36d9235b391cd8bdca3449e56442",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_all_commands.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "b8760c83ff7159c20340e5d4a5e5e328a1159122f4228336831a53ca8bc06747",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_config_evolution.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "57613f978b1ce780e86dbf786e9686675fa5f4073efb3fb09e369db759a69e89",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_config_evolution.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "cda388b620df503e5fac9be6f6e54737a53ba9c5bf757146ac30bc594c104676",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_config_evolution.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ecde41a924d41aeb764625a54100e6e1f43b4a2e4719b9827c4cab43163ecea4",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_fresh_install.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "48b9e97c64a792fab932c7d17055294724bb93444c1ef27fda529cdba16da7c6",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_fresh_install.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "61eba8645e1b1ecd492e2b525fb4bc935f13320ccd01053a069ba6f070d2625b",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_machine_migration.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "942153254cb4dbc421fbcaaf071f2c9b134bc8f75f8257a70c45eb4da5b2f57e",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_machine_migration.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ab4ced2b2476735a8603f86cdcd5076fbe4fcae7e217625797f3b40a69873219",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_machine_migration.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "2abbaf194f40222245dac0dae7db2cc0082ad25d98595f583b303996e65ca84c",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_multi_target.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "dfb2caf9e644753b086d71b09a5b8503bb475d50c9fd85092f4b41911763a65f",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_multi_target.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "6d8f2562d06100eccd80fdbe90ddccc30c169428a968c7166b9e88eb8a45bc6b",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_multi_target.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "290e85320ae62d6dda79848397f1fe7854f0d20e83379ed22950f64326d8c44e",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_operations.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "1a3b03c5475af6bf54cd21529e8fbae48ac72083a43d8e4504f96e42a3fab69d",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_operations.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "876a009c70c4ec765abe5460aa25b38713928c9389db42afc7dfaeccd8addaf9",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_reproducible.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "3b54a84331ce0dbb637b598a37a9b836f43102712563c8ab8ff69c7befeff2a9",
+      "rule_id": "DATA-001",
+      "file_path": "test/e2e/test_usecase_reproducible.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "d1dcb58ea8f64b837e80ab2f8e2ade1a8193ebb9edfcb2f3b84745cdcb2d73c7",
+      "rule_id": "DATA-001",
+      "file_path": "test/integration/capture_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "6790c45d30809bc1b72e408828374a1eb9ab6928140c878e031816e40a2937d1",
+      "rule_id": "DATA-001",
+      "file_path": "test/integration/full_workflow_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "c0df7f905f0c25a94e93dbf08f3b46836efde4179d17aeab9b8653e8832bfcd1",
+      "rule_id": "DATA-001",
+      "file_path": "test/integration/full_workflow_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "9aa31e4e04b8294575b9ff3c43d6232b5109a85506609e24d71ac58b9082adda",
+      "rule_id": "DATA-001",
+      "file_path": "test/integration/full_workflow_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "494fa9307347ac4128bfa684d7dcac2bbafab3d44320abc6083660164bb49c38",
+      "rule_id": "DATA-001",
+      "file_path": "test/integration/init_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "befca820aedcfdcb1b4a1120583ff7bfdbdc3ff1dd825db20a7e194d034ab9e8",
+      "rule_id": "DATA-001",
+      "file_path": "test/integration/plan_apply_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ab053443bcb7b16cdf2053c59334f32be1963d6a8ff7b75fe8ef81f633e042ce",
+      "rule_id": "DATA-001",
+      "file_path": "website/public/demos/recordings/capture-review.cast",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "f6164e47e401b12273d8b25a94f1fd0526f38ceba5580de3608efb5e29e8cd8b",
+      "rule_id": "DATA-001",
+      "file_path": "website/public/demos/recordings/plan-apply.cast",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "d43372436e9365046c465156b042f5b74508768f2b754e28a971016b5470504f",
+      "rule_id": "DATA-001",
+      "file_path": "website/public/demos/test-config/preflight.yaml",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "9ec0039ad51cef8560d0d274dbdf5de186ef9659d0416153cec8ca0f736923ae",
+      "rule_id": "DATA-005",
+      "file_path": "internal/domain/fleet/cloud/aws_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "b4b63bc12a07bcfab82f40c6e60a6d1dc6a6b9e5c711e77058eec01f2680524b",
+      "rule_id": "DATA-005",
+      "file_path": "internal/domain/fleet/cloud/aws_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "48dc8ed3890b7163fa6da613c674472d29ccb6cf5ded65398a1a70817cec4434",
+      "rule_id": "DATA-005",
+      "file_path": "internal/domain/fleet/cloud/aws_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "e1e5450559f7e72c72c7442296cf10005d5f94e3982871d795e45ab7e62519b6",
+      "rule_id": "DATA-005",
+      "file_path": "internal/domain/fleet/cloud/aws_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "269c14b2de7c66dea0ff37ee7a8434c55d4f6d479b42021b6af52cd3a8de68b7",
+      "rule_id": "DATA-005",
+      "file_path": "internal/domain/fleet/cloud/aws_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "1876c8e8295d74d827e3ca88adfa62faeafc96facc791c5877038bb23cd9b8cb",
+      "rule_id": "DATA-005",
+      "file_path": "internal/domain/fleet/cloud/aws_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "595ef74b6e5bb4a642183743b4f61f3713b2753041b3ce2bfc2da654392186ca",
+      "rule_id": "IAC-024",
+      "file_path": "Dockerfile.test",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "8d70e3addc9aa0864b358f64cf4c5d95393ab511d48e8aa3d60a2de6da877e1c",
+      "rule_id": "IAC-024",
+      "file_path": "Dockerfile.test",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "3cf6634c9c849c55e8d78e8929532ebbb12c95cb828d078fd1d3f4619bffa7a2",
+      "rule_id": "IAC-193",
+      "file_path": "internal/domain/catalog/embedded/catalog.yaml",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "09a7844d8035860190ce075444dfc49d5d4d21dafcfe75a4469a7f00b1f21f7e",
+      "rule_id": "IAC-193",
+      "file_path": "internal/testutil/fixtures/full.yaml",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "6a01a25be843f6aa6c3316057016fb2bca6cbe9a22f0eeed2420c3d12903da2c",
+      "rule_id": "IAC-193",
+      "file_path": "website/public/demos/test-config/preflight.yaml",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "0bd95b486f11c5ec2ca6369a2e202ace7d967c8c1a8cbe691770e9533ba9df7b",
+      "rule_id": "IAC-306",
+      "file_path": ".github/workflows/docs.yml",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "3e429bc87607f8f1d8ee2f995d4842344c98504d577a90c418cf8d6675fc41ad",
+      "rule_id": "IAC-308",
+      "file_path": ".github/workflows/docs.yml",
+      "severity": "low",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "8c9a05e7d0c8a05b61d4c18aefce8e2dc91a85c3456246a1c92bea30dbb416d8",
+      "rule_id": "IAC-309",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "low",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "be94a773ee391396458b0fc3b49feb2a94bc372d2c74a25b8ebce60fcb9f4106",
+      "rule_id": "IAC-314",
+      "file_path": ".github/workflows/dependabot-auto-merge.yml",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "e37e2faa5f7d812400d1323a31d22e93b710b881ea06f3b656d724454d47a8f4",
+      "rule_id": "IAC-314",
+      "file_path": ".github/workflows/release.yml",
+      "severity": "low",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "1f294aad7fa341261751e4f4ebfed1f476d28d88ed9830290c461b20befc1c73",
+      "rule_id": "IAC-351",
+      "file_path": ".github/workflows/docs.yml",
+      "severity": "critical",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "a5213f504f8ae49332cea7313c9c830ead0ba5b4c65ab2ee0d7fdb45e19e10ef",
+      "rule_id": "MCP-011",
+      "file_path": "internal/domain/capability/capability.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "6d5e113e67f4df373b5f3601903b8ee31716f9feb8836625c411c49666ad1c0a",
+      "rule_id": "SEC-004",
+      "file_path": "cmd/preflight/coverage_batch5_test.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "985350d89f875f965bc09645317717b39e557ec835743e7d041a842cb4a30520",
+      "rule_id": "SEC-004",
+      "file_path": "internal/app/capture_to_config_test.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "2b2ce96b29d55e6a80f38efebb77abd42c0f57ebf451bcbb7105df8f97d2be84",
+      "rule_id": "SEC-004",
+      "file_path": "internal/app/coverage_boost_test.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "b1c67c358b8f58ba71f9585267556438a57db81efeb2acf6c9d8fb49a6750fda",
+      "rule_id": "SEC-004",
+      "file_path": "internal/app/coverage_boost_test.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "1fb57ad686f12c0a0aea164b17b1d090923292e4f4da2d8f444ab8d9d89f9a99",
+      "rule_id": "SEC-004",
+      "file_path": "internal/app/coverage_boost_test.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "2f6f7a2aa4cc35f69c42b7d6bb365f721f278e514093a993d3336879b8433d8e",
+      "rule_id": "SEC-004",
+      "file_path": "internal/app/coverage_boost_test.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "dbd6846de4cc3a390b615e4b10485326ff09ba2af3977d68f28e59759531c3d6",
+      "rule_id": "SEC-004",
+      "file_path": "internal/app/coverage_boost_test.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "f3eb211ad2031283e891e9d9aaa73f400bb7ba94f972915b7bf7e50c09835bcb",
+      "rule_id": "SEC-004",
+      "file_path": "internal/domain/catalog/audit_test.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "2cb5008690ad5a25f39cd3a857f51b6c7220a81bf342d569834e547514403d52",
+      "rule_id": "SEC-078",
+      "file_path": "cmd/preflight/deep_coverage_test.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "cbbb0d70f5075d3298dc87d765772c192aa2973774503a665f965869d2aad047",
+      "rule_id": "SEC-078",
+      "file_path": "cmd/preflight/trust_test.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "5e8fa6b54531c78e1658447524cce0b94e5deadb09e2b02fc1e438d10dd41d9d",
+      "rule_id": "SEC-161",
+      "file_path": "internal/domain/audit/event.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "55ec5a58105ff0fa149c8fae33a98b59a1663bb1be0e08ad3de358be70fe4fd7",
+      "rule_id": "SEC-163",
+      "file_path": "cmd/preflight/coverage_batch5_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "f32d03dbd93c380306d0baea76d4d9df6540aab285f167f2b55810b55f073e4d",
+      "rule_id": "SEC-163",
+      "file_path": "cmd/preflight/coverage_batch5_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "25f4f0376ba29cd74be08ee27ee10388ad6c205b01859876a71c072805315834",
+      "rule_id": "SEC-163",
+      "file_path": "cmd/preflight/coverage_batch5_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "9caca44b6a9a00c692e4ab1d2fbc070ed28374508f9ff6a9ce60a3edb4b99ed4",
+      "rule_id": "SEC-163",
+      "file_path": "cmd/preflight/helpers_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "5ea8b4f8c7c22eb2f7d27bac96071cdd6e25a1d5fc0bcd5d44826ba50941d9b7",
+      "rule_id": "SEC-163",
+      "file_path": "cmd/preflight/secrets_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "b62a10416ff7d60b5accec5cf411fcfad4843e2cc8496120c5764a294dc303b9",
+      "rule_id": "SEC-163",
+      "file_path": "cmd/preflight/trust.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ca8fcf7f51ac65242f2a9942ac55d7d7994e0ca3a12348fe5368171f86ce020f",
+      "rule_id": "SEC-163",
+      "file_path": "internal/domain/advisor/anthropic/provider.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "d63325bacadc0cd8a62b6037ec0400d560ad5e4848bd7437fb3a6cf854574f3d",
+      "rule_id": "SEC-163",
+      "file_path": "internal/domain/advisor/gemini/provider.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "82d67a2217643c90791389e8e8689245b71d0119e11d28f2cf1434ebb9dc7803",
+      "rule_id": "SEC-163",
+      "file_path": "internal/domain/advisor/openai/provider.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "f77f26bf2cfbb4d55dcbda15feed3bc6f2cc5262492e45979019dda8d2caed50",
+      "rule_id": "SEC-163",
+      "file_path": "internal/domain/config/writer.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "3a182901d5d74d59b577c2ce01a5af5a010998017026fae7f3abf1c8d5f9479b",
+      "rule_id": "SEC-163",
+      "file_path": "internal/provider/cursor/steps.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "7818c69906c0af77576951b95ad5188d53ef20f1a029df6ea6629e8b5787113f",
+      "rule_id": "SEC-163",
+      "file_path": "internal/provider/macos/provider_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "3ab2ca4a4042e387c38684d82c54396db17f092e70a56621f6a3cf4e22e24c8a",
+      "rule_id": "SEC-163",
+      "file_path": "internal/provider/sublime/steps.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "772c441c338ff28305b437d41a9335421331490e76cc7b2e24cae24ab940bdcf",
+      "rule_id": "SEC-163",
+      "file_path": "internal/provider/windsurf/steps.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "a971b19fdf2452527b3bf5a9b552d7dc99a68bfb2d33af987ad3cb38d64fcc59",
+      "rule_id": "SEC-163",
+      "file_path": "internal/provider/zed/steps.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "e16f9d46c42ec4abcdeb3fcc957870d2e130250ce2b583dd97cfd7faa498932c",
+      "rule_id": "SEC-299",
+      "file_path": "cmd/preflight/trust_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "ac78f84a3bd862767c930b564a97591308f8866fc6e797085c7d39224d42f6b6",
+      "rule_id": "SEC-299",
+      "file_path": "internal/app/coverage_boost_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "8d5f5e84b04faf4d753eb8eda6a2ac14c2d3ec00a294e283e5f2dfa6892940b4",
+      "rule_id": "SEC-299",
+      "file_path": "internal/app/coverage_boost_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "56be05bc6c44d95399bdbcb14275e03826aee332585135dce98a2ddc42d5ba0c",
+      "rule_id": "SEC-299",
+      "file_path": "internal/app/coverage_boost_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "17ff97857d6b47bb6a2a088526eb8798186acf82c6be8b8a9e358b3bb1f5911f",
+      "rule_id": "SEC-299",
+      "file_path": "internal/app/coverage_boost_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "9b542db6b3ecf2f788954dcebaaa3df19bb9d6585b1da84b51e09343318817b1",
+      "rule_id": "SEC-299",
+      "file_path": "internal/app/coverage_boost_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "582b47adcb8d1841094c59a982799948860cb0683771abda319aca8e957d7f75",
+      "rule_id": "SEC-430",
+      "file_path": "cmd/preflight/coverage_batch1_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "d10c3a280f878bcbd2b4964e72b1875dd12581e954c678eb08e5f00e2e5bd2cc",
+      "rule_id": "SEC-463",
+      "file_path": "cmd/preflight/coverage_batch5_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "3ff6920d4aae8a9e85ac15a7c09c0a58a193b86eecd546a04a58d76771e04846",
+      "rule_id": "SEC-463",
+      "file_path": "cmd/preflight/coverage_final_push_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "1b202fbeb9b0e96b7f72602e587b67fe3ccbee8652af0206f6227b23990c4257",
+      "rule_id": "SEC-463",
+      "file_path": "cmd/preflight/deep_coverage_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "c8ddcdde1a8a817f8c6e9b9e697bac948a84da9b6e6daba6d36f7b661ea0e03c",
+      "rule_id": "SEC-463",
+      "file_path": "cmd/preflight/push_coverage_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "46a73c8283732615d30a949168db26f33f48e57b094ec683c558a6f3e89c3672",
+      "rule_id": "SEC-463",
+      "file_path": "cmd/preflight/trust_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "89e5bdb88b340281c5fb0c7c01afa340e76c3419bb7d389f1ea751fa0f8f1e32",
+      "rule_id": "SEC-463",
+      "file_path": "internal/app/coverage_boost_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "36ebc2ed7ad384cf6b4a0262c5d43890576629ebed32d839376ef5b41d0baff1",
+      "rule_id": "SEC-464",
+      "file_path": "cmd/preflight/coverage_final_push_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "6c3cc750ec0a25629839e5b41a2b89aedf0c020dc21e42c6dc1bc29805a9fa7a",
+      "rule_id": "SEC-464",
+      "file_path": "cmd/preflight/deep_coverage_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "be70b8e6f5eb80014495608685178a3a862204da2d0cdff24a83a583d6fe0d9e",
+      "rule_id": "SEC-464",
+      "file_path": "cmd/preflight/final_coverage_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "d5d213e0990037fc42a7f1358a78b16d00f7bb9c7eeb3043dcf0e403ecd1ea91",
+      "rule_id": "SEC-464",
+      "file_path": "cmd/preflight/push_coverage_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "56623a0df3bd26ee8b0343d69292b29ffc90788233dfec607438f4c943793c4a",
+      "rule_id": "SEC-464",
+      "file_path": "cmd/preflight/trust_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "6b99bc686a6b62963c2b900d0f6f25aab9782d93004a063c56a06413881fb754",
+      "rule_id": "SEC-510",
+      "file_path": "cmd/preflight/feedback_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "37b9eed57a3b1f8ea777e8d4642fa1d97da22e1c31d9041ba3d21b3c0e43116d",
+      "rule_id": "SEC-909",
+      "file_path": "internal/domain/catalog/embedded/catalog.yaml",
+      "severity": "high",
+      "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "571aeadeb706569c6a1190b0bac7a27b392682eda9b01f6beff63eeaa1d2f63e",
+      "rule_id": "SLOP-001",
+      "file_path": "website/src/content.config.ts",
+      "severity": "medium",
+      "created_at": "2026-07-11T10:59:04.427023Z"
     }
   ]
 }
