@@ -232,7 +232,15 @@ func runAgentStart(_ *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	// Start as daemon — re-exec self with --foreground
+	// Start as daemon — re-exec self with --foreground.
+	//
+	// Never from a test binary: re-execing one runs the whole suite rather than
+	// the requested subcommand, and each copy would reach this same line. See
+	// underTest in selfexec.go.
+	if underTest() {
+		return errNoDaemonUnderTest
+	}
+
 	fmt.Println("Starting agent as background daemon...")
 
 	execPath, err := os.Executable()
