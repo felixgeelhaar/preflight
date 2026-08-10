@@ -7,9 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+## [4.12.1] - 2026-08-10
 
 ### Fixed
+
+- **`agent start` can no longer fork-bomb a test run.** Without
+  `--foreground` it re-execs this binary as a detached daemon, and under
+  `go test` `os.Executable()` resolves to the compiled test binary — which,
+  handed a subcommand it does not recognise, does not error. It ignores the
+  unknown arguments and runs the whole suite, so each copy reaches the same
+  line and spawns again, detached with nil stdio. The test output looks
+  entirely normal while the machine fills up.
+
+  Latent rather than active: all three tests calling `runAgentStart` fail
+  earlier, so none reached the daemon branch. Guarded anyway, because one
+  future test supplying a valid schedule and policy is enough to arm it and
+  nothing about the resulting green run would point at the cause (#131).
+
+### Changed
+
+- `go.klarlabs.de/statekit` v1.8.0 → v1.13.2, which also completes the move
+  off the old `github.com/felixgeelhaar/statekit` module path (#132).
+
+### Security / CI
+
+- Vulnerable frontend npm dependencies updated (#127).
+- Migrated off dependabot onto the nox fleet security model (#128), with two
+  rounds of nox remediation for dependencies and action pins (#129, #133).
+- Pinned the nox taint plugin so a registry 404 stops failing the scan (#130).
+
+## [4.12.0] - 2026-07-10
+
+Dependency and CI maintenance — 26 commits, no functional change. Recorded
+here after the fact: 4.12.0 shipped without a changelog entry, so the file
+jumped from Unreleased straight to 4.11.0 and this release was invisible to
+anyone reading it.
+
+### Changed
+
+- Dependency bumps across the Go module (`statekit` 1.3.0 → 1.7.0, `mcp-go`
+  1.10.0 → 1.14.0, `wazero`, `go-toml`, `ini`, `x/crypto`) and the website.
+- GitHub Actions pins refreshed; macOS tests gated to push-to-main with
+  capped artifact retention.
 
 ## [4.11.0] - 2026-05-10
 
