@@ -1,6 +1,6 @@
 module github.com/felixgeelhaar/preflight
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/charmbracelet/bubbles v1.0.0
@@ -13,7 +13,7 @@ require (
 	github.com/tetratelabs/wazero v1.12.0
 	go.klarlabs.de/mcp v1.22.0
 	go.klarlabs.de/statekit v1.13.2
-	golang.org/x/crypto v0.55.0
+	golang.org/x/crypto v0.56.0
 	golang.org/x/mod v0.40.0
 	golang.org/x/text v0.41.0
 	gopkg.in/ini.v1 v1.67.2
@@ -55,6 +55,6 @@ require (
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260630182238-925bb5da69e7 // indirect
-	google.golang.org/grpc v1.82.1 // indirect
+	google.golang.org/grpc v1.83.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
