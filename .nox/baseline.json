@@ -8659,6 +8659,710 @@
       "file_path": "website/src/content.config.ts",
       "severity": "medium",
       "created_at": "2026-07-11T10:59:04.427023Z"
+    },
+    {
+      "fingerprint": "3eab51e3e9403bdfb3fe5dfde3e080bb88f5f4457a49f8199068caa7fad00461",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "Dockerfile.test is a test-only image (never published or deployed); the golang base is intentionally tracked by tag so tests run on the current patch release. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:30.425905Z"
+    },
+    {
+      "fingerprint": "6a08c3abf3c844061e6d27115c36dec9891a70809d727164d526165fb4a17f2e",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "Dockerfile.test is a test-only image (never published or deployed); the golang base is intentionally tracked by tag so tests run on the current patch release. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:30.426182Z"
+    },
+    {
+      "fingerprint": "739e462b5efd69933915ec7ad09def3fc36e907a51f855cc4986fe4b7c05c1b8",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "continue-on-error on the optional taint-analysis plugin install: a plugin-registry outage must not fail the scan. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:33.753614Z"
+    },
+    {
+      "fingerprint": "b460a8d2da3749ce3d158c248dfc197fd1264c030fe375dd0e1d12b0bbdb27c1",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "Dockerfile.test is a test-only image that runs to completion; no HEALTHCHECK needed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:37.34907Z"
+    },
+    {
+      "fingerprint": "2f77aeca1cb7682813590f36997eb8a3604880aef0fcb729fd2ca6dd96ab3796",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "Dockerfile.test: remaining COPY steps copy toolchain/test assets that the test user only reads. Test-only image. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:38.920639Z"
+    },
+    {
+      "fingerprint": "fa1d614536e51752f8814dff587d0c2378ee61ddb08d6a1c4934e59e8e4d1a08",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "Dockerfile.test: remaining COPY steps copy toolchain/test assets that the test user only reads. Test-only image. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:38.920709Z"
+    },
+    {
+      "fingerprint": "85ab4f1e60c5657689f9976e696cd139b0ff58c25de9fc5d59d92b129ec0e6c4",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "Dockerfile.test is a test-only image that is never published; image authors metadata does not apply. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:39.956433Z"
+    },
+    {
+      "fingerprint": "0b616c22f622f9f7c0305ba95cc4a06f162c81308c96e1543e312da993a54363",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "Low-confidence: the coverage.out artifact is a short-lived (7-day) CI input, not a release artifact, so build attestation does not apply. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:41.367398Z"
+    },
+    {
+      "fingerprint": "efffd45e45bdf218052ebd23a0a2fc2295219290f6341d868fed455c871b6993",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "workflow_dispatch without an environment gate. Reviewed: remediation opens a PR; on-demand runs are the point of the manual trigger. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:42.215129Z"
+    },
+    {
+      "fingerprint": "6f711664f31a33135737b4efc7c36c5b8e206667825dbb6bdde0cf29767b709d",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.71011Z"
+    },
+    {
+      "fingerprint": "6f98a1dade8d367ddcbdc63c5ac56c1c81b165bf5c8af6f893da3d5048d056bd",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.710177Z"
+    },
+    {
+      "fingerprint": "09e4dd040e4998118baf007ecb07c39071afe99ac91cc7dcb598f83ff964cb26",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.711174Z"
+    },
+    {
+      "fingerprint": "601646b4edf7191d03007b07be96c231f022b20671a24c97299f79968605a189",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.711659Z"
+    },
+    {
+      "fingerprint": "9ccd92e63f820c6b55d90dab6be5b20e491bf8f1294b3b78c03d6acbff192b81",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.711736Z"
+    },
+    {
+      "fingerprint": "02f078cb053ca76fa927edfa6e36f8b43b440522001d055136212ba0555e4238",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.711815Z"
+    },
+    {
+      "fingerprint": "e7ceb1f660b3b939c3a2591b3c6a7f348c6250ceba7313db905b0d15d5e7e9d3",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.711889Z"
+    },
+    {
+      "fingerprint": "9f7f56d9e478fed0fc05d7bd1a1bc5e95a17db3b42acedda51dc7619dc4eafd2",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.711962Z"
+    },
+    {
+      "fingerprint": "b44c0eb4878af685d51d34cdeb9ae6b14b17810df60dcb5ee9b62e6fe78e7672",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.712034Z"
+    },
+    {
+      "fingerprint": "b6f4b549d84cfd3326b2ce601c6b546cf5858e8dafa5f7f0c0bb98d8c7f0eff3",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.712374Z"
+    },
+    {
+      "fingerprint": "cbda54f947a75f398065631708b17b5fb894d02b8a778ed657584921bb29c432",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.712961Z"
+    },
+    {
+      "fingerprint": "02794f17c3605f4d288c085351ef525f82ea799ae89ba3ecfbb669787a88c1b3",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.713062Z"
+    },
+    {
+      "fingerprint": "8a3dd117bbb7c14e479e032fefbed142dfdf1525937906d3a304e5f29a7b576c",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.713144Z"
+    },
+    {
+      "fingerprint": "f17391476cbd698cc94bd790472ff8940d7897c13ae1152535103cd10298737a",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.713228Z"
+    },
+    {
+      "fingerprint": "d21d64f71d1d7a8f50b01494bf51fb94f161b0c233b24212bb22e0a513fd1d0e",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.714015Z"
+    },
+    {
+      "fingerprint": "9886eee54a6c7716c426f500d9ea34590bfb5a37340e5e478d99807c2da44cb8",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.714823Z"
+    },
+    {
+      "fingerprint": "0b02fd5bd79f234b7106c37904641ae2b2893176c5ce319490d6f9e7cd759796",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.714883Z"
+    },
+    {
+      "fingerprint": "b6491106c701a1dc523b8bfcae5bbb4427b69143ca289655c1c86aa2f750a1fe",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.715562Z"
+    },
+    {
+      "fingerprint": "e97313517e9e846b9d09368500c25163b27a91adac895711238284138f256e4b",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services are short-lived test jobs run with 'docker compose run' on developer machines and CI; resource limits do not apply. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:43.715702Z"
+    },
+    {
+      "fingerprint": "342de2eeac87ab5b382b59a07051c55cf532c4d20dee1174185066aa1cfce5ce",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml: ./coverage is the intended output directory for coverage reports and must be writable. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:45.071274Z"
+    },
+    {
+      "fingerprint": "1de56908f512432b7bd5226f25b09eef9147ea04572b0f651df6b00c1c4b7788",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml: ./coverage is the intended output directory for coverage reports and must be writable. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:45.071346Z"
+    },
+    {
+      "fingerprint": "7980e7e875e3ebfc72ef379f5c2a38442eed9c443e6f22ab181732ed04bd94b3",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml: ./coverage is the intended output directory for coverage reports and must be writable. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:45.071423Z"
+    },
+    {
+      "fingerprint": "17aeeba3d0741a9fdf9bf48bfce3779aacb02c61fb457b7a9043b56ce3712e13",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.543337Z"
+    },
+    {
+      "fingerprint": "9940a4e6b04a1085bcb800a2106372cbbc71e057201de02d29426a87cadd36dc",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.544586Z"
+    },
+    {
+      "fingerprint": "e72f587f620750d1c786030d75505d2be54126d656ca0882252ef668750976af",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.544753Z"
+    },
+    {
+      "fingerprint": "df33ab5e0ec9869c190facd56ad7a26b6c0c3bfbe74569a7e99845b966b51e50",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.544799Z"
+    },
+    {
+      "fingerprint": "b849674afe8d6b2dc2fce15df652881df8f2265395a0fcee4cc49342c4945a45",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.544839Z"
+    },
+    {
+      "fingerprint": "1692b85b624de9beb9d2d93d948853c4c1790fe3b1eb936e44fd66e5bf07e1a9",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.544878Z"
+    },
+    {
+      "fingerprint": "55c5b4339ce7374b32a937e1b8889c828da7f228c2d852d375aa7598f7618cc5",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.544925Z"
+    },
+    {
+      "fingerprint": "2d5402a8c2dd678d4b58645fc5986859e6679056522be02aac79ec14f0c51a81",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.559892Z"
+    },
+    {
+      "fingerprint": "e8b094b089635e527c3bebbc9dfec34d0aa5f8926cda9da564314ee71762b338",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.559991Z"
+    },
+    {
+      "fingerprint": "455d56ebe97ba82169f9b67efe652acf0c0763f12de5c7e088728835a0617d55",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.560085Z"
+    },
+    {
+      "fingerprint": "6b86665424cd64dbcd67110cb549f9c0dd9832355c090090d1a53493080b8aa9",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.560176Z"
+    },
+    {
+      "fingerprint": "e7bad4a242facaf38537f0bebf0386de0e85925d7c5e53188615d45e9f07ac0b",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.560396Z"
+    },
+    {
+      "fingerprint": "aaf91bb2902df0b9e27b16738b4ff94bc808832ccde23db96caeaea92d9b1469",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.560693Z"
+    },
+    {
+      "fingerprint": "565da98ea1691e3b20ac890c427e2e50e4d44d885fd7d0c05eb5e0984c2a013f",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.560786Z"
+    },
+    {
+      "fingerprint": "fc345fddf52c108274c64eaaeafb13483cd935f83644b2ba1bd07710b3a3bb23",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.561119Z"
+    },
+    {
+      "fingerprint": "e40d795d6c98c03b11e7c4f8a1fd2da1c3e472e90ceb7af3b5751149aeaabe54",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.561318Z"
+    },
+    {
+      "fingerprint": "6e755e342d7ac41f9101f6877221a311b2235bb4b664ad441a10c3fff0008a15",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.562044Z"
+    },
+    {
+      "fingerprint": "c52fb29ee440dd55995bc4ad88f1284c60c2b66c37cf1c55e0f05085a4bfc4e4",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.563923Z"
+    },
+    {
+      "fingerprint": "911b2c83b5501e3175e577a4a6e63b112d1baa0ed80078f6c2037ae95c19075a",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "docker-compose.test.yml services run to completion (go test); a health check is meaningless for a job that exits. Not deployed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:46.564041Z"
+    },
+    {
+      "fingerprint": "52922952e40b8c5ebd4fef0969dd782d57266e9ecccc4e9bddc9be74f0f6daa2",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "Manual dispatch on the nox-remediate caller is intentional so a maintainer can run remediation on demand; it only opens a PR. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:48.782133Z"
+    },
+    {
+      "fingerprint": "530e8464b73bb94d797aa233bcd4b2ea933dd8644a2b0a15d0bb6b7ba128980d",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "cancel-in-progress is intentional: a newer push supersedes an in-flight scan of the same ref. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:49.951455Z"
+    },
+    {
+      "fingerprint": "8378df7a1d4adb5806616a668bc89e456b48fe9b7212ca5799b5b8eddbe0ae9c",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "contents: write is required by the shared nox-remediate workflow to push its remediation branch and open a PR; it never pushes to the default branch. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:51.346851Z"
+    },
+    {
+      "fingerprint": "dc10805700ec2f4f2b1940488a6e2b56cd7b94d44a6e6a8ba3dedae0ff8a4c34",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "False positive: truncated fake OpenSSH key string in a unit-test fixture written to a temp directory; not a real key. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:25:52.015916Z"
+    },
+    {
+      "fingerprint": "1de1ff80924ef9e339dfd9f3cced4543f2ba23e9118d754b161a58294ddeb4d8",
+      "rule_id": "AI-006",
+      "file_path": "internal/provider/shell/steps.go",
+      "severity": "medium",
+      "reason": "False positive: the shell step explanation string describes the starship preset; no prompt or LLM response is logged. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "11714d7968f702be7469786d295e068a53932b1cde80d7078075193088f9c1dd",
+      "rule_id": "AI-007",
+      "file_path": "cmd/preflight/analyze.go",
+      "severity": "high",
+      "reason": "False positive: cmd/preflight/analyze.go prints help text naming the ANTHROPIC_API_KEY/GEMINI_API_KEY/OPENAI_API_KEY variables when no AI provider is configured; no key value is ever read or printed. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "96dbacf3f6a52f43f9454d9d0d8f0a775036d9d8a58297be218dbfe8e4c3503e",
+      "rule_id": "AI-031",
+      "file_path": "internal/domain/config/inheritance_test.go",
+      "severity": "low",
+      "reason": "False positive: unit-test fixture for config inheritance; no AI agent is involved. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "dd06b5058ccd0003f19901ec9d23b459c0649b33e772a3dc6747a178106bfa8f",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_batch6_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "186ba2b4779a785d16d6abeec6277fd1363ef7757e0af25fa5175587e3d1a1be",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/coverage_boost_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "a7e648720029fb7770d85626910663506c63de4dcc34547ac8ada21d1b7eacde",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/deep_coverage_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "a7e648720029fb7770d85626910663506c63de4dcc34547ac8ada21d1b7eacde",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/deep_coverage_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "d96a3a06b53e387948c31826edc2dd882f0b18f39e5213e0d3cfcd46aabd5aaf",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/root_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "d96a3a06b53e387948c31826edc2dd882f0b18f39e5213e0d3cfcd46aabd5aaf",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/root_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "d96a3a06b53e387948c31826edc2dd882f0b18f39e5213e0d3cfcd46aabd5aaf",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/root_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "d96a3a06b53e387948c31826edc2dd882f0b18f39e5213e0d3cfcd46aabd5aaf",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/root_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "d96a3a06b53e387948c31826edc2dd882f0b18f39e5213e0d3cfcd46aabd5aaf",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/root_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "d96a3a06b53e387948c31826edc2dd882f0b18f39e5213e0d3cfcd46aabd5aaf",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/root_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "f8031bb1ae445ce0853e512f65c7d340fd049f138d4154058b808213e82cb0a9",
+      "rule_id": "DATA-001",
+      "file_path": "cmd/preflight/sync_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "d36f054d568938393ccfd42b9fe74ec8913c874304f72ec040e18df464027b98",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/operations_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "d36f054d568938393ccfd42b9fe74ec8913c874304f72ec040e18df464027b98",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/operations_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "d36f054d568938393ccfd42b9fe74ec8913c874304f72ec040e18df464027b98",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/operations_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "d36f054d568938393ccfd42b9fe74ec8913c874304f72ec040e18df464027b98",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/operations_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "cb553dd0ef619a2cc524995a443bc87886877007cd0542c72f3a4db01c8b7b31",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/advisor/inference_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "cb553dd0ef619a2cc524995a443bc87886877007cd0542c72f3a4db01c8b7b31",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/advisor/inference_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "c56ef0524149aca1e6453f58eb49cfae03f67a518b17e77fef792b7ee0f5cd71",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/audit/event_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "426208d8a08cbd3e9e1952bd2889421bb9cd9bb130298d68e9944a87361a6a4f",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/audit/event_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "b469ddb111017373dffb4c3d8227f33df7ac2bf23c6be87e7769d944cbd71588",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/audit/service_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "b469ddb111017373dffb4c3d8227f33df7ac2bf23c6be87e7769d944cbd71588",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/audit/service_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "b469ddb111017373dffb4c3d8227f33df7ac2bf23c6be87e7769d944cbd71588",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/audit/service_test.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "88b48e33fb754311e186dd8a188a20318f4ee8939d803c50c929640efbd09511",
+      "rule_id": "DATA-001",
+      "file_path": "internal/domain/discover/suggestions.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "4180614dbc9c3eeec0c0ee5769b6debc1db0433c95845c41b6232da7e98883f6",
+      "rule_id": "DATA-001",
+      "file_path": "internal/tui/tour_content.go",
+      "severity": "medium",
+      "reason": "False positive: placeholder or fixture e-mail addresses (your@email.com, jane@company.com, test@example.com style) in test files and tour/suggestion help text; no real personal data. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "8d70e3addc9aa0864b358f64cf4c5d95393ab511d48e8aa3d60a2de6da877e1c",
+      "rule_id": "IAC-024",
+      "file_path": "Dockerfile.test",
+      "severity": "medium",
+      "reason": "Dockerfile.test: sudo is used by the non-root test user to prepare /go for Homebrew/APT integration tests; test-only image. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "fa1d614536e51752f8814dff587d0c2378ee61ddb08d6a1c4934e59e8e4d1a08",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "Dockerfile.test: remaining COPY steps copy toolchain/test assets that the test user only reads. Test-only image. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "fa1d614536e51752f8814dff587d0c2378ee61ddb08d6a1c4934e59e8e4d1a08",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "Dockerfile.test: remaining COPY steps copy toolchain/test assets that the test user only reads. Test-only image. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "fa1d614536e51752f8814dff587d0c2378ee61ddb08d6a1c4934e59e8e4d1a08",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "Dockerfile.test: remaining COPY steps copy toolchain/test assets that the test user only reads. Test-only image. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "fa1d614536e51752f8814dff587d0c2378ee61ddb08d6a1c4934e59e8e4d1a08",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "Dockerfile.test: remaining COPY steps copy toolchain/test assets that the test user only reads. Test-only image. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "3cf6634c9c849c55e8d78e8929532ebbb12c95cb828d078fd1d3f4619bffa7a2",
+      "rule_id": "IAC-193",
+      "file_path": "internal/domain/catalog/embedded/catalog.yaml",
+      "severity": "medium",
+      "reason": "Low-confidence: the catalog entry is a user-facing template string shipped as data in catalog.yaml, not an Ansible task run by this repo. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:29:28Z"
+    },
+    {
+      "fingerprint": "28feb4bce289d8dfcaaa4d56e2793a202c7f988718a1299c81b8c0ce29f34845",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "continue-on-error on the optional taint-analysis plugin install: a plugin-registry outage must not fail the scan (nox 1.7.1 reports this as IAC-310). Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T11:53:14.626523Z"
     }
   ]
 }

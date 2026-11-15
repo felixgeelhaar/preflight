@@ -13,6 +13,7 @@
   <a href="https://github.com/felixgeelhaar/preflight/actions/workflows/ci.yml"><img src="https://github.com/felixgeelhaar/preflight/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://goreportcard.com/report/github.com/felixgeelhaar/preflight"><img src="https://goreportcard.com/badge/github.com/felixgeelhaar/preflight" alt="Go Report Card"></a>
   <img src="https://img.shields.io/badge/coverage-80%25%2B-brightgreen" alt="Coverage">
+  <a href=".github/workflows/nox-scan.yml"><img src=".github/nox-badge.svg" alt="nox security grade"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
 </p>
 
