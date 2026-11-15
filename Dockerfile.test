@@ -4,7 +4,7 @@
 # =============================================================================
 # Stage 1: Base Go environment
 # =============================================================================
-FROM golang:1.25-bookworm AS go-base
+FROM golang:1.26-bookworm AS go-base
 
 # Install common development tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -117,7 +117,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Go (detect architecture)
-ARG GO_VERSION=1.25.0
+ARG GO_VERSION=1.26.0
 ARG TARGETARCH
 RUN ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
     curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz" | tar -C /usr/local -xzf -
