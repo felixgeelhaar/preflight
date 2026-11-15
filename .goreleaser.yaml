@@ -65,10 +65,8 @@ homebrew_casks:
     description: "Deterministic workstation compiler"
     hooks:
       post:
-        install: |
-          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/preflight"]
-          end
+        install_steps: |
+          run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/preflight"]
 
 changelog:
   disable: true  # We use relicta for changelogs
