@@ -9363,6 +9363,14 @@
       "severity": "",
       "reason": "continue-on-error on the optional taint-analysis plugin install: a plugin-registry outage must not fail the scan (nox 1.7.1 reports this as IAC-310). Reviewed 2026-11-15.",
       "created_at": "2026-11-15T11:53:14.626523Z"
+    },
+    {
+      "fingerprint": "7c3a8a7f9d0ecc1f8b858f522e6baeb8c7739e092d03f22ab6d4cc27bfc4cade",
+      "rule_id": "",
+      "file_path": "",
+      "severity": "",
+      "reason": "False positive: exec.Command(\"go\", \"version\", \"-m\", binaryPath) passes discrete arguments with no shell. binaryPath is the user's own GOBIN joined with a file name from os.ReadDir, so it always begins with an absolute directory and cannot be parsed as a flag. Reviewed 2026-11-15.",
+      "created_at": "2026-11-15T20:09:49.650955Z"
     }
   ]
 }
