@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.12.2] - 2026-11-24
+
+### Fixed
+
+- The Homebrew cask removes the Gatekeeper quarantine with declarative
+  `postflight_steps` instead of a raw Ruby `postflight` block, which
+  Homebrew deprecated: every `brew` command printed a deprecation warning
+  for the cask (#143).
+
+### Security
+
+- Dependency and GitHub Actions updates from nox remediation (#134–#140).
+- Built and linted with Go 1.26 (#143); goreleaser-action v7.3.0 (#145).
+
 ## [4.12.1] - 2026-08-10
 
 ### Fixed
